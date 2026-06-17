@@ -77,6 +77,6 @@ if (cmd === "graph") {
 } else if (cmd === "onboard") {
   await onboard(cfg, await buildGraph(cfg));
 } else {
-  console.error("usage: cli.ts graph|overview|docs|verify [--check|--fast|--apply <file>]");
+  console.error("usage: coherence <graph|overview|docs|verify|onboard> [--check|--fast|--apply <file>]");
   process.exit(2);
 }
