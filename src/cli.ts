@@ -20,6 +20,17 @@ const fast = argv.includes("--fast");
 const applyIdx = argv.indexOf("--apply");
 const applyPath = applyIdx >= 0 ? argv[applyIdx + 1] : null;
 
+// Exit AFTER stdout has drained. `process.exit()` terminates the process before
+// asynchronously-buffered writes flush when stdout is a pipe or file (it only
+// writes synchronously to a TTY) — so `coherence verify > file`, `| cat`, or any
+// CI capture silently lost the entire report AND surfaced a spurious nonzero exit
+// from the interrupted write. Writing an empty chunk and awaiting its callback
+// guarantees the buffer flushed before we exit, identically in every stdout mode.
+const exit = async (code: number): Promise<never> => {
+  await new Promise<void>((res) => process.stdout.write("", () => res()));
+  process.exit(code);
+};
+
 const cfg = await loadConfig(process.cwd());
 const stamp = new Date().toISOString().slice(0, 16).replace("T", " ") + "Z";
 const out = (p: string) => join(cfg.root, cfg.outputDir, p);
@@ -65,24 +76,24 @@ async function doOverview(): Promise<string[]> {
 
 if (cmd === "graph") {
   const stale = await doGraph();
-  if (check) { console.log(stale.length ? `stale: ${stale.join(", ")}` : "graph current"); process.exit(stale.length ? 1 : 0); }
+  if (check) { console.log(stale.length ? `stale: ${stale.join(", ")}` : "graph current"); await exit(stale.length ? 1 : 0); }
 } else if (cmd === "overview") {
   const stale = await doOverview();
-  if (check) { console.log(stale.length ? `stale: ${stale.join(", ")}` : "overview current"); process.exit(stale.length ? 1 : 0); }
+  if (check) { console.log(stale.length ? `stale: ${stale.join(", ")}` : "overview current"); await exit(stale.length ? 1 : 0); }
 } else if (cmd === "docs") {
   const stale = [...(await doOverview()), ...(await doGraph())];
-  if (check) { console.log(stale.length ? `stale: ${stale.join(", ")}` : "docs current"); process.exit(stale.length ? 1 : 0); }
+  if (check) { console.log(stale.length ? `stale: ${stale.join(", ")}` : "docs current"); await exit(stale.length ? 1 : 0); }
 } else if (cmd === "verify") {
-  if (applyPath) process.exit(await applyVerdicts(cfg, applyPath));
+  if (applyPath) await exit(await applyVerdicts(cfg, applyPath));
   const graph = await buildGraph(cfg);
-  process.exit(await runVerify(cfg, graph, { fast }));
+  await exit(await runVerify(cfg, graph, { fast }));
 } else if (cmd === "onboard") {
   await onboard(cfg, await buildGraph(cfg));
 } else if (cmd === "decompose") {
-  process.exit(await decompose(cfg, await buildGraph(cfg)));
+  await exit(await decompose(cfg, await buildGraph(cfg)));
 } else if (cmd === "scaffold") {
-  process.exit(await scaffold(cfg, argv[0], argv[1]));
+  await exit(await scaffold(cfg, argv[0], argv[1]));
 } else {
   console.error("usage: coherence <graph|overview|docs|verify|decompose|scaffold|onboard> [--check|--fast|--apply <file>]");
-  process.exit(2);
+  await exit(2);
 }
