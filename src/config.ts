@@ -10,6 +10,7 @@ const DEFAULTS: Omit<Config, "root"> = {
   ignore: ["node_modules", ".git", "dist", ".turbo", ".wrangler"],
   codeExt: ["ts"],
   typecheck: ["npm", "run", "typecheck"],
+  test: [],
   language: "typescript",
   platform: null,
 };

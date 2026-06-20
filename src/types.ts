@@ -48,6 +48,8 @@ export interface Config {
   ignore: string[];         // dir names never walked
   codeExt: string[];        // file extensions treated as code (for the tree)
   typecheck: string[];      // command for the `typechecks` claim
+  test: string[];           // base command for `passes test "<name>"` claims (name appended as final arg). Empty = claim skips.
+  testMatch?: string;       // optional regex the test output MUST contain to count as a pass. Guards runners (e.g. vitest -t) that exit 0 when the named test matched nothing — without it, a deleted/renamed test silently stays green.
   language: string;         // language adapter key
   platform: string | null;  // platform adapter key, or null
 }

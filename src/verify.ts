@@ -54,6 +54,21 @@ export async function runVerify(cfg: Config, graph: Graph, opts: { fast?: boolea
     if ((m = /^(\S+)\s+exists at\s+(root|this node|every node)$/.exec(claim))) { const base = m[2] === "root" ? root : nodeDir; return mk((await exists(join(base, m[1]))) ? "pass" : "fail", `${m[1]} @ ${m[2]}`); }
     if ((m = /^(\S+)\s+imports\s+(\S+)$/.exec(claim))) { try { const src = await readFile(join(nodeDir, m[1]), "utf8"); const re = new RegExp(`from\\s+["']${m[2].replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}["']`); return mk(re.test(src) ? "pass" : "fail", re.test(src) ? "" : `no import of ${m[2]}`); } catch { return mk("fail", `cannot read ${m[1]}`); } }
     if ((m = /^(\S+)\s+responds\s+(\d+)(?:\s+with\s+"(.*)")?$/.exec(claim))) { if (opts.fast) return mk("skip", "live tier (--fast)"); try { const res = await fetch(m[1]); if (res.status !== Number(m[2])) return mk("fail", `got ${res.status}`); if (m[3]) { const bdy = await res.text(); if (!bdy.includes(m[3])) return mk("fail", `body missing "${m[3]}"`); } return mk("pass"); } catch { return mk("skip", "unreachable"); } }
+    // executable tier: delegate an invariant to an existing test. The spec's `works
+    // when` becomes the single front door — coherence runs the test the claim names.
+    // Slow (shells the runner), so it joins the live tier skipped under --fast.
+    if ((m = /^passes test\s+"(.+)"$/.exec(claim))) {
+      if (opts.fast) return mk("skip", "executable tier (--fast)");
+      if (!cfg.test || !cfg.test.length) return mk("skip", "no test runner configured (config.test)");
+      const r = spawnSync(cfg.test[0], [...cfg.test.slice(1), m[1]], { cwd: root, encoding: "utf8", timeout: 120000 });
+      const out = (r.stderr || "") + (r.stdout || "");
+      const tail = out.split("\n").filter(Boolean).slice(-3).join(" | ");
+      // exit 0 alone is not trusted: a runner that matched zero tests (renamed/deleted)
+      // can still exit 0. testMatch requires positive evidence the named test actually ran.
+      if (r.status !== 0) return mk("fail", tail.slice(0, 200));
+      if (cfg.testMatch && !new RegExp(cfg.testMatch).test(out)) return mk("fail", `test "${m[1]}" matched no run (testMatch)`);
+      return mk("pass");
+    }
     return mk("skip", "no verifier (dialect gap)");
   };
 
@@ -83,14 +98,20 @@ export async function runVerify(cfg: Config, graph: Graph, opts: { fast?: boolea
     console.log(`narrative: ${narr.statements.length} statements · ${unchanged} unchanged · ${pending} need verification · ${broken} broken`);
   }
 
+  // Coverage gates NODE-CONTRACT completeness (does each node carry claims + a why),
+  // NOT symbol-doc exhaustiveness. Per-symbol prose is advisory: forcing a docblock on
+  // every export produces stale busywork and a perpetually-red baseline that trains
+  // contributors to ignore the gate. Undocumented symbols still surface as jobs.
   const compGaps = comps.filter((c) => !(c.claims && c.claims.length));
   const docGaps = symbols.filter((s) => !s.prose || !String(s.prose).trim());
   const whyGaps = comps.filter((c) => !c.why || !String(c.why).trim());
-  console.log(`coverage: components ${comps.length - compGaps.length}/${comps.length} claimed, ${comps.length - whyGaps.length}/${comps.length} with why · symbols ${symbols.length - docGaps.length}/${symbols.length} documented`);
+  console.log(`coverage: components ${comps.length - compGaps.length}/${comps.length} claimed, ${comps.length - whyGaps.length}/${comps.length} with why · symbols ${symbols.length - docGaps.length}/${symbols.length} documented (advisory)`);
   for (const c of compGaps) { console.log(`  ✗ [coverage] component "${c.label}" has no claims`); jobs.push({ kind: "generate-claims", id: c.id, name: c.label }); }
-  for (const s of docGaps) { console.log(`  ✗ [coverage] symbol "${s.label}" (${s.path}:${s.line}) has no description (what)`); jobs.push({ kind: "generate-doc", id: s.id, file: s.path, line: s.line, name: s.label }); }
   for (const c of whyGaps) { console.log(`  ✗ [coverage] component "${c.label}" states no rationale (why)`); jobs.push({ kind: "author-why", id: c.id, name: c.label }); }
-  const covGaps = compGaps.length + docGaps.length + whyGaps.length;
+  // advisory only — emitted as jobs, never gated
+  for (const s of docGaps) jobs.push({ kind: "generate-doc", id: s.id, file: s.path, line: s.line, name: s.label });
+  if (docGaps.length) console.log(`  · [advisory] ${docGaps.length} symbol(s) undocumented (not gated)`);
+  const covGaps = compGaps.length + whyGaps.length;
 
   const verifyJobs = jobs.filter((j) => j.kind === "verify-statement");
   const genJobs = jobs.filter((j) => j.kind === "generate-doc" || j.kind === "generate-claims");

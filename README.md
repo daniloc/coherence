@@ -50,6 +50,8 @@ Add `coherence.config.json` to the project root:
   "ignore": ["node_modules", ".git", "dist", ".wrangler", "__tests__"],
   "codeExt": ["ts", "sql"],
   "typecheck": ["npm", "run", "typecheck"],
+  "test": ["npx", "vitest", "run", "-t"],
+  "testMatch": "[1-9][0-9]* passed",
   "language": "typescript",
   "platform": "cloudflare"
 }
@@ -58,6 +60,29 @@ Add `coherence.config.json` to the project root:
 Then author `*.spec.md` files (a folder containing one is a *node*). See the spec
 grammar: a spec is `# Name`, a one-line intent, an optional `## works when` claim
 list, and an optional `## why` (protected rationale).
+
+### Claim grammar (the `## works when` list)
+
+Each claim is verified at one of three tiers:
+
+- **structural** (instant, deterministic) — `X exists at this node` · `X imports Y` · `typechecks`.
+- **executable** (slow, deterministic) — `passes test "<name>"` shells `config.test`
+  with `<name>` appended and reports pass/fail. This is the **single front door**: an
+  invariant enforced by a test (a totality check, a security boundary) is named in the
+  spec, so `coherence verify` transitively runs it. A claim pointing at a renamed or
+  deleted test goes **red** — that's the rot detection. Skipped under `--fast`.
+- **live** (slow) — `URL responds 200 with "..."`. Skipped under `--fast`.
+
+`config.test` is the base test command; `<name>` is appended as the final arg.
+`config.testMatch` is an optional regex the output must contain to count as a pass —
+**set it** for runners like `vitest -t` that exit 0 even when the name matched nothing
+(without it, a deleted test silently stays green). The example above requires vitest's
+`N passed` summary.
+
+**Coverage gates node-contract completeness, not symbol-doc exhaustiveness.** A node
+must carry claims and a `## why`; per-symbol prose is *advisory* (surfaced as jobs,
+never red). Forcing a docblock on every export produces stale busywork and a
+perpetually-red baseline that trains contributors to ignore the gate.
 
 ## Commands
 
