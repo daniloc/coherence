@@ -8,6 +8,7 @@ import { loadConfig } from "./config.ts";
 import { buildGraph } from "./derive.ts";
 import { renderOutline } from "./render-outline.ts";
 import { renderOverview } from "./render-overview.ts";
+import { renderClaude, spliceBlock, extractBlock, CLAUDE_BEGIN, CLAUDE_END } from "./render-claude.ts";
 import { runVerify, applyVerdicts } from "./verify.ts";
 import { onboard } from "./onboard.ts";
 import { decompose } from "./decompose.ts";
@@ -74,6 +75,33 @@ async function doOverview(): Promise<string[]> {
   return [];
 }
 
+async function doClaude(): Promise<string[]> {
+  const graph = await buildGraph(cfg);
+  const block = renderClaude(graph, stamp);
+  const path = join(cfg.root, "CLAUDE.md");
+  const existing = await read(path);
+  const current = extractBlock(existing);
+  // Strip the timestamp line so a re-run isn't reported stale just for the clock.
+  const normBlock = (s: string) => s.replace(/<sub>Generated at [^<]*<\/sub>/, "<sub>Generated at</sub>");
+  if (check) {
+    // Absent markers can't be "stale" — flag them so CI reports the file isn't wired up.
+    if (current === null) return ["CLAUDE.md (no coherence fence markers)"];
+    return normBlock(current) !== normBlock(block) ? ["CLAUDE.md"] : [];
+  }
+  if (!existing) {
+    console.log(`claude: no CLAUDE.md at ${path}. Create one and add a fenced block:\n\n${CLAUDE_BEGIN}\n${CLAUDE_END}\n\nThe generated component map + invariant table go between the markers; your authored prose (why-essays, conventions) goes outside them.`);
+    return [];
+  }
+  const spliced = spliceBlock(existing, block);
+  if (spliced === null) {
+    console.log(`claude: CLAUDE.md has no coherence fence markers. Add this pair where the generated block should live (e.g. just after the project intro):\n\n${CLAUDE_BEGIN}\n${CLAUDE_END}\n\nEverything between them is owned by \`coherence claude\`; everything outside stays authored. File left untouched.`);
+    return [];
+  }
+  await writeFile(path, spliced);
+  console.log("claude: wrote generated block into CLAUDE.md");
+  return [];
+}
+
 if (cmd === "graph") {
   const stale = await doGraph();
   if (check) { console.log(stale.length ? `stale: ${stale.join(", ")}` : "graph current"); await exit(stale.length ? 1 : 0); }
@@ -83,6 +111,9 @@ if (cmd === "graph") {
 } else if (cmd === "docs") {
   const stale = [...(await doOverview()), ...(await doGraph())];
   if (check) { console.log(stale.length ? `stale: ${stale.join(", ")}` : "docs current"); await exit(stale.length ? 1 : 0); }
+} else if (cmd === "claude") {
+  const stale = await doClaude();
+  if (check) { console.log(stale.length ? `stale: ${stale.join(", ")}` : "CLAUDE.md current"); await exit(stale.length ? 1 : 0); }
 } else if (cmd === "verify") {
   if (applyPath) await exit(await applyVerdicts(cfg, applyPath));
   const graph = await buildGraph(cfg);
@@ -94,6 +125,6 @@ if (cmd === "graph") {
 } else if (cmd === "scaffold") {
   await exit(await scaffold(cfg, argv[0], argv[1]));
 } else {
-  console.error("usage: coherence <graph|overview|docs|verify|decompose|scaffold|onboard> [--check|--fast|--apply <file>]");
+  console.error("usage: coherence <graph|overview|docs|claude|verify|decompose|scaffold|onboard> [--check|--fast|--apply <file>]");
   await exit(2);
 }

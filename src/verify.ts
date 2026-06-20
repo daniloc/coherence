@@ -6,6 +6,7 @@ import { join } from "node:path";
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import type { Config, Graph } from "./types.ts";
+import { analyzeOracle } from "./oracle-domain.ts";
 
 const hashOf = (s: string) => createHash("sha256").update(s).digest("hex").slice(0, 16);
 const exists = async (p: string) => { try { await stat(p); return true; } catch { return false; } };
@@ -73,23 +74,43 @@ export async function runVerify(cfg: Config, graph: Graph, opts: { fast?: boolea
       return mk("pass");
     }
     // BOUNDARY tier — the anti-entropy ratchet. `boundary "<invariant>" at <chokepoint>
-    // [via test "<oracle>"]` asserts the four-part anatomy of a self-enforcing boundary:
-    // the invariant is named, the chokepoint SYMBOL exists, and (if given) a totality
-    // oracle test passes. It ANCHORS the named invariant so the coverage gate can fail
-    // any `## invariants` entry with no boundary claim. This is what makes "one chokepoint
-    // + totality oracle" a checkable PROPERTY, not a prose checklist.
-    if ((m = /^boundary\s+"([^"]+)"\s+at\s+(\S+)(?:\s+via test\s+"([^"]+)")?$/.exec(claim))) {
-      const inv = m[1], sym = m[2], test = m[3];
+    // [via (test|guard) "<oracle>"]` asserts the four-part anatomy of a self-enforcing
+    // boundary: the invariant is named, the chokepoint SYMBOL exists, and (if given) the
+    // oracle passes. It ANCHORS the named invariant so the coverage gate can fail any
+    // `## invariants` entry with no boundary claim. This is what makes "one chokepoint +
+    // totality oracle" a checkable PROPERTY, not a prose checklist.
+    //   via test  — a DOMAIN-totality oracle: it must iterate a LIVE domain (the META-ORACLE
+    //               in oracle-domain.ts checks this — a literal/source-grep oracle FAILS).
+    //   via guard — a SOURCE-PROPERTY oracle (e.g. "no trusted factory exists anywhere"),
+    //               which can't be a domain loop; exempt from the live-domain requirement.
+    if ((m = /^boundary\s+"([^"]+)"\s+at\s+(\S+)(?:\s+via (test|guard)\s+"([^"]+)")?$/.exec(claim))) {
+      const inv = m[1], sym = m[2], verb = m[3], test = m[4];
       let set = anchored.get(node); if (!set) { set = new Set(); anchored.set(node, set); } set.add(inv);
       if (!graph.nodes.some((n) => n.kind === "symbol" && n.label === sym)) return mk("fail", `chokepoint symbol "${sym}" not found in the code graph`);
       if (!test) return mk("pass", `${inv} @ ${sym} (no oracle)`);
+      // META-ORACLE — the third assertion. A `via test` oracle MUST iterate a LIVE domain
+      // (an imported registry/SSOT, a call/query result, the anchor itself) — not an array/
+      // regex literal, a same-file const array (a sampling oracle wearing the totality
+      // label), nor "no domain iteration at all" (a pure source-grep / hand-enumerated
+      // cases). Cheap AST analysis (no runner) so it runs even under --fast. The `via guard`
+      // verb is the deliberate escape hatch for a legitimate source-PROPERTY oracle ("no
+      // trusted factory exists anywhere"), which cannot be expressed as domain iteration —
+      // `via guard` skips the live-domain requirement (the runner still has to pass).
+      if (verb === "test" && cfg.oracleDomain !== false) {
+        const a = await analyzeOracle(cfg, test);
+        if (a.verdict === "literal")
+          return mk("fail", `[oracle] "${test}" iterates a LITERAL domain (${a.detail}) — a sampling oracle, not totality. Derive its domain from the live SSOT behind \`${sym}\` (or, if it is a source-property guard, declare it \`via guard\` not \`via test\`).`);
+        if (a.verdict === "no-iteration")
+          return mk("fail", `[oracle] "${test}" performs NO domain iteration (${a.detail}) — a source-grep / hand-enumerated cases, not totality. Loop the live domain behind \`${sym}\`, or — if it is a genuine source-property guard — declare it \`via guard "${test}"\` instead of \`via test\`.`);
+        // not-found → fall through; the runner check below will fail/skip and report it.
+      }
       if (opts.fast) return mk("skip", "boundary oracle (--fast)");
       if (!cfg.test || !cfg.test.length) return mk("skip", "no test runner configured (config.test)");
       const r = spawnSync(cfg.test[0], [...cfg.test.slice(1), test], { cwd: root, encoding: "utf8", timeout: 120000 });
       const out = (r.stderr || "") + (r.stdout || "");
       if (r.status !== 0) return mk("fail", out.split("\n").filter(Boolean).slice(-3).join(" | ").slice(0, 200));
       if (cfg.testMatch && !new RegExp(cfg.testMatch).test(out)) return mk("fail", `oracle "${test}" matched no run (testMatch)`);
-      return mk("pass", `${inv} @ ${sym}`);
+      return mk("pass", `${inv} @ ${sym}${verb === "guard" ? " (source-property guard)" : ""}`);
     }
     return mk("skip", "no verifier (dialect gap)");
   };

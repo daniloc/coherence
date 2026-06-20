@@ -51,6 +51,7 @@ export interface Config {
   typecheck: string[];      // command for the `typechecks` claim
   test: string[];           // base command for `passes test "<name>"` claims (name appended as final arg). Empty = claim skips.
   testMatch?: string;       // optional regex the test output MUST contain to count as a pass. Guards runners (e.g. vitest -t) that exit 0 when the named test matched nothing — without it, a deleted/renamed test silently stays green.
+  oracleDomain?: boolean;   // META-ORACLE: also assert a boundary's oracle test iterates a LIVE domain (not a literal/source-grep). Default true; set false to disable the gate (still classifies for the report).
   language: string;         // language adapter key
   platform: string | null;  // platform adapter key, or null
 }
