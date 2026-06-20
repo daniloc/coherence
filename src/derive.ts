@@ -41,7 +41,7 @@ export async function buildGraph(cfg: Config): Promise<Graph> {
   const classToDir: Record<string, string> = {};
   for (const d of dirs) {
     const spec = parseSpec(await readFile((await findSpec(join(root, d === "." ? "" : d)))!, "utf8"));
-    add({ id: compId(d), label: spec.name || basename(d), kind: "component", sub: spec.intent, claimed: spec.claims.length > 0, claims: spec.claims, prose: spec.prose || undefined, why: spec.why || undefined });
+    add({ id: compId(d), label: spec.name || basename(d), kind: "component", sub: spec.intent, claimed: spec.claims.length > 0, claims: spec.claims, prose: spec.prose || undefined, why: spec.why || undefined, invariants: spec.invariants.length ? spec.invariants : undefined });
     classToDir[spec.name || basename(d)] = d;
   }
 

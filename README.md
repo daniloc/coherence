@@ -72,6 +72,10 @@ Each claim is verified at one of three tiers:
   spec, so `coherence verify` transitively runs it. A claim pointing at a renamed or
   deleted test goes **red** — that's the rot detection. Skipped under `--fast`.
 - **live** (slow) — `URL responds 200 with "..."`. Skipped under `--fast`.
+- **boundary** (the anti-entropy ratchet) — `boundary "<invariant>" at <chokepoint> [via test "<oracle>"]`
+  asserts a self-enforcing boundary's anatomy *as a unit*: the named invariant, the
+  chokepoint SYMBOL exists in the code graph, and (if given) a totality oracle test
+  passes. It **anchors** the named invariant for the coverage gate below.
 
 `config.test` is the base test command; `<name>` is appended as the final arg.
 `config.testMatch` is an optional regex the output must contain to count as a pass —
@@ -84,6 +88,16 @@ must carry claims and a `## why`; per-symbol prose is *advisory* (surfaced as jo
 never red). Forcing a docblock on every export produces stale busywork and a
 perpetually-red baseline that trains contributors to ignore the gate.
 
+### `## invariants` — the no-unanchored-invariant gate
+
+A spec may declare a `## invariants` section (a bullet list of named properties the
+component upholds). **Every listed invariant must be anchored by a `boundary "<name>" …`
+claim, or coverage FAILS.** This is the ratchet: it makes "every invariant is enforced at
+a chokepoint with a totality oracle" a *checkable property* — a boundary shipped without
+its oracle fails loud instead of rotting silently. The intent is to encode the doctrine
+*convert block-lists into chokepoints; fail closed; one home; a totality oracle* as
+machinery rather than prose, so a codebase inherits it by construction.
+
 ## Commands
 
 - `coherence graph` — emit `graph.json` + `_graph.html` (the outline) to `outputDir`.
@@ -92,6 +106,16 @@ perpetually-red baseline that trains contributors to ignore the gate.
 - `coherence verify` — run claims, the narrative evidence chain, and coverage.
   Emits inference jobs (`.coherence/verify-jobs.json`) for a subagent on change;
   `--apply <verdicts>` records the subagent's verdicts; `--fast` skips live claims.
+- `coherence decompose` — the **wise-decomposition** report. Coherence holds the Intent
+  graph (spec tree) and the Structure graph (imports); this adds the Evolution graph (git
+  change-coupling) and measures their *agreement*. Prints a **LOCALITY** score (the
+  fraction of co-change that stays inside one component — higher = wiser) plus smells:
+  cross-boundary co-change (false-boundary / smeared-concern), files pulled into many
+  concerns (missing abstraction), and structure hubs. Advisory — it surfaces, you judge.
+- `coherence scaffold boundary <name>` — emit a spec pre-wired with `## invariants` + a
+  `boundary` claim + the chokepoint/fail-closed/oracle TODOs, so the cheapest "add a
+  boundary" already produces the complete shape. You can't scaffold a half-boundary: the
+  unanchored-invariant gate refuses it until the chokepoint symbol and oracle exist.
 - `coherence onboard` — bootstrap a repo with no specs: derive structure, suggest a
   decomposition, and emit why-from-history jobs. Output is proposals to review.
 

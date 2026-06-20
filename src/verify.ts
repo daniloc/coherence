@@ -38,6 +38,9 @@ export async function applyVerdicts(cfg: Config, verdictsPath: string): Promise<
 
 export async function runVerify(cfg: Config, graph: Graph, opts: { fast?: boolean }): Promise<number> {
   const root = cfg.root;
+  // Invariants ANCHORED by a `boundary "<name>" ...` claim, per component label. The
+  // coverage gate fails any `## invariants` entry that nothing anchors (the ratchet).
+  const anchored = new Map<string, Set<string>>();
   let tc: { pass: boolean; detail: string } | null = null;
   const typecheck = () => {
     if (tc) return tc;
@@ -68,6 +71,25 @@ export async function runVerify(cfg: Config, graph: Graph, opts: { fast?: boolea
       if (r.status !== 0) return mk("fail", tail.slice(0, 200));
       if (cfg.testMatch && !new RegExp(cfg.testMatch).test(out)) return mk("fail", `test "${m[1]}" matched no run (testMatch)`);
       return mk("pass");
+    }
+    // BOUNDARY tier — the anti-entropy ratchet. `boundary "<invariant>" at <chokepoint>
+    // [via test "<oracle>"]` asserts the four-part anatomy of a self-enforcing boundary:
+    // the invariant is named, the chokepoint SYMBOL exists, and (if given) a totality
+    // oracle test passes. It ANCHORS the named invariant so the coverage gate can fail
+    // any `## invariants` entry with no boundary claim. This is what makes "one chokepoint
+    // + totality oracle" a checkable PROPERTY, not a prose checklist.
+    if ((m = /^boundary\s+"([^"]+)"\s+at\s+(\S+)(?:\s+via test\s+"([^"]+)")?$/.exec(claim))) {
+      const inv = m[1], sym = m[2], test = m[3];
+      let set = anchored.get(node); if (!set) { set = new Set(); anchored.set(node, set); } set.add(inv);
+      if (!graph.nodes.some((n) => n.kind === "symbol" && n.label === sym)) return mk("fail", `chokepoint symbol "${sym}" not found in the code graph`);
+      if (!test) return mk("pass", `${inv} @ ${sym} (no oracle)`);
+      if (opts.fast) return mk("skip", "boundary oracle (--fast)");
+      if (!cfg.test || !cfg.test.length) return mk("skip", "no test runner configured (config.test)");
+      const r = spawnSync(cfg.test[0], [...cfg.test.slice(1), test], { cwd: root, encoding: "utf8", timeout: 120000 });
+      const out = (r.stderr || "") + (r.stdout || "");
+      if (r.status !== 0) return mk("fail", out.split("\n").filter(Boolean).slice(-3).join(" | ").slice(0, 200));
+      if (cfg.testMatch && !new RegExp(cfg.testMatch).test(out)) return mk("fail", `oracle "${test}" matched no run (testMatch)`);
+      return mk("pass", `${inv} @ ${sym}`);
     }
     return mk("skip", "no verifier (dialect gap)");
   };
@@ -111,7 +133,15 @@ export async function runVerify(cfg: Config, graph: Graph, opts: { fast?: boolea
   // advisory only — emitted as jobs, never gated
   for (const s of docGaps) jobs.push({ kind: "generate-doc", id: s.id, file: s.path, line: s.line, name: s.label });
   if (docGaps.length) console.log(`  · [advisory] ${docGaps.length} symbol(s) undocumented (not gated)`);
-  const covGaps = compGaps.length + whyGaps.length;
+  // RATCHET coverage: a named invariant with no `boundary` claim is a property the spec
+  // asserts but nothing enforces/anchors — fail it, the way a boundary shipped without
+  // its totality oracle should fail loud rather than rot silently.
+  const invGaps: { comp: string; inv: string }[] = [];
+  for (const c of comps) for (const inv of c.invariants ?? []) if (!anchored.get(c.label)?.has(inv)) invGaps.push({ comp: c.label, inv });
+  for (const g of invGaps) { console.log(`  ✗ [coverage] invariant "${g.inv}" (${g.comp}) is not anchored by a boundary claim`); jobs.push({ kind: "anchor-invariant", comp: g.comp, inv: g.inv }); }
+  const totalInv = comps.reduce((n, c) => n + (c.invariants?.length ?? 0), 0);
+  if (totalInv) console.log(`invariants: ${totalInv - invGaps.length}/${totalInv} anchored by a boundary claim`);
+  const covGaps = compGaps.length + whyGaps.length + invGaps.length;
 
   const verifyJobs = jobs.filter((j) => j.kind === "verify-statement");
   const genJobs = jobs.filter((j) => j.kind === "generate-doc" || j.kind === "generate-claims");

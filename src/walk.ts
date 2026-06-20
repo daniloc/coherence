@@ -25,13 +25,20 @@ export function parseSpec(text: string): ParsedSpec {
   const wy = lines.findIndex((l) => /^##\s+why\s*$/i.test(l));
   let wye = -1, why = "";
   if (wy >= 0) { wye = lines.length; for (let j = wy + 1; j < lines.length; j++) if (/^##\s+/.test(lines[j])) { wye = j; break; } why = lines.slice(wy + 1, wye).join("\n").trim(); }
+  // ## invariants — named properties this component upholds; each MUST be anchored by
+  // a `boundary "<name>" ...` claim. Coverage fails an unanchored invariant (the ratchet).
+  const invariants: string[] = [];
+  const iv = lines.findIndex((l) => /^##\s+invariants\s*$/i.test(l));
+  let ive = -1;
+  if (iv >= 0) { ive = lines.length; for (let j = iv + 1; j < lines.length; j++) { if (/^##\s+/.test(lines[j])) { ive = j; break; } const c = /^-\s+(.+?)\s*$/.exec(lines[j]); if (c) invariants.push(c[1]); } }
   const prose: string[] = [];
   for (let k = (intentLine >= 0 ? intentLine + 1 : i); k < lines.length; k++) {
     if (ws >= 0 && k >= ws && k < we) continue;
     if (wy >= 0 && k >= wy && k < wye) continue;
+    if (iv >= 0 && k >= iv && k < ive) continue;
     prose.push(lines[k]);
   }
-  return { name, intent, claims, prose: prose.join("\n").trim(), why };
+  return { name, intent, claims, prose: prose.join("\n").trim(), why, invariants };
 }
 
 export async function findSpec(dir: string): Promise<string | null> {

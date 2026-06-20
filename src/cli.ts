@@ -10,6 +10,8 @@ import { renderOutline } from "./render-outline.ts";
 import { renderOverview } from "./render-overview.ts";
 import { runVerify, applyVerdicts } from "./verify.ts";
 import { onboard } from "./onboard.ts";
+import { decompose } from "./decompose.ts";
+import { scaffold } from "./scaffold.ts";
 
 const cmd = process.argv[2];
 const argv = process.argv.slice(3);
@@ -76,7 +78,11 @@ if (cmd === "graph") {
   process.exit(await runVerify(cfg, graph, { fast }));
 } else if (cmd === "onboard") {
   await onboard(cfg, await buildGraph(cfg));
+} else if (cmd === "decompose") {
+  process.exit(await decompose(cfg, await buildGraph(cfg)));
+} else if (cmd === "scaffold") {
+  process.exit(await scaffold(cfg, argv[0], argv[1]));
 } else {
-  console.error("usage: coherence <graph|overview|docs|verify|onboard> [--check|--fast|--apply <file>]");
+  console.error("usage: coherence <graph|overview|docs|verify|decompose|scaffold|onboard> [--check|--fast|--apply <file>]");
   process.exit(2);
 }
