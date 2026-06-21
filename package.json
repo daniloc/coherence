@@ -1,14 +1,14 @@
 {
   "name": "coherence-harness",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "description": "A spec + coherence harness for agent-developed projects: derive a multi-resolution graph from *.spec.md + code, render an explorable outline and an agent map, and verify claims/narrative/coverage. Language and platform specifics live behind adapters.",
   "type": "module",
   "bin": { "coherence": "dist/cli.js" },
   "files": ["dist", "README.md"],
   "engines": { "node": ">=22" },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "prepare": "tsc -p tsconfig.json"
+    "build": "tsc -p tsconfig.json && chmod +x dist/cli.js",
+    "prepare": "npm run build"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
