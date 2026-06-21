@@ -112,6 +112,20 @@ machinery rather than prose, so a codebase inherits it by construction.
   fraction of co-change that stays inside one component — higher = wiser) plus smells:
   cross-boundary co-change (false-boundary / smeared-concern), files pulled into many
   concerns (missing abstraction), and structure hubs. Advisory — it surfaces, you judge.
+- `coherence drift` — the **direction** view: decompose's derivative. Where decompose
+  grades the decomposition *now*, drift reads recent history and shows whether the agent
+  is **converging** (one concern → one home — the anti-entropic response to perturbation)
+  or **decohering** (concerns smearing across boundaries — a block-list forming). It
+  projects today's component map back over the last ~400 commits and prints two
+  trajectories — **LOCALITY** (co-change staying in one component; rising = wiser) and
+  **SPREAD** (distinct components per commit; falling = localizing) — the **hot seam**
+  (the boundary being churned across right now), and the recent stream of **gestures**
+  (each commit tagged ● converge / ○ couple / ✕ smear by component span). For an operator
+  watching an agent drive, this is the "where is this going" instrument: a clean snapshot
+  with a decohering slope is the early warning a static grade can't give. Advisory, and
+  honest about its limit — it sees gesture *shape*, not intent (a chokepoint-building edit
+  and a guard-scattering one can look alike); read the diff at the seam, and use
+  `coherence verify` for whether each invariant is actually anchored.
 - `coherence scaffold boundary <name>` — emit a spec pre-wired with `## invariants` + a
   `boundary` claim + the chokepoint/fail-closed/oracle TODOs, so the cheapest "add a
   boundary" already produces the complete shape. You can't scaffold a half-boundary: the

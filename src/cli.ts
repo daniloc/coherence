@@ -12,6 +12,7 @@ import { renderClaude, spliceBlock, extractBlock, CLAUDE_BEGIN, CLAUDE_END } fro
 import { runVerify, applyVerdicts } from "./verify.ts";
 import { onboard } from "./onboard.ts";
 import { decompose } from "./decompose.ts";
+import { drift } from "./drift.ts";
 import { scaffold } from "./scaffold.ts";
 
 const cmd = process.argv[2];
@@ -122,9 +123,11 @@ if (cmd === "graph") {
   await onboard(cfg, await buildGraph(cfg));
 } else if (cmd === "decompose") {
   await exit(await decompose(cfg, await buildGraph(cfg)));
+} else if (cmd === "drift") {
+  await exit(await drift(cfg, await buildGraph(cfg)));
 } else if (cmd === "scaffold") {
   await exit(await scaffold(cfg, argv[0], argv[1]));
 } else {
-  console.error("usage: coherence <graph|overview|docs|claude|verify|decompose|scaffold|onboard> [--check|--fast|--apply <file>]");
+  console.error("usage: coherence <graph|overview|docs|claude|verify|decompose|drift|scaffold|onboard> [--check|--fast|--apply <file>]");
   await exit(2);
 }

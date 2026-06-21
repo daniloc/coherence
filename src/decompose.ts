@@ -10,8 +10,10 @@
 import { spawnSync } from "node:child_process";
 import type { Config, Graph } from "./types.ts";
 
-const BULK = 40; // a commit touching more than this is mechanical (a rename/migration) — noise, not a concern signal
+export const BULK = 40; // a commit touching more than this is mechanical (a rename/migration) — noise, not a concern signal
 const HIST = 2000; // commits of history to read
+
+export interface Commit { hash: string; subject: string; files: string[] }
 
 interface Coupling {
   locality: number;            // EVOLUTION∩STRUCTURE: fraction of co-change pairs that stay within one component
@@ -22,30 +24,37 @@ interface Coupling {
   commits: number;
 }
 
-function gitCommits(root: string): { files: string[] }[] {
-  const r = spawnSync("git", ["log", `-n${HIST}`, "--no-merges", "--name-only", "--pretty=format:%H"], { cwd: root, encoding: "utf8", maxBuffer: 128 * 1024 * 1024 });
+// EVOLUTION graph, raw: every non-merge commit newest→oldest with its touched files
+// and subject. Shared by decompose (all-time coupling) and drift (recent trajectory).
+export function readCommitLog(cfg: Config, limit: number): Commit[] {
+  const r = spawnSync("git", ["log", `-n${limit}`, "--no-merges", "--name-only", "--pretty=format:%x00%H%x1f%s"], { cwd: cfg.root, encoding: "utf8", maxBuffer: 256 * 1024 * 1024 });
   if (r.status !== 0) return [];
-  const commits: { files: string[] }[] = [];
-  let cur: string[] | null = null;
+  const commits: Commit[] = [];
+  let cur: Commit | null = null;
   for (const line of r.stdout.split("\n")) {
-    if (/^[0-9a-f]{40}$/.test(line)) { if (cur && cur.length) commits.push({ files: cur }); cur = []; }
-    else if (line.trim() && cur) cur.push(line.trim());
+    if (line.startsWith("\x00")) { if (cur) commits.push(cur); const [hash, subject] = line.slice(1).split("\x1f"); cur = { hash, subject: subject ?? "", files: [] }; }
+    else if (line.trim() && cur) cur.files.push(line.trim());
   }
-  if (cur && cur.length) commits.push({ files: cur });
-  return commits.filter((c) => c.files.length >= 2 && c.files.length <= BULK);
+  if (cur) commits.push(cur);
+  return commits;
 }
 
-function analyze(cfg: Config, graph: Graph): Coupling {
-  // git reports paths from the REPO root; the graph is relative to cfg.root (which may be
-  // a subdir). Strip the prefix so the two address spaces line up.
+// STRUCTURE map: resolve a git-reported path (repo-root-relative) to its component
+// label. git reports paths from the REPO root; the graph is relative to cfg.root
+// (which may be a subdir), so strip the prefix to line the two address spaces up.
+// `fileComp` is the raw graph-path→label map (graph edges are already cfg.root-relative).
+export function componentMap(cfg: Config, graph: Graph): { compOf: (gitPath: string) => string | undefined; fileComp: Map<string, string> } {
   const prefix = (spawnSync("git", ["rev-parse", "--show-prefix"], { cwd: cfg.root, encoding: "utf8" }).stdout || "").trim();
   const rel = (p: string): string | null => prefix ? (p.startsWith(prefix) ? p.slice(prefix.length) : null) : p;
-
   const compLabel = new Map<string, string>();
   for (const n of graph.nodes) if (n.kind === "component") compLabel.set(n.id, n.label);
   const fileComp = new Map<string, string>(); // graph file path → component label
   for (const n of graph.nodes) if (n.kind === "file" && n.path && n.parent) fileComp.set(n.path, compLabel.get(n.parent) ?? n.parent);
-  const compOf = (gitPath: string): string | undefined => { const r = rel(gitPath); return r ? fileComp.get(r) : undefined; };
+  return { compOf: (gitPath) => { const r = rel(gitPath); return r ? fileComp.get(r) : undefined; }, fileComp };
+}
+
+function analyze(cfg: Config, graph: Graph): Coupling {
+  const { compOf, fileComp } = componentMap(cfg, graph);
 
   // STRUCTURE: cross-component import fan-in (who imports INTO each component)
   const fanIn = new Map<string, Set<string>>();
@@ -56,7 +65,7 @@ function analyze(cfg: Config, graph: Graph): Coupling {
   }
 
   // EVOLUTION: classify every co-changing file PAIR as within- or cross-component
-  const commits = gitCommits(cfg.root);
+  const commits = readCommitLog(cfg, HIST).filter((c) => c.files.length >= 2 && c.files.length <= BULK);
   let within = 0, cross = 0;
   const crossPair = new Map<string, number>();
   const fileSpan = new Map<string, Set<string>>();
