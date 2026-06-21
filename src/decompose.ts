@@ -50,7 +50,30 @@ export function componentMap(cfg: Config, graph: Graph): { compOf: (gitPath: str
   for (const n of graph.nodes) if (n.kind === "component") compLabel.set(n.id, n.label);
   const fileComp = new Map<string, string>(); // graph file path → component label
   for (const n of graph.nodes) if (n.kind === "file" && n.path && n.parent) fileComp.set(n.path, compLabel.get(n.parent) ?? n.parent);
+  applySubComponents(cfg, fileComp);
   return { compOf: (gitPath) => { const r = rel(gitPath); return r ? fileComp.get(r) : undefined; }, fileComp };
+}
+
+// Glob → regex: `**` matches any run (incl. `/`), `*` matches within a path
+// segment, everything else is literal.
+function globToRe(glob: string): RegExp {
+  const esc = (s: string) => s.replace(/[.+?^${}()|[\]\\]/g, "\\$&");
+  const body = glob.split("**").map((seg) => seg.split("*").map(esc).join("[^/]*")).join(".*");
+  return new RegExp("^" + body + "$");
+}
+
+// Refine the file→component map with optional config sub-components — decompose/drift
+// ONLY. A large spec-component (a deliberate domain core / hub) can declare the
+// concerns it actually contains, so co-change WITHIN a concern reads as local instead
+// of manufacturing a cross-boundary hub signal. First matching definition wins; files
+// matching none keep their spec-component. Does not touch the spec graph or verify.
+function applySubComponents(cfg: Config, fileComp: Map<string, string>): void {
+  const subs = cfg.components;
+  if (!subs?.length) return;
+  const compiled = subs.map((s) => ({ name: s.name, res: s.files.map(globToRe) }));
+  for (const path of fileComp.keys()) {
+    for (const s of compiled) if (s.res.some((re) => re.test(path))) { fileComp.set(path, s.name); break; }
+  }
 }
 
 function analyze(cfg: Config, graph: Graph): Coupling {
@@ -90,7 +113,11 @@ function analyze(cfg: Config, graph: Graph): Coupling {
 }
 
 export async function decompose(cfg: Config, graph: Graph): Promise<number> {
-  const comps = graph.nodes.filter((n) => n.kind === "component").length;
+  // With config sub-components, the effective component count for the analysis is the
+  // distinct refined labels (not the spec-node count) — report what the metric sees.
+  const comps = cfg.components?.length
+    ? new Set(componentMap(cfg, graph).fileComp.values()).size
+    : graph.nodes.filter((n) => n.kind === "component").length;
   const a = analyze(cfg, graph);
   console.log(`decomposition — three-graph agreement (Intent · Structure · Evolution)`);
   console.log(`  ${comps} components · ${a.commits} commits analyzed (2–${BULK} files each)`);
