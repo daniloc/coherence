@@ -7,6 +7,7 @@ import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import type { Config, Graph } from "./types.ts";
 import { analyzeOracle } from "./oracle-domain.ts";
+import { ownerOf } from "./walk.ts";
 
 const hashOf = (s: string) => createHash("sha256").update(s).digest("hex").slice(0, 16);
 const exists = async (p: string) => { try { await stat(p); return true; } catch { return false; } };
@@ -37,7 +38,7 @@ export async function applyVerdicts(cfg: Config, verdictsPath: string): Promise<
   return drift === 0 ? 0 : 1;
 }
 
-export async function runVerify(cfg: Config, graph: Graph, opts: { fast?: boolean }): Promise<number> {
+export async function runVerify(cfg: Config, graph: Graph, opts: { fast?: boolean; only?: Set<string> }): Promise<number> {
   const root = cfg.root;
   // Invariants ANCHORED by a `boundary "<name>" ...` claim, per component label. The
   // coverage gate fails any `## invariants` entry that nothing anchors (the ratchet).
@@ -115,8 +116,16 @@ export async function runVerify(cfg: Config, graph: Graph, opts: { fast?: boolea
     return mk("skip", "no verifier (dialect gap)");
   };
 
-  const comps = graph.nodes.filter((n) => n.kind === "component");
-  const symbols = graph.nodes.filter((n) => n.kind === "symbol");
+  // `only` (verify --staged/--since) scopes the run to the components whose dirs
+  // changed — the edit-loop affordance. The boundary-anchoring + coverage gates below
+  // then cover exactly the touched components, so a fast scoped check still fails on a
+  // touched-but-broken invariant. Symbol resolution for boundary claims stays GLOBAL
+  // (a touched chokepoint's oracle may name a symbol defined elsewhere).
+  const comps = graph.nodes.filter((n) => n.kind === "component" && (!opts.only || opts.only.has(n.id.slice(2))));
+  const compDirs = graph.nodes.filter((n) => n.kind === "component").map((n) => n.id.slice(2));
+  // Scope the (advisory) symbol-doc coverage to the touched components too, so a
+  // staged run doesn't dump every undocumented symbol in the repo as a job.
+  const symbols = graph.nodes.filter((n) => n.kind === "symbol" && (!opts.only || (n.path != null && opts.only.has(ownerOf(n.path, compDirs)))));
   const sigs: Sig[] = [];
   for (const c of comps) { const dir = c.id.slice(2); const diskDir = dir === "." ? root : join(root, dir); for (const cl of c.claims || []) sigs.push(await evalClaim(cl, diskDir, c.label)); }
   const red = sigs.filter((s) => s.kind === "fail").length;

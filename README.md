@@ -106,6 +106,17 @@ machinery rather than prose, so a codebase inherits it by construction.
 - `coherence verify` — run claims, the narrative evidence chain, and coverage.
   Emits inference jobs (`.coherence/verify-jobs.json`) for a subagent on change;
   `--apply <verdicts>` records the subagent's verdicts; `--fast` skips live claims.
+  `--staged` (working changes vs HEAD + untracked) or `--since <ref>` **scopes** the
+  run to the components whose dirs changed — fast edit-loop reconciliation of just what
+  you touched (claims + boundary anchoring + coverage), instead of the whole tree.
+- `coherence log [<refA> [<refB>]]` — the **temporal ledger**: the structural diff of
+  the invariant/boundary set between two refs (default `HEAD` → working tree). The graph
+  is a snapshot; this is the transaction view — which `## invariants` and `boundary`
+  claims were **added**, **removed**, or **rewired** (chokepoint or oracle changed),
+  per component, by building the graph at each ref in a throwaway git worktree. Answers
+  "did my change alter what's enforced?" without re-reading the world. `--strict` exits
+  nonzero on a **loss** (a removed invariant/boundary/component) so a PR can't silently
+  drop a guard the way a prose review misses it.
 - `coherence decompose` — the **wise-decomposition** report. Coherence holds the Intent
   graph (spec tree) and the Structure graph (imports); this adds the Evolution graph (git
   change-coupling) and measures their *agreement*. Prints a **LOCALITY** score (the
@@ -126,10 +137,15 @@ machinery rather than prose, so a codebase inherits it by construction.
   honest about its limit — it sees gesture *shape*, not intent (a chokepoint-building edit
   and a guard-scattering one can look alike); read the diff at the seam, and use
   `coherence verify` for whether each invariant is actually anchored.
-- `coherence scaffold boundary <name>` — emit a spec pre-wired with `## invariants` + a
-  `boundary` claim + the chokepoint/fail-closed/oracle TODOs, so the cheapest "add a
-  boundary" already produces the complete shape. You can't scaffold a half-boundary: the
-  unanchored-invariant gate refuses it until the chokepoint symbol and oracle exist.
+- `coherence scaffold <boundary|component|invariant> <name>` — the gradient-flip
+  generator: make the complete shape the cheapest thing to ship.
+  - `boundary` — a NEW component spec pre-wired with `## invariants` + a `boundary` claim
+    + the chokepoint/fail-closed/oracle TODOs. You can't scaffold a half-boundary: the
+    unanchored-invariant gate refuses it until the chokepoint symbol and oracle exist.
+  - `component` — a NEW plain component spec (intent + works-when skeleton + why stub).
+  - `invariant` — the PASTE-IN fragments (invariants entry + boundary claim + why
+    paragraph) to add an invariant to an **existing** spec; printed to stdout, no file,
+    so the three pieces land in lockstep instead of as orphaned prose.
 - `coherence onboard` — bootstrap a repo with no specs: derive structure, suggest a
   decomposition, and emit why-from-history jobs. Output is proposals to review.
 

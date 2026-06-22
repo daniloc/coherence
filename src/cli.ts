@@ -14,13 +14,18 @@ import { onboard } from "./onboard.ts";
 import { decompose } from "./decompose.ts";
 import { drift } from "./drift.ts";
 import { scaffold } from "./scaffold.ts";
+import { structuralLog, changedFiles, affectedComponents } from "./structural.ts";
 
 const cmd = process.argv[2];
 const argv = process.argv.slice(3);
 const check = argv.includes("--check");
 const fast = argv.includes("--fast");
+const strict = argv.includes("--strict");
 const applyIdx = argv.indexOf("--apply");
 const applyPath = applyIdx >= 0 ? argv[applyIdx + 1] : null;
+const sinceIdx = argv.indexOf("--since");
+const since = sinceIdx >= 0 ? argv[sinceIdx + 1] : null;
+const positional = argv.filter((a, i) => !a.startsWith("--") && argv[i - 1] !== "--since" && argv[i - 1] !== "--apply");
 
 // Exit AFTER stdout has drained. `process.exit()` terminates the process before
 // asynchronously-buffered writes flush when stdout is a pipe or file (it only
@@ -118,7 +123,19 @@ if (cmd === "graph") {
 } else if (cmd === "verify") {
   if (applyPath) await exit(await applyVerdicts(cfg, applyPath));
   const graph = await buildGraph(cfg);
-  await exit(await runVerify(cfg, graph, { fast }));
+  // Edit-loop scoping: --staged (working changes vs HEAD + untracked) or --since <ref>
+  // restricts verify to the components whose dirs changed — fast reconciliation of just
+  // what you touched, instead of the whole tree.
+  let only: Set<string> | undefined;
+  if (argv.includes("--staged") || since) {
+    only = affectedComponents(graph, changedFiles(cfg, since));
+    if (!only.size) { console.log(`verify (scoped): no changed files map to a component — nothing to check.`); await exit(0); }
+    console.log(`verify (scoped to ${only.size} changed component(s)): ${[...only].join(", ")}`);
+  }
+  await exit(await runVerify(cfg, graph, { fast, only }));
+} else if (cmd === "log") {
+  // The temporal ledger: what did refA → refB do to the invariant/boundary set.
+  await exit(await structuralLog(cfg, positional[0] ?? "HEAD", positional[1] ?? null, strict));
 } else if (cmd === "onboard") {
   await onboard(cfg, await buildGraph(cfg));
 } else if (cmd === "decompose") {
@@ -126,8 +143,11 @@ if (cmd === "graph") {
 } else if (cmd === "drift") {
   await exit(await drift(cfg, await buildGraph(cfg)));
 } else if (cmd === "scaffold") {
-  await exit(await scaffold(cfg, argv[0], argv[1]));
+  await exit(await scaffold(cfg, positional[0], positional[1]));
 } else {
-  console.error("usage: coherence <graph|overview|docs|claude|verify|decompose|drift|scaffold|onboard> [--check|--fast|--apply <file>]");
+  console.error("usage: coherence <graph|overview|docs|claude|verify|log|decompose|drift|scaffold|onboard> [options]");
+  console.error("  verify [--fast] [--staged | --since <ref>]   scope to changed components");
+  console.error("  log [<refA> [<refB>]] [--strict]             structural diff of the invariant/boundary set");
+  console.error("  scaffold <boundary|component|invariant> <name>");
   await exit(2);
 }
