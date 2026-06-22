@@ -1,0 +1,53 @@
+// claude.test.ts — the CLAUDE.md fence splicer. `coherence claude` regenerates ONLY the
+// fenced block and must preserve all authored prose around it — and must REFUSE (return
+// null, never clobber) a file that hasn't opted in by carrying the markers.
+import test from "node:test";
+import assert from "node:assert/strict";
+import { spliceBlock, extractBlock, renderClaude, CLAUDE_BEGIN, CLAUDE_END } from "../src/render-claude.ts";
+import { graph, comp, sym } from "./_helpers.ts";
+
+test("spliceBlock — refuses (null) a file with no fence markers (never clobber)", () => {
+  assert.equal(spliceBlock("# My CLAUDE.md\n\nall authored, no fences.\n", "BLOCK"), null);
+});
+
+test("spliceBlock — replaces only between the markers, preserving prose on both sides", () => {
+  const existing = `BEFORE\n${CLAUDE_BEGIN}\nold generated\n${CLAUDE_END}\nAFTER`;
+  const spliced = spliceBlock(existing, `${CLAUDE_BEGIN}\nnew generated\n${CLAUDE_END}`);
+  assert.equal(spliced, `BEFORE\n${CLAUDE_BEGIN}\nnew generated\n${CLAUDE_END}\nAFTER`);
+  assert.match(spliced!, /BEFORE/);
+  assert.match(spliced!, /AFTER/);
+  assert.doesNotMatch(spliced!, /old generated/);
+});
+
+test("spliceBlock — refuses reversed/again-malformed markers (end before begin)", () => {
+  const broken = `${CLAUDE_END}\nx\n${CLAUDE_BEGIN}`;
+  assert.equal(spliceBlock(broken, "BLOCK"), null);
+});
+
+test("extractBlock — returns the marker-inclusive block, or null when absent", () => {
+  const existing = `head\n${CLAUDE_BEGIN}\nbody\n${CLAUDE_END}\ntail`;
+  assert.equal(extractBlock(existing), `${CLAUDE_BEGIN}\nbody\n${CLAUDE_END}`);
+  assert.equal(extractBlock("no markers here"), null);
+});
+
+test("renderClaude — emits a fenced block carrying the boundary table derived from claims", () => {
+  const g = graph([
+    comp(".", {
+      label: "Hive",
+      intent: "the durable object",
+      claims: ['boundary "kernel write" at executeMutate via test "write totality"'],
+    }),
+    sym("executeMutate"),
+  ]);
+  const block = renderClaude(g, "2026-06-22");
+  assert.ok(block.startsWith(CLAUDE_BEGIN));
+  assert.ok(block.trimEnd().endsWith(CLAUDE_END));
+  // the derived invariants table surfaces the chokepoint + oracle
+  assert.match(block, /kernel write/);
+  assert.match(block, /executeMutate/);
+  assert.match(block, /write totality/);
+  // round-trips through the splicer it is meant to feed
+  const host = `intro\n${CLAUDE_BEGIN}\nstale\n${CLAUDE_END}\noutro`;
+  const spliced = spliceBlock(host, block);
+  assert.match(spliced!, /intro[\s\S]*kernel write[\s\S]*outro/);
+});

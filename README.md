@@ -162,7 +162,21 @@ machinery rather than prose, so a codebase inherits it by construction.
 npm install        # installs typescript + @types/node, builds dist via prepare
 npm run build      # tsc → dist
 node src/cli.ts graph   # run from source (Node ≥22 strips types; no build needed)
+npm test           # node:test suite (Node ≥22; type-stripped, zero test deps)
 ```
 
 Add a `LanguageAdapter`/`PlatformAdapter` (see `src/types.ts`), register it in
 `src/derive.ts`'s `LANGUAGES`/`PLATFORMS` map, and select it via config.
+
+### Tests
+
+`test/*.test.ts` run on the built-in `node:test` runner (no Vitest/Jest — the
+harness keeps its zero-dependency stance, and Node ≥22 strips the TypeScript at
+load). Coverage targets the load-bearing, regression-prone logic rather than
+chasing a line-count: the **meta-oracle** classifier (`oracle-domain.ts` — every
+live/literal/no-iteration path), the **spec parser** (`walk.ts`), the **claim +
+boundary + coverage engine** end-to-end (`verify.ts`, including the `testMatch`
+rule that stops a renamed test from silently staying green and the
+unanchored-invariant ratchet), the **CLAUDE.md fence splicer** (never clobbers an
+un-opted-in file), and the **structural ledger** (`structural.ts` — a dropped
+boundary/invariant is a loss `--strict` gates on).
