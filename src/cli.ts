@@ -15,6 +15,10 @@ import { decompose } from "./decompose.ts";
 import { drift } from "./drift.ts";
 import { scaffold } from "./scaffold.ts";
 import { structuralLog, changedFiles, affectedComponents } from "./structural.ts";
+import { lintSinks } from "./lint-sinks.ts";
+import { conventions } from "./conventions.ts";
+import { atlas } from "./atlas.ts";
+import { whyLint } from "./why-lint.ts";
 
 const cmd = process.argv[2];
 const argv = process.argv.slice(3);
@@ -154,10 +158,27 @@ if (cmd === "graph") {
   await exit(await drift(cfg, await buildGraph(cfg)));
 } else if (cmd === "scaffold") {
   await exit(await scaffold(cfg, positional[0], positional[1]));
+} else if (cmd === "lint-sinks") {
+  // Interpolation-surface ratchet. Mechanism in the harness; SAFE patterns + scoped
+  // sources in config; baseline in <outputDir>/sinks-baseline.json.
+  const mode = argv.includes("--update-baseline") ? "update" : check ? "check" : "report";
+  await exit(await lintSinks(cfg, mode));
+} else if (cmd === "conventions") {
+  // Guard-vs-contract detector + growth ratchet. Reuses the graph's boundary claims.
+  const mode = argv.includes("--update-baseline") ? "update" : check ? "check" : "report";
+  await exit(await conventions(cfg, await buildGraph(cfg), mode));
+} else if (cmd === "atlas") {
+  // Trust-graded manifold; tiers derived from boundary claims, charts/crossings from config.
+  await exit(await atlas(cfg, await buildGraph(cfg), check ? "check" : "render"));
+} else if (cmd === "why-lint") {
+  // Advisory: ## why prose restating a mechanism a boundary claim already anchors.
+  await exit(whyLint(await buildGraph(cfg), check ? "check" : "report"));
 } else {
-  console.error("usage: coherence <graph|overview|docs|claude|verify|log|decompose|drift|scaffold|onboard> [options]");
+  console.error("usage: coherence <graph|overview|docs|claude|verify|log|decompose|drift|scaffold|onboard|lint-sinks|conventions|atlas|why-lint> [options]");
   console.error("  verify [--fast] [--staged | --since <ref>]   scope to changed components");
   console.error("  log [<refA> [<refB>]] [--strict]             structural diff of the invariant/boundary set");
   console.error("  scaffold <boundary|component|invariant> <name>");
+  console.error("  lint-sinks | conventions [--check | --update-baseline]   ratchets (baseline in <outputDir>)");
+  console.error("  atlas [--check]   trust-manifold render + drift gate     why-lint [--check]   ## why prose lint");
   await exit(2);
 }

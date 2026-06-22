@@ -55,4 +55,23 @@ export interface Config {
   language: string;         // language adapter key
   platform: string | null;  // platform adapter key, or null
   components?: { name: string; files: string[] }[]; // optional sub-component overrides for the decompose/drift co-change analysis ONLY (the spec graph, verify, and coverage are untouched). `files` are globs relative to cfg.root (`*` = within a path segment, `**` = any). A file matching one is regrouped under `name`, so a large spec-component (a domain core) can be measured as the distinct concerns it actually contains instead of one opaque hub. First matching definition wins; unmatched files keep their spec-component.
+
+  // --- ratchet / atlas subcommands (lint-sinks · conventions · atlas) — all optional ---
+  // The harness owns the MECHANISM (scan, classify, baseline, render, --check); the
+  // project owns the DATA here. Absent → sensible defaults (the lints scan the whole
+  // tree minus `ignore`; the atlas is empty).
+  sources?: string[];          // dirs the lint-sinks/conventions scans are scoped to (default: [entryDir]) — keep generated/vendored trees out
+  testDir?: string;            // path substring identifying test files (default "__tests__")
+  conventions?: {
+    guardVerb?: string;        // regex (as a string) matching guard-function NAMES (names that signal a correctness/security decision)
+    seed?: string[];           // extra guard names whose form doesn't match guardVerb
+    dismissed?: Record<string, string>; // guard name → why it is NOT an unguarded convention (covered by another contract)
+  };
+  sinks?: { safeSql?: string; safeHtml?: string }; // regex (string) for interpolation exprs that are SAFE by construction
+  atlas?: {
+    charts: Record<string, string>;  // trust domain → description
+    transitions: Record<string, { from: string; to: string; security?: boolean; anchoredBy?: string; translates: string }>; // chokepoint symbol → the crossing it manages
+    nonTransition?: Record<string, string>; // boundary chokepoints that hold WITHIN a chart (not crossings) → reason (so they aren't flagged as drift)
+    knownPending?: string[];          // mapped symbols tolerated as not-yet-in-source (don't fail --check)
+  };
 }

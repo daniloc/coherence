@@ -73,6 +73,18 @@ function ledgersOf(graph: Graph): Map<string, Ledger> {
   return out;
 }
 
+/** Every boundary claim in the graph, keyed by its CHOKEPOINT symbol — the shared
+ *  input the atlas (tier derivation) and conventions (anchored set) subcommands both
+ *  consume, parsed ONCE from the graph the harness already built (no spec re-walk). */
+export function allBoundaries(graph: Graph): Map<string, Boundary & { component: string }> {
+  const out = new Map<string, Boundary & { component: string }>();
+  for (const n of graph.nodes)
+    if (n.kind === "component")
+      for (const b of ledgerOf(n).boundaries.values())
+        if (!out.has(b.chokepoint)) out.set(b.chokepoint, { ...b, component: n.label });
+  return out;
+}
+
 /** Build the graph as it exists at a git ref (null = the live working tree). */
 export async function graphAtRef(cfg: Config, ref: string | null): Promise<Graph> {
   if (!ref) return buildGraph(cfg);
