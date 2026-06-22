@@ -76,7 +76,10 @@ function applySubComponents(cfg: Config, fileComp: Map<string, string>): void {
   }
 }
 
-function analyze(cfg: Config, graph: Graph): Coupling {
+// Exported + commit-injectable (default = the real git read) so the locality/pairing/smell
+// math is a pure, testable function of (graph, commits). `decompose` calls `analyze(cfg,
+// graph)` unchanged, so live output is byte-identical; tests inject a hand-built commit log.
+export function analyze(cfg: Config, graph: Graph, commits = readCommitLog(cfg, HIST)): Coupling {
   const { compOf, fileComp } = componentMap(cfg, graph);
 
   // STRUCTURE: cross-component import fan-in (who imports INTO each component)
@@ -87,12 +90,15 @@ function analyze(cfg: Config, graph: Graph): Coupling {
     if (sc && tc && sc !== tc) { let s = fanIn.get(tc); if (!s) { s = new Set(); fanIn.set(tc, s); } s.add(sc); }
   }
 
-  // EVOLUTION: classify every co-changing file PAIR as within- or cross-component
-  const commits = readCommitLog(cfg, HIST).filter((c) => c.files.length >= 2 && c.files.length <= BULK);
+  // EVOLUTION: classify every co-changing file PAIR as within- or cross-component.
+  // The 2…BULK band is a SEMANTIC property of the metric (a 1-file commit has no pairs;
+  // a >BULK commit is a mechanical rename/migration), so it filters here regardless of
+  // how `commits` was sourced — injected or read from git.
+  const filtered = commits.filter((c) => c.files.length >= 2 && c.files.length <= BULK);
   let within = 0, cross = 0;
   const crossPair = new Map<string, number>();
   const fileSpan = new Map<string, Set<string>>();
-  for (const c of commits) {
+  for (const c of filtered) {
     const fs = c.files.map((f) => ({ f, c: compOf(f) })).filter((x): x is { f: string; c: string } => !!x.c);
     const distinct = [...new Set(fs.map((x) => x.c))];
     for (const { f, c: fc } of fs) { let s = fileSpan.get(f); if (!s) { s = new Set(); fileSpan.set(f, s); } for (const oc of distinct) if (oc !== fc) s.add(oc); }
@@ -108,7 +114,7 @@ function analyze(cfg: Config, graph: Graph): Coupling {
     pairs: [...crossPair.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8),
     godFiles: [...fileSpan.entries()].filter(([, s]) => s.size >= 3).map(([f, s]) => [f, s.size] as [string, number]).sort((a, b) => b[1] - a[1]).slice(0, 8),
     hubs: [...fanIn.entries()].filter(([, s]) => s.size >= 4).map(([c, s]) => [c, s.size] as [string, number]).sort((a, b) => b[1] - a[1]).slice(0, 8),
-    commits: commits.length,
+    commits: filtered.length,
   };
 }
 
