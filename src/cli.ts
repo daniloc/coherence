@@ -50,7 +50,15 @@ const normStamp = (s: string) => s.replace(/<span id="stamp">[^<]*<\/span>/, '<s
 // local editor:// deep-links). Like the timestamp, that's machine-specific, so blank it
 // for the freshness comparison — otherwise the committed file only ever matches the one
 // machine that generated it and `--check` is perpetually stale across dev ↔ CI.
-const normGraphHtml = (s: string) => normStamp(s).replace(/const ABS = "[^"]*"/, 'const ABS = ""');
+// Symbol `data-line` attrs are the third volatile field: any edit that adds/removes
+// lines shifts every symbol below it, so a comment-only or above-the-symbol change
+// would fail the gate despite NOT changing the graph's shape. Line numbers are a
+// navigation aid, never structure, so strip them too — the gate then fails ONLY on
+// real structural drift (nodes/edges/claims/boundaries), and committed graph diffs
+// stop being polluted with line churn. See the same strip in `nj` for graph.json.
+const normGraphHtml = (s: string) => normStamp(s)
+  .replace(/const ABS = "[^"]*"/, 'const ABS = ""')
+  .replace(/ data-line="\d+"/g, '');
 const read = (p: string) => readFile(p, "utf8").catch(() => "");
 
 async function writeOutputs() { await mkdir(join(cfg.root, cfg.outputDir), { recursive: true }); }
@@ -61,12 +69,15 @@ async function doGraph(): Promise<string[]> {
   const html = renderOutline(graph, cfg, stamp);
   if (check) {
     const stale: string[] = [];
-    // Normalize BOTH run/machine-specific fields — generatedAt (clock) and absRoot
-    // (absolute checkout path) — so the gate compares only the derived graph, not where
-    // or when it was generated.
+    // Normalize the volatile fields so the gate compares only the derived graph's
+    // SHAPE: generatedAt (clock), absRoot (absolute checkout path), and "line" (a
+    // navigation aid — any line-shifting edit moves every symbol below it without
+    // changing structure; gating on it produces false-positive staleness and noisy
+    // diffs). What remains is nodes/edges/claims/boundaries — the things that matter.
     const nj = (s: string) => s
       .replace(/"generatedAt":\s*"[^"]*"/, '"generatedAt":""')
-      .replace(/"absRoot":\s*"[^"]*"/, '"absRoot":""');
+      .replace(/"absRoot":\s*"[^"]*"/, '"absRoot":""')
+      .replace(/"line":\s*\d+/g, '"line":0');
     if (nj(json) !== nj(await read(out("graph.json")))) stale.push("graph.json");
     if (normGraphHtml(html) !== normGraphHtml(await read(out("_graph.html")))) stale.push("_graph.html");
     return stale;
