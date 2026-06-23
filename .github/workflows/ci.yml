@@ -1,0 +1,21 @@
+name: CI
+
+# The harness gates every consumer project; this gates the harness on itself.
+# `npm ci` runs the `prepare` build (tsc must compile), then the node:test suite
+# runs — TypeScript is stripped natively, so no test framework is installed.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22' # engines: >=22 (native TS type-stripping, no --flag needed)
+          cache: npm
+      - run: npm ci # installs deps + runs prepare → tsc build (a build break fails here)
+      - run: npm test
