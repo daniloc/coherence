@@ -55,6 +55,7 @@ export interface Config {
   language: string;         // language adapter key
   platform: string | null;  // platform adapter key, or null
   components?: { name: string; files: string[] }[]; // optional sub-component overrides for the decompose/drift co-change analysis ONLY (the spec graph, verify, and coverage are untouched). `files` are globs relative to cfg.root (`*` = within a path segment, `**` = any). A file matching one is regrouped under `name`, so a large spec-component (a domain core) can be measured as the distinct concerns it actually contains instead of one opaque hub. First matching definition wins; unmatched files keep their spec-component.
+  claudeMdPath?: string;    // path to the CLAUDE.md whose fenced block `coherence claude` owns (default: "CLAUDE.md" at cfg.root). Use a `../`-relative path when the authored CLAUDE.md lives outside the coherence root (e.g. a repo root above a sub-package); coherence still operates on cfg.root, only the splice target moves.
 
   // --- ratchet / atlas subcommands (lint-sinks · conventions · atlas) — all optional ---
   // The harness owns the MECHANISM (scan, classify, baseline, render, --check); the
