@@ -8,7 +8,7 @@ import { loadConfig } from "./config.ts";
 import { buildGraph } from "./derive.ts";
 import { renderOutline } from "./render-outline.ts";
 import { renderOverview } from "./render-overview.ts";
-import { renderClaude, spliceBlock, extractBlock, CLAUDE_BEGIN, CLAUDE_END } from "./render-claude.ts";
+import { renderClaude, spliceBlock, extractBlock, resolveClaudeMdPath, CLAUDE_BEGIN, CLAUDE_END } from "./render-claude.ts";
 import { runVerify, applyVerdicts } from "./verify.ts";
 import { onboard } from "./onboard.ts";
 import { decompose } from "./decompose.ts";
@@ -109,7 +109,9 @@ async function doOverview(): Promise<string[]> {
 async function doClaude(): Promise<string[]> {
   const graph = await buildGraph(cfg);
   const block = renderClaude(graph, stamp);
-  const path = join(cfg.root, "CLAUDE.md");
+  // The authored CLAUDE.md may live OUTSIDE cfg.root (e.g. a repo root above a
+  // sub-package). resolveClaudeMdPath honors cfg.claudeMdPath when set.
+  const path = resolveClaudeMdPath(cfg);
   const existing = await read(path);
   const current = extractBlock(existing);
   // Strip the timestamp line so a re-run isn't reported stale just for the clock.

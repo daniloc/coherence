@@ -1,4 +1,6 @@
 // render-claude.ts — Graph → the GENERATED block of a project's CLAUDE.md.
+import { join } from "node:path";
+import type { Config } from "./types.ts";
 //
 // The sibling of render-overview.ts (AGENTS.md). Where AGENTS.md is a standalone
 // generated file, CLAUDE.md is two-zone: an authored prose document (why-essays,
@@ -11,14 +13,17 @@
 //   - the invariants → chokepoint(anchor) → oracle table, parsed from boundary claims
 //   - derivable counts (components, files, symbols, boundary claims)
 //
+// PARTIAL: per-file prose is emitted WHEN PRESENT — a file's top-of-file docblock
+// `prose` (the part before any `@why`) becomes a one-line role beside the filename.
+// A file without a docblock appears as a bare label, same as before. This lets the
+// rich per-file one-liners that CLAUDE.md trees often hand-maintain move into the
+// docblocks coherence already reads, eliminating a hand-maintained duplicate without
+// requiring uniform coverage to do so. The `@why` half stays out — the generated
+// block surfaces ROLE (the WHAT), not rationale (the WHY).
+//
 // DELIBERATELY NOT GENERATED (stays authored, outside the fences):
-//   - per-FILE prose roles. The graph carries COMPONENT-level `intent` (spec `sub`)
-//     and FILE-level `prose`/`why` only when a file happens to have a docblock — it
-//     does NOT carry a curated one-line "what this file is for" for every file. So we
-//     emit the bare file list per component and let the rich per-file one-liners (the
-//     kind CLAUDE.md hand-maintains in its "Project structure" tree) stay AUTHORED.
 //   - all the WHY: design-principle essays, conventions, vocabulary, tech-stack notes.
-import type { Graph, GraphNode } from "./types.ts";
+import type { Graph } from "./types.ts";
 
 export const CLAUDE_BEGIN = "<!-- coherence:begin -->";
 export const CLAUDE_END = "<!-- coherence:end -->";
@@ -59,7 +64,20 @@ export function renderClaude(graph: Graph, stamp: string): string {
     if (c.sub) md.push(c.sub);
     const files = childrenOf(c.id);
     if (files.length) {
-      md.push("", `_files:_ ${files.map((f) => `\`${f.label}\``).join(", ")}`);
+      // Pivot: if NO file has prose, render the compact one-line list (old behavior,
+      // legible at-a-glance for component dirs full of organizational sub-modules).
+      // If ANY file has prose, render a per-file bullet list so the prose actually
+      // shows; files without prose appear as bare-label rows so the list stays full.
+      const any = files.some((f) => f.prose);
+      if (!any) {
+        md.push("", `_files:_ ${files.map((f) => `\`${f.label}\``).join(", ")}`);
+      } else {
+        md.push("", "_files:_");
+        for (const f of files) {
+          const one = (f.prose ?? "").split(/\r?\n/)[0].trim();
+          md.push(one ? `- \`${f.label}\` — ${esc(one)}` : `- \`${f.label}\``);
+        }
+      }
     }
     md.push("");
   }
@@ -104,4 +122,13 @@ export function extractBlock(existing: string): string | null {
   const j = existing.indexOf(CLAUDE_END);
   if (i < 0 || j < 0 || j < i) return null;
   return existing.slice(i, j + CLAUDE_END.length);
+}
+
+/** Resolve the CLAUDE.md path the splicer writes to. `cfg.claudeMdPath` defaults
+ *  to `CLAUDE.md` (sibling of the specs); a `../`-relative path escapes cfg.root,
+ *  for the case where the authored CLAUDE.md lives at a repo root above a
+ *  sub-package whose coherence config is nested. Coherence still operates on
+ *  cfg.root; only the splice target moves. */
+export function resolveClaudeMdPath(cfg: Config): string {
+  return join(cfg.root, cfg.claudeMdPath ?? "CLAUDE.md");
 }

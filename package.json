@@ -1,6 +1,6 @@
 {
   "name": "coherence-harness",
-  "version": "0.5.1",
+  "version": "0.5.3",
   "description": "A spec + coherence harness for agent-developed projects: derive a multi-resolution graph from *.spec.md + code, render an explorable outline and an agent map, and verify claims/narrative/coverage. Language and platform specifics live behind adapters.",
   "type": "module",
   "bin": { "coherence": "dist/cli.js" },

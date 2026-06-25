@@ -148,6 +148,22 @@ machinery rather than prose, so a codebase inherits it by construction.
     so the three pieces land in lockstep instead of as orphaned prose.
 - `coherence onboard` — bootstrap a repo with no specs: derive structure, suggest a
   decomposition, and emit why-from-history jobs. Output is proposals to review.
+- `coherence why-lint` — the **`## why` discipline**, two advisory checks against the
+  graph the harness already holds:
+  1. **mechanism-restatement** — a sentence that names an anchored chokepoint/oracle
+     SYMBOL alongside an oracle-VERB ("iterates", "totality", "fails the build") is
+     prose re-deriving the WHAT — the boundary claim already carries it.
+  2. **paragraph ↔ invariant anchoring** — in specs that declare `## invariants`,
+     every `## why` paragraph should anchor to a named invariant (mention it by name,
+     case- and punctuation-insensitive), and every invariant should be anchored by
+     some paragraph. Unanchored paragraphs are narrative drift; unanchored invariants
+     are rationale debt. Parenthetical paragraphs (`(...)`) are exempt as meta-framing.
+     Components without `## invariants` are exempt entirely (free-form why is fine).
+
+  This applies pressure on the right axis (CONTENT, keyed to the invariant set) rather
+  than the wrong one (character count, which would flatten the load signal — a spec
+  carrying thirteen boundaries earns more bytes than one carrying one). `--check` exits
+  nonzero on a finding; otherwise advisory.
 
 ## The two documentation fields
 
