@@ -105,6 +105,42 @@ test("anchored-paragraph: components without ## invariants are exempt (free-form
   assert.equal(code, 0);
 });
 
+test("mechanism-restatement: a bold anchor lead-in is NOT itself flagged as mechanism (it IS the anchor)", async () => {
+  // Without the lead-in strip, the anchor `**egress-sensitivity totality.**` trips
+  // its own check: the symbol "egress-sensitivity totality" sits in the same
+  // sentence as the verb "totality" (part of the invariant name). The lead-in IS
+  // the anchoring mechanism — it must be exempt.
+  const g = graph([
+    comp("a", {
+      claims: ['boundary "egress-sensitivity totality" at SENSITIVE_COLUMNS via test "egress-sensitivity totality"'],
+      invariants: ["egress-sensitivity totality"],
+      why: "**egress-sensitivity totality.** The rejected design had two parallel hand-lists.",
+    }),
+    sym("SENSITIVE_COLUMNS"),
+  ]);
+  const { code } = await runCaptured(async () => whyLint(g, "check"));
+  assert.equal(code, 0, "the bold lead-in is the anchor, not mechanism prose");
+});
+
+test("mechanism-restatement: sentence-splitter handles `.)` and `.**` terminators (paragraphs don't fuse)", async () => {
+  // The naive `(?<=[.!?])\s+` split misses `.)` and `.**`, fusing what reads as two
+  // sentences (or two paragraphs!) into one. That produced false positives where a
+  // parenthetical closer flowed into the next paragraph's bold anchor + prose.
+  const g = graph([
+    comp("a", {
+      claims: ['boundary "x totality" at chokepointFoo via test "x totality"'],
+      invariants: ["x totality"],
+      // Two paragraphs: a parenthetical and an anchored one. Without paragraph-first
+      // splitting + the `.)` terminator, these fuse into one long "sentence" that
+      // mentions chokepointFoo AND an oracle-verb.
+      why: "(Intro framing that mentions nothing dangerous.)\n\n**x totality.** The rejected design was the hand-list.",
+    }),
+    sym("chokepointFoo"),
+  ]);
+  const { code } = await runCaptured(async () => whyLint(g, "check"));
+  assert.equal(code, 0, "paragraphs are checked independently and `.)` ends a sentence");
+});
+
 test("report mode never exits nonzero, even with findings", async () => {
   const g = graph([
     comp("a", {

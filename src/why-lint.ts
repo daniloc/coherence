@@ -25,6 +25,21 @@ const ORACLE_VERB =
   /\b(iterates?|totality|enumerates?|fails (the )?(build|suite)|double-entry|keyset|reconcil\w*|asserts? every|every .*(must|fails))\b/i;
 const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
+/** Split a paragraph into sentences, tolerating `.**`, `.)`, `."`, etc. — a sentence
+ *  end may carry closing punctuation between the terminator and the whitespace.
+ *  The naive `(?<=[.!?])\s+` split misses these and fuses what reads as two sentences
+ *  into one, which both makes findings hard to read and produces false positives when
+ *  a bold anchor lead-in (`**name.**`) absorbs the next sentence's prose. */
+const splitSentences = (s: string) => s.split(/(?<=[.!?][)\]*"'`]*)\s+/);
+
+/** Strip a leading bold-anchor `**X.**` (and the space after it) from a paragraph
+ *  before sentence-splitting. The bold lead-in IS the anchoring mechanism — it keys
+ *  the paragraph to a declared invariant — so it must not itself be flagged as
+ *  mechanism-restating prose. Without this, every anchored paragraph trips the check
+ *  on its own anchor (the anchor name is the symbol; the invariant name often contains
+ *  an oracle-verb like "totality"). */
+const stripAnchorLead = (s: string) => s.replace(/^\*\*[^*]+\*\*\s*/, "");
+
 /** Normalize for fuzzy anchor matching: lowercase, treat `/`, `-`, `_`, and runs of
  *  whitespace as a single space. Lets "facet/kernel-column collision" match "facet
  *  kernel column collision" without forcing a specific punctuation in prose. */
@@ -45,11 +60,16 @@ function checkMechanismRestatement(graph: Graph): MechanismFinding[] {
   const findings: MechanismFinding[] = [];
   for (const n of graph.nodes) {
     if (n.kind !== "component" || !n.why) continue;
-    for (const raw of n.why.split(/(?<=[.!?])\s+/)) {
-      const s = raw.trim();
-      if (!s || !ORACLE_VERB.test(s)) continue;
-      const m = symRe.exec(s);
-      if (m) findings.push({ component: n.label, sentence: s.replace(/\s+/g, " ").slice(0, 140), sym: m[1] });
+    // Split paragraphs first so a sentence can't bleed across a paragraph break,
+    // then strip each paragraph's bold-anchor lead-in (the anchoring mechanism is
+    // not itself "mechanism-restating prose") before sentence-splitting.
+    for (const para of n.why.split(/\n\s*\n/)) {
+      for (const raw of splitSentences(stripAnchorLead(para.trim()))) {
+        const s = raw.trim();
+        if (!s || !ORACLE_VERB.test(s)) continue;
+        const m = symRe.exec(s);
+        if (m) findings.push({ component: n.label, sentence: s.replace(/\s+/g, " ").slice(0, 140), sym: m[1] });
+      }
     }
   }
   return findings;
