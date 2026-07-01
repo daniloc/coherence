@@ -103,7 +103,14 @@ export async function runVerify(cfg: Config, graph: Graph, opts: { fast?: boolea
           return mk("fail", `[oracle] "${test}" iterates a LITERAL domain (${a.detail}) — a sampling oracle, not totality. Derive its domain from the live SSOT behind \`${sym}\` (or, if it is a source-property guard, declare it \`via guard\` not \`via test\`).`);
         if (a.verdict === "no-iteration")
           return mk("fail", `[oracle] "${test}" performs NO domain iteration (${a.detail}) — a source-grep / hand-enumerated cases, not totality. Loop the live domain behind \`${sym}\`, or — if it is a genuine source-property guard — declare it \`via guard "${test}"\` instead of \`via test\`.`);
-        // not-found → fall through; the runner check below will fail/skip and report it.
+        // NOT-FOUND must fail, not fall through: the test RUNNER matches names as a
+        // substring/regex, so a claim anchored to an it() title (or a typo'd describe)
+        // still passes the runner while silently opting out of domain analysis — the
+        // exact muting that lets a hand-list regression ship green. `via test` means
+        // "analyzable totality"; if the describe can't be located, the claim is
+        // unverifiable as declared.
+        if (a.verdict === "not-found")
+          return mk("fail", `[oracle] "${test}" — no describe() with this EXACT title found, so the meta-oracle cannot analyze its domain (the runner alone would still pass on an it()-name match, silently skipping analysis). Anchor the claim to the oracle's exact describe title, or declare it \`passes test\`/\`via guard\` if it is not a domain totality.`);
       }
       if (opts.fast) return mk("skip", "boundary oracle (--fast)");
       if (!cfg.test || !cfg.test.length) return mk("skip", "no test runner configured (config.test)");
