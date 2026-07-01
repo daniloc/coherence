@@ -36,6 +36,16 @@ export interface OracleAnalysis {
   detail: string;
   /** the test file (relative to root) the describe block was found in, if any. */
   file?: string;
+  /**
+   * Whether the oracle asserts a lower bound on its domain size. Only meaningful
+   * when verdict === "live": a LIVE domain is necessary but NOT sufficient — a
+   * live-derived collection that can silently shrink to empty (a schema
+   * projection whose shape changed, an `.options`/registry that collapsed) makes
+   * the assertion loop range over nothing and pass VACUOUSLY. A floor
+   * (`expect(domain.length).toBeGreaterThanOrEqual(n)`, or a `.length >= n`
+   * check) turns that collapse into a loud failure. Heuristic, best-effort.
+   */
+  hasFloor?: boolean;
 }
 
 /** A test file (NOT a *.spec.md — those are coherence specs, not runnable tests). */
@@ -251,6 +261,35 @@ function classifyDomain(d: ts.Expression, scope: Scope, sf: ts.SourceFile): { ve
  * `it()`); LITERAL if it has loops but ALL of them iterate literals/local arrays;
  * NO-ITERATION if it has no domain-iteration construct at all.
  */
+const FLOOR_MATCHERS = new Set(["toBeGreaterThan", "toBeGreaterThanOrEqual"]);
+
+/** Best-effort: does the oracle assert a lower bound on its domain size? Catches
+ *  the vitest/jest floor matchers and a bare `.length`/`.size`/`.count` `>=`/`>`
+ *  comparison. A LIVE oracle without one passes vacuously the moment its domain
+ *  empties — the false-green class the meta-oracle can't see from liveness alone. */
+function hasFloorAssertion(body: ts.Node): boolean {
+  const sizeRe = /\.(length|size|count)\b/;
+  let found = false;
+  const visit = (n: ts.Node): void => {
+    if (found) return;
+    // A floor matcher whose ASSERTED expression references a domain size, i.e.
+    // `expect(domain.length).toBeGreaterThanOrEqual(n)` — not `expect(v).toBeGreaterThan(0)`
+    // on some scalar value (which is not a domain-size floor).
+    if (ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression) &&
+        FLOOR_MATCHERS.has(n.expression.name.text) && sizeRe.test(n.expression.expression.getText())) {
+      found = true; return;
+    }
+    // A bare `.length`/`.size`/`.count` `>=`/`>` comparison.
+    if (ts.isBinaryExpression(n) &&
+        (n.operatorToken.kind === ts.SyntaxKind.GreaterThanEqualsToken ||
+         n.operatorToken.kind === ts.SyntaxKind.GreaterThanToken) &&
+        sizeRe.test(n.getText())) { found = true; return; }
+    ts.forEachChild(n, visit);
+  };
+  visit(body);
+  return found;
+}
+
 export async function analyzeOracle(cfg: Config, oracleName: string): Promise<OracleAnalysis> {
   const files = await findTestFiles(cfg);
   for (const rel of files) {
@@ -267,7 +306,11 @@ export async function analyzeOracle(cfg: Config, oracleName: string): Promise<Or
     if (loops.length === 0) return { verdict: "no-iteration", detail: "no for-of / .forEach / .map / spread over a domain", file: rel };
     const classed = loops.map((l) => classifyDomain(l.domain, scope, sf));
     const live = classed.find((c) => c.verdict === "live");
-    if (live) return { verdict: "live", detail: live.detail, file: rel };
+    if (live) {
+      const hasFloor = hasFloorAssertion(body);
+      const detail = hasFloor ? live.detail : `${live.detail} — no domain floor (vacuous if the domain empties)`;
+      return { verdict: "live", detail, file: rel, hasFloor };
+    }
     // every loop is literal
     const lit = classed[0];
     return { verdict: "literal", detail: lit.detail + (classed.length > 1 ? ` (+${classed.length - 1} more, all literal)` : ""), file: rel };
