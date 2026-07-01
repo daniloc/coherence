@@ -221,6 +221,16 @@ function findLoops(block: ts.Node): Loop[] {
     if (ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression) && ITER_METHODS.has(n.expression.name.text)) {
       loops.push({ domain: n.expression.expression });
     }
+    // it.each(X)(...) / test.each(X)(...) / describe.each(X)(...) — the vitest/jest
+    // parameterization idiom. The each ARGUMENT is the iterated domain; missing this
+    // form misclassifies the most idiomatic totality oracles as NO-ITERATION.
+    if (
+      ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression) &&
+      n.expression.name.text === "each" && ts.isIdentifier(n.expression.expression) &&
+      ["it", "test", "describe"].includes(n.expression.expression.text) && n.arguments[0]
+    ) {
+      loops.push({ domain: n.arguments[0] });
+    }
     // spread of a collection: [...X] (only when X is a collection, not a literal already)
     if (ts.isSpreadElement(n) && !ts.isArrayLiteralExpression(n.expression)) loops.push({ domain: n.expression });
     ts.forEachChild(n, visit);
