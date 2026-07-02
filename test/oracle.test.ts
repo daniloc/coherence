@@ -53,6 +53,19 @@ describe("source-grep no iteration", () => {
 });
 
 describe("empty body no iteration", () => {});
+
+describe("live via it.each over an import", () => {
+  it.each(REGISTRY)("case %s", (p) => { expect(p).toBeDefined(); });
+});
+
+describe("literal via it.each over an inline array", () => {
+  it.each(["a", "b"])("case %s", (v) => { expect(v).toBeTruthy(); });
+});
+
+describe("live with a domain floor", () => {
+  expect(REGISTRY.length).toBeGreaterThanOrEqual(3);
+  for (const p of REGISTRY) { expect(p).toBeDefined(); }
+});
 `;
 
 let root: string;
@@ -109,4 +122,32 @@ test("NOT-FOUND — an oracle name with no describe anywhere", async () => {
 test("the analysis reports which file the oracle was found in", async () => {
   const a = await analyzeOracle(cfg(root), "imported registry");
   assert.equal(a.file, "oracles.test.ts");
+});
+
+test("LIVE + FLOOR — a domain-size floor is detected", async () => {
+  const a = await analyzeOracle(cfg(root), "live with a domain floor");
+  assert.equal(a.verdict, "live");
+  assert.equal(a.hasFloor, true);
+});
+
+test("LIVE + NO FLOOR — a live loop without a size floor is vacuous-able", async () => {
+  const a = await analyzeOracle(cfg(root), "imported registry");
+  assert.equal(a.verdict, "live");
+  assert.equal(a.hasFloor, false);
+  assert.match(a.detail, /no domain floor/);
+});
+
+test("a value assertion (toBeGreaterThan on a scalar) is NOT a domain floor", async () => {
+  // `new Set over a literal` asserts `expect(v).toBeGreaterThan(0)` on each value —
+  // that is not a lower bound on the domain size, so it must not read as a floor.
+  const a = await analyzeOracle(cfg(root), "new Set over a literal");
+  assert.notEqual(a.hasFloor, true);
+});
+
+test("LIVE — it.each over an imported registry is domain iteration", async () => {
+  assert.equal(await verdict("live via it.each over an import"), "live");
+});
+
+test("LITERAL — it.each over an inline array is still a hand-list", async () => {
+  assert.equal(await verdict("literal via it.each over an inline array"), "literal");
 });
