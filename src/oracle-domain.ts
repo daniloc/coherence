@@ -49,7 +49,8 @@ export interface OracleAnalysis {
 }
 
 /** A test file (NOT a *.spec.md — those are coherence specs, not runnable tests). */
-const isTestFile = (name: string) => name !== "spec.md" && /\.(test|spec)\.[mc]?[jt]sx?$/.test(name);
+const isTestFile = (name: string) =>
+  name !== "spec.md" && (/\.(test|spec)\.[mc]?[jt]sx?$/.test(name) || /^test_.*\.py$|_test\.py$/.test(name));
 
 // Dirs that are never source, regardless of the project's graph-`ignore`. We deliberately
 // do NOT reuse cfg.ignore: a project commonly excludes its test dir (e.g. "__tests__") from
@@ -300,12 +301,84 @@ function hasFloorAssertion(body: ts.Node): boolean {
   return found;
 }
 
+
+/**
+ * Python arm of the meta-oracle — regex-based (no Python AST available here), tuned
+ * conservative like the TS unknown-identifier rule: only verdicts that are UNAMBIGUOUS
+ * from the source text (an inline list literal as the loop/parametrize domain) read as
+ * LITERAL; a name that appears in an import line, a call result, or anything we cannot
+ * resolve reads as LIVE — never a false fail. The oracle name must match a
+ * `def <name>(` or `class <Name>` exactly (pytest -k will still substring-match for
+ * the runner, but analysis anchors exactly, mirroring the TS describe rule).
+ */
+function analyzePythonOracle(src: string, oracleName: string): Omit<OracleAnalysis, "file"> | null {
+  const lines = src.split("\n");
+  // exact anchor: def <name>( at any indent, or class <Name>
+  const defRe = new RegExp(`^(\\s*)(?:async\\s+)?def\\s+${oracleName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*\\(`);
+  const clsRe = new RegExp(`^(\\s*)class\\s+${oracleName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`);
+  let start = -1, indent = "";
+  for (let i = 0; i < lines.length; i++) {
+    const m = defRe.exec(lines[i]) ?? clsRe.exec(lines[i]);
+    if (m) { start = i; indent = m[1]; break; }
+  }
+  if (start < 0) return null;
+  // block: from the anchor to the next non-blank line at <= the anchor's indent
+  let end = lines.length;
+  for (let i = start + 1; i < lines.length; i++) {
+    const l = lines[i];
+    if (!l.trim()) continue;
+    if (!l.startsWith(indent + " ") && !l.startsWith(indent + "\t")) { end = i; break; }
+  }
+  // decorators above the anchor belong to it (parametrize domains live there)
+  let decoStart = start;
+  while (decoStart > 0 && lines[decoStart - 1].trim().startsWith("@")) decoStart--;
+  const block = lines.slice(decoStart, end).join("\n");
+  const importedNames = new Set<string>();
+  for (const l of lines) {
+    let m = /^from\s+\S+\s+import\s+(.+)$/.exec(l.trim());
+    if (m) for (const part of m[1].split(",")) importedNames.add(part.trim().split(/\s+as\s+/).pop()!.trim());
+    m = /^import\s+([A-Za-z_][\w.]*)/.exec(l.trim());
+    if (m) importedNames.add(m[1].split(".")[0]);
+  }
+  // domains: for X in <domain>:  |  @pytest.mark.parametrize("...", <domain>)
+  const domains: string[] = [];
+  let m: RegExpExecArray | null;
+  const forRe = /for\s+[\w,\s()]+\s+in\s+([^:]+):/g;
+  while ((m = forRe.exec(block))) domains.push(m[1].trim());
+  const parRe = /parametrize\(\s*["'][^"']+["']\s*,\s*((?:\[[^\]]*\])|[A-Za-z_][\w.()]*)/g;
+  while ((m = parRe.exec(block))) domains.push(m[1].trim());
+  if (domains.length === 0)
+    return { verdict: "no-iteration", detail: "no for-in / parametrize over a domain" };
+  const classify = (d: string): "live" | "literal" => {
+    if (/^[\[(]/.test(d)) return "literal";                 // inline list/tuple literal
+    if (/^range\(/.test(d)) return "literal";               // hand-chosen bound
+    const root = d.split(/[.([]/)[0].trim();
+    if (importedNames.has(root)) return "live";              // imported SSOT
+    if (/\(/.test(d)) return "live";                        // call result
+    return "live";                                           // unknown name — conservative
+  };
+  const verdicts = domains.map((d) => ({ d, v: classify(d) }));
+  const live = verdicts.find((x) => x.v === "live");
+  // floor: a len(...) lower-bound assertion anywhere in the block
+  const hasFloor = /len\([^)]*\)\s*>=?\s*\d|assert\s+[^\n]*len\(/.test(block);
+  if (live) {
+    const detail = hasFloor ? `for-in/parametrize over ${live.d}` : `for-in/parametrize over ${live.d} — no domain floor (vacuous if the domain empties)`;
+    return { verdict: "live", detail, hasFloor };
+  }
+  return { verdict: "literal", detail: `inline ${verdicts[0].d.slice(0, 40)} literal` };
+}
+
 export async function analyzeOracle(cfg: Config, oracleName: string): Promise<OracleAnalysis> {
   const files = await findTestFiles(cfg);
   for (const rel of files) {
     let src: string;
     try { src = await readFile(join(cfg.root, rel), "utf8"); } catch { continue; }
     if (!src.includes(oracleName)) continue; // cheap pre-filter
+    if (rel.endsWith(".py")) {
+      const py = analyzePythonOracle(src, oracleName);
+      if (py) return { ...py, file: rel };
+      continue;
+    }
     const sf = parse(src, basename(rel));
     const desc = findDescribe(sf, oracleName);
     if (!desc) continue;

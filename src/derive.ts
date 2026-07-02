@@ -6,9 +6,10 @@ import { join, basename, dirname, relative, resolve } from "node:path";
 import type { Config, Graph, GraphNode, GraphEdge, LanguageAdapter, PlatformAdapter } from "./types.ts";
 import { parseSpec, splitWhy, findSpec, nodeDirs, codeFiles, ownerOf } from "./walk.ts";
 import { typescript } from "./adapters/typescript.ts";
+import { python } from "./adapters/python.ts";
 import { cloudflare } from "./adapters/cloudflare.ts";
 
-const LANGUAGES: Record<string, LanguageAdapter> = { typescript };
+const LANGUAGES: Record<string, LanguageAdapter> = { typescript, python };
 const PLATFORMS: Record<string, PlatformAdapter> = { cloudflare };
 
 export async function buildGraph(cfg: Config): Promise<Graph> {
