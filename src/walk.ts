@@ -13,6 +13,12 @@ export function splitWhy(text: string): { what: string; why: string } {
   return { what: text.slice(0, idx).trim(), why: text.slice(idx).replace(/^\s*\n?\s*@why\b[ :]*/, "").trim() };
 }
 
+
+/** Markdown formatters (markdownlint/prettier --fix) escape `_` and `*` in prose —
+ *  including inside claim lines (`at \_load` → unresolvable symbol). Claims are a
+ *  grammar, not prose: strip those escapes so a formatted spec still parses. */
+const unescapeMd = (s: string) => s.replace(/\\([_*])/g, "$1");
+
 export function parseSpec(text: string): ParsedSpec {
   const lines = text.split("\n");
   let name = "", intent = "", i = 0, intentLine = -1;
@@ -21,7 +27,7 @@ export function parseSpec(text: string): ParsedSpec {
   const claims: string[] = [];
   const ws = lines.findIndex((l) => /^##\s+works when\s*$/i.test(l));
   let we = -1;
-  if (ws >= 0) { we = lines.length; for (let j = ws + 1; j < lines.length; j++) { if (/^##\s+/.test(lines[j])) { we = j; break; } const c = /^-\s+(.+?)\s*$/.exec(lines[j]); if (c) claims.push(c[1]); } }
+  if (ws >= 0) { we = lines.length; for (let j = ws + 1; j < lines.length; j++) { if (/^##\s+/.test(lines[j])) { we = j; break; } const c = /^-\s+(.+?)\s*$/.exec(lines[j]); if (c) claims.push(unescapeMd(c[1])); } }
   const wy = lines.findIndex((l) => /^##\s+why\s*$/i.test(l));
   let wye = -1, why = "";
   if (wy >= 0) { wye = lines.length; for (let j = wy + 1; j < lines.length; j++) if (/^##\s+/.test(lines[j])) { wye = j; break; } why = lines.slice(wy + 1, wye).join("\n").trim(); }
