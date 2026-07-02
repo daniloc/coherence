@@ -98,6 +98,50 @@ its oracle fails loud instead of rotting silently. The intent is to encode the d
 *convert block-lists into chokepoints; fail closed; one home; a totality oracle* as
 machinery rather than prose, so a codebase inherits it by construction.
 
+## Authoring boundaries — pitfalls & how not to fool yourself
+
+The `boundary` / `## invariants` ratchet is only as honest as the oracle behind
+it. Three sharp edges and one discipline, all found the hard way:
+
+**`via test "<name>"` must name a `describe` block, not an `it()`.** The
+meta-oracle (`oracle-domain.ts`) resolves the oracle by `describe` title. An
+`it()` name resolves `not-found` and **falls through to the runner** — the claim
+goes green off the passing test and the meta-oracle never gets to judge whether
+the oracle is real. Name the `describe` after the invariant. (A `not-found`
+via-test oracle passing silently is itself a sharp edge — treat it as a spec
+wiring bug, not a pass; a warning here would be a good future guard.)
+
+**Oracle names are matched as a regex.** `via test` shells `config.test` with the
+name appended (`vitest -t "<name>"`, etc.), and `-t` is a regex. Parentheses and
+brackets in a `describe` title become regex groups and can match **nothing** —
+which surfaces as `0 passed` / "no run", not a failure. Keep boundary-oracle
+titles free of regex metacharacters.
+
+**`decompose` / `drift` are degenerate with a single node.** LOCALITY reads a
+trivial 100% and SPREAD flat until the spec tree actually carves the code into
+multiple components — the three-graph agreement has nothing to disagree about yet.
+
+### The meta-oracle proves anatomy, not semantics
+
+`oracle-domain.ts` proves the oracle *iterates a live domain* (not a hand-list,
+not a source-grep). It **cannot** prove the oracle exercises the real enforcement
+rather than a *correlate* of it. An oracle can loop a live domain, pass every
+static check, and still assert a proxy — e.g. a unit test with a fake DB that
+asserts the owner argument was *passed*, while the SQL predicate that actually
+filters the rows has been deleted. `oracle → meta-oracle` are both static; a
+proxy fools both.
+
+So **validate every boundary by perturbation, not by a green run**: revert the
+fix (or inject the exact violation the invariant forbids), confirm the oracle
+goes **red**, restore. If it stays green, the oracle tests a correlate — rewrite
+it against the real mechanism (real DB, real dispatch). This is the per-boundary
+form of the falsification experiment (§ anti-entropy): a boundary is only real if
+it *responds* to the perturbation it claims to forbid. For an impact read rather
+than a spot check, inject a *fair* set — in-domain violations, plus out-of-domain
+logic bugs (to measure blind spots), plus benign edits (to measure false alarms)
+— and score which go red; a green run lulls you on exactly the defects outside the
+declared boundaries. Static layers stack; the injection is ground truth.
+
 ## Commands
 
 - `coherence graph` — emit `graph.json` + `_graph.html` (the outline) to `outputDir`.
