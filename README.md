@@ -9,6 +9,34 @@ behind two adapters:
 - **language adapter** (`src/adapters/typescript.ts`) — symbols, imports, docblocks.
 - **platform adapter** (`src/adapters/cloudflare.ts`) — infra bindings (wrangler.jsonc + .toml). Optional.
 
+## The mental model: the enforcement ladder
+
+Every rule a codebase depends on sits at one of three tiers. The harness exists to
+move rules **up** the ladder and to make the current tier of every rule *visible*:
+
+1. **Enshrined (structural)** — the wrong state is *unrepresentable*. A capability
+   type with no trust parameter to dial at a call site; a constructor that only
+   produces the safe shape. The best tier: correct by construction, no oracle needed
+   to *stay* correct. This tier belongs to the **type system**, not to coherence.
+2. **Totality-checked** — the rule has N sites, but ONE declarative home plus an
+   oracle that enumerates the live domain and **fails loud** when the declaration and
+   the domain disagree. Correct because *checked* every build. This is the tier the
+   `boundary` claim machinery targets.
+3. **Convention** — N sites held together by memory. A latent tear: it holds only
+   because everyone remembers, so it will eventually not hold.
+
+The thesis in one line: **conventions are failures lurking in the code; promote them
+to contracts** — a type, a chokepoint, an oracle, a ratchet. Match rigor to
+consequence: not every rule needs tier-1 (over-enshrining is its own pathology), but
+a *security* rule at tier-3 is a bug waiting for a forgetful edit.
+
+**The honest ceiling, stated plainly:** coherence verifies a boundary's **anatomy**
+— the invariant is named, the chokepoint symbol exists, the oracle runs and iterates
+a live domain. It does **not** verify that the wrong call is *impossible* (that's
+the type system's job, tier-1), and it does **not** verify that a claim is the
+**right** claim (that's the human's judgment — axiom #5, judge ≠ notary). It is a
+coherence layer, not a proof system. Treat every green run accordingly.
+
 ## Install from GitHub (no npm registry)
 
 Add it as a git dependency. npm clones the repo and runs `prepare` (which builds
@@ -40,48 +68,108 @@ harness uses only Node built-ins, no runtime deps).
 
 ## Configure the target project
 
-Add `coherence.config.json` to the project root:
+Add `coherence.config.json` to the project root. Minimal:
+
+```json
+{
+  "typecheck": ["npm", "run", "typecheck"],
+  "test": ["npx", "vitest", "run", "-t"],
+  "testMatch": "[1-9][0-9]* passed"
+}
+```
+
+Full (every field the `Config` interface in `src/types.ts` accepts; defaults from
+`src/config.ts`):
 
 ```json
 {
   "outputDir": "docs/coherence",
   "entryDir": ".",
-  "tooling": [],
+  "tooling": ["scripts"],
   "ignore": ["node_modules", ".git", "dist", ".wrangler", "__tests__"],
   "codeExt": ["ts", "sql"],
   "typecheck": ["npm", "run", "typecheck"],
   "test": ["npx", "vitest", "run", "-t"],
   "testMatch": "[1-9][0-9]* passed",
+  "oracleDomain": true,
   "language": "typescript",
-  "platform": "cloudflare"
+  "platform": "cloudflare",
+  "claudeMdPath": "../CLAUDE.md",
+  "sources": ["src"],
+  "testDir": "__tests__",
+  "components": [{ "name": "billing", "files": ["src/billing/**"] }],
+  "conventions": { "guardVerb": "^(assert|require|check)", "seed": [], "dismissed": {} },
+  "sinks": { "safeSql": "quoteIdent\\(", "safeHtml": "escapeHtml\\(" },
+  "atlas": { "charts": {}, "transitions": {} }
 }
 ```
 
-Then author `*.spec.md` files (a folder containing one is a *node*). See the spec
-grammar: a spec is `# Name`, a one-line intent, an optional `## works when` claim
-list, and an optional `## why` (protected rationale).
+### Config reference
 
-### Claim grammar (the `## works when` list)
+| Field | Default | Purpose |
+| --- | --- | --- |
+| `outputDir` | `"public"` | Where generated artifacts go (`graph.json`, `_graph.html`, `_overview.html`, ratchet baselines). |
+| `entryDir` | `"."` | The entrypoint component's dir (`.` = root). |
+| `tooling` | `[]` | Path prefixes demoted to a "tooling" group in the graph. |
+| `ignore` | `["node_modules",".git","dist",".turbo",".wrangler"]` | Dir names the spec/code walk never enters. NOTE: the meta-oracle does **not** reuse this list when hunting for oracle test files (see below). |
+| `codeExt` | `["ts"]` | File extensions treated as code for the tree. |
+| `typecheck` | `["npm","run","typecheck"]` | Command the `typechecks` claim shells. |
+| `test` | `[]` | Base command for `passes test "<name>"` / boundary-oracle claims; `<name>` is appended as the final arg. Empty = those claims skip. |
+| `testMatch` | unset | Optional regex the test output MUST contain to count as a pass. **Set it** for runners like `vitest -t` that exit 0 when the name matched nothing — without it a deleted/renamed test silently stays green. |
+| `oracleDomain` | `true` (anything but `false`) | The META-ORACLE gate: assert a `via test` oracle iterates a LIVE domain. Set `false` to disable the gate. |
+| `language` | `"typescript"` | Language adapter key. |
+| `platform` | `null` | Platform adapter key, or null. |
+| `components` | unset | Sub-component overrides for `decompose`/`drift` co-change analysis ONLY (globs relative to root; first match wins). The spec graph, verify, and coverage are untouched. |
+| `claudeMdPath` | `"CLAUDE.md"` | Path to the CLAUDE.md whose fenced block `coherence claude` owns. May be `../`-relative to escape the coherence root (repo-root CLAUDE.md above a sub-package). |
+| `sources` | `[entryDir]` | Dirs the `lint-sinks`/`conventions` scans are scoped to — keep generated/vendored trees out. |
+| `testDir` | `"__tests__"` | Path substring identifying test files for the ratchet scans. |
+| `conventions` | unset | `guardVerb` (regex for guard-function NAMES), `seed` (extra guard names), `dismissed` (guard → why it's covered elsewhere). |
+| `sinks` | unset | `safeSql`/`safeHtml` — regexes for interpolation expressions that are SAFE by construction. |
+| `atlas` | unset | Trust-manifold data: `charts` (trust domain → description), `transitions` (chokepoint symbol → crossing), `nonTransition` (within-chart boundaries), `knownPending` (mapped symbols tolerated as not-yet-in-source). |
 
-Each claim is verified at one of three tiers:
+Then author `*.spec.md` files (a folder containing one is a *node*). A spec is
+`# Name`, a one-line intent, an optional `## works when` claim list, an optional
+`## invariants` list, and an optional `## why` (protected rationale). Claims are a
+grammar, not prose — the parser (`src/walk.ts`) strips markdown-formatter escapes
+(`\_` → `_`) so a prettified spec still parses.
 
-- **structural** (instant, deterministic) — `X exists at this node` · `X imports Y` · `typechecks`.
-- **executable** (slow, deterministic) — `passes test "<name>"` shells `config.test`
-  with `<name>` appended and reports pass/fail. This is the **single front door**: an
-  invariant enforced by a test (a totality check, a security boundary) is named in the
-  spec, so `coherence verify` transitively runs it. A claim pointing at a renamed or
-  deleted test goes **red** — that's the rot detection. Skipped under `--fast`.
-- **live** (slow) — `URL responds 200 with "..."`. Skipped under `--fast`.
-- **boundary** (the anti-entropy ratchet) — `boundary "<invariant>" at <chokepoint> [via test "<oracle>"]`
-  asserts a self-enforcing boundary's anatomy *as a unit*: the named invariant, the
-  chokepoint SYMBOL exists in the code graph, and (if given) a totality oracle test
-  passes. It **anchors** the named invariant for the coverage gate below.
+## The claim phrasebook (the `## works when` grammar)
 
-`config.test` is the base test command; `<name>` is appended as the final arg.
-`config.testMatch` is an optional regex the output must contain to count as a pass —
-**set it** for runners like `vitest -t` that exit 0 even when the name matched nothing
-(without it, a deleted test silently stays green). The example above requires vitest's
-`N passed` summary.
+This is the complete set of claim forms `src/verify.ts` (`evalClaim`) parses. **A
+line matching none of these is SKIPPED** (`no verifier (dialect gap)`) — it never
+goes red. A typo'd verb is therefore a silent no-op; check verify's `skipped` count
+after authoring claims.
+
+| Claim | Grammar | Tier | Example |
+| --- | --- | --- | --- |
+| typechecks | `typechecks` | deterministic (runs under `--fast`) | `typechecks` |
+| exists | `<file> exists at (root\|this node\|every node)` | deterministic | `wrangler.jsonc exists at root` |
+| imports | `<file> imports <specifier>` | deterministic | `main.ts imports ./registry` |
+| responds | `<url> responds <status> [with "<text>"]` | **live** (skipped under `--fast`; unreachable URL = skip, not fail) | `http://localhost:8787/health responds 200 with "ok"` |
+| passes test | `passes test "<name>"` | executable (skipped under `--fast`) | `passes test "write policy totality"` |
+| boundary | `boundary "<invariant>" at <chokepoint> [via (test\|guard) "<oracle>"]` | hybrid — anchoring + chokepoint-symbol check + meta-oracle run even under `--fast`; the oracle test run is skipped under `--fast` | `boundary "fail-closed writes" at applyWritePolicy via test "write policy totality"` |
+
+Notes, from the implementing code:
+
+- **exists** resolves `root` to the project root and `this node` to the component's
+  dir. `every node` is accepted by the grammar but is currently evaluated against
+  the declaring component's dir only (same as `this node`) — claims are per-spec, so
+  there is no cross-node fan-out today.
+- **imports** reads `<file>` relative to the node dir and requires a
+  `from "<specifier>"` match.
+- **responds** treats a connection failure as a *skip* ("unreachable"), not a fail —
+  so a full `verify` run without the server up quietly skips the live tier rather
+  than going red. Only a reachable-but-wrong status/body fails.
+- **passes test** shells `config.test` with `<name>` appended and applies
+  `config.testMatch` as positive evidence the named test actually ran (exit 0 alone
+  is not trusted). This is the **single front door**: an invariant enforced by a
+  test is named in the spec, so `coherence verify` transitively runs it, and a claim
+  pointing at a renamed or deleted test goes **red** — that's the rot detection.
+- **boundary** asserts a self-enforcing boundary's anatomy *as a unit*: the named
+  invariant, the chokepoint SYMBOL exists in the code graph, and (if given) the
+  oracle passes — `via test` additionally passes the meta-oracle (next section);
+  `via guard` is exempt from it (see the escape-hatch section). It **anchors** the
+  named invariant for the coverage gate.
 
 **Coverage gates node-contract completeness, not symbol-doc exhaustiveness.** A node
 must carry claims and a `## why`; per-symbol prose is *advisory* (surfaced as jobs,
@@ -98,58 +186,205 @@ its oracle fails loud instead of rotting silently. The intent is to encode the d
 *convert block-lists into chokepoints; fail closed; one home; a totality oracle* as
 machinery rather than prose, so a codebase inherits it by construction.
 
-## Authoring boundaries — pitfalls & how not to fool yourself
+## The meta-oracle: what it proves — and what it does NOT
 
-The `boundary` / `## invariants` ratchet is only as honest as the oracle behind
-it. Three sharp edges and one discipline, all found the hard way:
+A `boundary … via test "<oracle>"` claim already checks the chokepoint symbol exists
+and the named test passes. Those two say NOTHING about whether the oracle is a real
+totality check: a test that loops a hand-written array passes, looks total, and
+proves nothing about completeness. The meta-oracle (`src/oracle-domain.ts`,
+`analyzeOracle`) is the third assertion. It locates the oracle by its **exact
+`describe("<title>")`** in the project's test files (for Python, an exact
+`def <name>(`/`class <Name>`), reads the oracle's own source, and classifies how it
+iterates its domain:
 
-**`via test "<name>"` must name a `describe` block, not an `it()`.** The
-meta-oracle (`oracle-domain.ts`) resolves the oracle by `describe` title. An
-`it()` name resolves `not-found` and **falls through to the runner** — the claim
-goes green off the passing test and the meta-oracle never gets to judge whether
-the oracle is real. Name the `describe` after the invariant. (A `not-found`
-via-test oracle passing silently is itself a sharp edge — treat it as a spec
-wiring bug, not a pass; a warning here would be a good future guard.)
+- **LIVE** — some assertion loop ranges over a live-derived collection: an imported
+  binding (a registry/SSOT), a call/query result, member access on an import, or the
+  anchor symbol itself. The analyzer peels `Object.keys/values/entries`,
+  `Array.from`, and chained `.map`/`.filter`/etc. down to the source collection, and
+  recognizes `for…of`/`for…in`, `.forEach`-family calls, `it.each`/`test.each`/
+  `describe.each`, and spreads as iteration. LIVE **passes**.
+- **LITERAL** — every loop iterates an array/regex literal, a same-file `const`
+  array, or `new Set([...literal])`. A sampling oracle wearing the totality label:
+  the hand-list drifts from the domain silently. **Fails** the claim.
+- **NO-ITERATION** — no domain iteration at all (a pure source-grep, or hand-
+  enumerated `it()` blocks). Asserts a source property, not coverage. **Fails.**
+- **NOT-FOUND** — no `describe` with that exact title exists. **Fails** — it does
+  *not* fall through to the runner. (The runner matches names as a substring/regex,
+  so a claim anchored to an `it()` title or a typo'd describe would still pass the
+  runner while silently opting out of domain analysis — the exact muting that lets a
+  hand-list regression ship green. `via test` means "analyzable totality"; if the
+  describe can't be located, the claim is unverifiable as declared. Name the
+  `describe` after the invariant, or use `passes test`/`via guard`.)
 
-**Oracle names are matched as a regex.** `via test` shells `config.test` with the
-name appended (`vitest -t "<name>"`, etc.), and `-t` is a regex. Parentheses and
-brackets in a `describe` title become regex groups and can match **nothing** —
-which surfaces as `0 passed` / "no run", not a failure. Keep boundary-oracle
-titles free of regex metacharacters.
+The analysis is cheap AST work (the `typescript` compiler API; no runner), so it
+runs even under `--fast`. It deliberately does **not** reuse `config.ignore` when
+hunting for test files — projects commonly exclude their test dir from the spec
+graph, and that's exactly where the oracles live; only true build/VCS noise dirs are
+skipped. Unknown identifiers (params, closure vars) classify as LIVE — the analyzer
+is conservative and never false-fails.
 
-**`decompose` / `drift` are degenerate with a single node.** LOCALITY reads a
+### The #1 footgun: live-rooted ≠ the right, complete domain
+
+**The meta-oracle checks the iteration ROOT is live-derived — it does NOT check the
+domain is COMPLETE.** The canonical failure:
+
+```ts
+// PASSES the meta-oracle: the root `app.routes` is live (imported binding).
+// But the EFFECTIVE domain is a hand-list hidden in the filter predicate —
+// every route outside PUBLIC and "…" is silently uncovered.
+for (const r of app.routes.filter(r => PUBLIC.has(r) || r === "…")) {
+  // assert …
+}
+```
+
+This oracle is live-rooted (the analyzer peels `.filter` down to `app.routes`), so
+`via test` goes green — while the predicate quietly narrows the domain to a
+hand-list. A whole class of elements is uncovered and nothing is red. This is a real
+failure mode, not a theoretical one: **do not mistake a passing `via test` for a
+proof of totality.** The pattern that actually prevents it is in the next section.
+
+Two related honest limits, also from the code:
+
+- **Vacuous-if-empty.** A LIVE domain that silently shrinks to zero (a schema
+  projection whose shape changed, a registry that collapsed) makes the loop range
+  over nothing and pass vacuously. The analyzer detects a **floor** assertion
+  (`expect(domain.length).toBeGreaterThanOrEqual(n)`, or a bare `.length >= n`) and
+  *annotates* a live oracle without one ("no domain floor (vacuous if the domain
+  empties)") — but the annotation is advisory; it does not fail the claim. Write the
+  floor.
+- **Anatomy, not semantics.** The meta-oracle proves the oracle *iterates a live
+  domain*. It **cannot** prove the oracle exercises the real enforcement rather than
+  a *correlate* of it. An oracle can loop a live domain, pass every static check,
+  and still assert a proxy — e.g. a unit test with a fake DB that asserts the owner
+  argument was *passed*, while the SQL predicate that actually filters the rows has
+  been deleted. `oracle → meta-oracle` are both static; a proxy fools both. The
+  answer is perturbation (see the checklist below).
+
+## Uniform vs non-uniform domains — the pattern that prevents the footgun
+
+Before writing an oracle, ask: **is every element of the live domain in scope for
+this invariant, or only some?**
+
+**UNIFORM** — every element is in scope ("every route must 401 without a token",
+"every kernel table is classified"). A single loop over the whole live set is
+genuinely total:
+
+```ts
+describe("auth totality", () => {
+  for (const r of app.routes) {
+    it(`${r.path} rejects an unauthenticated request`, async () => { /* … */ });
+  }
+});
+```
+
+No filter, no carve-outs. If an element genuinely can't be asserted uniformly, that
+is the signal your domain is not uniform — do not reach for `.filter`.
+
+**NON-UNIFORM** — only SOME elements are in scope ("these routes are metered, those
+aren't"; "these tables sync, those are local"). A single loop **cannot self-certify
+completeness** — any filter/carve-out re-introduces the hand-list. You need
+**double-entry**: declare the classification as *data* (one home), then check it
+against the live domain in **both directions** — every live element is classified,
+and every classification is live:
+
+```ts
+import { METERED, UNMETERED } from "../src/billing/classification"; // data, one home
+import { app } from "../src/app";
+
+describe("metering classification totality", () => {
+  const live = new Set(app.routes.map((r) => r.path));
+  it("every live route is classified", () => {
+    for (const r of live) assert.ok(METERED.has(r) || UNMETERED.has(r), r);
+  });
+  it("every classification is live", () => {
+    for (const r of [...METERED, ...UNMETERED]) assert.ok(live.has(r), r);
+  });
+  it("the domain has a floor", () => {
+    assert.ok(live.size >= 10); // collapse-to-empty fails loud, not vacuously
+  });
+});
+```
+
+The chokepoint then *derives* its behavior from the same classification data — one
+home, both the code and the oracle reading it.
+
+Honest note: even double-entry only reduces the residual question to **"is the live
+source you named genuinely the complete domain?"** If `app.routes` is not actually
+where every route registers, no oracle over it can save you. That last step stays
+human judgment — name your SSOT deliberately.
+
+## Authoring a boundary — the checklist
+
+To add `boundary "<inv>" at <chokepoint> via test|guard "<oracle>"`:
+
+1. **Name the invariant** in the spec's `## invariants` list. The coverage gate now
+   refuses the spec until a `boundary` claim anchors it — that refusal is the
+   ratchet.
+2. **Put the chokepoint where the invariant is *about*** — the one symbol all paths
+   to the protected thing cross (a required flag, a registry read, a factory), not
+   the convenient layer. The claim fails until the symbol exists in the code graph.
+3. **Give it a fail-closed default** — the unclassified/unrouted case resolves to
+   the safe state, so forgetting to update the declaration is *safe*.
+4. **Write the oracle over the LIVE domain** — uniform → a single loop over the
+   whole live set; non-uniform → double-entry (previous section). Name the
+   `describe` exactly what the claim says, keep the title free of regex
+   metacharacters (the runner's `-t` is a regex — parentheses become groups and can
+   match *nothing*, surfacing as "no run" rather than a failure), and add a domain
+   floor.
+5. **MANDATORY — validate by perturbation.** Break the chokepoint (revert the fix,
+   or inject the exact violation the invariant forbids), confirm the oracle goes
+   **RED**, then restore. **A green oracle can be green for the wrong reason; only a
+   confirmed red proves it enforces.** If it stays green under the violation, the
+   oracle tests a correlate — rewrite it against the real mechanism (real DB, real
+   dispatch). For an impact read rather than a spot check, inject a *fair* set —
+   in-domain violations, out-of-domain logic bugs (blind spots), benign edits (false
+   alarms) — and score which go red. Static layers stack; the injection is ground
+   truth.
+
+`coherence scaffold boundary <name>` emits the complete shape in one shot — a draft
+spec pre-wired with `## invariants`, the `boundary` claim, and the
+chokepoint/fail-closed/oracle TODOs — so the full anatomy is the cheapest thing to
+ship. `coherence scaffold invariant <name>` prints the paste-in fragments for an
+*existing* spec.
+
+**`decompose` / `drift` are degenerate with a single node** — LOCALITY reads a
 trivial 100% and SPREAD flat until the spec tree actually carves the code into
-multiple components — the three-graph agreement has nothing to disagree about yet.
+multiple components.
 
-### The meta-oracle proves anatomy, not semantics
+## `via guard` — the escape hatch, with warnings
 
-`oracle-domain.ts` proves the oracle *iterates a live domain* (not a hand-list,
-not a source-grep). It **cannot** prove the oracle exercises the real enforcement
-rather than a *correlate* of it. An oracle can loop a live domain, pass every
-static check, and still assert a proxy — e.g. a unit test with a fake DB that
-asserts the owner argument was *passed*, while the SQL predicate that actually
-filters the rows has been deleted. `oracle → meta-oracle` are both static; a
-proxy fools both.
+Some real oracles are **source-property** checks, not domain loops: "no trusted
+factory exists anywhere", "no call site constructs this type directly". These cannot
+be expressed as iteration over a live domain, so `via guard "<oracle>"` exists: the
+oracle test must still run and pass, but the meta-oracle's live-domain analysis is
+**skipped** (`src/verify.ts`, the boundary arm — the `verb === "test"` condition
+gates the `analyzeOracle` call).
 
-So **validate every boundary by perturbation, not by a green run**: revert the
-fix (or inject the exact violation the invariant forbids), confirm the oracle
-goes **red**, restore. If it stays green, the oracle tests a correlate — rewrite
-it against the real mechanism (real DB, real dispatch). This is the per-boundary
-form of the falsification experiment (§ anti-entropy): a boundary is only real if
-it *responds* to the perturbation it claims to forbid. For an impact read rather
-than a spot check, inject a *fair* set — in-domain violations, plus out-of-domain
-logic bugs (to measure blind spots), plus benign edits (to measure false alarms)
-— and score which go red; a green run lulls you on exactly the defects outside the
-declared boundaries. Static layers stack; the injection is ground truth.
+Two warnings:
+
+- **It can launder a hand-list.** Because `via guard` skips domain analysis, a
+  sampling oracle re-declared as a guard sails past the meta-oracle. Use it ONLY for
+  genuine source properties — if your oracle *could* be a loop over a live domain,
+  it must be `via test`. Treat every `via guard` in review as a claim that needs a
+  human eye.
+- **Write source guards as AST walks, never regexes.** A guard that greps source
+  text for a forbidden token misses aliases (`const f = trustedFactory`), computed
+  access (`obj["trusted" + "Factory"]`), re-exports, and string-embedded code — it
+  is theater. Walk the actual TypeScript program (the compilation surface) the way
+  `oracle-domain.ts` itself does, and assert over symbols, not strings.
 
 ## Commands
 
 - `coherence graph` — emit `graph.json` + `_graph.html` (the outline) to `outputDir`.
 - `coherence overview` — emit `_overview.html` + `AGENTS.md`.
 - `coherence docs` — both. `--check` fails if any artifact is stale (for CI/pre-commit).
+- `coherence claude` — regenerate the owned fenced block inside CLAUDE.md
+  (see "Generated artifacts" below). `--check` fails if the block is stale or the
+  markers are missing.
 - `coherence verify` — run claims, the narrative evidence chain, and coverage.
   Emits inference jobs (`.coherence/verify-jobs.json`) for a subagent on change;
-  `--apply <verdicts>` records the subagent's verdicts; `--fast` skips live claims.
+  `--apply <verdicts>` records the subagent's verdicts; `--fast` skips the
+  live/executable tiers (see "The verify loop" below).
   `--staged` (working changes vs HEAD + untracked) or `--since <ref>` **scopes** the
   run to the components whose dirs changed — fast edit-loop reconciliation of just what
   you touched (claims + boundary anchoring + coverage), instead of the whole tree.
@@ -192,6 +427,14 @@ declared boundaries. Static layers stack; the injection is ground truth.
     so the three pieces land in lockstep instead of as orphaned prose.
 - `coherence onboard` — bootstrap a repo with no specs: derive structure, suggest a
   decomposition, and emit why-from-history jobs. Output is proposals to review.
+- `coherence lint-sinks [--check | --update-baseline]` — interpolation-surface
+  ratchet (raw SQL-identifier / HTML sinks). Mechanism in the harness; SAFE patterns
+  + scoped `sources` in config; baseline in `<outputDir>/sinks-baseline.json`.
+- `coherence conventions [--check | --update-baseline]` — guard-vs-contract detector
+  + growth ratchet: a load-bearing guard at N sites with no boundary contract is a
+  convention crossing; the baseline makes the set append-only-with-review.
+- `coherence atlas [--check]` — trust-graded manifold render + drift gate; tiers
+  derived from boundary claims, charts/crossings from `config.atlas`.
 - `coherence why-lint` — the **`## why` discipline**, two advisory checks against the
   graph the harness already holds:
   1. **mechanism-restatement** — a sentence that names an anchored chokepoint/oracle
@@ -208,6 +451,129 @@ declared boundaries. Static layers stack; the injection is ground truth.
   than the wrong one (character count, which would flatten the load signal — a spec
   carrying thirteen boundaries earns more bytes than one carrying one). `--check` exits
   nonzero on a finding; otherwise advisory.
+
+## The verify loop + verdict flow
+
+`coherence verify` runs in two tiers:
+
+- **`--fast` (the deterministic tier)** — structural claims (`exists`, `imports`),
+  `typechecks`, boundary **anchoring** + chokepoint-symbol resolution + the
+  **meta-oracle** (static AST analysis — it runs even under `--fast`), the coverage
+  gates, and the narrative evidence hashing. No test runner, no network. This is the
+  pre-commit tier.
+- **the full run (the live tier)** — everything above **plus** `responds` probes
+  (needs the server up; unreachable = skip), `passes test` runs, and boundary-oracle
+  test runs. This is the outer-loop / CI tier.
+
+### The narrative evidence chain
+
+`narrative.json` (at the project root) holds prose statements pinned to evidence
+files (`"evidence": ["file:src/x.ts", …]`). On every run, verify hashes each
+statement's evidence; when the hash differs from the statement's `verifiedHash`, the
+statement flips to `pending` and a `verify-statement` job is emitted — a code change
+automatically flags every narrative statement whose evidence it touched. Missing
+evidence files flip the statement to `broken`, which is a hard failure.
+
+Jobs land in **`.coherence/verify-jobs.json`** in three groups: VERIFY (judge if the
+statement still holds against the changed evidence), GENERATE (derivable — missing
+claims/docblocks; write into source and re-run), AUTHOR (a missing `## why` — NOT
+derivable; do not fabricate; needs a human/attested author).
+
+A subagent (or you) resolves the VERIFY jobs by writing
+**`.coherence/verify-verdicts.json`** — the exact shape `applyVerdicts`
+(`src/verify.ts`) reads:
+
+```json
+[
+  { "id": "n1", "supported": true, "reason": "still holds" },
+  { "id": "n2", "supported": false, "reason": "the retry limit moved to config",
+    "corrected": "Retries are bounded by config.maxRetries (default 3)." }
+]
+```
+
+Then apply:
+
+```sh
+coherence verify --apply .coherence/verify-verdicts.json
+```
+
+`supported: true` re-pins the statement to the current evidence hash (`status: ok`).
+`supported: false` marks it `drifted` with `reason` as the drift note and the
+optional `corrected` text as the suggested replacement — and exits nonzero until the
+narrative is fixed. The judge (whoever wrote the verdicts) and the notary (the
+harness recording them) are deliberately separate — axiom #5.
+
+### The two enforcement points
+
+Wire the fast tier as a pre-commit governor and mirror the full tier in CI. The
+harness ships no hook files — the consuming project owns this wiring, e.g.:
+
+```sh
+# .hooks/pre-commit  (then: git config core.hooksPath .hooks)
+coherence verify --fast --staged && coherence docs --check && coherence claude --check
+```
+
+CI runs the full thing: `coherence verify` (live tier, server up if you use
+`responds`), `coherence docs --check`, `coherence claude --check`, plus whichever
+ratchets the project has adopted (`conventions --check`, `lint-sinks --check`,
+`atlas --check`, `log --strict`). Both points need **Node ≥22**.
+
+## Generated artifacts: what coherence owns vs what stays authored
+
+| Artifact | Ownership | Regenerated by | Freshness gate |
+| --- | --- | --- | --- |
+| `<outputDir>/graph.json`, `_graph.html` | fully owned | `coherence graph` (or `docs`) | `graph --check` / `docs --check` |
+| `<outputDir>/_overview.html`, `AGENTS.md` | fully owned | `coherence overview` (or `docs`) | `overview --check` / `docs --check` |
+| `CLAUDE.md` | **two-zone** — one owned fenced block; everything outside stays authored | `coherence claude` | `claude --check` |
+
+**Never hand-edit the owned regions** — the next regeneration clobbers them, and
+`--check` fails CI on the drift in the meantime. The `--check` comparison normalizes
+volatile fields (timestamps, the absolute checkout path, symbol line numbers) so it
+fails only on real structural drift, not clock/machine/line churn.
+
+The CLAUDE.md contract (`src/render-claude.ts`): the owned block sits between the
+exact markers
+
+```
+<!-- coherence:begin -->
+…generated component map + invariants→chokepoint→oracle table…
+<!-- coherence:end -->
+```
+
+`coherence claude` splices a fresh block between them and preserves everything
+outside (your why-essays, conventions, doctrine — the WHY, which the graph cannot
+derive). If the markers are absent it **refuses to touch the file** and prints the
+marker pair to add — opting in is explicit. `config.claudeMdPath` moves the splice
+target (e.g. a repo-root CLAUDE.md above a sub-package). The generated invariants
+table is rendered from every `boundary … via (test|guard)` claim, parsed by the
+single `BOUNDARY_RE` in `src/boundary.ts` (shared by `verify`, `structural`, and
+`render-claude` — one home for the grammar).
+
+## Known limits (read this section; it is the point)
+
+- **The meta-oracle is necessary, not sufficient.** It proves the oracle's iteration
+  root is live-derived — NOT that the effective domain is complete
+  (`app.routes.filter(r => PUBLIC.has(r) || r === "…")` passes while covering a
+  hand-list), NOT that the domain is non-empty (the floor annotation is advisory),
+  and NOT that the assertion exercises the real mechanism rather than a correlate.
+  Perturbation (break it, watch it go red, restore) is the only ground truth.
+- **`via guard` skips domain analysis entirely.** A genuine escape hatch for source-
+  property oracles — and therefore a laundering channel for hand-lists dressed as
+  guards. Review every `via guard` by hand; write guards as AST walks, never source
+  regexes.
+- **Coherence checks DECLARED invariants.** Nothing enforces `exists ⇒ declared`: an
+  invariant your code depends on but no spec names is invisible to every gate here.
+  Declaring the right invariants is your discipline; `conventions` and `onboard`
+  help surface candidates, but the declaration is on you.
+- **It verifies claims PASS, not that they're the RIGHT claims.** A spec full of
+  green trivialities is coherent and worthless. Human attestation of the claim set —
+  judge ≠ notary — is axiom #5, and it is not automatable.
+- **An unrecognized claim line skips, it doesn't fail.** The dialect gap keeps the
+  harness language-agnostic, but it means a typo'd verb is a silent no-op — watch
+  the `skipped` count.
+- **The wrong call is still expressible.** Coherence can require the chokepoint
+  exists and its oracle holds; only the type system can make routing *around* the
+  chokepoint unrepresentable. Tier-2 machinery is not tier-1.
 
 ## The two documentation fields
 
