@@ -11,6 +11,7 @@ import { spawnSync } from "node:child_process";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, relative, resolve } from "node:path";
+import { parseBoundary, type Boundary } from "./boundary.ts";
 import { loadConfig } from "./config.ts";
 import { buildGraph } from "./derive.ts";
 import { ownerOf } from "./walk.ts";
@@ -41,9 +42,7 @@ export function affectedComponents(graph: Graph, files: Set<string>): Set<string
 const git = (args: string[], cwd: string) =>
   spawnSync("git", args, { cwd, encoding: "utf8" });
 
-const BOUNDARY_RE = /^boundary\s+"([^"]+)"\s+at\s+(\S+)(?:\s+via (test|guard)\s+"([^"]+)")?$/;
-
-export interface Boundary { inv: string; chokepoint: string; verb: string; oracle: string; }
+export type { Boundary } from "./boundary.ts";
 interface Ledger {
   label: string;
   invariants: Set<string>;
@@ -55,8 +54,8 @@ function ledgerOf(node: GraphNode): Ledger {
   const boundaries = new Map<string, Boundary>();
   const claims = new Set<string>();
   for (const c of node.claims ?? []) {
-    const m = BOUNDARY_RE.exec(c);
-    if (m) boundaries.set(m[1], { inv: m[1], chokepoint: m[2], verb: m[3] ?? "", oracle: m[4] ?? "" });
+    const b = parseBoundary(c);
+    if (b) boundaries.set(b.inv, b);
     else claims.add(c);
   }
   return {

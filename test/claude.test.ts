@@ -89,3 +89,26 @@ test("renderClaude — emits a fenced block carrying the boundary table derived 
   const spliced = spliceBlock(host, block);
   assert.match(spliced!, /intro[\s\S]*kernel write[\s\S]*outro/);
 });
+
+test("renderClaude — a `via guard` boundary appears in the invariants table with its oracle (grammar is via (test|guard), not test-only)", () => {
+  // Regression pin: render-claude once carried a private BOUNDARY_RE that matched
+  // `via test` ONLY, so guard-anchored boundaries silently vanished from the table
+  // AND the boundary-claim count. The shared grammar in src/boundary.ts fixes both.
+  const g = graph([
+    comp(".", {
+      label: "Hive",
+      intent: "the durable object",
+      claims: [
+        'boundary "kernel write" at executeMutate via test "write totality"',
+        'boundary "no trusted factory" at makeCapability via guard "no trusted factory exists"',
+      ],
+    }),
+    sym("executeMutate"),
+    sym("makeCapability"),
+  ]);
+  const block = renderClaude(g, "2026-07-05");
+  // the guard boundary renders as a full table row: invariant | component | chokepoint | oracle
+  assert.match(block, /\| no trusted factory \| Hive \| `makeCapability` \| `no trusted factory exists` \|/);
+  // and the derived count includes BOTH boundary claims
+  assert.match(block, /2 boundary claims/);
+});

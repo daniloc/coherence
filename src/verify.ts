@@ -6,6 +6,7 @@ import { join } from "node:path";
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import type { Config, Graph } from "./types.ts";
+import { BOUNDARY_RE } from "./boundary.ts";
 import { analyzeOracle } from "./oracle-domain.ts";
 import { ownerOf } from "./walk.ts";
 
@@ -84,7 +85,7 @@ export async function runVerify(cfg: Config, graph: Graph, opts: { fast?: boolea
     //               in oracle-domain.ts checks this — a literal/source-grep oracle FAILS).
     //   via guard — a SOURCE-PROPERTY oracle (e.g. "no trusted factory exists anywhere"),
     //               which can't be a domain loop; exempt from the live-domain requirement.
-    if ((m = /^boundary\s+"([^"]+)"\s+at\s+(\S+)(?:\s+via (test|guard)\s+"([^"]+)")?$/.exec(claim))) {
+    if ((m = BOUNDARY_RE.exec(claim))) {
       const inv = m[1], sym = m[2], verb = m[3], test = m[4];
       let set = anchored.get(node); if (!set) { set = new Set(); anchored.set(node, set); } set.add(inv);
       if (!graph.nodes.some((n) => n.kind === "symbol" && n.label === sym)) return mk("fail", `chokepoint symbol "${sym}" not found in the code graph`);
