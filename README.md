@@ -125,7 +125,7 @@ Full (every field the `Config` interface in `src/types.ts` accepts; defaults fro
 | `testDir` | `"__tests__"` | Path substring identifying test files for the ratchet scans. |
 | `conventions` | unset | `guardVerb` (regex for guard-function NAMES), `seed` (extra guard names), `dismissed` (guard → why it's covered elsewhere). |
 | `sinks` | unset | `safeSql`/`safeHtml` — regexes for interpolation expressions that are SAFE by construction. |
-| `atlas` | unset | Trust-manifold data: `charts` (trust domain → description), `transitions` (chokepoint symbol → crossing), `nonTransition` (within-chart boundaries), `knownPending` (mapped symbols tolerated as not-yet-in-source). |
+| `atlas` | unset | Trust-manifold data: `charts` (trust domain → description), `transitions` (chokepoint symbol → crossing; each may set `enshrined: true` — see below), `nonTransition` (within-chart boundaries), `knownPending` (mapped symbols tolerated as not-yet-in-source). A transition's `enshrined: true` is an **explicit** attestation that the illegal value at that crossing is unrepresentable (a runtime-branded capability), promoting it to tier-1 — it is NOT inferred from a claim's verb, and it MUST be backed by a `via guard` boundary claim (an `enshrined` marker with no backing guard fails `atlas --check`). |
 
 Then author `*.spec.md` files (a folder containing one is a *node*). A spec is
 `# Name`, a one-line intent, an optional `## works when` claim list, an optional
@@ -433,8 +433,13 @@ Two warnings:
 - `coherence conventions [--check | --update-baseline]` — guard-vs-contract detector
   + growth ratchet: a load-bearing guard at N sites with no boundary contract is a
   convention crossing; the baseline makes the set append-only-with-review.
-- `coherence atlas [--check]` — trust-graded manifold render + drift gate; tiers
-  derived from boundary claims, charts/crossings from `config.atlas`.
+- `coherence atlas [--check]` — trust-graded manifold render + drift/dangling/over-claim
+  gate; charts/crossings from `config.atlas`. Tier-1 (**enshrined**) is a crossing
+  explicitly marked `enshrined: true` in config AND backed by a `via guard` boundary claim
+  (the guard is the source-totality evidence the enshrinement rides on); a bare `via guard`
+  or `via test` claim is tier-2 (**totality-checked**); no governing claim is tier-3
+  (**convention**). The renderer does NOT infer unrepresentability from a claim's verb. An
+  `enshrined` marker with no backing `via guard` is an over-claim and **fails `--check`**.
 - `coherence why-lint` — the **`## why` discipline**, two advisory checks against the
   graph the harness already holds:
   1. **mechanism-restatement** — a sentence that names an anchored chokepoint/oracle

@@ -71,7 +71,7 @@ export interface Config {
   sinks?: { safeSql?: string; safeHtml?: string }; // regex (string) for interpolation exprs that are SAFE by construction
   atlas?: {
     charts: Record<string, string>;  // trust domain → description
-    transitions: Record<string, { from: string; to: string; security?: boolean; anchoredBy?: string; translates: string }>; // chokepoint symbol → the crossing it manages
+    transitions: Record<string, { from: string; to: string; security?: boolean; anchoredBy?: string; translates: string; enshrined?: true }>; // chokepoint symbol → the crossing it manages. `enshrined: true` is an EXPLICIT project attestation that the illegal value at this crossing is unrepresentable (a runtime-branded capability), not just source-checked — it promotes a crossing to tier-1. It is NOT verb-inferred: a `via guard` claim alone is only source-totality evidence (tier-2). An `enshrined` marker MUST be backed by a `via guard` boundary claim (the source-totality guard the enshrinement rides on); an enshrinement with no backing guard fails `atlas --check` (fail-closed — an empty over-claim).
     nonTransition?: Record<string, string>; // boundary chokepoints that hold WITHIN a chart (not crossings) → reason (so they aren't flagged as drift)
     knownPending?: string[];          // mapped symbols tolerated as not-yet-in-source (don't fail --check)
   };
