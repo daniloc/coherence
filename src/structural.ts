@@ -84,6 +84,21 @@ export function allBoundaries(graph: Graph): Map<string, Boundary & { component:
   return out;
 }
 
+/** EVERY boundary claim whose chokepoint is `sym` — not the single kept claim `allBoundaries`
+ *  keeps per symbol. A chokepoint can carry several claims (e.g. one `via test` and one
+ *  `via guard`); `allBoundaries` collapses them order-dependently, so any caller that must ask
+ *  an ∃/∀ question across a symbol's claims (the atlas: "is ANY claim here `via guard`?" when
+ *  grading enshrinement) has to consult the full list, not whichever claim the map happened
+ *  to keep. Returns [] when no claim anchors that symbol. */
+export function boundariesAt(graph: Graph, sym: string): Array<Boundary & { component: string }> {
+  const out: Array<Boundary & { component: string }> = [];
+  for (const n of graph.nodes)
+    if (n.kind === "component")
+      for (const b of ledgerOf(n).boundaries.values())
+        if (b.chokepoint === sym) out.push({ ...b, component: n.label });
+  return out;
+}
+
 /** Build the graph as it exists at a git ref (null = the live working tree). */
 export async function graphAtRef(cfg: Config, ref: string | null): Promise<Graph> {
   if (!ref) return buildGraph(cfg);

@@ -65,6 +65,36 @@ test("atlas — `enshrined` with NO backing via-guard claim FAILS --check (fail-
   await cleanup(root);
 });
 
+test("atlas — a chokepoint with TWO boundary claims (one via test, one via guard) renders tier-1 REGARDLESS of claim order", async () => {
+  // Two claims share the chokepoint `mintToken`: one `via test`, one `via guard`. Enshrinement
+  // is guard-backed iff ANY claim there is `via guard`, so this must render tier-1 and pass
+  // --check no matter which claim `allBoundaries` happens to keep first. Drive BOTH orders.
+  const guardClaim = 'boundary "capability" at mintToken via guard "brand totality"';
+  const testClaim = 'boundary "chat ownership" at mintToken via test "ownership check"';
+  const run = async (claims: string[]) => {
+    const { root, cfg: c } = await fixture(
+      { mintToken: { from: "untrusted", to: "trusted", security: true, enshrined: true, translates: "raw → branded capability" } },
+      ["mintToken"],
+    );
+    const g = graph([comp(".", { label: "Auth", claims, invariants: ["capability", "chat ownership"], why: "r" })]);
+    const res = await runCaptured(() => atlas(c, g, "check"));
+    await cleanup(root);
+    return res;
+  };
+  // guard-first and test-first: `allBoundaries` keeps whichever is declared first, but the
+  // tier grade must not depend on that pick.
+  const guardFirst = await run([guardClaim, testClaim]);
+  const testFirst = await run([testClaim, guardClaim]);
+  for (const [name, r] of [["guard-first", guardFirst], ["test-first", testFirst]] as const) {
+    assert.equal(r.code, 0, `${name}: two claims incl. a via-guard must pass --check`);
+    assert.match(r.out, /tier-1 · ENSHRINED \(structural — 1 crossing\)/, `${name}: renders tier-1`);
+    assert.match(r.out, /Tiers: 1 enshrined · 0 totality-checked · 0 convention/, `${name}`);
+    assert.match(r.out, /no over-claim/, `${name}: not an over-claim`);
+  }
+  // Order-independence, stated directly: the outcome is identical either way.
+  assert.equal(guardFirst.code, testFirst.code);
+});
+
 test("atlas — `enshrined` with NO boundary claim at all also fails-closed (tier-3, over-claim)", async () => {
   const { root, cfg: c } = await fixture(
     { mintToken: { from: "untrusted", to: "trusted", security: true, enshrined: true, translates: "raw → branded capability" } },

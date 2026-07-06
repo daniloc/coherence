@@ -17,7 +17,7 @@
 // derivation, the drift/dangling/over-claim checks, and the render.
 import type { Config, Graph } from "./types.ts";
 import { scanSources } from "./sidecar.ts";
-import { allBoundaries } from "./structural.ts";
+import { allBoundaries, boundariesAt } from "./structural.ts";
 import { writeFile, mkdir } from "node:fs/promises";
 import { join } from "node:path";
 
@@ -52,7 +52,12 @@ export async function atlas(cfg: Config, graph: Graph, mode: "render" | "check")
         ? { tier: 3, label: "convention", note: "MARKED enshrined but NO boundary claim", overclaim: true }
         : { tier: 3, label: "convention", note: "no boundary claim", overclaim: false };
     const via = anchoredBy && !claims.get(sym) ? ` (via ${anchoredBy})` : "";
-    const guardBacked = c.verb === "guard";
+    // Enshrinement rides on source-totality evidence: it is guard-backed iff ANY boundary
+    // claim at this chokepoint is `via guard` — NOT whichever single claim `allBoundaries`
+    // kept (that pick is spec-line-order-dependent, so a benign doc reorder could otherwise
+    // flip a legitimate tier-1 into a false over-claim). `c` still supplies the display note.
+    const claimSym = claims.get(sym) ? sym : (anchoredBy as string);
+    const guardBacked = boundariesAt(graph, claimSym).some((b) => b.verb === "guard");
     if (enshrined && guardBacked) return { tier: 1, label: "enshrined", note: c.oracle + via, overclaim: false };
     if (enshrined)
       // marked enshrined but the backing claim is `via test`, not `via guard` — no source-

@@ -440,6 +440,14 @@ Two warnings:
   or `via test` claim is tier-2 (**totality-checked**); no governing claim is tier-3
   (**convention**). The renderer does NOT infer unrepresentability from a claim's verb. An
   `enshrined` marker with no backing `via guard` is an over-claim and **fails `--check`**.
+  What `--check` verifies is only that an `enshrined` crossing HAS a backing `via guard`
+  claim — it does **not** verify the crossing is genuinely a runtime-branded capability
+  whose illegal value cannot be constructed (that is not statically decidable from the
+  claim). So a consuming project should **reconcile** its atlas `enshrined` set against its
+  own tier authority — e.g. a tier-gate that grades tier-1 structurally from a capability
+  list — with a double-entry check: the atlas `enshrined` set must **equal** the gate's
+  tier-1 set, and drift in either direction (an enshrined crossing the gate does not grade,
+  or a gate tier-1 the atlas does not enshrine) is a red.
 - `coherence why-lint` — the **`## why` discipline**, two advisory checks against the
   graph the harness already holds:
   1. **mechanism-restatement** — a sentence that names an anchored chokepoint/oracle
