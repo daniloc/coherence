@@ -156,7 +156,7 @@ if (cmd === "graph") {
   // what you touched, instead of the whole tree.
   let only: Set<string> | undefined;
   if (argv.includes("--staged") || since) {
-    only = affectedComponents(graph, changedFiles(cfg, since));
+    only = await affectedComponents(cfg, graph, changedFiles(cfg, since));
     if (!only.size) { console.log(`verify (scoped): no changed files map to a component — nothing to check.`); await exit(0); }
     console.log(`verify (scoped to ${only.size} changed component(s)): ${[...only].join(", ")}`);
   }

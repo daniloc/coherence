@@ -8,13 +8,14 @@
 // silently-rewired chokepoint is the diff a prose review misses. `--strict` turns
 // a LOSS (an invariant or boundary anchor removed) into a nonzero exit.
 import { spawnSync } from "node:child_process";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, readFile, readdir, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, relative, resolve } from "node:path";
 import { parseBoundary, type Boundary } from "./boundary.ts";
 import { loadConfig } from "./config.ts";
 import { buildGraph } from "./derive.ts";
 import { ownerOf } from "./walk.ts";
+import { CONFORMS_RE, dictionaryDir, parseWord } from "./phrasebook.ts";
 import type { Config, Graph, GraphNode } from "./types.ts";
 
 /** Files changed vs `since` (a ref), or — when null — the working tree vs HEAD
@@ -30,12 +31,67 @@ export function changedFiles(cfg: Config, since: string | null): Set<string> {
   ]);
 }
 
+/** The word a changed path names, if it is a `<dictionary>/<Word>.md` file (else null).
+ *  Word files are flat basenames directly under the dictionary dir. */
+function wordOfPath(f: string, dictDir: string): string | null {
+  const norm = f.replace(/\\/g, "/");
+  const prefix = dictDir.replace(/\/+$/, "") + "/";
+  if (!norm.startsWith(prefix)) return null;
+  const m = /^([A-Za-z][A-Za-z0-9_-]*)\.md$/.exec(norm.slice(prefix.length));
+  return m ? m[1] : null;
+}
+
+/** Given a set of directly-changed words, the transitive closure of words affected by the
+ *  edit: a word whose commitments `conforms to` an affected word is itself affected (a nested
+ *  reference means an edit to the inner word propagates through the outer word to its
+ *  conformers). Reads the CURRENT dictionary — the same tree the graph and verify see. */
+async function affectedWords(cfg: Config, changed: Set<string>): Promise<Set<string>> {
+  const dir = join(cfg.root, dictionaryDir(cfg));
+  let files: string[] = [];
+  try { files = (await readdir(dir)).filter((f) => f.endsWith(".md")); } catch { /* no dictionary */ }
+  const refs = new Map<string, Set<string>>(); // word → words it conforms-to (its commitments)
+  for (const f of files) {
+    const base = f.replace(/\.md$/, "");
+    const w = parseWord(await readFile(join(dir, f), "utf8").catch(() => ""));
+    const set = new Set<string>();
+    for (const c of w?.commitments ?? []) { const m = CONFORMS_RE.exec(c); if (m) set.add(m[1]); }
+    refs.set(base, set);
+  }
+  const out = new Set(changed);
+  for (let grew = true; grew; ) {
+    grew = false;
+    for (const [word, set] of refs) {
+      if (out.has(word)) continue;
+      for (const r of set) if (out.has(r)) { out.add(word); grew = true; break; }
+    }
+  }
+  return out;
+}
+
 /** Map changed files to the component dirs that own them (the deepest spec'd
- *  ancestor — same ownership rule the graph uses). */
-export function affectedComponents(graph: Graph, files: Set<string>): Set<string> {
+ *  ancestor — same ownership rule the graph uses). A changed dictionary word file does NOT
+ *  map to its owning dir (the root, spuriously) — it maps to every component that `conforms
+ *  to` that word (transitively through nested word references), so a word edit re-verifies
+ *  the CONFORMERS it actually propagates to, not the dictionary's accidental container. */
+export async function affectedComponents(cfg: Config, graph: Graph, files: Set<string>): Promise<Set<string>> {
   const dirs = graph.nodes.filter((n) => n.kind === "component").map((n) => n.id.slice(2));
+  const dictDir = dictionaryDir(cfg);
   const hit = new Set<string>();
-  for (const f of files) hit.add(ownerOf(f, dirs));
+  const changedWords = new Set<string>();
+  for (const f of files) {
+    const w = wordOfPath(f, dictDir);
+    if (w) changedWords.add(w);
+    else hit.add(ownerOf(f, dirs));
+  }
+  if (changedWords.size) {
+    const words = await affectedWords(cfg, changedWords);
+    for (const n of graph.nodes)
+      if (n.kind === "component")
+        for (const cl of n.claims ?? []) {
+          const m = CONFORMS_RE.exec(cl);
+          if (m && words.has(m[1])) { hit.add(n.id.slice(2)); break; }
+        }
+  }
   return hit;
 }
 

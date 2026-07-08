@@ -6,7 +6,7 @@
 // every form (the README's generated authority).
 import test from "node:test";
 import assert from "node:assert/strict";
-import { CLAIM_FORMS, parseWord } from "../src/phrasebook.ts";
+import { CLAIM_FORMS, parseWord, reEscape } from "../src/phrasebook.ts";
 
 test("registry — order IS the historical precedence (typechecks → conforms to)", () => {
   assert.deepEqual(
@@ -66,4 +66,13 @@ test("parseWord — heading + intent + commitments; markdown escapes stripped", 
 test("parseWord — no heading, or no `## commitments` section, is unparseable (null → RED)", () => {
   assert.equal(parseWord("just prose, no heading"), null);
   assert.equal(parseWord("# Word\nan intent but no commitments section"), null);
+});
+
+test("reEscape — regex metacharacters in a runner name are escaped to match literally", () => {
+  // The runner's `-t <name>` is a regex; a name with `+`/parens must match the literal string.
+  const name = "Patient send + transcript (v2)";
+  const escaped = reEscape(name);
+  assert.ok(new RegExp(escaped).test(name), "escaped name matches its own literal");
+  // Every metacharacter is backslash-prefixed; the raw name would compile to a different pattern.
+  assert.equal(escaped, "Patient send \\+ transcript \\(v2\\)");
 });

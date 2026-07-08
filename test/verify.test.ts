@@ -5,6 +5,7 @@
 // silently stays green" specifically broke and that this rule exists to catch.
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { join } from "node:path";
 import { runVerify } from "../src/verify.ts";
 import { tmpProject, cleanup, runCaptured, cfg, comp, sym, graph } from "./_helpers.ts";
 
@@ -38,6 +39,22 @@ test("structural — `imports` checks the source actually imports the module", a
   await withProject({ "a.ts": "const x = 1;\n" }, async (root) => {
     const badG = graph([comp(".", { claims: ["a.ts imports ./b"], why: "r" })]);
     assert.equal((await runCaptured(() => runVerify(cfg(root), badG, {}))).code, 1);
+  });
+});
+
+test("passes test — a claim name with regex metacharacters (+ and parens) is escaped so it matches literally", async () => {
+  // The runner receives the name as its `-t` arg and treats it as a REGEX. Our fake runner
+  // builds `new RegExp(argv[2])` and tests it against the LITERAL name: it passes (exit 0)
+  // only if the harness escaped the metacharacters — an unescaped `(name)`/`+` would compile
+  // to a different pattern that does NOT match the literal string (exit 1, a false failure).
+  const HAYSTACK = "the (name) with + here";
+  const runner = `const re = new RegExp(process.argv[2]); process.exit(re.test(${JSON.stringify(HAYSTACK)}) ? 0 : 1);`;
+  await withProject({ "runner.js": runner }, async (root) => {
+    const g = graph([comp(".", { claims: [`passes test "${HAYSTACK}"`], why: "r" })]);
+    const r = await runCaptured(() =>
+      runVerify(cfg(root, { typecheck: ["true"], test: ["node", join(root, "runner.js")] }), g, { fast: false }));
+    assert.equal(r.code, 0, r.out);
+    assert.match(r.out, /1 green/);
   });
 });
 

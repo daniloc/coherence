@@ -143,9 +143,11 @@ an ordered list of forms where **first match wins** (the order IS the precedence
 is SKIPPED** (`no verifier (dialect gap)`) — it never goes red. A typo'd verb is
 therefore a silent no-op; check verify's `skipped` count after authoring claims.
 
-**The table below is generated** — run `coherence phrasebook` to print it straight
-from the registry. It is reproduced here for convenience; the registry is the
-authority (the two cannot drift because the verb prints the source of truth).
+**`coherence phrasebook` is the generated authority** — it prints the table straight
+from the `CLAIM_FORMS` registry, so it never lies about the current grammar. The table
+below is a hand-maintained convenience copy: nothing compares it against the registry,
+so it *can* drift. When the two disagree, the verb (and the registry behind it) wins —
+run `coherence phrasebook` to see the source of truth.
 
 | Claim | Grammar | Tier | Example |
 | --- | --- | --- | --- |
@@ -394,10 +396,12 @@ To add `boundary "<inv>" at <chokepoint> via test|guard "<oracle>"`:
    the safe state, so forgetting to update the declaration is *safe*.
 4. **Write the oracle over the LIVE domain** — uniform → a single loop over the
    whole live set; non-uniform → double-entry (previous section). Name the
-   `describe` exactly what the claim says, keep the title free of regex
-   metacharacters (the runner's `-t` is a regex — parentheses become groups and can
-   match *nothing*, surfacing as "no run" rather than a failure), and add a domain
-   floor.
+   `describe` exactly what the claim says (the meta-oracle matches it as an *exact*
+   string, so that title must be literal), and add a domain floor. The harness now
+   **regex-escapes** the claim/oracle name before passing it to the runner's `-t`, so
+   a title with `+` or parentheses matches literally instead of silently matching
+   nothing — the only remaining constraint is whatever regex your own `config.testMatch`
+   imposes on the runner's *output*.
 5. **MANDATORY — validate by perturbation.** Break the chokepoint (revert the fix,
    or inject the exact violation the invariant forbids), confirm the oracle goes
    **RED**, then restore. **A green oracle can be green for the wrong reason; only a
@@ -657,6 +661,25 @@ single `BOUNDARY_RE` in `src/boundary.ts` (shared by `verify`, `structural`, and
 - **The wrong call is still expressible.** Coherence can require the chokepoint
   exists and its oracle holds; only the type system can make routing *around* the
   chokepoint unrepresentable. Tier-2 machinery is not tier-1.
+- **Dictionary words are parameterless (v1), so most commitments are GLOBAL, not
+  node-relative.** A word's `typechecks` / `passes test` commitments assert the same
+  global fact no matter which node conforms — so the conformer list is *documentation,
+  not discrimination*: a node can `conforms to` a word whose pattern it doesn't actually
+  use and still verify green (the commitments pass for reasons unrelated to that node).
+  Only node-relative forms (`exists at this node`, `imports`) genuinely vary per
+  conformer. Read a green `conforms to` as "these commitments hold," not "this node
+  embodies the pattern."
+- **`conforms to`'s red-not-skip guarantee begins only AFTER the verb matches exactly.**
+  The contract semantics (a broken reference or a typo'd commitment goes red, not skip)
+  apply to a `conforms to <Word>` line the harness *recognized*. A malformed line —
+  trailing punctuation, wrong casing, a stray word — matches no claim form at all, so it
+  is a silent dialect-gap skip like any other unrecognized free-form claim. Watch the
+  `skipped` count after authoring a `conforms to`; a typo in the verb itself vanishes.
+- **A word with unrunnable commitments reports SKIPPED, not green.** Under `--fast` (or
+  with no test runner configured), a word whose commitments include `passes test` makes
+  the whole `conforms to` claim a **skip** — it lands in verify's skipped tally, not the
+  green count, so a word can't launder to "coherent" having run none of its commitments.
+  Run the full tier to certify a word.
 
 ## The two documentation fields
 

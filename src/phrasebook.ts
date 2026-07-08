@@ -90,7 +90,14 @@ const MAX_CONFORMS_DEPTH = 16;
 /** A dictionary word plus the components that `conforms to` it — for the overview render. */
 export interface DictEntry { word: string; intent: string; conformers: string[] }
 
-const CONFORMS_RE = /^conforms to\s+([A-Za-z][A-Za-z0-9_-]*)$/;
+/** The `conforms to <Word>` grammar — SINGLE HOME. Consumed by the claim form's `match`,
+ *  the dictionary cross-reference in `loadDictionary`, and the `--staged`/`--since` word-edit
+ *  propagation scope in structural.ts. Capture group 1 is the word token. */
+export const CONFORMS_RE = /^conforms to\s+([A-Za-z][A-Za-z0-9_-]*)$/;
+
+/** Regex-escape a string so it matches literally when interpolated into a RegExp or passed
+ *  to a test runner whose `-t <name>` treats the arg as a regex (vitest, jest). */
+export const reEscape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 /** Scan the dictionary dir + cross-reference the graph's `conforms to` claims. Empty when
  *  the project has no dictionary dir (so the overview's Dictionary section is omitted). */
@@ -171,7 +178,10 @@ export const CLAIM_FORMS: ClaimForm[] = [
     evaluate: (ctx, m) => {
       if (ctx.fast) return { kind: "skip", detail: "executable tier (--fast)" };
       if (!ctx.cfg.test || !ctx.cfg.test.length) return { kind: "skip", detail: "no test runner configured (config.test)" };
-      const r = spawnSync(ctx.cfg.test[0], [...ctx.cfg.test.slice(1), m[1]], { cwd: ctx.root, encoding: "utf8", timeout: 120000 });
+      // The name is appended as the runner's `-t <name>` arg, which vitest/jest treat as a
+      // REGEX — escape it so a name with `+`/parens matches literally instead of silently
+      // matching nothing (which exit-0 runners report as a pass, not a failure).
+      const r = spawnSync(ctx.cfg.test[0], [...ctx.cfg.test.slice(1), reEscape(m[1])], { cwd: ctx.root, encoding: "utf8", timeout: 120000 });
       const out = (r.stderr || "") + (r.stdout || "");
       const tail = out.split("\n").filter(Boolean).slice(-3).join(" | ");
       // exit 0 alone is not trusted: a runner that matched zero tests (renamed/deleted)
@@ -207,7 +217,8 @@ export const CLAIM_FORMS: ClaimForm[] = [
       }
       if (ctx.fast) return { kind: "skip", detail: "boundary oracle (--fast)" };
       if (!ctx.cfg.test || !ctx.cfg.test.length) return { kind: "skip", detail: "no test runner configured (config.test)" };
-      const r = spawnSync(ctx.cfg.test[0], [...ctx.cfg.test.slice(1), test], { cwd: ctx.root, encoding: "utf8", timeout: 120000 });
+      // Same regex-arg hazard as `passes test`: escape the oracle name for the runner's `-t`.
+      const r = spawnSync(ctx.cfg.test[0], [...ctx.cfg.test.slice(1), reEscape(test)], { cwd: ctx.root, encoding: "utf8", timeout: 120000 });
       const out = (r.stderr || "") + (r.stdout || "");
       if (r.status !== 0) return { kind: "fail", detail: out.split("\n").filter(Boolean).slice(-3).join(" | ").slice(0, 200) };
       if (ctx.cfg.testMatch && !new RegExp(ctx.cfg.testMatch).test(out)) return { kind: "fail", detail: `oracle "${test}" matched no run (testMatch)` };
@@ -226,7 +237,7 @@ export const CLAIM_FORMS: ClaimForm[] = [
     // and aggregates. A word is a CONTRACT, so — unlike a free-form spec claim — a commitment
     // that matches no claim form goes RED rather than skipping, and a missing/unparseable word
     // file goes RED (the verb was recognized; a broken reference is not a dialect gap).
-    match: (l) => l.match(/^conforms to\s+([A-Za-z][A-Za-z0-9_-]*)$/),
+    match: (l) => l.match(CONFORMS_RE),
     evaluate: async (ctx, m) => {
       const word = m[1];
       if (ctx.wordStack.includes(word))
@@ -239,6 +250,9 @@ export const CLAIM_FORMS: ClaimForm[] = [
       catch { return { kind: "fail", detail: `word "${word}" not found at ${rel}` }; }
       const w = parseWord(text);
       if (!w) return { kind: "fail", detail: `word "${word}" at ${rel} is unparseable (needs a "# ${word}" heading and a "## commitments" list)` };
+      // The file basename is what `conforms to` resolves against; its `# heading` must agree,
+      // or the contract references a word that isn't the one on disk (a silent aliasing bug).
+      if (w.name !== word) return { kind: "fail", detail: `word "${word}" at ${rel} is headed "# ${w.name}" — the heading must match the file basename "${word}"` };
       const child: ClaimCtx = { ...ctx, wordStack: [...ctx.wordStack, word] };
       let green = 0, skipped = 0;
       for (const commitment of w.commitments) {
@@ -250,7 +264,12 @@ export const CLAIM_FORMS: ClaimForm[] = [
         if (r.kind === "fail") return { kind: "fail", detail: `word "${word}": commitment "${commitment}" failed${r.detail ? ` — ${r.detail}` : ""}` };
         if (r.kind === "skip") skipped++; else green++;
       }
-      return { kind: "pass", detail: `${word}: ${green} commitment${green === 1 ? "" : "s"} green${skipped ? `, ${skipped} skipped` : ""}` };
+      // A word verifies NOTHING it skipped: if any commitment was skipped (unrunnable in this
+      // tier — `--fast`, or no test runner) the claim is a SKIP, not a green pass. It lands in
+      // verify's skipped tally and skip list exactly like an inline skipped claim, so a word
+      // can't launder to coherent having run none of its commitments. A FAIL still wins above.
+      if (skipped) return { kind: "skip", detail: `${word}: ${green} green · ${skipped} skipped (not runnable in this tier)` };
+      return { kind: "pass", detail: `${word}: ${green} commitment${green === 1 ? "" : "s"} green` };
     },
   },
 ];

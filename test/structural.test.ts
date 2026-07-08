@@ -4,12 +4,19 @@
 // pure core; renderDiff returns the loss count that --strict turns into a nonzero exit.
 import test from "node:test";
 import assert from "node:assert/strict";
-import { diffGraphs, renderDiff, allBoundaries } from "../src/structural.ts";
-import { graph, comp } from "./_helpers.ts";
+import { diffGraphs, renderDiff, allBoundaries, affectedComponents } from "../src/structural.ts";
+import { graph, comp, tmpProject, cleanup, cfg } from "./_helpers.ts";
 import { runCaptured } from "./_helpers.ts";
 
 const losses = async (before: ReturnType<typeof graph>, after: ReturnType<typeof graph>) =>
   (await runCaptured(async () => renderDiff(diffGraphs(before, after), "A", "B"))).code;
+
+const word = (name: string, intent: string, commitments: string[]) =>
+  [`# ${name}`, intent, "", "## commitments", ...commitments.map((c) => `- ${c}`)].join("\n");
+const withProject = async (files: Record<string, string>, fn: (root: string) => Promise<void>) => {
+  const root = await tmpProject(files);
+  try { await fn(root); } finally { await cleanup(root); }
+};
 
 test("diffGraphs — a removed boundary anchor is recorded as a loss", () => {
   const before = graph([comp(".", { label: "Hive", claims: ['boundary "egress" at seal via test "egress totality"'], invariants: ["egress"], why: "r" })]);
@@ -54,6 +61,51 @@ test("renderDiff — counts losses (the number --strict gates on)", async () => 
   assert.equal(await losses(before, dropped), 1 + 1); // invariant removed + boundary removed
   // a no-op diff has zero losses
   assert.equal(await losses(before, before), 0);
+});
+
+test("affectedComponents — a changed dictionary word file scopes to its CONFORMERS (both), not the word's container", async () => {
+  await withProject(
+    { "dictionary/Owned.md": word("Owned", "owner scope", ["typechecks"]) },
+    async (root) => {
+      const g = graph([
+        comp("meter", { label: "Meter", claims: ["conforms to Owned"], why: "r" }),
+        comp("consumer", { label: "Consumer", claims: ["conforms to Owned"], why: "r" }),
+        comp("other", { label: "Other", claims: ["typechecks"], why: "r" }),
+      ]);
+      const scope = await affectedComponents(cfg(root), g, new Set(["dictionary/Owned.md"]));
+      assert.deepEqual([...scope].sort(), ["consumer", "meter"]);
+    },
+  );
+});
+
+test("affectedComponents — a non-dictionary change still scopes by owning component (unchanged)", async () => {
+  await withProject({}, async (root) => {
+    const g = graph([
+      comp("meter", { label: "Meter", claims: ["conforms to Owned"], why: "r" }),
+      comp("other", { label: "Other", claims: ["typechecks"], why: "r" }),
+    ]);
+    const scope = await affectedComponents(cfg(root), g, new Set(["other/thing.ts"]));
+    assert.deepEqual([...scope], ["other"]);
+  });
+});
+
+test("affectedComponents — a word edit propagates TRANSITIVELY through a nested `conforms to`", async () => {
+  await withProject(
+    {
+      "dictionary/Base.md": word("Base", "base pattern", ["typechecks"]),
+      "dictionary/Owned.md": word("Owned", "wraps base", ["conforms to Base"]),
+    },
+    async (root) => {
+      // Consumer conforms only to Owned; Owned conforms to Base. Editing Base must still reach
+      // Consumer (the inner word propagates through the outer word to its conformers).
+      const g = graph([
+        comp("consumer", { label: "Consumer", claims: ["conforms to Owned"], why: "r" }),
+        comp("other", { label: "Other", claims: ["typechecks"], why: "r" }),
+      ]);
+      const scope = await affectedComponents(cfg(root), g, new Set(["dictionary/Base.md"]));
+      assert.deepEqual([...scope], ["consumer"]);
+    },
+  );
 });
 
 test("allBoundaries — keyed by chokepoint symbol, first declaration wins", () => {

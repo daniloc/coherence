@@ -51,6 +51,58 @@ test("conforms to — a failing commitment fails the claim, naming the word + co
   );
 });
 
+test("conforms to — ALL commitments SKIPPED → the claim SKIPS (does not launder to green)", async () => {
+  await withProject(
+    { "dictionary/Runs.md": word("Runs", "runs a test", ['passes test "never runs"']) },
+    async (root) => {
+      // Under --fast a `passes test` commitment skips; the word verified NOTHING, so the claim
+      // must be a skip (tallied as skipped), not a green pass — the v0.8.0 laundering bug.
+      const g = graph([comp(".", { claims: ["conforms to Runs"], why: "r" })]);
+      const r = await runCaptured(() => runVerify(cfg(root, { typecheck: ["true"], test: ["true"] }), g, { fast: true }));
+      assert.equal(r.code, 0, r.out);
+      assert.match(r.out, /0 green · 0 red · 1 skipped/);
+      assert.match(r.out, /Runs: 0 green · 1 skipped \(not runnable in this tier\)/);
+    },
+  );
+});
+
+test("conforms to — MIXED green + skipped → SKIP, with a detail that lists both counts", async () => {
+  await withProject(
+    { "dictionary/Mix.md": word("Mix", "mixes tiers", ["typechecks", 'passes test "later"']) },
+    async (root) => {
+      const g = graph([comp(".", { claims: ["conforms to Mix"], why: "r" })]);
+      const r = await runCaptured(() => runVerify(cfg(root, { typecheck: ["true"], test: ["true"] }), g, { fast: true }));
+      assert.equal(r.code, 0, r.out);
+      assert.match(r.out, /Mix: 1 green · 1 skipped \(not runnable in this tier\)/);
+      assert.match(r.out, /0 green · 0 red · 1 skipped/);
+    },
+  );
+});
+
+test("conforms to — a FAIL still wins over a skip (an earlier skip does not mask a later failure)", async () => {
+  await withProject(
+    { "dictionary/FailWins.md": word("FailWins", "…", ['passes test "skipme"', "missing.txt exists at root"]) },
+    async (root) => {
+      const g = graph([comp(".", { claims: ["conforms to FailWins"], why: "r" })]);
+      const r = await runCaptured(() => runVerify(cfg(root, { typecheck: ["true"], test: ["true"] }), g, { fast: true }));
+      assert.equal(r.code, 1, r.out);
+      assert.match(r.out, /word "FailWins": commitment "missing\.txt exists at root" failed/);
+    },
+  );
+});
+
+test("conforms to — a word file whose `# heading` ≠ its basename is RED (naming both)", async () => {
+  await withProject(
+    { "dictionary/Mismatch.md": word("SomethingElse", "wrong heading", ["typechecks"]) },
+    async (root) => {
+      const g = graph([comp(".", { claims: ["conforms to Mismatch"], why: "r" })]);
+      const r = await runCaptured(() => runVerify(cfg(root, { typecheck: ["true"] }), g, { fast: true }));
+      assert.equal(r.code, 1, r.out);
+      assert.match(r.out, /headed "# SomethingElse".*basename "Mismatch"/);
+    },
+  );
+});
+
 test("conforms to — a MISSING word file is RED (recognized verb, broken reference — not a dialect gap)", async () => {
   await withProject({}, async (root) => {
     const g = graph([comp(".", { claims: ["conforms to Ghost"], why: "r" })]);
