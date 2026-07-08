@@ -13,6 +13,7 @@ const DEFAULTS: Omit<Config, "root"> = {
   test: [],
   language: "typescript",
   platform: null,
+  dictionary: "dictionary",
 };
 
 export async function loadConfig(root: string): Promise<Config> {

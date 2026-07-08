@@ -1,6 +1,7 @@
 // render-overview.ts — Graph → AGENTS.md (agent map) + _overview.html (human page).
 // Consumes the derived Graph only — no second walk (the duplication is gone).
 import type { Graph, GraphNode } from "./types.ts";
+import type { DictEntry } from "./phrasebook.ts";
 
 const esc = (s: unknown) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
@@ -32,7 +33,7 @@ function tree(graph: Graph): string[] {
   return out;
 }
 
-export function renderOverview(graph: Graph, stamp: string): { html: string; md: string } {
+export function renderOverview(graph: Graph, stamp: string, words: DictEntry[] = []): { html: string; md: string } {
   const comps = graph.nodes.filter((n) => n.kind === "component");
   const root = comps.find((c) => c.id === "c:.") ?? comps[0];
   const childrenOf = (pid: string) => graph.nodes.filter((n) => n.parent === pid);
@@ -59,6 +60,14 @@ export function renderOverview(graph: Graph, stamp: string): { html: string; md:
     for (const [k, v] of Object.entries(b.vars)) md.push(`- var: \`${k}\` = \`${v}\``);
     md.push("");
   }
+  if (words.length) {
+    md.push("## Dictionary", "", "> Words are patterns with commitments; a component that `conforms to <Word>` inherits them.", "");
+    for (const w of words) {
+      md.push(`### ${w.word}`);
+      if (w.intent) md.push(w.intent);
+      md.push("", `_conforms:_ ${w.conformers.length ? w.conformers.map((c) => `\`${c}\``).join(", ") : "— (no conformers yet)"}`, "");
+    }
+  }
   md.push("## Structure", "", "```", ...treeLines, "```", "");
 
   // ── html (human page) ──
@@ -77,6 +86,12 @@ export function renderOverview(graph: Graph, stamp: string): { html: string; md:
     ${b.stores.map((s) => `<tr><th>store</th><td><code>${esc(s.binding)}</code> · ${esc(s.sub)}</td></tr>`).join("")}
     ${Object.entries(b.vars).map(([k, v]) => `<tr><th>var</th><td><code>${esc(k)}</code> = <code>${esc(String(v))}</code></td></tr>`).join("")}
   </table></section>` : "";
+  const dictionaryHtml = words.length ? `<section class="card"><h2>Dictionary</h2>
+    <p class="intent">Words are patterns with commitments; a component that <code>conforms to &lt;Word&gt;</code> inherits them.</p>
+    ${words.map((w) => `<div class="word"><h3 style="text-transform:none;color:inherit;font-size:.95rem;margin:.6rem 0 .1rem">${esc(w.word)}</h3>
+      ${w.intent ? `<p class="intent" style="margin:.1rem 0">${esc(w.intent)}</p>` : ""}
+      <p class="dim" style="font-size:.8rem">conforms: ${w.conformers.length ? w.conformers.map((c) => `<code>${esc(c)}</code>`).join(", ") : "— none yet"}</p></div>`).join("")}
+  </section>` : "";
   const html = `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(graph.root)} — overview</title>
 <style>
@@ -97,6 +112,7 @@ export function renderOverview(graph: Graph, stamp: string): { html: string; md:
   <p style="color:var(--dim);font-size:.85rem">${counts.component ?? 0} components · ${counts.file ?? 0} files · ${counts.symbol ?? 0} symbols</p>
   ${comps.map(section).join("")}
   ${bindingsHtml}
+  ${dictionaryHtml}
   <section class="card"><h2>Structure</h2><pre>${esc(treeLines.join("\n"))}</pre><p style="color:var(--dim);font-size:.85rem">● marks a node (a folder with a <code>*.spec.md</code>).</p></section>
   <footer>Generated at <span id="stamp">${esc(stamp)}</span> — do not edit; run the harness.</footer>
 </body></html>

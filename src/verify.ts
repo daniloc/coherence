@@ -1,17 +1,15 @@
 // verify.ts — the coherence engine: deterministic claim verifiers + the narrative
 // evidence chain (emits inference jobs for a subagent) + coverage meta-claims
 // (what auto-generates, why is human-authored). Config-driven; consumes the Graph.
-import { readFile, writeFile, stat, mkdir } from "node:fs/promises";
+import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { join } from "node:path";
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import type { Config, Graph } from "./types.ts";
-import { BOUNDARY_RE } from "./boundary.ts";
-import { analyzeOracle } from "./oracle-domain.ts";
+import { CLAIM_FORMS, type ClaimCtx } from "./phrasebook.ts";
 import { ownerOf } from "./walk.ts";
 
 const hashOf = (s: string) => createHash("sha256").update(s).digest("hex").slice(0, 16);
-const exists = async (p: string) => { try { await stat(p); return true; } catch { return false; } };
 const jobsPath = (cfg: Config) => join(cfg.root, ".coherence", "verify-jobs.json");
 const narrPath = (cfg: Config) => join(cfg.root, "narrative.json");
 
@@ -53,75 +51,22 @@ export async function runVerify(cfg: Config, graph: Graph, opts: { fast?: boolea
     return tc;
   };
   type Sig = { kind: "pass" | "fail" | "skip"; claim: string; node: string; detail?: string };
+  // The claim grammar is a declarative registry (src/phrasebook.ts): an ordered list of
+  // ClaimForms, first match wins (the order IS the historical precedence). evalClaim is now
+  // a thin loop — build the per-claim context, find the first matching form, adapt its
+  // ClaimResult into a Sig. A line matching NO form still skips as a dialect gap. The
+  // boundary + `conforms to` forms anchor invariants via ctx.anchor so the coverage gate
+  // sees them (including boundaries reached transitively through a dictionary word).
   const evalClaim = async (claim: string, nodeDir: string, node: string): Promise<Sig> => {
-    const mk = (kind: Sig["kind"], detail?: string): Sig => ({ kind, claim, node, detail });
-    let m: RegExpExecArray | null;
-    if (/^typechecks$/.test(claim)) { const t = typecheck(); return mk(t.pass ? "pass" : "fail", t.detail); }
-    if ((m = /^(\S+)\s+exists at\s+(root|this node|every node)$/.exec(claim))) { const base = m[2] === "root" ? root : nodeDir; return mk((await exists(join(base, m[1]))) ? "pass" : "fail", `${m[1]} @ ${m[2]}`); }
-    if ((m = /^(\S+)\s+imports\s+(\S+)$/.exec(claim))) { try { const src = await readFile(join(nodeDir, m[1]), "utf8"); const re = new RegExp(`from\\s+["']${m[2].replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}["']`); return mk(re.test(src) ? "pass" : "fail", re.test(src) ? "" : `no import of ${m[2]}`); } catch { return mk("fail", `cannot read ${m[1]}`); } }
-    if ((m = /^(\S+)\s+responds\s+(\d+)(?:\s+with\s+"(.*)")?$/.exec(claim))) { if (opts.fast) return mk("skip", "live tier (--fast)"); try { const res = await fetch(m[1]); if (res.status !== Number(m[2])) return mk("fail", `got ${res.status}`); if (m[3]) { const bdy = await res.text(); if (!bdy.includes(m[3])) return mk("fail", `body missing "${m[3]}"`); } return mk("pass"); } catch { return mk("skip", "unreachable"); } }
-    // executable tier: delegate an invariant to an existing test. The spec's `works
-    // when` becomes the single front door — coherence runs the test the claim names.
-    // Slow (shells the runner), so it joins the live tier skipped under --fast.
-    if ((m = /^passes test\s+"(.+)"$/.exec(claim))) {
-      if (opts.fast) return mk("skip", "executable tier (--fast)");
-      if (!cfg.test || !cfg.test.length) return mk("skip", "no test runner configured (config.test)");
-      const r = spawnSync(cfg.test[0], [...cfg.test.slice(1), m[1]], { cwd: root, encoding: "utf8", timeout: 120000 });
-      const out = (r.stderr || "") + (r.stdout || "");
-      const tail = out.split("\n").filter(Boolean).slice(-3).join(" | ");
-      // exit 0 alone is not trusted: a runner that matched zero tests (renamed/deleted)
-      // can still exit 0. testMatch requires positive evidence the named test actually ran.
-      if (r.status !== 0) return mk("fail", tail.slice(0, 200));
-      if (cfg.testMatch && !new RegExp(cfg.testMatch).test(out)) return mk("fail", `test "${m[1]}" matched no run (testMatch)`);
-      return mk("pass");
+    const ctx: ClaimCtx = {
+      cfg, graph, root, nodeDir, node, fast: !!opts.fast, typecheck, wordStack: [],
+      anchor: (inv) => { let set = anchored.get(node); if (!set) { set = new Set(); anchored.set(node, set); } set.add(inv); },
+    };
+    for (const form of CLAIM_FORMS) {
+      const m = form.match(claim);
+      if (m) { const r = await form.evaluate(ctx, m); return { kind: r.kind, claim, node, detail: r.detail }; }
     }
-    // BOUNDARY tier — the anti-entropy ratchet. `boundary "<invariant>" at <chokepoint>
-    // [via (test|guard) "<oracle>"]` asserts the four-part anatomy of a self-enforcing
-    // boundary: the invariant is named, the chokepoint SYMBOL exists, and (if given) the
-    // oracle passes. It ANCHORS the named invariant so the coverage gate can fail any
-    // `## invariants` entry with no boundary claim. This is what makes "one chokepoint +
-    // totality oracle" a checkable PROPERTY, not a prose checklist.
-    //   via test  — a DOMAIN-totality oracle: it must iterate a LIVE domain (the META-ORACLE
-    //               in oracle-domain.ts checks this — a literal/source-grep oracle FAILS).
-    //   via guard — a SOURCE-PROPERTY oracle (e.g. "no trusted factory exists anywhere"),
-    //               which can't be a domain loop; exempt from the live-domain requirement.
-    if ((m = BOUNDARY_RE.exec(claim))) {
-      const inv = m[1], sym = m[2], verb = m[3], test = m[4];
-      let set = anchored.get(node); if (!set) { set = new Set(); anchored.set(node, set); } set.add(inv);
-      if (!graph.nodes.some((n) => n.kind === "symbol" && n.label === sym)) return mk("fail", `chokepoint symbol "${sym}" not found in the code graph`);
-      if (!test) return mk("pass", `${inv} @ ${sym} (no oracle)`);
-      // META-ORACLE — the third assertion. A `via test` oracle MUST iterate a LIVE domain
-      // (an imported registry/SSOT, a call/query result, the anchor itself) — not an array/
-      // regex literal, a same-file const array (a sampling oracle wearing the totality
-      // label), nor "no domain iteration at all" (a pure source-grep / hand-enumerated
-      // cases). Cheap AST analysis (no runner) so it runs even under --fast. The `via guard`
-      // verb is the deliberate escape hatch for a legitimate source-PROPERTY oracle ("no
-      // trusted factory exists anywhere"), which cannot be expressed as domain iteration —
-      // `via guard` skips the live-domain requirement (the runner still has to pass).
-      if (verb === "test" && cfg.oracleDomain !== false) {
-        const a = await analyzeOracle(cfg, test);
-        if (a.verdict === "literal")
-          return mk("fail", `[oracle] "${test}" iterates a LITERAL domain (${a.detail}) — a sampling oracle, not totality. Derive its domain from the live SSOT behind \`${sym}\` (or, if it is a source-property guard, declare it \`via guard\` not \`via test\`).`);
-        if (a.verdict === "no-iteration")
-          return mk("fail", `[oracle] "${test}" performs NO domain iteration (${a.detail}) — a source-grep / hand-enumerated cases, not totality. Loop the live domain behind \`${sym}\`, or — if it is a genuine source-property guard — declare it \`via guard "${test}"\` instead of \`via test\`.`);
-        // NOT-FOUND must fail, not fall through: the test RUNNER matches names as a
-        // substring/regex, so a claim anchored to an it() title (or a typo'd describe)
-        // still passes the runner while silently opting out of domain analysis — the
-        // exact muting that lets a hand-list regression ship green. `via test` means
-        // "analyzable totality"; if the describe can't be located, the claim is
-        // unverifiable as declared.
-        if (a.verdict === "not-found")
-          return mk("fail", `[oracle] "${test}" — no describe() with this EXACT title found, so the meta-oracle cannot analyze its domain (the runner alone would still pass on an it()-name match, silently skipping analysis). Anchor the claim to the oracle's exact describe title, or declare it \`passes test\`/\`via guard\` if it is not a domain totality.`);
-      }
-      if (opts.fast) return mk("skip", "boundary oracle (--fast)");
-      if (!cfg.test || !cfg.test.length) return mk("skip", "no test runner configured (config.test)");
-      const r = spawnSync(cfg.test[0], [...cfg.test.slice(1), test], { cwd: root, encoding: "utf8", timeout: 120000 });
-      const out = (r.stderr || "") + (r.stdout || "");
-      if (r.status !== 0) return mk("fail", out.split("\n").filter(Boolean).slice(-3).join(" | ").slice(0, 200));
-      if (cfg.testMatch && !new RegExp(cfg.testMatch).test(out)) return mk("fail", `oracle "${test}" matched no run (testMatch)`);
-      return mk("pass", `${inv} @ ${sym}${verb === "guard" ? " (source-property guard)" : ""}`);
-    }
-    return mk("skip", "no verifier (dialect gap)");
+    return { kind: "skip", claim, node, detail: "no verifier (dialect gap)" };
   };
 
   // `only` (verify --staged/--since) scopes the run to the components whose dirs

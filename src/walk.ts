@@ -17,7 +17,7 @@ export function splitWhy(text: string): { what: string; why: string } {
 /** Markdown formatters (markdownlint/prettier --fix) escape `_` and `*` in prose —
  *  including inside claim lines (`at \_load` → unresolvable symbol). Claims are a
  *  grammar, not prose: strip those escapes so a formatted spec still parses. */
-const unescapeMd = (s: string) => s.replace(/\\([_*])/g, "$1");
+export const unescapeMd = (s: string) => s.replace(/\\([_*])/g, "$1");
 
 export function parseSpec(text: string): ParsedSpec {
   const lines = text.split("\n");

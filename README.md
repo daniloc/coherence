@@ -95,6 +95,7 @@ Full (every field the `Config` interface in `src/types.ts` accepts; defaults fro
   "language": "typescript",
   "platform": "cloudflare",
   "claudeMdPath": "../CLAUDE.md",
+  "dictionary": "dictionary",
   "sources": ["src"],
   "testDir": "__tests__",
   "components": [{ "name": "billing", "files": ["src/billing/**"] }],
@@ -121,6 +122,7 @@ Full (every field the `Config` interface in `src/types.ts` accepts; defaults fro
 | `platform` | `null` | Platform adapter key, or null. |
 | `components` | unset | Sub-component overrides for `decompose`/`drift` co-change analysis ONLY (globs relative to root; first match wins). The spec graph, verify, and coverage are untouched. |
 | `claudeMdPath` | `"CLAUDE.md"` | Path to the CLAUDE.md whose fenced block `coherence claude` owns. May be `../`-relative to escape the coherence root (repo-root CLAUDE.md above a sub-package). |
+| `dictionary` | `"dictionary"` | Dir (relative to the coherence root) holding the pattern dictionary — one `<Word>.md` per word. A `conforms to <Word>` claim expands the word's commitments against the declaring component. A project with no such dir simply has no words (see "The dictionary" below). |
 | `sources` | `[entryDir]` | Dirs the `lint-sinks`/`conventions` scans are scoped to — keep generated/vendored trees out. |
 | `testDir` | `"__tests__"` | Path substring identifying test files for the ratchet scans. |
 | `conventions` | unset | `guardVerb` (regex for guard-function NAMES), `seed` (extra guard names), `dismissed` (guard → why it's covered elsewhere). |
@@ -135,10 +137,15 @@ grammar, not prose — the parser (`src/walk.ts`) strips markdown-formatter esca
 
 ## The claim phrasebook (the `## works when` grammar)
 
-This is the complete set of claim forms `src/verify.ts` (`evalClaim`) parses. **A
-line matching none of these is SKIPPED** (`no verifier (dialect gap)`) — it never
-goes red. A typo'd verb is therefore a silent no-op; check verify's `skipped` count
-after authoring claims.
+The claim grammar is a declarative registry — `CLAIM_FORMS` in `src/phrasebook.ts`,
+an ordered list of forms where **first match wins** (the order IS the precedence).
+`evalClaim` (`src/verify.ts`) is a thin loop over it. **A line matching none of these
+is SKIPPED** (`no verifier (dialect gap)`) — it never goes red. A typo'd verb is
+therefore a silent no-op; check verify's `skipped` count after authoring claims.
+
+**The table below is generated** — run `coherence phrasebook` to print it straight
+from the registry. It is reproduced here for convenience; the registry is the
+authority (the two cannot drift because the verb prints the source of truth).
 
 | Claim | Grammar | Tier | Example |
 | --- | --- | --- | --- |
@@ -148,6 +155,7 @@ after authoring claims.
 | responds | `<url> responds <status> [with "<text>"]` | **live** (skipped under `--fast`; unreachable URL = skip, not fail) | `http://localhost:8787/health responds 200 with "ok"` |
 | passes test | `passes test "<name>"` | executable (skipped under `--fast`) | `passes test "write policy totality"` |
 | boundary | `boundary "<invariant>" at <chokepoint> [via (test\|guard) "<oracle>"]` | hybrid — anchoring + chokepoint-symbol check + meta-oracle run even under `--fast`; the oracle test run is skipped under `--fast` | `boundary "fail-closed writes" at applyWritePolicy via test "write policy totality"` |
+| conforms to | `conforms to <Word>` | hybrid — expands a dictionary word's commitments against the declaring component (see "The dictionary" below) | `conforms to OwnedScope` |
 
 Notes, from the implementing code:
 
@@ -170,6 +178,65 @@ Notes, from the implementing code:
   oracle passes — `via test` additionally passes the meta-oracle (next section);
   `via guard` is exempt from it (see the escape-hatch section). It **anchors** the
   named invariant for the coverage gate.
+- **conforms to** expands a dictionary word's commitments against the declaring
+  component (see the next section). Unlike every other form, a *broken* `conforms to`
+  goes **red**, not skip.
+
+## The dictionary (`conforms to <Word>`)
+
+A pattern recurs across a codebase — "owner-scoped reads", "fail-closed writes",
+"idempotent handler". Rather than re-authoring the same claim list at every node that
+upholds it, name it once as a **word** and have each node `conforms to` it. A word is
+a *pattern with commitments, grown from the project's own code*: a dictionary edit
+propagates to every conforming node on the next verify.
+
+Words live in `<coherence root>/<dictionary>/<Word>.md` (dir configurable via
+`dictionary`, default `"dictionary"`). A word file is:
+
+```md
+# OwnedScope
+Reads and writes stay inside the caller's owner scope.
+
+## commitments
+- boundary "owner-scoped reads" at scopedQuery via guard "no cross-owner read"
+- typechecks
+- conforms to Idempotent
+```
+
+`# <Word>` heading, first non-blank line = the intent, then a `## commitments` bullet
+list where **each bullet is a claim line in the phrasebook grammar above** — including
+`boundary …` and a nested `conforms to <OtherWord>`. (Word files are parsed with the
+same markdown-unescape as specs, so a prettified file still resolves.)
+
+A node opts in with a single `## works when` claim:
+
+```md
+- conforms to OwnedScope
+```
+
+On verify, `conforms to OwnedScope` loads the word file and evaluates **every
+commitment against the declaring component's own context** — same node dir, same
+anchoring. All commitments green → the claim passes (`OwnedScope: N commitments
+green`); any commitment fails → the claim fails, naming the word and the first failing
+commitment.
+
+Three properties make a word a **contract**, not a convenience:
+
+- **Boundary commitments anchor on the declaring component.** A `boundary "<inv>" …`
+  commitment anchors `<inv>` for the conforming node's coverage gate *exactly as if it
+  were written inline* — so a node can declare `## invariants` and satisfy the
+  unanchored-invariant ratchet entirely through the word.
+- **Red, not skip, inside a word.** In a free-form spec a line matching no claim form
+  is a silent dialect-gap skip. Inside a word's commitments that is a **failure** — a
+  typo'd verb in a contract must go red, not vanish. Likewise a **missing or
+  unparseable word file is red** (the verb was recognized; a broken reference is not a
+  dialect gap), and `conforms to` **cycles** (`A → B → A`) fail with a clear detail.
+- **Propagation.** The word file is re-read every verify, so editing a commitment
+  flips every conforming node on the next run — one edit, one home, N enforced nodes.
+
+The dictionary is rendered into the generated overview / `AGENTS.md` as a small
+**Dictionary** section (each word, its intent, and which components conform) — but
+only when a dictionary dir exists; projects without one see zero output change.
 
 **Coverage gates node-contract completeness, not symbol-doc exhaustiveness.** A node
 must carry claims and a `## why`; per-symbol prose is *advisory* (surfaced as jobs,
@@ -375,6 +442,9 @@ Two warnings:
 
 ## Commands
 
+- `coherence phrasebook` — print the claim-form table (name, grammar, tier, example)
+  straight from the `CLAIM_FORMS` registry (`src/phrasebook.ts`). The generated authority
+  behind the phrasebook table above.
 - `coherence graph` — emit `graph.json` + `_graph.html` (the outline) to `outputDir`.
 - `coherence overview` — emit `_overview.html` + `AGENTS.md`.
 - `coherence docs` — both. `--check` fails if any artifact is stale (for CI/pre-commit).

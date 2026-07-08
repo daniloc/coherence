@@ -19,6 +19,7 @@ import { lintSinks } from "./lint-sinks.ts";
 import { conventions } from "./conventions.ts";
 import { atlas } from "./atlas.ts";
 import { whyLint } from "./why-lint.ts";
+import { CLAIM_FORMS, loadDictionary } from "./phrasebook.ts";
 
 const cmd = process.argv[2];
 const argv = process.argv.slice(3);
@@ -92,7 +93,7 @@ async function doGraph(): Promise<string[]> {
 
 async function doOverview(): Promise<string[]> {
   const graph = await buildGraph(cfg);
-  const { html, md } = renderOverview(graph, stamp);
+  const { html, md } = renderOverview(graph, stamp, await loadDictionary(cfg, graph));
   if (check) {
     const stale: string[] = [];
     if (normStamp(html) !== normStamp(await read(out("_overview.html")))) stale.push("_overview.html");
@@ -186,8 +187,20 @@ if (cmd === "graph") {
 } else if (cmd === "why-lint") {
   // Advisory: ## why prose restating a mechanism a boundary claim already anchors.
   await exit(whyLint(await buildGraph(cfg), check ? "check" : "report"));
+} else if (cmd === "phrasebook") {
+  // The claim grammar, rendered straight from the CLAIM_FORMS registry — the generated
+  // authority behind the README's hand-kept table. A line matching no form is SKIPPED
+  // (dialect gap), never red — so a typo'd verb is a silent no-op; check verify's skipped count.
+  console.log("The claim phrasebook — the `## works when` grammar (src/phrasebook.ts).");
+  console.log("First match wins; the order below is the precedence. A line matching none is skipped (dialect gap).\n");
+  for (const f of CLAIM_FORMS) {
+    console.log(`● ${f.name}  [${f.tier}]`);
+    console.log(`    grammar: ${f.grammar}`);
+    console.log(`    example: ${f.example}`);
+  }
+  await exit(0);
 } else {
-  console.error("usage: coherence <graph|overview|docs|claude|verify|log|decompose|drift|scaffold|onboard|lint-sinks|conventions|atlas|why-lint> [options]");
+  console.error("usage: coherence <graph|overview|docs|claude|verify|log|decompose|drift|scaffold|onboard|lint-sinks|conventions|atlas|why-lint|phrasebook> [options]");
   console.error("  verify [--fast] [--staged | --since <ref>]   scope to changed components");
   console.error("  log [<refA> [<refB>]] [--strict]             structural diff of the invariant/boundary set");
   console.error("  scaffold <boundary|component|invariant> <name>");
