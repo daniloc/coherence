@@ -18,6 +18,7 @@ import { structuralLog, changedFiles, affectedComponents } from "./structural.ts
 import { lintSinks } from "./lint-sinks.ts";
 import { conventions } from "./conventions.ts";
 import { atlas } from "./atlas.ts";
+import { contracts } from "./contracts.ts";
 import { whyLint } from "./why-lint.ts";
 import { CLAIM_FORMS, loadDictionary } from "./phrasebook.ts";
 
@@ -184,6 +185,10 @@ if (cmd === "graph") {
 } else if (cmd === "atlas") {
   // Trust-graded manifold; tiers derived from boundary claims, charts/crossings from config.
   await exit(await atlas(cfg, await buildGraph(cfg), check ? "check" : "render"));
+} else if (cmd === "contracts") {
+  // Producer/consumer contracts across deploy artifacts + the uncovered cross-artifact
+  // surface detector. Charts analog: artifacts/contracts are config data, mechanism here.
+  await exit(await contracts(cfg, await buildGraph(cfg), check ? "check" : "render"));
 } else if (cmd === "why-lint") {
   // Advisory: ## why prose restating a mechanism a boundary claim already anchors.
   await exit(whyLint(await buildGraph(cfg), check ? "check" : "report"));
@@ -200,11 +205,12 @@ if (cmd === "graph") {
   }
   await exit(0);
 } else {
-  console.error("usage: coherence <graph|overview|docs|claude|verify|log|decompose|drift|scaffold|onboard|lint-sinks|conventions|atlas|why-lint|phrasebook> [options]");
+  console.error("usage: coherence <graph|overview|docs|claude|verify|log|decompose|drift|scaffold|onboard|lint-sinks|conventions|atlas|contracts|why-lint|phrasebook> [options]");
   console.error("  verify [--fast] [--staged | --since <ref>]   scope to changed components");
   console.error("  log [<refA> [<refB>]] [--strict]             structural diff of the invariant/boundary set");
   console.error("  scaffold <boundary|component|invariant|parity> <name>");
   console.error("  lint-sinks | conventions [--check | --update-baseline]   ratchets (baseline in <outputDir>)");
   console.error("  atlas [--check]   trust-manifold render + drift gate     why-lint [--check]   ## why prose lint");
+  console.error("  contracts [--check]   producer/consumer contracts across deploy artifacts + uncovered-surface detector");
   await exit(2);
 }
