@@ -368,6 +368,71 @@ function analyzePythonOracle(src: string, oracleName: string): Omit<OracleAnalys
   return { verdict: "literal", detail: `inline ${verdicts[0].d.slice(0, 40)} literal` };
 }
 
+// ── the PARITY meta-oracle ────────────────────────────────────────────────────────────
+// A `parity "<inv>" over <domain> between <f> and <g> via test "<oracle>"` claim asserts
+// two projections AGREE over one enumerated domain. Running the named test proves only
+// that whatever the test does passes; this analysis asserts the test has the SHAPE of a
+// parity totality: (a) its body ENUMERATES the DECLARED domain symbol (not a hand-copied
+// sample list, not some other collection), and (b) it exercises BOTH projections. The
+// motivating false oracle was exactly one-sided: it compared two runs of the SAME
+// projector (settled vs history-reload) and never touched the live projection — so the
+// live/settled divergence class sailed through green.
+
+export type ParityVerdict = "ok" | "not-found" | "no-enumeration" | "one-sided";
+
+export interface ParityAnalysis {
+  verdict: ParityVerdict;
+  detail: string;
+  /** the test file (relative to root) the describe block was found in, if any. */
+  file?: string;
+}
+
+export async function analyzeParityOracle(
+  cfg: Config, oracleName: string, domain: string, f: string, g: string,
+): Promise<ParityAnalysis> {
+  const files = await findTestFiles(cfg);
+  for (const rel of files) {
+    if (rel.endsWith(".py")) continue; // TS/JS only (the parity form is TS-first for now)
+    let src: string;
+    try { src = await readFile(join(cfg.root, rel), "utf8"); } catch { continue; }
+    if (!src.includes(oracleName)) continue; // cheap pre-filter
+    const sf = parse(src, basename(rel));
+    const desc = findDescribe(sf, oracleName);
+    if (!desc) continue;
+    const body = desc.arguments[1];
+    if (!body) return { verdict: "no-enumeration", detail: "describe has no body", file: rel };
+    // (a) some iteration construct must range over the DECLARED domain symbol — helper
+    // unwraps (Object.keys/values, Array.from, chained .map/.filter, it/test.each) are
+    // handled by the same iterTargetOf the coverage meta-oracle uses.
+    const loops = findLoops(body);
+    const enumerates = loops.some((l) => iterTargetOf(l.domain, sf).root?.text === domain);
+    if (!enumerates) {
+      const roots = [...new Set(loops.map((l) => iterTargetOf(l.domain, sf).text))].slice(0, 3);
+      return {
+        verdict: "no-enumeration",
+        detail: loops.length
+          ? `iterates ${roots.map((r) => `\`${r.slice(0, 40)}\``).join(", ")} — never the declared domain \`${domain}\``
+          : `no domain iteration at all — hand-enumerated cases cannot be a parity totality over \`${domain}\``,
+        file: rel,
+      };
+    }
+    // (b) both projections must appear in the body — a one-sided oracle proves nothing
+    // about agreement.
+    const ids = new Set<string>();
+    const visit = (n: ts.Node): void => { if (ts.isIdentifier(n)) ids.add(n.text); ts.forEachChild(n, visit); };
+    visit(body);
+    const missing = [f, g].filter((s) => !ids.has(s));
+    if (missing.length)
+      return {
+        verdict: "one-sided",
+        detail: `enumerates \`${domain}\` but never exercises ${missing.map((s) => `\`${s}\``).join(" or ")} — a parity oracle must drive BOTH projections`,
+        file: rel,
+      };
+    return { verdict: "ok", detail: `enumerates \`${domain}\` and drives both \`${f}\` and \`${g}\``, file: rel };
+  }
+  return { verdict: "not-found", detail: `no describe("${oracleName}") found in any test file` };
+}
+
 export async function analyzeOracle(cfg: Config, oracleName: string): Promise<OracleAnalysis> {
   const files = await findTestFiles(cfg);
   for (const rel of files) {

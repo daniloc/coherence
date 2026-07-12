@@ -203,7 +203,7 @@ if (cmd === "graph") {
   console.error("usage: coherence <graph|overview|docs|claude|verify|log|decompose|drift|scaffold|onboard|lint-sinks|conventions|atlas|why-lint|phrasebook> [options]");
   console.error("  verify [--fast] [--staged | --since <ref>]   scope to changed components");
   console.error("  log [<refA> [<refB>]] [--strict]             structural diff of the invariant/boundary set");
-  console.error("  scaffold <boundary|component|invariant> <name>");
+  console.error("  scaffold <boundary|component|invariant|parity> <name>");
   console.error("  lint-sinks | conventions [--check | --update-baseline]   ratchets (baseline in <outputDir>)");
   console.error("  atlas [--check]   trust-manifold render + drift gate     why-lint [--check]   ## why prose lint");
   await exit(2);
