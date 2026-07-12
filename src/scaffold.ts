@@ -77,8 +77,34 @@ code and regenerated; this WHY is not — author it, don't fabricate it.
 }
 
 function usage(): number {
-  console.error("usage: coherence scaffold <boundary|component|invariant> <name>   (name: a short identifier)");
+  console.error("usage: coherence scaffold <boundary|component|invariant|parity> <name>   (name: a short identifier)");
   return 2;
+}
+
+function parityFragments(name: string): { inv: string; claim: string; why: string; test: string } {
+  const inv = `${name} parity`;
+  const oracle = `${name} agreement`;
+  return {
+    inv,
+    claim: `parity "${inv}" over DomainSymbol between projectionA and projectionB via test "${oracle}"`,
+    why: `The invariant "${inv}" declares that \`projectionA\` and \`projectionB\` are TWO
+PROJECTIONS OF ONE ENUMERATED DOMAIN (\`DomainSymbol\`) and must agree over every member —
+the drift class where two views of the same vocabulary (a live frame vs a settled record,
+a server table vs a client table, often in DIFFERENT deploy artifacts no single compile
+can reconcile) silently diverge. Do NOT keep per-projection lookup tables; derive both
+projections from the one domain, and let the "${oracle}" oracle enumerate it.`,
+    test: `describe("${oracle}", () => {
+  // PARITY TOTALITY: enumerate the LIVE domain (import the SSOT — never a copied list)
+  // and assert the two projections agree on every member. The parity meta-oracle will
+  // refuse this oracle unless it (a) loops \`DomainSymbol\` and (b) drives BOTH
+  // \`projectionA\` and \`projectionB\`.
+  for (const member of DomainSymbol) {
+    it(\`\${member}: projections agree\`, () => {
+      expect(projectionA(member)).toEqual(projectionB(member)); // define "agree" for your domain
+    });
+  }
+});`,
+  };
 }
 
 export async function scaffold(cfg: Config, kind: string, name: string): Promise<number> {
@@ -103,6 +129,23 @@ export async function scaffold(cfg: Config, kind: string, name: string): Promise
     console.log(`Place it as <component-dir>/${name}.spec.md and replace the placeholder`);
     console.log(`works-when claims with real ones (exists / imports). \`coherence verify\``);
     console.log(`then gates that the component carries claims AND a why.`);
+    return 0;
+  }
+
+  if (kind === "parity") {
+    // Like `invariant`, a paste-in kit for an EXISTING component spec — plus the oracle
+    // skeleton, since a parity claim is refused until its oracle enumerates the domain
+    // and drives both projections (the meta-oracle is the ratchet).
+    const { inv, claim, why, test } = parityFragments(name);
+    console.log(`# add parity invariant "${inv}" to an existing component spec — paste each fragment\n`);
+    console.log(`## invariants  (append)`);
+    console.log(`- ${inv}\n`);
+    console.log(`## works when  (append — anchors the invariant; stays RED until the domain, both projections, and the oracle exist)`);
+    console.log(`- ${claim}\n`);
+    console.log(`## why  (append a paragraph)`);
+    console.log(why + "\n");
+    console.log(`## test skeleton  (drop into the component's test file, replace the three placeholder symbols)`);
+    console.log(test);
     return 0;
   }
 

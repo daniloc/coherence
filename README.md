@@ -101,7 +101,10 @@ Full (every field the `Config` interface in `src/types.ts` accepts; defaults fro
   "components": [{ "name": "billing", "files": ["src/billing/**"] }],
   "conventions": { "guardVerb": "^(assert|require|check)", "seed": [], "dismissed": {} },
   "sinks": { "safeSql": "quoteIdent\\(", "safeHtml": "escapeHtml\\(" },
-  "atlas": { "charts": {}, "transitions": {} }
+  "atlas": { "charts": {}, "transitions": {} },
+  "novelty": { "minSurface": 8, "minLoc": 400, "ratio": 12 },
+  "artifacts": { "worker": ["worker.ts", "entities/**", "shared/**"], "browser": ["web/**", "shared/**"] },
+  "contracts": { "sse-frames": { "producer": "Patient", "consumer": "readSse", "type": "SseFrames" } }
 }
 ```
 
@@ -128,6 +131,9 @@ Full (every field the `Config` interface in `src/types.ts` accepts; defaults fro
 | `conventions` | unset | `guardVerb` (regex for guard-function NAMES), `seed` (extra guard names), `dismissed` (guard → why it's covered elsewhere). |
 | `sinks` | unset | `safeSql`/`safeHtml` — regexes for interpolation expressions that are SAFE by construction. |
 | `atlas` | unset | Trust-manifold data: `charts` (trust domain → description), `transitions` (chokepoint symbol → crossing; each may set `enshrined: true` — see below), `nonTransition` (within-chart boundaries), `knownPending` (mapped symbols tolerated as not-yet-in-source). A transition's `enshrined: true` is an **explicit** attestation that the illegal value at that crossing is unrepresentable (a runtime-branded capability), promoting it to tier-1 — it is NOT inferred from a claim's verb, and it MUST be backed by a `via guard` boundary claim (an `enshrined` marker with no backing guard fails `atlas --check`). |
+| `novelty` | unset | Thresholds for `log`'s novelty-vs-anchor advisory: `minSurface` (8), `minLoc` (400), `ratio` (12). |
+| `artifacts` | unset | Deploy units for `contracts`: unit name → path globs. A file may belong to several (shared vocabulary typically does). |
+| `contracts` | unset | Declared cross-unit data contracts: name → `{ producer, consumer, type, description? }` (all symbols). `contracts --check` fails a contract that dangles or that no boundary/parity claim anchors. |
 
 Then author `*.spec.md` files (a folder containing one is a *node*). A spec is
 `# Name`, a one-line intent, an optional `## works when` claim list, an optional
@@ -157,6 +163,7 @@ run `coherence phrasebook` to see the source of truth.
 | responds | `<url> responds <status> [with "<text>"]` | **live** (skipped under `--fast`; unreachable URL = skip, not fail) | `http://localhost:8787/health responds 200 with "ok"` |
 | passes test | `passes test "<name>"` | executable (skipped under `--fast`) | `passes test "write policy totality"` |
 | boundary | `boundary "<invariant>" at <chokepoint> [via (test\|guard) "<oracle>"]` | hybrid — anchoring + chokepoint-symbol check + meta-oracle run even under `--fast`; the oracle test run is skipped under `--fast` | `boundary "fail-closed writes" at applyWritePolicy via test "write policy totality"` |
+| parity | `parity "<invariant>" over <domain> between <fnA> and <fnB> via test "<oracle>"` | hybrid — anchoring + domain/projection symbols must exist + the parity meta-oracle runs even under `--fast`; the oracle test run is skipped under `--fast` | `parity "disclosure faithfulness" over TOOL_NAMES between toolActivity and messageProvenance via test "live equals settled"` |
 | conforms to | `conforms to <Word>` | hybrid — expands a dictionary word's commitments against the declaring component (see "The dictionary" below) | `conforms to OwnedScope` |
 
 Notes, from the implementing code:
@@ -180,6 +187,17 @@ Notes, from the implementing code:
   oracle passes — `via test` additionally passes the meta-oracle (next section);
   `via guard` is exempt from it (see the escape-hatch section). It **anchors** the
   named invariant for the coverage gate.
+- **parity** generalizes the boundary totality pattern from COVERAGE to AGREEMENT:
+  `<fnA>` and `<fnB>` are declared two projections of ONE enumerated domain and must
+  agree over it (the drift class where a live view and a settled view — or a server
+  table and a client table in *different deploy artifacts* — silently diverge). It
+  anchors the invariant like a boundary; `<domain>`, `<fnA>`, `<fnB>` must all exist
+  in the code graph; and the **parity meta-oracle** (run even under `--fast`) requires
+  the named describe to ENUMERATE the declared domain and DRIVE both projections — a
+  one-sided oracle (e.g. one comparing two runs of the *same* projector) or a
+  hand-copied sample list goes red. `via test` is mandatory: what "agree" means is
+  project knowledge, so the oracle body stays yours. `coherence scaffold parity <name>`
+  prints the paste-in spec fragments plus a domain-loop oracle skeleton.
 - **conforms to** expands a dictionary word's commitments against the declaring
   component (see the next section). Unlike every other form, a *broken* `conforms to`
   goes **red**, not skip.
@@ -468,8 +486,20 @@ Two warnings:
   claims were **added**, **removed**, or **rewired** (chokepoint or oracle changed),
   per component, by building the graph at each ref in a throwaway git worktree. Answers
   "did my change alter what's enforced?" without re-reading the world. `--strict` exits
-  nonzero on a **loss** (a removed invariant/boundary/component) so a PR can't silently
-  drop a guard the way a prose review misses it.
+  nonzero on a **loss** (a removed invariant/boundary/parity/component) so a PR can't
+  silently drop a guard the way a prose review misses it.
+  After the ledger it prints the **NOVELTY vs ANCHORS advisory** — the pressure the
+  ledger alone lacks: a large feature can land with ZERO ledger change and read
+  "no structural change" while shipping a pile of unanchored surface. The advisory
+  contrasts BEHAVIORAL SURFACE ADDED across the range (net-new exported symbols,
+  net-new union/enum variants and `Record<…>`-keyed table keys — an AST scan of the
+  changed files at each ref, `.tsx` included, non-exported tables counted, test files
+  excluded — plus code-LOC numstat) against ANCHORS ADDED (invariants + boundary/parity
+  claims). Significant surface with zero anchors raises the alarm; anchors outpaced
+  `ratio`× raise the softer advisory; and when the signal is churn-shaped (LOC-only, or
+  deletions tracking additions) it self-qualifies: *"disregard if recent work was mostly
+  refactor"*. Thresholds in `config.novelty` (`minSurface` 8 · `minLoc` 400 · `ratio`
+  12). Advisory only — never the exit code.
 - `coherence decompose` — the **wise-decomposition** report. Coherence holds the Intent
   graph (spec tree) and the Structure graph (imports); this adds the Evolution graph (git
   change-coupling) and measures their *agreement*. Prints a **LOCALITY** score (the
@@ -490,7 +520,7 @@ Two warnings:
   honest about its limit — it sees gesture *shape*, not intent (a chokepoint-building edit
   and a guard-scattering one can look alike); read the diff at the seam, and use
   `coherence verify` for whether each invariant is actually anchored.
-- `coherence scaffold <boundary|component|invariant> <name>` — the gradient-flip
+- `coherence scaffold <boundary|component|invariant|parity> <name>` — the gradient-flip
   generator: make the complete shape the cheapest thing to ship.
   - `boundary` — a NEW component spec pre-wired with `## invariants` + a `boundary` claim
     + the chokepoint/fail-closed/oracle TODOs. You can't scaffold a half-boundary: the
@@ -499,6 +529,9 @@ Two warnings:
   - `invariant` — the PASTE-IN fragments (invariants entry + boundary claim + why
     paragraph) to add an invariant to an **existing** spec; printed to stdout, no file,
     so the three pieces land in lockstep instead of as orphaned prose.
+  - `parity` — the same paste-in kit for a **parity** invariant, plus a domain-loop
+    oracle skeleton (enumerate the SSOT, assert `projectionA ≡ projectionB` per member)
+    that the parity meta-oracle will accept once the placeholders are real symbols.
 - `coherence onboard` — bootstrap a repo with no specs: derive structure, suggest a
   decomposition, and emit why-from-history jobs. Output is proposals to review.
 - `coherence lint-sinks [--check | --update-baseline]` — interpolation-surface
@@ -522,6 +555,23 @@ Two warnings:
   list — with a double-entry check: the atlas `enshrined` set must **equal** the gate's
   tier-1 set, and drift in either direction (an enshrined crossing the gate does not grade,
   or a gate tier-1 the atlas does not enshrine) is a red.
+- `coherence contracts [--check]` — **producer/consumer contracts across deploy
+  artifacts** (the atlas's split, applied to data contracts: project data, harness
+  mechanism). `config.artifacts` names the deploy units as path globs (a file may sit
+  in several — `shared/**` typically in all); `config.contracts` declares each typed
+  cross-unit message: a `producer` chokepoint symbol, a `consumer` chokepoint symbol,
+  and the shared vocabulary `type` symbol. The WHY: a message produced in one
+  compile/deploy unit and consumed in another (a Worker's SSE frames rendered by the
+  browser bundle) is invisible to either unit's compiler — the two sides typecheck
+  separately and drift silently; only the whole-source graph sees both. Each declared
+  contract is resolved against the graph (**DANGLING** if a symbol is gone), located in
+  its artifacts (disjoint producer/consumer sets = **CROSS-ARTIFACT**), and graded
+  **anchored** iff a boundary or parity claim names its producer, consumer, or type.
+  `--check` fails dangling or unanchored contracts. The **detector** then flags, as an
+  advisory, every file whose importers span disjoint artifact sets but which no
+  contract or anchored claim covers — shared vocabulary two deploy units must agree on
+  that nothing yet declares. (Import edges come from the graph, so today they cover the
+  language adapter's extensions — `.ts`; a `.tsx`-only importer is not seen.)
 - `coherence why-lint` — the **`## why` discipline**, two advisory checks against the
   graph the harness already holds:
   1. **mechanism-restatement** — a sentence that names an anchored chokepoint/oracle

@@ -55,8 +55,8 @@ export function componentMap(cfg: Config, graph: Graph): { compOf: (gitPath: str
 }
 
 // Glob → regex: `**` matches any run (incl. `/`), `*` matches within a path
-// segment, everything else is literal.
-function globToRe(glob: string): RegExp {
+// segment, everything else is literal. Shared with contracts.ts (artifact globs).
+export function globToRe(glob: string): RegExp {
   const esc = (s: string) => s.replace(/[.+?^${}()|[\]\\]/g, "\\$&");
   const body = glob.split("**").map((seg) => seg.split("*").map(esc).join("[^/]*")).join(".*");
   return new RegExp("^" + body + "$");

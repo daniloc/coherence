@@ -120,3 +120,33 @@ test("allBoundaries — keyed by chokepoint symbol, first declaration wins", () 
   assert.equal(all.get("seal")!.component, "A");
   assert.equal(all.get("mint")!.verb, "guard");
 });
+
+// ── parity claims in the ledger — agreement anchors are first-class ──────────────────
+
+const PARITY = 'parity "disclosure faithfulness" over TOOL_NAMES between toolActivity and messageProvenance via test "live == settled"';
+
+test("diffGraphs — an added parity claim is a structural addition, not a generic claim", () => {
+  const before = graph([comp(".", { label: "Patient", why: "r" })]);
+  const after = graph([comp(".", { label: "Patient", claims: [PARITY], invariants: ["disclosure faithfulness"], why: "r" })]);
+  const d = diffGraphs(before, after);
+  assert.equal(d.parityAdded.length, 1);
+  assert.equal(d.parityAdded[0].p.domain, "TOOL_NAMES");
+  assert.equal(d.claimDelta.length, 0); // not double-counted as a plain claim
+});
+
+test("diffGraphs + renderDiff — a removed parity claim is a LOSS (what --strict gates on)", async () => {
+  const before = graph([comp(".", { label: "Patient", claims: [PARITY], why: "r" })]);
+  const after = graph([comp(".", { label: "Patient", claims: [], why: "r" })]);
+  const d = diffGraphs(before, after);
+  assert.equal(d.parityRemoved.length, 1);
+  assert.equal(await losses(before, after), 1);
+});
+
+test("diffGraphs — a reprojected parity (different f/g or domain) is rewired, not silent", () => {
+  const before = graph([comp(".", { label: "Patient", claims: [PARITY], why: "r" })]);
+  const after = graph([comp(".", { label: "Patient", claims: [PARITY.replace("messageProvenance", "history")], why: "r" })]);
+  const d = diffGraphs(before, after);
+  assert.equal(d.parityRewired.length, 1);
+  assert.equal(d.parityRewired[0].before.g, "messageProvenance");
+  assert.equal(d.parityRewired[0].after.g, "history");
+});
