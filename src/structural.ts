@@ -97,8 +97,28 @@ export async function affectedComponents(cfg: Config, graph: Graph, files: Set<s
   return hit;
 }
 
+// Git env vars a caller (lint-staged, a rebase, another hook) may have set that
+// would hijack our subcommands — most damagingly `git worktree add`, which
+// resolves a relative GIT_INDEX_FILE inside the new detached worktree and dies
+// with ".git/index: Not a directory". Scrub them so worktree/log ops always
+// target the real repo regardless of the invoking context.
+const GIT_ENV_SCRUB = [
+  "GIT_INDEX_FILE",
+  "GIT_DIR",
+  "GIT_WORK_TREE",
+  "GIT_OBJECT_DIRECTORY",
+  "GIT_COMMON_DIR",
+  "GIT_PREFIX",
+] as const;
+
+const scrubbedGitEnv = (): NodeJS.ProcessEnv => {
+  const env = { ...process.env };
+  for (const k of GIT_ENV_SCRUB) delete env[k];
+  return env;
+};
+
 const git = (args: string[], cwd: string) =>
-  spawnSync("git", args, { cwd, encoding: "utf8" });
+  spawnSync("git", args, { cwd, encoding: "utf8", env: scrubbedGitEnv() });
 
 export type { Boundary } from "./boundary.ts";
 interface Ledger {
