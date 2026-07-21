@@ -21,6 +21,7 @@ import { atlas } from "./atlas.ts";
 import { contracts } from "./contracts.ts";
 import { whyLint } from "./why-lint.ts";
 import { CLAIM_FORMS, loadDictionary } from "./phrasebook.ts";
+import { runMcpServer } from "./mcp.ts";
 
 const cmd = process.argv[2];
 const argv = process.argv.slice(3);
@@ -204,13 +205,20 @@ if (cmd === "graph") {
     console.log(`    example: ${f.example}`);
   }
   await exit(0);
+} else if (cmd === "mcp") {
+  // The stdio MCP server — Claude Code (or any MCP client) speaks JSON-RPC on
+  // stdin/stdout; every tool call shells this same CLI in the project cwd. The
+  // server runs until the client closes stdin; no exit() here — the readline
+  // listener keeps the event loop alive.
+  await runMcpServer();
 } else {
-  console.error("usage: coherence <graph|overview|docs|claude|verify|log|decompose|drift|scaffold|onboard|lint-sinks|conventions|atlas|contracts|why-lint|phrasebook> [options]");
+  console.error("usage: coherence <graph|overview|docs|claude|verify|log|decompose|drift|scaffold|onboard|lint-sinks|conventions|atlas|contracts|why-lint|phrasebook|mcp> [options]");
   console.error("  verify [--fast] [--staged | --since <ref>]   scope to changed components");
   console.error("  log [<refA> [<refB>]] [--strict]             structural diff of the invariant/boundary set");
   console.error("  scaffold <boundary|component|invariant|parity> <name>");
   console.error("  lint-sinks | conventions [--check | --update-baseline]   ratchets (baseline in <outputDir>)");
   console.error("  atlas [--check]   trust-manifold render + drift gate     why-lint [--check]   ## why prose lint");
   console.error("  contracts [--check]   producer/consumer contracts across deploy artifacts + uncovered-surface detector");
+  console.error("  mcp   stdio MCP server exposing the commands above as tools (for Claude Code / any MCP client)");
   await exit(2);
 }

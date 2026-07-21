@@ -1,0 +1,15 @@
+{
+  "name": "coherence",
+  "owner": { "name": "Danilo Campos", "email": "mail@danilocampos.com" },
+  "metadata": {
+    "description": "Marketplace for the coherence harness plugin — spec + coherence verification for agent-developed projects."
+  },
+  "plugins": [
+    {
+      "name": "coherence",
+      "source": "./",
+      "description": "MCP tools (verify, docs, phrasebook, scaffold, onboard, …) plus skills for authoring specs and claims with the coherence harness.",
+      "category": "development"
+    }
+  ]
+}

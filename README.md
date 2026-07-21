@@ -37,6 +37,27 @@ the type system's job, tier-1), and it does **not** verify that a claim is the
 **right** claim (that's the human's judgment — axiom #5, judge ≠ notary). It is a
 coherence layer, not a proof system. Treat every green run accordingly.
 
+## Install as a Claude Code plugin (MCP + skills) — the primary way in
+
+Coherence is meant to be experienced through MCP. The repo is itself a Claude
+Code plugin: installing it registers a `coherence` MCP server (the commands
+below as tools, run against your project's cwd) plus two skills — `coherence`
+(the day-to-day spec/claim/verify workflow) and `coherence-adopt` (bootstrapping
+the harness into a project).
+
+```
+/plugin marketplace add daniloc/coherence
+/plugin install coherence@coherence
+```
+
+On the MCP server's first launch the plugin bootstraps itself (`npm install`,
+which builds `dist/`) — that one-time step needs network access and Node ≥ 22;
+after that it starts instantly. The MCP tools: `verify`, `docs`, `claude_md`,
+`phrasebook`, `scaffold`, `onboard`, `log`, `atlas`, `contracts`, `conventions`,
+`lint_sinks`, `why_lint` — each mirrors the CLI command of the same name.
+
+Any other MCP client can run the same server directly: `coherence mcp` (stdio).
+
 ## Install from GitHub (no npm registry)
 
 Add it as a git dependency. npm clones the repo and runs `prepare` (which builds

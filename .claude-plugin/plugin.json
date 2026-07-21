@@ -1,0 +1,16 @@
+{
+  "name": "coherence",
+  "version": "0.9.0",
+  "description": "The coherence harness, experienced through MCP: tools to verify spec claims against code, regenerate the graph/docs/CLAUDE.md, scaffold boundary and parity claims, and onboard a repo — plus skills that teach the spec + claim workflow.",
+  "author": { "name": "Danilo Campos" },
+  "homepage": "https://github.com/daniloc/coherence",
+  "repository": "https://github.com/daniloc/coherence",
+  "license": "MIT",
+  "keywords": ["specs", "verification", "invariants", "coherence", "mcp"],
+  "mcpServers": {
+    "coherence": {
+      "command": "node",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/plugin/mcp-launcher.mjs"]
+    }
+  }
+}
