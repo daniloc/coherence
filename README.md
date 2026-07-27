@@ -94,6 +94,11 @@ Full (every field the `Config` interface in `src/types.ts` accepts; defaults fro
   "oracleDomain": true,
   "language": "typescript",
   "platform": "cloudflare",
+  "dbt": {
+    "manifest": "target/manifest.json",
+    "snapshot": ".coherence/dbt-manifest.json",
+    "semantics": "coherence.dbt.json"
+  },
   "claudeMdPath": "../CLAUDE.md",
   "dictionary": "dictionary",
   "sources": ["src"],
@@ -123,6 +128,7 @@ Full (every field the `Config` interface in `src/types.ts` accepts; defaults fro
 | `oracleDomain` | `true` (anything but `false`) | The META-ORACLE gate: assert a `via test` oracle iterates a LIVE domain. Set `false` to disable the gate. |
 | `language` | `"typescript"` | Language adapter key. |
 | `platform` | `null` | Platform adapter key, or null. |
+| `dbt` | unset | Optional dbt graph contributor: generated `manifest`, committed normalized `snapshot`, and Coherence-owned `semantics` paths. Run `coherence dbt` after `dbt parse`; `coherence dbt --check` fails when the snapshot is stale. |
 | `components` | unset | Sub-component overrides for `decompose`/`drift` co-change analysis ONLY (globs relative to root; first match wins). The spec graph, verify, and coverage are untouched. |
 | `claudeMdPath` | `"CLAUDE.md"` | Path to the CLAUDE.md whose fenced block `coherence claude` owns. May be `../`-relative to escape the coherence root (repo-root CLAUDE.md above a sub-package). |
 | `dictionary` | `"dictionary"` | Dir (relative to the coherence root) holding the pattern dictionary — one `<Word>.md` per word. A `conforms to <Word>` claim expands the word's commitments against the declaring component. A project with no such dir simply has no words (see "The dictionary" below). |
@@ -140,6 +146,63 @@ Then author `*.spec.md` files (a folder containing one is a *node*). A spec is
 `## invariants` list, and an optional `## why` (protected rationale). Claims are a
 grammar, not prose — the parser (`src/walk.ts`) strips markdown-formatter escapes
 (`\_` → `_`) so a prettified spec still parses.
+
+### dbt projects
+
+dbt contributes a graph; it is not parsed as a source language. Coherence derives
+resources, dependencies, declared columns, and materialization from dbt's manifest.
+Meaning dbt cannot supply—roles, grain, chokepoints, parity, multiplicity, and
+filtering—lives in a separate `coherence.dbt.json`:
+
+```json
+{
+  "version": 1,
+  "scope": ["models/ledger/**"],
+  "roles": {
+    "LedgerEntryProducer": ["models/ledger/entries/**"],
+    "CanonicalLedger": ["model:ledger"]
+  },
+  "chokepoints": ["ledger"],
+  "models": {
+    "ledger": { "grain": ["entry_id"] }
+  },
+  "parities": {
+    "allocation becomes revenue entries": {
+      "between": ["usage_allocation", "revenue_entries"],
+      "via": "revenue_entries_match_allocation"
+    }
+  },
+  "relationships": [{
+    "from": "revenue_entries",
+    "to": "ledger",
+    "multiplicity": "one-to-one",
+    "filtering": "preserves"
+  }]
+}
+```
+
+Path selectors are glob patterns; `model:<name>` selects one exact model. Every
+model in `scope` must receive at least one role. Role selectors, model declarations,
+and relationships fail closed when they point at absent resources or non-edges.
+
+Each entry in `parities` names two representations of the same fact and the exact
+dbt test that proves their agreement. Coherence fails graph construction unless
+both models and the test exist and the test directly depends on both models. A full
+`coherence verify` runs every declared parity oracle through `config.test`; `--fast`
+keeps the structural checks but skips execution. Adding, removing, or rewiring a dbt
+parity is first-class in the structural ledger, and removing one is a structural loss.
+
+Declaring a model as a `chokepoint` makes its upstream model subgraph private. Models
+inside that shadow can depend on one another, and the chokepoint can depend on all of
+them. A model outside the shadow may depend on the chokepoint, but `coherence verify`
+fails if it bypasses the chokepoint and reads a private upstream model directly.
+Traversal stops at another chokepoint, so nested boundaries compose instead of
+absorbing one another. Sources and tests are not hidden by this model-visibility rule.
+
+The normalized snapshot deliberately omits SQL text. Commit it so `coherence log`
+can reconstruct dbt structure at both git refs without running dbt in a detached
+worktree. The dbt structural ledger reports resources, dependencies, declared
+column shapes, roles, grain, materialization, parity, multiplicity, and filtering.
 
 ## The claim phrasebook (the `## works when` grammar)
 

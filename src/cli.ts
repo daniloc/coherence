@@ -21,6 +21,7 @@ import { atlas } from "./atlas.ts";
 import { contracts } from "./contracts.ts";
 import { whyLint } from "./why-lint.ts";
 import { CLAIM_FORMS, loadDictionary } from "./phrasebook.ts";
+import { syncDbtSnapshot } from "./adapters/dbt.ts";
 
 const cmd = process.argv[2];
 const argv = process.argv.slice(3);
@@ -204,13 +205,16 @@ if (cmd === "graph") {
     console.log(`    example: ${f.example}`);
   }
   await exit(0);
+} else if (cmd === "dbt") {
+  await exit(await syncDbtSnapshot(cfg, check));
 } else {
-  console.error("usage: coherence <graph|overview|docs|claude|verify|log|decompose|drift|scaffold|onboard|lint-sinks|conventions|atlas|contracts|why-lint|phrasebook> [options]");
+  console.error("usage: coherence <graph|overview|docs|claude|verify|log|decompose|drift|scaffold|onboard|lint-sinks|conventions|atlas|contracts|why-lint|phrasebook|dbt> [options]");
   console.error("  verify [--fast] [--staged | --since <ref>]   scope to changed components");
   console.error("  log [<refA> [<refB>]] [--strict]             structural diff of the invariant/boundary set");
   console.error("  scaffold <boundary|component|invariant|parity> <name>");
   console.error("  lint-sinks | conventions [--check | --update-baseline]   ratchets (baseline in <outputDir>)");
   console.error("  atlas [--check]   trust-manifold render + drift gate     why-lint [--check]   ## why prose lint");
   console.error("  contracts [--check]   producer/consumer contracts across deploy artifacts + uncovered-surface detector");
+  console.error("  dbt [--check]   normalize target/manifest.json into the committed Coherence snapshot");
   await exit(2);
 }

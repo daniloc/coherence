@@ -2,14 +2,43 @@
 // The core is platform- and language-agnostic; everything project-specific lives
 // behind LanguageAdapter (how to read code) and PlatformAdapter (how to read infra).
 
+export interface DbtParity {
+  name: string;
+  left: string;
+  right: string;
+  oracle: string;
+}
+
 export interface GraphNode {
   id: string; parent?: string; label: string; kind: string;
   sub?: string; path?: string; line?: number; claimed?: boolean; claims?: string[];
   invariants?: string[]; // named properties the component upholds (## invariants); each anchored by a `boundary` claim
   prose?: string; // the WHAT — derivable from code, regenerable
   why?: string;   // the WHY — rationale/intent, authored + protected
+  dbt?: {
+    uniqueId: string;
+    resourceType: string;
+    dependsOn: string[];
+    columns: Array<{ name: string; dataType: string | null }>;
+    roles: string[];
+    chokepoint?: true;
+    shadowedBy?: string[];
+    parities?: DbtParity[];
+    grain?: string[];
+    materialized?: string;
+    uniqueKey?: string | string[];
+    incrementalStrategy?: string;
+    contractEnforced?: boolean;
+  };
 }
-export interface GraphEdge { id: string; source: string; target: string; kind: string; }
+export interface GraphEdge {
+  id: string; source: string; target: string; kind: string;
+  dbt?: {
+    multiplicity: "one-to-one" | "one-to-many" | "many-to-one" | "many-to-many";
+    filtering: "preserves" | "narrows" | "expands" | "mixed";
+    description?: string;
+  };
+}
 
 export interface Bindings {
   /** runtime entities that map to a code component (e.g. a Durable Object class). */
@@ -54,6 +83,11 @@ export interface Config {
   oracleDomain?: boolean;   // META-ORACLE: also assert a boundary's oracle test iterates a LIVE domain (not a literal/source-grep). Default true; set false to disable the gate (still classifies for the report).
   language: string;         // language adapter key
   platform: string | null;  // platform adapter key, or null
+  dbt?: {
+    manifest: string;       // dbt's generated target/manifest.json
+    snapshot: string;       // normalized, committed manifest used by graph/log at git refs
+    semantics: string;      // Coherence-owned roles, grain, chokepoints, parity, and relationship contracts
+  };
   components?: { name: string; files: string[] }[]; // optional sub-component overrides for the decompose/drift co-change analysis ONLY (the spec graph, verify, and coverage are untouched). `files` are globs relative to cfg.root (`*` = within a path segment, `**` = any). A file matching one is regrouped under `name`, so a large spec-component (a domain core) can be measured as the distinct concerns it actually contains instead of one opaque hub. First matching definition wins; unmatched files keep their spec-component.
   claudeMdPath?: string;    // path to the CLAUDE.md whose fenced block `coherence claude` owns (default: "CLAUDE.md" at cfg.root). Use a `../`-relative path when the authored CLAUDE.md lives outside the coherence root (e.g. a repo root above a sub-package); coherence still operates on cfg.root, only the splice target moves.
   dictionary?: string;      // dir (relative to cfg.root) holding the pattern dictionary — one `<Word>.md` per word, each a `# <Word>` heading + intent + `## commitments` claim list. A `conforms to <Word>` claim expands the word's commitments against the declaring component. Default "dictionary"; a project with no such dir simply has no words (the claim form still resolves — a missing word file goes RED, not skip).

@@ -8,6 +8,7 @@ import { parseSpec, splitWhy, findSpec, nodeDirs, codeFiles, ownerOf } from "./w
 import { typescript } from "./adapters/typescript.ts";
 import { python } from "./adapters/python.ts";
 import { cloudflare } from "./adapters/cloudflare.ts";
+import { dbtGraphFragment } from "./adapters/dbt.ts";
 
 const LANGUAGES: Record<string, LanguageAdapter> = { typescript, python };
 const PLATFORMS: Record<string, PlatformAdapter> = { cloudflare };
@@ -78,6 +79,13 @@ export async function buildGraph(cfg: Config): Promise<Graph> {
     for (const [bind, target] of Object.entries(targets)) if (new RegExp(`env\\.${bind}\\b`).test(src)) link(fileIds.get(f)!, target, "binds");
     for (const m of src.matchAll(/fetch\(\s*["']https?:\/\/([^"'/]+)/g)) { const id = `x:host:${m[1]}`; add({ id, label: m[1], kind: "external", sub: "service" }); link(fileIds.get(f)!, id, "calls"); }
   }
+
+  // Framework graphs enrich the source graph; they do not replace language parsing.
+  // dbt resources are symbols at their source files, so ordinary boundary claims can
+  // name model chokepoints while the exact DAG still comes from dbt itself.
+  const dbt = await dbtGraphFragment(cfg, nodes);
+  for (const n of dbt.nodes) add(n);
+  for (const e of dbt.edges) if (e.source !== e.target && !edges.some((x) => x.id === e.id)) edges.push(e);
 
   return { generatedAt: new Date().toISOString().slice(0, 16).replace("T", " ") + "Z", root: basename(resolve(root)), absRoot: resolve(root), nodes, edges, bindings };
 }

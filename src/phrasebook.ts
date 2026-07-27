@@ -106,7 +106,7 @@ export const reEscape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
  *  requires positive evidence the named test actually ran — an exit-0 runner that
  *  matched zero tests would otherwise pass a renamed/deleted oracle). Returns
  *  `{ ok: true }` on a real pass, else the failure detail. */
-function execNamedTest(cfg: Config, root: string, name: string): { ok: boolean; detail: string } {
+export function runNamedTest(cfg: Config, root: string, name: string): { ok: boolean; detail: string } {
   const r = spawnSync(cfg.test[0], [...cfg.test.slice(1), reEscape(name)], { cwd: root, encoding: "utf8", timeout: 120000 });
   const out = (r.stderr || "") + (r.stdout || "");
   if (r.status !== 0) return { ok: false, detail: out.split("\n").filter(Boolean).slice(-3).join(" | ").slice(0, 200) };
@@ -193,7 +193,7 @@ export const CLAIM_FORMS: ClaimForm[] = [
     evaluate: (ctx, m) => {
       if (ctx.fast) return { kind: "skip", detail: "executable tier (--fast)" };
       if (!ctx.cfg.test || !ctx.cfg.test.length) return { kind: "skip", detail: "no test runner configured (config.test)" };
-      const r = execNamedTest(ctx.cfg, ctx.root, m[1]);
+      const r = runNamedTest(ctx.cfg, ctx.root, m[1]);
       return r.ok ? { kind: "pass" } : { kind: "fail", detail: r.detail };
     },
   },
@@ -223,7 +223,7 @@ export const CLAIM_FORMS: ClaimForm[] = [
       }
       if (ctx.fast) return { kind: "skip", detail: "boundary oracle (--fast)" };
       if (!ctx.cfg.test || !ctx.cfg.test.length) return { kind: "skip", detail: "no test runner configured (config.test)" };
-      const r = execNamedTest(ctx.cfg, ctx.root, test);
+      const r = runNamedTest(ctx.cfg, ctx.root, test);
       if (!r.ok) return { kind: "fail", detail: r.detail };
       return { kind: "pass", detail: `${inv} @ ${sym}${verb === "guard" ? " (source-property guard)" : ""}` };
     },
@@ -257,7 +257,7 @@ export const CLAIM_FORMS: ClaimForm[] = [
       }
       if (ctx.fast) return { kind: "skip", detail: "parity oracle (--fast)" };
       if (!ctx.cfg.test || !ctx.cfg.test.length) return { kind: "skip", detail: "no test runner configured (config.test)" };
-      const r = execNamedTest(ctx.cfg, ctx.root, oracle);
+      const r = runNamedTest(ctx.cfg, ctx.root, oracle);
       if (!r.ok) return { kind: "fail", detail: r.detail };
       return { kind: "pass", detail: `${inv}: ${f} ≡ ${g} over ${domain}` };
     },

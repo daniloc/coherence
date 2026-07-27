@@ -11,8 +11,10 @@
     "test": "node --test \"test/**/*.test.ts\"",
     "prepare": "npm run build"
   },
-  "devDependencies": {
-    "@types/node": "^22.0.0",
+  "dependencies": {
     "typescript": "^5.7.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0"
   }
 }
