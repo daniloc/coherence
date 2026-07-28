@@ -28,7 +28,7 @@ import { renderContract } from "./render-contract.ts";
 import { readStatus } from "./status.ts";
 import { CLAIM_FORMS, loadDictionary } from "./phrasebook.ts";
 import { appendDecision, renderJournal, readJournal } from "./decisions.ts";
-import { printHooks, runHook } from "./hooks.ts";
+import { printHooks, checkHooks, runHook } from "./hooks.ts";
 
 const cmd = process.argv[2];
 const argv = process.argv.slice(3);
@@ -226,6 +226,7 @@ if (cmd === "graph") {
   console.log(text);
   await exit(0);
 } else if (cmd === "hooks") {
+  if (check) await exit(checkHooks(cfg));
   printHooks(cfg);
   await exit(0);
 } else if (cmd === "hook") {
@@ -354,7 +355,7 @@ if (cmd === "graph") {
   console.error("  blocked \"<what>\" --because \"<why>\"                 log what you could NOT do — first-class, not a footnote");
   console.error("  retract <id> --because \"<what refuted it>\"          withdraw a decision by appending, never by editing");
   console.error("  decisions [--job|--agent|--session|--branch|--sessions|--md]  the MERGED timeline across every session and branch");
-  console.error("  hooks                                               print the settings.json hooks block + agent instructions");
+  console.error("  hooks [--check]                                     print the hooks block; --check asks whether it has ever FIRED");
   console.error("  panel [--no-watch | --once]                  live TUI over the graph + status record");
   console.error("  scene [--diff <ref>]                         persistent isometric worksite (_scene.html); --diff renders a review vs <ref>");
   console.error("  contract                                     the promise graph — graded gates + reliance ledger (_contract.html)");

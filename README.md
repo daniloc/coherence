@@ -554,8 +554,19 @@ The journal is the third option: each agent emits a line per decision **as it ma
 it**, and you read the merged result.
 
 ```sh
-coherence hooks     # print the .claude/settings.json block + what agents get told
+coherence hooks           # print the .claude/settings.json block + what agents get told
+coherence hooks --check   # has it ever actually FIRED?
 ```
+
+**Run `--check`.** The first real test of the hook path failed silently: the settings
+block was present, `coherence hook SubagentStart` emitted correct JSON when run by
+hand, and the subagent received nothing at all — no error, no warning. Some embedded
+and SDK-hosted harnesses do not run project hooks. `--check` reads the tell: a
+hook-opened session writes a `session` header record, so *entries but zero
+hook-opened sessions* means the hook is dead, and it says so with the throwaway
+`PostToolUse` test that proves it either way. **The journal itself needs no hook** —
+`coherence decide` is a plain command; without the hook you put the instruction in
+each agent's brief instead.
 
 `SubagentStart` mints a session id per agent and injects the instruction. Then:
 

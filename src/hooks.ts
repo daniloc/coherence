@@ -16,6 +16,8 @@
 // there. Exit 2 would make the journal a gate, and a gate acquires an incentive to be
 // complete — at which point it is a transcript again, which is the thing it exists to
 // compress.
+import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import { readJournal, openSession } from "./decisions.ts";
 import type { Config } from "./types.ts";
 
@@ -99,6 +101,61 @@ function readStdin(): Promise<string> {
   });
 }
 
+/** `coherence hooks --check` — IS THE HOOK ACTUALLY FIRING?
+ *
+ *  This exists because the first real test of the hook path failed SILENTLY: the
+ *  settings block was present and well-formed, `coherence hook SubagentStart` emitted
+ *  correct JSON when run by hand, and the subagent received nothing at all. No error,
+ *  no warning — the mechanism looked installed and did nothing, which is the exact
+ *  defect this project's doctrine names ("the readFidelity guard reported green for
+ *  hours while gating nothing").
+ *
+ *  The tell is structural: a hook-opened session writes a `session` header record. If
+ *  the journal has decisions but ZERO hook-opened sessions, every entry was logged by
+ *  an agent that was told to by hand, and the hook is not running. */
+export function checkHooks(cfg: Config): number {
+  const settings = join(cfg.root, ".claude", "settings.json");
+  const local = join(cfg.root, ".claude", "settings.local.json");
+  const configured: string[] = [];
+  for (const f of [settings, local]) {
+    if (!existsSync(f)) continue;
+    try {
+      const j = JSON.parse(readFileSync(f, "utf8"));
+      for (const ev of Object.keys(j?.hooks ?? {})) {
+        const cmds = JSON.stringify(j.hooks[ev]);
+        if (cmds.includes("coherence hook")) configured.push(`${ev} (${f.endsWith("local.json") ? "local" : "project"})`);
+      }
+    } catch { console.log(`  ! ${f} is not valid JSON`); }
+  }
+  const { records, sessions } = readJournal(cfg);
+  const opened = records.filter((r) => r.kind === "session");
+  const entries = records.length - opened.length;
+
+  console.log(`hooks configured: ${configured.length ? configured.join(", ") : "NONE"}`);
+  console.log(`journal: ${entries} entr${entries === 1 ? "y" : "ies"} across ${sessions.length} session(s)`);
+  console.log(`sessions OPENED BY A HOOK: ${opened.length}`);
+  console.log("");
+
+  if (!configured.length) {
+    console.log("The hook is not configured. Run `coherence hooks` and paste the block.");
+    return 1;
+  }
+  if (opened.length === 0) {
+    console.log([
+      "CONFIGURED BUT NEVER FIRED. The settings block is present and no hook has ever",
+      "opened a session. Either no agent has started since you added it, or this harness",
+      "is not running project hooks at all — some embedded/SDK hosts do not. Verify with a",
+      "throwaway PostToolUse hook that touches a file, then run any tool: if the file does",
+      "not appear, no project hook runs here and agents must be told to log in their brief.",
+      "",
+      "The journal still works: `coherence decide` is a plain command and needs no hook.",
+    ].join("\n"));
+    return 1;
+  }
+  console.log(`FIRING. ${opened.length} session(s) were opened by the hook.`);
+  return 0;
+}
+
 /** `coherence hooks` — print the block to paste into .claude/settings.json, plus the
  *  instruction text so a reader can see what agents will actually be told. */
 export function printHooks(cfg: Config): void {
@@ -109,7 +166,8 @@ export function printHooks(cfg: Config): void {
       SubagentStop: [{ hooks: [{ type: "command", command: "npx coherence hook SubagentStop" }] }],
     },
   };
-  console.log("Paste into .claude/settings.json (merge with any existing `hooks` key):\n");
+  console.log("Paste into .claude/settings.json (merge with any existing `hooks` key),");
+  console.log("then run `coherence hooks --check` to confirm it actually FIRES:\n");
   console.log(JSON.stringify(block, null, 2));
   console.log(`
 SubagentStart / SessionStart inject the instruction below into the agent's context.
