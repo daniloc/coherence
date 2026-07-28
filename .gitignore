@@ -1,3 +1,12 @@
 node_modules/
 dist/
-.coherence/
+# .coherence/ holds two DIFFERENT kinds of thing, and they need opposite treatment.
+# verify-jobs.json is regenerated on every run and is genuinely a cache. decisions/
+# and status.json are the RECORD — the decision journal and the sticky red history,
+# both cumulative, both worthless if a fresh clone starts empty. A blanket ignore was
+# defensible when this directory held only transient files; it stopped being defensible
+# the moment the journal landed here, and this repo was ignoring the very folder its
+# own README tells consumers to commit.
+.coherence/*
+!.coherence/decisions/
+!.coherence/status.json
