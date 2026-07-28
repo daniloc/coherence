@@ -23,7 +23,23 @@ export function parseSpec(text: string): ParsedSpec {
   const lines = text.split("\n");
   let name = "", intent = "", i = 0, intentLine = -1;
   for (; i < lines.length; i++) { const m = /^#\s+(.+?)\s*$/.exec(lines[i]); if (m) { name = m[1]; i++; break; } }
-  for (; i < lines.length; i++) { const l = lines[i].trim(); if (!l) continue; if (l.startsWith("#")) break; intent = l; intentLine = i; break; }
+  // The intent is the first PARAGRAPH, not the first line. Specs are hard-wrapped at 80
+  // columns, so reading one line chopped every intent mid-clause — and that text is what
+  // the generated CLAUDE.md, the outline, the panel and the scene all show. `intentLine`
+  // is the LAST line consumed, because the prose scan below starts after it.
+  for (; i < lines.length; i++) {
+    const l = lines[i].trim();
+    if (!l) continue;
+    if (l.startsWith("#")) break;
+    const para: string[] = [];
+    for (; i < lines.length; i++) {
+      const t = lines[i].trim();
+      if (!t || t.startsWith("#")) { i--; break; }
+      para.push(t); intentLine = i;
+    }
+    intent = para.join(" ");
+    break;
+  }
   const claims: string[] = [];
   // A claim may carry a trailing KIND — `... via test "t" [structural]`. It is stripped
   // HERE, at the single parse site, so every downstream consumer (parseBoundary, the

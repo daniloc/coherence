@@ -222,3 +222,28 @@ test("claude — the invariant table carries kind + refutation status, and only 
   assert.match(md2, /\| Invariant \| Component \| Chokepoint \| Oracle \|\n/);
   assert.ok(!/Kind|Refuted/.test(md2), "no columns for features the project does not use");
 });
+
+// ── the intent is what every renderer shows, so it must be a whole sentence ──────
+
+test("intent — the first PARAGRAPH, not the first line of a hard-wrapped one", () => {
+  const s = parseSpec(`# game
+
+The player's half of the program: the four priced verbs (\`tools.ts\`), the one
+chokepoint every action crosses (\`actions.ts\`), and the save format (\`save.ts\`).
+
+Some later prose.
+
+## works when
+- typechecks
+`);
+  assert.equal(s.intent,
+    "The player's half of the program: the four priced verbs (`tools.ts`), the one " +
+    "chokepoint every action crosses (`actions.ts`), and the save format (`save.ts`).");
+  assert.match(s.prose, /Some later prose\./);
+  assert.ok(!s.prose.includes("priced verbs"), "the intent must not also appear in prose");
+});
+
+test("intent — a genuinely one-line intent is unchanged, and a spec with none is empty", () => {
+  assert.equal(parseSpec("# c\nintent line\n\n## works when\n- typechecks\n").intent, "intent line");
+  assert.equal(parseSpec("# c\n\n## works when\n- typechecks\n").intent, "");
+});
