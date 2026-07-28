@@ -751,6 +751,15 @@ commit + dirty flag. The record is the last known truth, honestly dated — neve
 claim about the present. Machine-readable by design (`jq`-able; the panel is just one
 consumer).
 
+**Commit `.coherence/status.json`.** The sticky red history (`everFailed`,
+`lastFailAt`, `lastFailCommit`, `runs`) is the only part of the record that is
+CUMULATIVE, and it is what makes the never-red advisory mean anything — a fresh
+clone starts with no history, so nothing has "never been red" and the advisory
+stays silent forever. The cost is honest churn: the timestamp and dirty flag move
+on every run, so the file conflicts on concurrent branches. Resolve by keeping the
+side with the higher `runs` and `everFailed: true` if either has it — those two
+fields only ever ratchet.
+
 Three merge rules keep the record honest (`src/status.ts`):
 
 - **A skip never clobbers a real verdict.** A `--fast` run skips the executable tier;

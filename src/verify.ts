@@ -77,7 +77,6 @@ export async function runVerify(cfg: Config, graph: Graph, opts: { fast?: boolea
     // to what 0.10.0 saw, so every form's grammar, the coverage ratchet, and the status
     // record's identity are untouched. What a kind MEANS is the project's business
     // (config.claimKinds); an unknown one is red because a typo must not grade as unkinded.
-    const body = claim;
     if (kindPolicy && declaredKind && !kindPolicy[declaredKind])
       return { kind: "fail", claim, node, declaredKind,
         detail: `unknown claim kind "${declaredKind}" — config.claimKinds declares: ${Object.keys(kindPolicy).join(", ")}` };
@@ -86,7 +85,7 @@ export async function runVerify(cfg: Config, graph: Graph, opts: { fast?: boolea
       anchor: (inv) => { let set = anchored.get(node); if (!set) { set = new Set(); anchored.set(node, set); } set.add(inv); },
     };
     for (const form of CLAIM_FORMS) {
-      const m = form.match(body);
+      const m = form.match(claim);
       if (m) { const r = await form.evaluate(ctx, m); return { kind: r.kind, claim, node, detail: r.detail, declaredKind }; }
     }
     return { kind: "skip", claim, node, detail: "no verifier (dialect gap)", declaredKind };
