@@ -11,14 +11,21 @@ import { spawnSync } from "node:child_process";
 import { mkdtemp, readFile, readdir, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, relative, resolve } from "node:path";
-import { parseBoundary, type Boundary } from "./boundary.ts";
+import {
+  boundaryInvariantName,
+  formatBoundary,
+  formatBoundaryInvariant,
+  formatBoundaryVia,
+  parseBoundary,
+  type Boundary,
+} from "./boundary.ts";
 import { parseParity, type Parity } from "./parity.ts";
 import { loadConfig } from "./config.ts";
 import { buildGraph } from "./derive.ts";
 import { ownerOf } from "./walk.ts";
 import { CONFORMS_RE, dictionaryDir, parseWord } from "./phrasebook.ts";
 import { noveltyVerdict, renderNovelty, scanSurface, surfaceSignals } from "./novelty.ts";
-import type { Config, Graph, GraphNode } from "./types.ts";
+import type { Config, DbtParity, Graph, GraphEdge, GraphNode } from "./types.ts";
 
 /** Files changed vs `since` (a ref), or — when null — the working tree vs HEAD
  *  PLUS untracked files. Paths are relative to cfg.root (`--relative`). This is the
@@ -136,7 +143,7 @@ function ledgerOf(node: GraphNode): Ledger {
   for (const c of node.claims ?? []) {
     const b = parseBoundary(c);
     const p = b ? null : parseParity(c);
-    if (b) boundaries.set(b.inv, b);
+    if (b) boundaries.set(boundaryInvariantName(b), b);
     else if (p) parities.set(p.inv, p);
     else claims.add(c);
   }
@@ -226,7 +233,79 @@ export interface StructuralDiff {
   parityRemoved: Array<{ comp: string; p: Parity }>;
   parityRewired: Array<{ comp: string; inv: string; before: Parity; after: Parity }>;
   claimDelta: Array<{ comp: string; added: number; removed: number }>;
+  dbtResourcesAdded: Array<{ uniqueId: string; name: string; resourceType: string }>;
+  dbtResourcesRemoved: Array<{ uniqueId: string; name: string; resourceType: string }>;
+  dbtChanged: Array<{
+    uniqueId: string;
+    name: string;
+    dependenciesAdded: string[];
+    dependenciesRemoved: string[];
+    columnsAdded: string[];
+    columnsRemoved: string[];
+    constraintsAdded: string[];
+    constraintsRemoved: string[];
+    rolesAdded: string[];
+    rolesRemoved: string[];
+    grainBefore?: string[];
+    grainAfter?: string[];
+    materializedBefore?: string;
+    materializedAfter?: string;
+  }>;
+  dbtRelationshipsAdded: Array<{ source: string; target: string; contract: NonNullable<GraphEdge["dbt"]> }>;
+  dbtRelationshipsRemoved: Array<{ source: string; target: string; contract: NonNullable<GraphEdge["dbt"]> }>;
+  dbtRelationshipsRewired: Array<{
+    source: string;
+    target: string;
+    before: NonNullable<GraphEdge["dbt"]>;
+    after: NonNullable<GraphEdge["dbt"]>;
+  }>;
+  dbtParitiesAdded: DbtParity[];
+  dbtParitiesRemoved: DbtParity[];
+  dbtParitiesRewired: Array<{ name: string; before: DbtParity; after: DbtParity }>;
 }
+
+const dbtNodes = (graph: Graph) =>
+  new Map(graph.nodes.filter((n) => n.dbt).map((n) => [n.dbt!.uniqueId, n]));
+
+const dbtRelationships = (graph: Graph) => {
+  const labels = new Map(graph.nodes.map((node) => [node.id, node.label]));
+  return new Map(graph.edges.filter((edge) => edge.dbt).map((edge) => [
+    `${edge.source}->${edge.target}`,
+    {
+      edge,
+      source: labels.get(edge.source) ?? edge.source,
+      target: labels.get(edge.target) ?? edge.target,
+    },
+  ]));
+};
+
+const dbtParities = (graph: Graph) => {
+  const labels = new Map(
+    graph.nodes.filter((node) => node.dbt).map((node) => [node.dbt!.uniqueId, node.label]),
+  );
+  return new Map(graph.nodes.flatMap((node) => node.dbt?.parities ?? []).map((parity) => [
+    parity.name,
+    {
+      ...parity,
+      left: labels.get(parity.left) ?? parity.left,
+      right: labels.get(parity.right) ?? parity.right,
+    },
+  ]));
+};
+
+const stringSetDelta = (before: Iterable<string>, after: Iterable<string>) => {
+  const a = new Set(before), b = new Set(after);
+  return {
+    added: [...b].filter((x) => !a.has(x)).sort(),
+    removed: [...a].filter((x) => !b.has(x)).sort(),
+  };
+};
+
+const columnsOf = (n: GraphNode) => (n.dbt?.columns ?? []).map((c) => `${c.name}:${c.dataType ?? "?"}`);
+const constraintsOf = (n: GraphNode) =>
+  (n.dbt?.constraints ?? []).map((constraint) =>
+    `${constraint.type}(${constraint.columns.join(", ")})`
+  );
 
 export function diffGraphs(before: Graph, after: Graph): StructuralDiff {
   const A = ledgersOf(before), B = ledgersOf(after);
@@ -234,6 +313,9 @@ export function diffGraphs(before: Graph, after: Graph): StructuralDiff {
     componentsAdded: [], componentsRemoved: [], invAdded: [], invRemoved: [],
     boundaryAdded: [], boundaryRemoved: [], boundaryRewired: [],
     parityAdded: [], parityRemoved: [], parityRewired: [], claimDelta: [],
+    dbtResourcesAdded: [], dbtResourcesRemoved: [], dbtChanged: [],
+    dbtRelationshipsAdded: [], dbtRelationshipsRemoved: [], dbtRelationshipsRewired: [],
+    dbtParitiesAdded: [], dbtParitiesRemoved: [], dbtParitiesRewired: [],
   };
   for (const label of B.keys()) if (!A.has(label)) d.componentsAdded.push(label);
   for (const label of A.keys()) if (!B.has(label)) d.componentsRemoved.push(label);
@@ -246,7 +328,10 @@ export function diffGraphs(before: Graph, after: Graph): StructuralDiff {
     for (const [inv, bnd] of b.boundaries) {
       const prev = a.boundaries.get(inv);
       if (!prev) d.boundaryAdded.push({ comp: label, b: bnd });
-      else if (prev.chokepoint !== bnd.chokepoint || prev.oracle !== bnd.oracle || prev.verb !== bnd.verb)
+      else if (
+        prev.chokepoint !== bnd.chokepoint ||
+        formatBoundaryVia(prev) !== formatBoundaryVia(bnd)
+      )
         d.boundaryRewired.push({ comp: label, inv, before: prev, after: bnd });
     }
     for (const [inv, bnd] of a.boundaries) if (!b.boundaries.has(inv)) d.boundaryRemoved.push({ comp: label, b: bnd });
@@ -263,16 +348,96 @@ export function diffGraphs(before: Graph, after: Graph): StructuralDiff {
     for (const c of a.claims) if (!b.claims.has(c)) removed++;
     if (added || removed) d.claimDelta.push({ comp: label, added, removed });
   }
+
+  const dbtA = dbtNodes(before), dbtB = dbtNodes(after);
+  for (const [uniqueId, n] of dbtB) if (!dbtA.has(uniqueId))
+    d.dbtResourcesAdded.push({ uniqueId, name: n.label, resourceType: n.dbt!.resourceType });
+  for (const [uniqueId, n] of dbtA) if (!dbtB.has(uniqueId))
+    d.dbtResourcesRemoved.push({ uniqueId, name: n.label, resourceType: n.dbt!.resourceType });
+  for (const [uniqueId, b] of dbtB) {
+    const a = dbtA.get(uniqueId);
+    if (!a) continue;
+    const dependencies = stringSetDelta(a.dbt!.dependsOn, b.dbt!.dependsOn);
+    const columns = stringSetDelta(columnsOf(a), columnsOf(b));
+    const constraints = stringSetDelta(constraintsOf(a), constraintsOf(b));
+    const roles = stringSetDelta(a.dbt!.roles, b.dbt!.roles);
+    const grainBefore = a.dbt!.grain;
+    const grainAfter = b.dbt!.grain;
+    const grainChanged = JSON.stringify(grainBefore ?? []) !== JSON.stringify(grainAfter ?? []);
+    const materializedChanged = a.dbt!.materialized !== b.dbt!.materialized;
+    if (
+      dependencies.added.length || dependencies.removed.length ||
+      columns.added.length || columns.removed.length ||
+      constraints.added.length || constraints.removed.length ||
+      roles.added.length || roles.removed.length ||
+      grainChanged || materializedChanged
+    ) {
+      d.dbtChanged.push({
+        uniqueId,
+        name: b.label,
+        dependenciesAdded: dependencies.added,
+        dependenciesRemoved: dependencies.removed,
+        columnsAdded: columns.added,
+        columnsRemoved: columns.removed,
+        constraintsAdded: constraints.added,
+        constraintsRemoved: constraints.removed,
+        rolesAdded: roles.added,
+        rolesRemoved: roles.removed,
+        grainBefore,
+        grainAfter,
+        materializedBefore: a.dbt!.materialized,
+        materializedAfter: b.dbt!.materialized,
+      });
+    }
+  }
+  const relA = dbtRelationships(before), relB = dbtRelationships(after);
+  for (const [key, relationship] of relB) {
+    const previous = relA.get(key);
+    if (!previous) d.dbtRelationshipsAdded.push({
+      source: relationship.source,
+      target: relationship.target,
+      contract: relationship.edge.dbt!,
+    });
+    else if (JSON.stringify(previous.edge.dbt) !== JSON.stringify(relationship.edge.dbt))
+      d.dbtRelationshipsRewired.push({
+        source: relationship.source,
+        target: relationship.target,
+        before: previous.edge.dbt!,
+        after: relationship.edge.dbt!,
+      });
+  }
+  for (const [key, relationship] of relA) if (!relB.has(key))
+    d.dbtRelationshipsRemoved.push({
+      source: relationship.source,
+      target: relationship.target,
+      contract: relationship.edge.dbt!,
+    });
+  const dbtParityA = dbtParities(before), dbtParityB = dbtParities(after);
+  for (const [name, parity] of dbtParityB) {
+    const previous = dbtParityA.get(name);
+    if (!previous) d.dbtParitiesAdded.push(parity);
+    else if (
+      previous.left !== parity.left ||
+      previous.right !== parity.right ||
+      previous.oracle !== parity.oracle
+    ) d.dbtParitiesRewired.push({ name, before: previous, after: parity });
+  }
+  for (const [name, parity] of dbtParityA)
+    if (!dbtParityB.has(name)) d.dbtParitiesRemoved.push(parity);
   return d;
 }
 
-const fmtB = (b: Boundary) => `"${b.inv}" at ${b.chokepoint}${b.oracle ? ` via ${b.verb} "${b.oracle}"` : ""}`;
+const fmtB = (b: Boundary) => formatBoundary(b).slice("boundary ".length);
 const fmtP = (p: Parity) => `"${p.inv}" over ${p.domain} between ${p.f} and ${p.g} via test "${p.oracle}"`;
 
 /** Render the diff; return the count of LOSSES (removed invariants/boundaries/parities/components). */
 export function renderDiff(d: StructuralDiff, fromLabel: string, toLabel: string): number {
   console.log(`\n  STRUCTURAL LEDGER — ${fromLabel} → ${toLabel}\n`);
-  const losses = d.componentsRemoved.length + d.invRemoved.length + d.boundaryRemoved.length + d.parityRemoved.length;
+  const dbtShapeLosses = d.dbtChanged.reduce((n, x) =>
+    n + x.columnsRemoved.length + x.constraintsRemoved.length + x.rolesRemoved.length +
+    (x.grainBefore?.length && !x.grainAfter?.length ? 1 : 0), 0);
+  const losses = d.componentsRemoved.length + d.invRemoved.length + d.boundaryRemoved.length + d.parityRemoved.length
+    + d.dbtResourcesRemoved.length + d.dbtRelationshipsRemoved.length + d.dbtParitiesRemoved.length + dbtShapeLosses;
   const line = (mark: string, s: string) => console.log(`  ${mark} ${s}`);
 
   if (d.componentsAdded.length) for (const c of d.componentsAdded) line("+", `component ${c}`);
@@ -284,10 +449,10 @@ export function renderDiff(d: StructuralDiff, fromLabel: string, toLabel: string
   for (const x of d.boundaryAdded) line("+", `boundary ${fmtB(x.b)} (${x.comp})`);
   for (const x of d.boundaryRemoved) line("–", `boundary ${fmtB(x.b)} (${x.comp})  (ANCHOR REMOVED)`);
   for (const x of d.boundaryRewired) {
-    line("~", `boundary "${x.inv}" (${x.comp}) rewired:`);
+    line("~", `boundary ${formatBoundaryInvariant(x.before)} (${x.comp}) rewired:`);
     const cp = x.before.chokepoint !== x.after.chokepoint ? `chokepoint ${x.before.chokepoint} → ${x.after.chokepoint}` : "";
-    const or = x.before.oracle !== x.after.oracle || x.before.verb !== x.after.verb
-      ? `oracle ${x.before.verb} "${x.before.oracle}" → ${x.after.verb} "${x.after.oracle}"` : "";
+    const or = formatBoundaryVia(x.before) !== formatBoundaryVia(x.after)
+      ? `oracle${formatBoundaryVia(x.before)} →${formatBoundaryVia(x.after)}` : "";
     for (const s of [cp, or].filter(Boolean)) console.log(`      ${s}`);
   }
 
@@ -307,8 +472,50 @@ export function renderDiff(d: StructuralDiff, fromLabel: string, toLabel: string
     console.log(`\n  (${tot} non-boundary claim change(s) across ${d.claimDelta.length} component(s): ${d.claimDelta.map((c) => `${c.comp} +${c.added}/-${c.removed}`).join(", ")})`);
   }
 
+  for (const x of d.dbtResourcesAdded) line("+", `dbt ${x.resourceType} ${x.name}`);
+  for (const x of d.dbtResourcesRemoved) line("–", `dbt ${x.resourceType} ${x.name}  (REMOVED)`);
+  for (const x of d.dbtChanged) {
+    line("~", `dbt ${x.name}`);
+    if (x.dependenciesAdded.length) console.log(`      dependencies +${x.dependenciesAdded.join(", +")}`);
+    if (x.dependenciesRemoved.length) console.log(`      dependencies -${x.dependenciesRemoved.join(", -")}`);
+    if (x.columnsAdded.length) console.log(`      columns +${x.columnsAdded.join(", +")}`);
+    if (x.columnsRemoved.length) console.log(`      columns -${x.columnsRemoved.join(", -")}  (SHAPE REMOVED)`);
+    if (x.constraintsAdded.length) console.log(`      constraints +${x.constraintsAdded.join(", +")}`);
+    if (x.constraintsRemoved.length) console.log(`      constraints -${x.constraintsRemoved.join(", -")}  (PROPERTY REMOVED)`);
+    if (x.rolesAdded.length) console.log(`      roles +${x.rolesAdded.join(", +")}`);
+    if (x.rolesRemoved.length) console.log(`      roles -${x.rolesRemoved.join(", -")}  (CLASSIFICATION REMOVED)`);
+    if (JSON.stringify(x.grainBefore ?? []) !== JSON.stringify(x.grainAfter ?? []))
+      console.log(`      grain [${x.grainBefore?.join(", ") ?? "undeclared"}] → [${x.grainAfter?.join(", ") ?? "undeclared"}]`);
+    if (x.materializedBefore !== x.materializedAfter)
+      console.log(`      materialization ${x.materializedBefore ?? "unset"} → ${x.materializedAfter ?? "unset"}`);
+  }
+  for (const x of d.dbtRelationshipsAdded)
+    line("+", `dbt relationship ${x.target} → ${x.source} (${x.contract.multiplicity}, ${x.contract.filtering})`);
+  for (const x of d.dbtRelationshipsRemoved)
+    line("–", `dbt relationship ${x.target} → ${x.source} (${x.contract.multiplicity}, ${x.contract.filtering})  (CONTRACT REMOVED)`);
+  for (const x of d.dbtRelationshipsRewired) {
+    line("~", `dbt relationship ${x.target} → ${x.source}`);
+    console.log(`      multiplicity ${x.before.multiplicity} → ${x.after.multiplicity}`);
+    console.log(`      filtering ${x.before.filtering} → ${x.after.filtering}`);
+  }
+  const fmtDbtParity = (parity: DbtParity) =>
+    `"${parity.name}" between ${parity.left} and ${parity.right} via test "${parity.oracle}"`;
+  for (const parity of d.dbtParitiesAdded)
+    line("+", `dbt parity ${fmtDbtParity(parity)}`);
+  for (const parity of d.dbtParitiesRemoved)
+    line("–", `dbt parity ${fmtDbtParity(parity)}  (AGREEMENT ANCHOR REMOVED)`);
+  for (const parity of d.dbtParitiesRewired) {
+    line("~", `dbt parity "${parity.name}" rewired:`);
+    if (parity.before.left !== parity.after.left || parity.before.right !== parity.after.right)
+      console.log(`      models ${parity.before.left}/${parity.before.right} → ${parity.after.left}/${parity.after.right}`);
+    if (parity.before.oracle !== parity.after.oracle)
+      console.log(`      oracle "${parity.before.oracle}" → "${parity.after.oracle}"`);
+  }
+
   const changed = losses + d.componentsAdded.length + d.invAdded.length + d.boundaryAdded.length + d.boundaryRewired.length
-    + d.parityAdded.length + d.parityRewired.length;
+    + d.parityAdded.length + d.parityRewired.length + d.dbtResourcesAdded.length + d.dbtChanged.length
+    + d.dbtRelationshipsAdded.length + d.dbtRelationshipsRewired.length
+    + d.dbtParitiesAdded.length + d.dbtParitiesRewired.length;
   if (!changed && !d.claimDelta.length) console.log("  no structural change.");
   console.log(`\n  ${changed} structural change(s) · ${losses} loss(es) (removed invariant/boundary/parity/component)`);
   return losses;
@@ -363,7 +570,7 @@ export async function structuralLog(cfg: Config, refA: string, refB: string | nu
   const sig = surfaceSignals(
     before.surface, after.surface,
     locDelta(cfg, refA, refB),
-    { anchorsAdded: d.invAdded.length + d.boundaryAdded.length + d.parityAdded.length, componentsAdded: d.componentsAdded.length },
+    { anchorsAdded: d.invAdded.length + d.boundaryAdded.length + d.parityAdded.length + d.dbtParitiesAdded.length, componentsAdded: d.componentsAdded.length },
   );
   renderNovelty(sig, noveltyVerdict(sig, cfg.novelty));
 

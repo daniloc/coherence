@@ -22,6 +22,7 @@
 //   symbols; uncovered files are flagged (advisory — the loud gap list #1's novelty
 //   advisory drives you to declare, not yet a hard gate).
 import type { Config, Graph } from "./types.ts";
+import { formatBoundaryInvariant } from "./boundary.ts";
 import { globToRe } from "./decompose.ts";
 import { allBoundaries } from "./structural.ts";
 import { parseParity } from "./parity.ts";
@@ -65,7 +66,7 @@ export async function contracts(cfg: Config, graph: Graph, mode: "render" | "che
     const out: string[] = [];
     for (const l of labels) {
       const b = boundaryAt.get(l);
-      if (b) out.push(`boundary "${b.inv}" at ${l} (${b.component})`);
+      if (b) out.push(`boundary ${formatBoundaryInvariant(b)} at ${l} (${b.component})`);
       for (const p of parityClaims)
         if (p.f === l || p.g === l || p.domain === l) out.push(`parity "${p.inv}" over ${p.domain} (${p.comp})`);
     }

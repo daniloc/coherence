@@ -23,7 +23,7 @@ test("diffGraphs — a removed boundary anchor is recorded as a loss", () => {
   const after = graph([comp(".", { label: "Hive", claims: [], invariants: ["egress"], why: "r" })]);
   const d = diffGraphs(before, after);
   assert.equal(d.boundaryRemoved.length, 1);
-  assert.equal(d.boundaryRemoved[0].b.inv, "egress");
+  assert.deepEqual(d.boundaryRemoved[0].b.invariant, { kind: "named", name: "egress" });
 });
 
 test("diffGraphs — a removed invariant is a loss", () => {
@@ -53,6 +53,43 @@ test("diffGraphs — additions are tracked but are not losses", () => {
   assert.deepEqual(d.invAdded, [{ comp: "Hive", inv: "writes" }]);
   assert.equal(d.boundaryAdded.length, 1);
   assert.equal(d.invRemoved.length + d.boundaryRemoved.length + d.componentsRemoved.length, 0);
+});
+
+test("renderDiff — `via shadow` remains first-class boundary syntax", async () => {
+  const before = graph([comp(".", { label: "Money", why: "r" })]);
+  const after = graph([comp(".", {
+    label: "Money",
+    claims: ['boundary "canonical ledger access" at ledger via shadow'],
+    invariants: ["canonical ledger access"],
+    why: "r",
+  })]);
+  const result = await runCaptured(async () => renderDiff(diffGraphs(before, after), "A", "B"));
+  assert.match(result.out, /\+ boundary "canonical ledger access" at ledger via shadow \(Money\)/);
+  assert.doesNotMatch(result.out, /via shadow ""/);
+});
+
+test("renderDiff — `via dbt test` remains first-class boundary syntax", async () => {
+  const before = graph([comp(".", { label: "Money", why: "r" })]);
+  const after = graph([comp(".", {
+    label: "Money",
+    claims: ['boundary "ledger balances" at ledger via dbt test "ledger_balances"'],
+    invariants: ["ledger balances"],
+    why: "r",
+  })]);
+  const result = await runCaptured(async () => renderDiff(diffGraphs(before, after), "A", "B"));
+  assert.match(result.out, /\+ boundary "ledger balances" at ledger via dbt test "ledger_balances" \(Money\)/);
+});
+
+test("renderDiff — structured dbt schema boundaries stay structured", async () => {
+  const before = graph([comp(".", { label: "Money", why: "r" })]);
+  const after = graph([comp(".", {
+    label: "Money",
+    claims: ["boundary unique(event_id) at unified_events via dbt schema"],
+    invariants: ["unique(event_id)"],
+    why: "r",
+  })]);
+  const result = await runCaptured(async () => renderDiff(diffGraphs(before, after), "A", "B"));
+  assert.match(result.out, /\+ boundary unique\(event_id\) at unified_events via dbt schema \(Money\)/);
 });
 
 test("renderDiff — counts losses (the number --strict gates on)", async () => {
@@ -116,9 +153,9 @@ test("allBoundaries — keyed by chokepoint symbol, first declaration wins", () 
   ]);
   const all = allBoundaries(g);
   assert.equal(all.size, 2);
-  assert.equal(all.get("seal")!.inv, "x");
+  assert.deepEqual(all.get("seal")!.invariant, { kind: "named", name: "x" });
   assert.equal(all.get("seal")!.component, "A");
-  assert.equal(all.get("mint")!.verb, "guard");
+  assert.deepEqual(all.get("mint")!.oracle, { kind: "guard", name: "g" });
 });
 
 // ── parity claims in the ledger — agreement anchors are first-class ──────────────────
