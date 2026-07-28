@@ -6,10 +6,17 @@ export interface DbtShadowViolation {
   privateModel: string;
 }
 
+export interface DbtObserverViolation {
+  observer: string;
+  consumer: string;
+}
+
 export interface DbtShadowReport {
   chokepoints: number;
   privateModels: number;
+  observers: number;
   violations: DbtShadowViolation[];
+  observerViolations: DbtObserverViolation[];
 }
 
 /**
@@ -25,6 +32,7 @@ export function dbtShadowReport(graph: Graph): DbtShadowReport {
   const byId = new Map(dbtNodes.map((node) => [node.id, node]));
   const byUniqueId = new Map(dbtNodes.map((node) => [node.dbt!.uniqueId, node]));
   const violations: DbtShadowViolation[] = [];
+  const observerViolations: DbtObserverViolation[] = [];
 
   for (const edge of graph.edges) {
     if (edge.kind !== "dbt-depends-on") continue;
@@ -34,6 +42,14 @@ export function dbtShadowReport(graph: Graph): DbtShadowReport {
       consumer?.dbt?.resourceType !== "model" ||
       dependency?.dbt?.resourceType !== "model"
     ) continue;
+
+    if (dependency.dbt.observer) {
+      observerViolations.push({
+        observer: dependency.label,
+        consumer: consumer.label,
+      });
+    }
+    if (consumer.dbt.observer) continue;
 
     for (const chokepointId of dependency.dbt.shadowedBy ?? []) {
       const consumerInside =
@@ -53,9 +69,15 @@ export function dbtShadowReport(graph: Graph): DbtShadowReport {
     a.consumer.localeCompare(b.consumer) ||
     a.privateModel.localeCompare(b.privateModel)
   );
+  observerViolations.sort((a, b) =>
+    a.observer.localeCompare(b.observer) ||
+    a.consumer.localeCompare(b.consumer)
+  );
   return {
     chokepoints: dbtNodes.filter((node) => node.dbt?.chokepoint).length,
     privateModels: dbtNodes.filter((node) => node.dbt?.shadowedBy?.length).length,
+    observers: dbtNodes.filter((node) => node.dbt?.observer).length,
     violations,
+    observerViolations,
   };
 }

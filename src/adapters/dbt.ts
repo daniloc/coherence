@@ -38,6 +38,7 @@ interface DbtSemantics {
   scope?: string[];
   roles?: Record<string, string[]>;
   chokepoints?: string[];
+  observers?: string[];
   parities?: Record<string, {
     between: [string, string];
     via: string;
@@ -244,6 +245,22 @@ export async function dbtGraphFragment(
     chokepoints.set(model.uniqueId, model);
   }
 
+  if (
+    semantics.observers !== undefined &&
+    (
+      !Array.isArray(semantics.observers) ||
+      semantics.observers.some((selector) => typeof selector !== "string" || !selector)
+    )
+  ) throw new Error("dbt observers must contain non-empty model selectors");
+  const observers = new Set<string>();
+  for (const selector of new Set(semantics.observers ?? [])) {
+    const selected = resources.filter((resource) =>
+      resource.resourceType === "model" && matches(resource, selector)
+    );
+    if (!selected.length) throw new Error(`dbt observer selector "${selector}" matched no models`);
+    for (const resource of selected) observers.add(resource.uniqueId);
+  }
+
   // A chokepoint owns every upstream model reachable from it, stopping at other
   // chokepoints. Sources and tests stay public: the boundary governs model reuse,
   // not whether an internal model can be tested or where its raw data originated.
@@ -365,6 +382,7 @@ export async function dbtGraphFragment(
         })),
         roles: assignedRoles,
         chokepoint: chokepoints.has(r.uniqueId) ? true : undefined,
+        observer: observers.has(r.uniqueId) ? true : undefined,
         shadowedBy: shadowedBy.has(r.uniqueId) ? [...shadowedBy.get(r.uniqueId)!].sort() : undefined,
         parities: paritiesByOracle.get(r.uniqueId),
         grain: grain.get(r.uniqueId),

@@ -155,6 +155,11 @@ export async function runVerify(cfg: Config, graph: Graph, opts: { fast?: boolea
     for (const violation of shadows.violations)
       console.log(`  ✗ [dbt shadow] ${violation.consumer} depends on ${violation.privateModel}, which is private behind ${violation.chokepoint}; depend on ${violation.chokepoint} instead`);
   }
+  if (shadows.observers) {
+    console.log(`dbt observers: ${shadows.observers} declared · ${shadows.observerViolations.length} model read${shadows.observerViolations.length === 1 ? "" : "s"}`);
+    for (const violation of shadows.observerViolations)
+      console.log(`  ✗ [dbt observer] ${violation.consumer} depends on observer ${violation.observer}; observers must be leaves`);
+  }
 
   const dbtNodesByUniqueId = new Map(
     graph.nodes.filter((node) => node.dbt).map((node) => [node.dbt!.uniqueId, node]),
@@ -201,7 +206,7 @@ export async function runVerify(cfg: Config, graph: Graph, opts: { fast?: boolea
     if (authorJobs.length) { console.log(`\n AUTHOR — the WHY (NOT derivable — do not fabricate; needs a human/attested author):`); for (const j of authorJobs) console.log(`   [why] component "${j.name}" — states no rationale`); }
   }
 
-  const failures = claimFailures + broken + covGaps + shadows.violations.length + dbtParityRed;
-  console.log(failures === 0 ? (verifyJobs.length ? `\n• ${verifyJobs.length} verification job(s) pending` : "\n✓ coherent") : `\n✗ ${failures} coherence failure(s) — ${claimFailures} claim · ${broken} broken · ${covGaps} coverage · ${shadows.violations.length} dbt shadow · ${dbtParityRed} dbt parity`);
+  const failures = claimFailures + broken + covGaps + shadows.violations.length + shadows.observerViolations.length + dbtParityRed;
+  console.log(failures === 0 ? (verifyJobs.length ? `\n• ${verifyJobs.length} verification job(s) pending` : "\n✓ coherent") : `\n✗ ${failures} coherence failure(s) — ${claimFailures} claim · ${broken} broken · ${covGaps} coverage · ${shadows.violations.length} dbt shadow · ${shadows.observerViolations.length} dbt observer · ${dbtParityRed} dbt parity`);
   return failures === 0 ? 0 : 1;
 }

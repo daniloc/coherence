@@ -534,7 +534,7 @@ test("`via shadow` binds a boundary property to the dbt shadow oracle without do
   assert.equal(result.code, 1);
   assert.match(result.out, /\[Money\] boundary "outside consumers cross c" at c via shadow — 1 shadow bypass; individual violation reported below/);
   assert.match(result.out, /\[dbt shadow\] e depends on a, which is private behind c; depend on c instead/);
-  assert.match(result.out, /✗ 1 coherence failure\(s\) — 0 claim · 0 broken · 0 coverage · 1 dbt shadow · 0 dbt parity/);
+  assert.match(result.out, /✗ 1 coherence failure\(s\) — 0 claim · 0 broken · 0 coverage · 1 dbt shadow · 0 dbt observer · 0 dbt parity/);
 });
 
 test("`via shadow` passes when the declared dbt chokepoint has no bypasses", async () => {
@@ -550,7 +550,7 @@ test("`via shadow` fails closed when its target is not a declared dbt chokepoint
 
   assert.equal(result.code, 1);
   assert.match(result.out, /dbt model "d" is not declared as a chokepoint/);
-  assert.match(result.out, /✗ 1 coherence failure\(s\) — 1 claim · 0 broken · 0 coverage · 0 dbt shadow · 0 dbt parity/);
+  assert.match(result.out, /✗ 1 coherence failure\(s\) — 1 claim · 0 broken · 0 coverage · 0 dbt shadow · 0 dbt observer · 0 dbt parity/);
 });
 
 const dbtOracleManifest = {
@@ -765,6 +765,94 @@ test("`via dbt test` fails closed for unknown or detached tests", async () => {
   assert.match(detached.out, /dbt test "c_contract" does not depend on model "c"/);
 });
 
+test("dbt observers may inspect shadows but are unreadable by models", async () => {
+  const observerManifest = {
+    ...shadowManifest,
+    resources: [
+      ...shadowManifest.resources.filter((resource) => resource.name !== "e"),
+      {
+        uniqueId: "model.money.diag",
+        resourceType: "model",
+        name: "diag",
+        originalFilePath: "models/diagnostics/diag.sql",
+        dependsOn: ["model.money.a"],
+        columns: [],
+      },
+      {
+        uniqueId: "model.money.diag_consumer",
+        resourceType: "model",
+        name: "diag_consumer",
+        originalFilePath: "models/diag_consumer.sql",
+        dependsOn: ["model.money.diag"],
+        columns: [],
+      },
+      {
+        uniqueId: "test.money.diag_contract",
+        resourceType: "test",
+        name: "diag_contract",
+        originalFilePath: "tests/diag_contract.sql",
+        dependsOn: ["model.money.diag"],
+        columns: [],
+      },
+    ],
+  };
+  const root = await tmpProject({
+    ".coherence/dbt-manifest.json": JSON.stringify(observerManifest),
+    "coherence.dbt.json": JSON.stringify({
+      ...shadowSemantics,
+      observers: ["models/diagnostics/**"],
+    }),
+  });
+  try {
+    const g = await buildGraph(cfg(root, {
+      dbt: {
+        manifest: "target/manifest.json",
+        snapshot: ".coherence/dbt-manifest.json",
+        semantics: "coherence.dbt.json",
+      },
+    }));
+    const observer = g.nodes.find((node) => node.label === "diag");
+    assert.equal(observer?.dbt?.observer, true);
+
+    const report = dbtShadowReport(g);
+    assert.deepEqual(report.violations, []);
+    assert.deepEqual(report.observerViolations, [{
+      observer: "diag",
+      consumer: "diag_consumer",
+    }]);
+
+    const result = await runCaptured(() => runVerify(cfg(root), g, { fast: true }));
+    assert.equal(result.code, 1);
+    assert.match(result.out, /dbt observers: 1 declared · 1 model read/);
+    assert.match(result.out, /\[dbt observer\] diag_consumer depends on observer diag; observers must be leaves/);
+  } finally {
+    await cleanup(root);
+  }
+});
+
+test("dbt observer selectors fail closed when they match no models", async () => {
+  const root = await tmpProject({
+    ".coherence/dbt-manifest.json": JSON.stringify(shadowManifest),
+    "coherence.dbt.json": JSON.stringify({
+      ...shadowSemantics,
+      observers: ["model:missing"],
+    }),
+  });
+  try {
+    await assert.rejects(
+      buildGraph(cfg(root, {
+        dbt: {
+          manifest: "target/manifest.json",
+          snapshot: ".coherence/dbt-manifest.json",
+          semantics: "coherence.dbt.json",
+        },
+      })),
+      /dbt observer selector "model:missing" matched no models/,
+    );
+  } finally {
+    await cleanup(root);
+  }
+});
 test("dbt chokepoints fail closed when they name an unknown model", async () => {
   const root = await tmpProject({
     ".coherence/dbt-manifest.json": JSON.stringify(shadowManifest),
@@ -875,6 +963,22 @@ test("structural dbt diff explains dependencies, columns, constraints, grain, an
   const rendered = await runCaptured(async () => renderDiff(d, "A", "B"));
   assert.equal(rendered.code, 1);
   assert.match(rendered.out, /constraints -unique\(entry_id\)  \(PROPERTY REMOVED\)/);
+});
+
+test("structural dbt diff records observer classification and treats removal as a loss", async () => {
+  const ordinary = dbtNode("model.money.diag");
+  const observer = dbtNode("model.money.diag", { observer: true });
+
+  const added = diffGraphs(graph([ordinary]), graph([observer]));
+  assert.equal(added.dbtChanged[0].observerBefore, false);
+  assert.equal(added.dbtChanged[0].observerAfter, true);
+
+  const removed = diffGraphs(graph([observer]), graph([ordinary]));
+  const result = await runCaptured(async () => (
+    await import("../src/structural.ts")
+  ).renderDiff(removed, "before", "after"));
+  assert.equal(result.code, 1);
+  assert.match(result.out, /observer true → false.*CLASSIFICATION REMOVED/);
 });
 
 test("structural dbt diff treats removed parity as a loss", async () => {

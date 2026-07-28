@@ -246,6 +246,8 @@ export interface StructuralDiff {
     constraintsRemoved: string[];
     rolesAdded: string[];
     rolesRemoved: string[];
+    observerBefore: boolean;
+    observerAfter: boolean;
     grainBefore?: string[];
     grainAfter?: string[];
     materializedBefore?: string;
@@ -361,6 +363,8 @@ export function diffGraphs(before: Graph, after: Graph): StructuralDiff {
     const columns = stringSetDelta(columnsOf(a), columnsOf(b));
     const constraints = stringSetDelta(constraintsOf(a), constraintsOf(b));
     const roles = stringSetDelta(a.dbt!.roles, b.dbt!.roles);
+    const observerBefore = !!a.dbt!.observer;
+    const observerAfter = !!b.dbt!.observer;
     const grainBefore = a.dbt!.grain;
     const grainAfter = b.dbt!.grain;
     const grainChanged = JSON.stringify(grainBefore ?? []) !== JSON.stringify(grainAfter ?? []);
@@ -370,6 +374,7 @@ export function diffGraphs(before: Graph, after: Graph): StructuralDiff {
       columns.added.length || columns.removed.length ||
       constraints.added.length || constraints.removed.length ||
       roles.added.length || roles.removed.length ||
+      observerBefore !== observerAfter ||
       grainChanged || materializedChanged
     ) {
       d.dbtChanged.push({
@@ -383,6 +388,8 @@ export function diffGraphs(before: Graph, after: Graph): StructuralDiff {
         constraintsRemoved: constraints.removed,
         rolesAdded: roles.added,
         rolesRemoved: roles.removed,
+        observerBefore,
+        observerAfter,
         grainBefore,
         grainAfter,
         materializedBefore: a.dbt!.materialized,
@@ -435,6 +442,7 @@ export function renderDiff(d: StructuralDiff, fromLabel: string, toLabel: string
   console.log(`\n  STRUCTURAL LEDGER — ${fromLabel} → ${toLabel}\n`);
   const dbtShapeLosses = d.dbtChanged.reduce((n, x) =>
     n + x.columnsRemoved.length + x.constraintsRemoved.length + x.rolesRemoved.length +
+    (x.observerBefore && !x.observerAfter ? 1 : 0) +
     (x.grainBefore?.length && !x.grainAfter?.length ? 1 : 0), 0);
   const losses = d.componentsRemoved.length + d.invRemoved.length + d.boundaryRemoved.length + d.parityRemoved.length
     + d.dbtResourcesRemoved.length + d.dbtRelationshipsRemoved.length + d.dbtParitiesRemoved.length + dbtShapeLosses;
@@ -484,6 +492,8 @@ export function renderDiff(d: StructuralDiff, fromLabel: string, toLabel: string
     if (x.constraintsRemoved.length) console.log(`      constraints -${x.constraintsRemoved.join(", -")}  (PROPERTY REMOVED)`);
     if (x.rolesAdded.length) console.log(`      roles +${x.rolesAdded.join(", +")}`);
     if (x.rolesRemoved.length) console.log(`      roles -${x.rolesRemoved.join(", -")}  (CLASSIFICATION REMOVED)`);
+    if (x.observerBefore !== x.observerAfter)
+      console.log(`      observer ${x.observerBefore} → ${x.observerAfter}${x.observerBefore ? "  (CLASSIFICATION REMOVED)" : ""}`);
     if (JSON.stringify(x.grainBefore ?? []) !== JSON.stringify(x.grainAfter ?? []))
       console.log(`      grain [${x.grainBefore?.join(", ") ?? "undeclared"}] → [${x.grainAfter?.join(", ") ?? "undeclared"}]`);
     if (x.materializedBefore !== x.materializedAfter)

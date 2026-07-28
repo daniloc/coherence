@@ -28,6 +28,7 @@ export interface GraphNode {
     constraints: DbtConstraint[];
     roles: string[];
     chokepoint?: true;
+    observer?: true;
     shadowedBy?: string[];
     parities?: DbtParity[];
     grain?: string[];
