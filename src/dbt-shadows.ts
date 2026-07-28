@@ -23,14 +23,35 @@ export interface DbtShadowReport {
  * Check the visibility boundary encoded by dbt chokepoint shadows.
  *
  * dbt dependency edges point from consumer to dependency. A dependency hidden
- * behind C may therefore be read only by C itself or by another model in C's
- * shadow. Tests are deliberately outside this rule: testing an internal model
- * does not make it part of the project's public data interface.
+ * behind C may therefore be reused by upstream peer branches, but a model
+ * downstream of C must not bypass C and read that dependency directly. Tests
+ * are deliberately outside this rule: testing an internal model does not make
+ * it part of the project's public data interface.
  */
 export function dbtShadowReport(graph: Graph): DbtShadowReport {
   const dbtNodes = graph.nodes.filter((node) => node.dbt);
   const byId = new Map(dbtNodes.map((node) => [node.id, node]));
   const byUniqueId = new Map(dbtNodes.map((node) => [node.dbt!.uniqueId, node]));
+  const consumersByDependency = new Map<string, string[]>();
+  for (const edge of graph.edges) {
+    if (edge.kind !== "dbt-depends-on") continue;
+    const consumers = consumersByDependency.get(edge.target) ?? [];
+    consumers.push(edge.source);
+    consumersByDependency.set(edge.target, consumers);
+  }
+  const downstreamByChokepoint = new Map<string, Set<string>>();
+  for (const chokepoint of dbtNodes.filter((node) => node.dbt?.chokepoint)) {
+    const downstream = new Set<string>();
+    const pending = [...(consumersByDependency.get(chokepoint.id) ?? [])];
+    while (pending.length) {
+      const consumerId = pending.pop()!;
+      const consumer = byId.get(consumerId);
+      if (consumer?.dbt?.resourceType !== "model" || downstream.has(consumerId)) continue;
+      downstream.add(consumerId);
+      pending.push(...(consumersByDependency.get(consumerId) ?? []));
+    }
+    downstreamByChokepoint.set(chokepoint.dbt!.uniqueId, downstream);
+  }
   const violations: DbtShadowViolation[] = [];
   const observerViolations: DbtObserverViolation[] = [];
 
@@ -52,6 +73,8 @@ export function dbtShadowReport(graph: Graph): DbtShadowReport {
     if (consumer.dbt.observer) continue;
 
     for (const chokepointId of dependency.dbt.shadowedBy ?? []) {
+      const consumerDownstream = downstreamByChokepoint.get(chokepointId)?.has(consumer.id);
+      if (!consumerDownstream) continue;
       const consumerInside =
         consumer.dbt.uniqueId === chokepointId ||
         consumer.dbt.shadowedBy?.includes(chokepointId);

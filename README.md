@@ -241,8 +241,11 @@ parity is first-class in the structural ledger, and removing one is a structural
 
 Declaring a model as a `chokepoint` makes its upstream model subgraph private. Models
 inside that shadow can depend on one another, and the chokepoint can depend on all of
-them. A model outside the shadow may depend on the chokepoint, but `coherence verify`
-fails if it bypasses the chokepoint and reads a private upstream model directly.
+them. Upstream peer branches may share those inputs while independently constructing
+facts. Once a model is transitively downstream of the chokepoint, however,
+`coherence verify` fails if it bypasses the chokepoint and reads a private upstream
+model directly. This makes the chokepoint's tested properties a layering guarantee
+for every downstream consumer without making sibling producers shadow one another.
 Traversal stops at another chokepoint, so nested boundaries compose instead of
 absorbing one another. Sources and tests are not hidden by this model-visibility rule.
 

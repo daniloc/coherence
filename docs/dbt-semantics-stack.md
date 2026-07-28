@@ -25,5 +25,13 @@ Review and merge bottom-up:
      and observers as distinct, composable guarantees.
    - Keep documentation examples covered by harness fixtures.
 
+4. **Directional chokepoint shadows**
+   - Upstream peer branches may share private construction inputs.
+   - A model transitively downstream of a chokepoint may not bypass it to read
+     one of those inputs directly.
+   - Nested chokepoints stop upstream ownership traversal and compose their
+     individually proven properties.
+   - Proof: peer, downstream-bypass, and nested-chokepoint fixtures.
+
 The stack is based on `codex/dbt-poc-01-adapter`, the open PR #8 head used by
 the revenue-model package.

@@ -586,6 +586,14 @@ const shadowManifest = {
       dependsOn: ["model.money.a", "model.money.c"],
       columns: [],
     },
+    {
+      uniqueId: "model.money.peer",
+      resourceType: "model",
+      name: "peer",
+      originalFilePath: "models/peer.sql",
+      dependsOn: ["model.money.a"],
+      columns: [],
+    },
   ],
 };
 
@@ -627,6 +635,7 @@ test("a dbt chokepoint hides its upstream shadow from outside consumers", async 
       consumer: "e",
       privateModel: "a",
     }]);
+    assert.equal(report.violations.some((violation) => violation.consumer === "peer"), false);
 
     const result = await runCaptured(() => runVerify(cfg(root), g, { fast: true }));
     assert.equal(result.code, 1);
@@ -919,6 +928,84 @@ test("`via dbt test` fails closed for unknown or detached tests", async () => {
   const detached = await runDbtTestBoundary(detachedManifest);
   assert.equal(detached.code, 1);
   assert.match(detached.out, /dbt test "c_contract" does not depend on model "c"/);
+});
+
+test("nested dbt chokepoints compose while peer branches may share upstream inputs", async () => {
+  const nestedManifest = {
+    ...shadowManifest,
+    resources: [
+      {
+        uniqueId: "model.money.raw",
+        resourceType: "model",
+        name: "raw",
+        originalFilePath: "models/raw.sql",
+        dependsOn: [],
+        columns: [],
+      },
+      {
+        uniqueId: "model.money.inner",
+        resourceType: "model",
+        name: "inner",
+        originalFilePath: "models/inner.sql",
+        dependsOn: ["model.money.raw"],
+        columns: [],
+      },
+      {
+        uniqueId: "model.money.outer",
+        resourceType: "model",
+        name: "outer",
+        originalFilePath: "models/outer.sql",
+        dependsOn: ["model.money.inner"],
+        columns: [],
+      },
+      {
+        uniqueId: "model.money.downstream_bypass",
+        resourceType: "model",
+        name: "downstream_bypass",
+        originalFilePath: "models/downstream_bypass.sql",
+        dependsOn: ["model.money.outer", "model.money.raw"],
+        columns: [],
+      },
+      {
+        uniqueId: "model.money.peer",
+        resourceType: "model",
+        name: "peer",
+        originalFilePath: "models/peer.sql",
+        dependsOn: ["model.money.raw"],
+        columns: [],
+      },
+    ],
+  };
+  const root = await tmpProject({
+    ".coherence/dbt-manifest.json": JSON.stringify(nestedManifest),
+    "coherence.dbt.json": JSON.stringify({
+      ...shadowSemantics,
+      chokepoints: ["inner", "outer"],
+    }),
+  });
+  try {
+    const g = await buildGraph(cfg(root, {
+      dbt: {
+        manifest: "target/manifest.json",
+        snapshot: ".coherence/dbt-manifest.json",
+        semantics: "coherence.dbt.json",
+      },
+    }));
+    const byName = new Map(
+      g.nodes.filter((node) => node.dbt?.resourceType === "model").map((node) => [node.label, node]),
+    );
+    assert.deepEqual(byName.get("raw")?.dbt?.shadowedBy, ["model.money.inner"]);
+    assert.equal(byName.get("inner")?.dbt?.shadowedBy, undefined);
+
+    const report = dbtShadowReport(g);
+    assert.deepEqual(report.violations, [{
+      chokepoint: "inner",
+      consumer: "downstream_bypass",
+      privateModel: "raw",
+    }]);
+  } finally {
+    await cleanup(root);
+  }
 });
 
 test("dbt observers may inspect shadows but are unreadable by models", async () => {
