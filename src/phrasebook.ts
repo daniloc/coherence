@@ -13,16 +13,61 @@
 import { readFile, readdir, stat } from "node:fs/promises";
 import { join } from "node:path";
 import { spawnSync } from "node:child_process";
-import type { Config, Graph } from "./types.ts";
-import { BOUNDARY_RE } from "./boundary.ts";
+import type { Config, Graph, GraphNode } from "./types.ts";
+import {
+  BOUNDARY_RE,
+  boundaryInvariantName,
+  parseBoundary,
+  type BoundaryInvariant,
+} from "./boundary.ts";
+import { dbtShadowReport } from "./dbt-shadows.ts";
 import { PARITY_RE } from "./parity.ts";
 import { analyzeOracle, analyzeParityOracle } from "./oracle-domain.ts";
 import { unescapeMd } from "./walk.ts";
 
 const fileExists = async (p: string) => { try { await stat(p); return true; } catch { return false; } };
 
+const dbtModel = (graph: Graph, name: string): GraphNode | string => {
+  const models = graph.nodes.filter((node) =>
+    node.kind === "symbol" &&
+    node.label === name &&
+    node.dbt?.resourceType === "model"
+  );
+  if (models.length === 0) return `chokepoint "${name}" is not a dbt model in the graph`;
+  if (models.length > 1) return `chokepoint "${name}" is ambiguous across ${models.length} dbt models`;
+  return models[0];
+};
+
+const schemaInvariantColumns = (invariant: BoundaryInvariant): string[] =>
+  invariant.kind === "unique"
+    ? invariant.columns
+    : invariant.kind === "not_null"
+      ? [invariant.column]
+      : [];
+
+const schemaConstraintProves = (
+  invariant: Exclude<BoundaryInvariant, { kind: "named" }>,
+  constraint: { type: string; columns: string[] },
+): boolean => {
+  if (invariant.kind === "not_null") {
+    return (
+      (constraint.type === "not_null" && constraint.columns.length === 1) ||
+      constraint.type === "primary_key"
+    ) && constraint.columns.includes(invariant.column);
+  }
+  return (
+    constraint.type === "unique" ||
+    constraint.type === "primary_key"
+  ) && JSON.stringify(constraint.columns) === JSON.stringify(invariant.columns);
+};
+
 /** The verdict a claim form returns — adapted into verify's `Sig` (which adds claim + node). */
-export interface ClaimResult { kind: "pass" | "fail" | "skip"; detail?: string }
+export interface ClaimResult {
+  kind: "pass" | "fail" | "skip";
+  detail?: string;
+  /** A failed claim can be evidence for a more granular failure bucket reported elsewhere. */
+  accountedBy?: "dbt-shadow";
+}
 
 /**
  * Everything a claim form needs to evaluate, threaded from runVerify. `nodeDir`/`node`
@@ -106,7 +151,7 @@ export const reEscape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
  *  requires positive evidence the named test actually ran — an exit-0 runner that
  *  matched zero tests would otherwise pass a renamed/deleted oracle). Returns
  *  `{ ok: true }` on a real pass, else the failure detail. */
-function execNamedTest(cfg: Config, root: string, name: string): { ok: boolean; detail: string } {
+export function runNamedTest(cfg: Config, root: string, name: string): { ok: boolean; detail: string } {
   const r = spawnSync(cfg.test[0], [...cfg.test.slice(1), reEscape(name)], { cwd: root, encoding: "utf8", timeout: 120000 });
   const out = (r.stderr || "") + (r.stdout || "");
   if (r.status !== 0) return { ok: false, detail: out.split("\n").filter(Boolean).slice(-3).join(" | ").slice(0, 200) };
@@ -193,39 +238,115 @@ export const CLAIM_FORMS: ClaimForm[] = [
     evaluate: (ctx, m) => {
       if (ctx.fast) return { kind: "skip", detail: "executable tier (--fast)" };
       if (!ctx.cfg.test || !ctx.cfg.test.length) return { kind: "skip", detail: "no test runner configured (config.test)" };
-      const r = execNamedTest(ctx.cfg, ctx.root, m[1]);
+      const r = runNamedTest(ctx.cfg, ctx.root, m[1]);
       return r.ok ? { kind: "pass" } : { kind: "fail", detail: r.detail };
     },
   },
   {
     name: "boundary",
-    grammar: 'boundary "<invariant>" at <chokepoint> [via (test|guard) "<oracle>"]',
+    grammar: 'boundary ("<invariant>" | unique(<columns>) | not_null(<column>)) at <chokepoint> [via test "<oracle>" | via guard "<oracle>" | via shadow | via dbt test "<oracle>" | via dbt schema]',
     example: 'boundary "fail-closed writes" at applyWritePolicy via test "write policy totality"',
     tier: "hybrid",
     match: (l) => l.match(BOUNDARY_RE),
     // The anti-entropy ratchet. Asserts the four-part anatomy of a self-enforcing boundary:
     // the invariant is named (and ANCHORED for the coverage gate), the chokepoint SYMBOL
     // exists, and (if given) the oracle passes. `via test` additionally runs the META-ORACLE
-    // (live-domain analysis, even under --fast); `via guard` is exempt (source-property oracle).
+    // (live-domain analysis, even under --fast); `via guard` is exempt (source-property
+    // oracle); `via shadow` binds to the dbt DAG's chokepoint-shadow proof; `via dbt
+    // test` binds an active manifest test directly to the target model; `via dbt
+    // schema` proves a structured invariant from a contract-bound manifest constraint.
     evaluate: async (ctx, m) => {
-      const inv = m[1], sym = m[2], verb = m[3], test = m[4];
+      const boundary = parseBoundary(m[0])!;
+      const { chokepoint: sym, oracle } = boundary;
+      const inv = boundaryInvariantName(boundary);
       ctx.anchor(inv);
-      if (!ctx.graph.nodes.some((n) => n.kind === "symbol" && n.label === sym)) return { kind: "fail", detail: `chokepoint symbol "${sym}" not found in the code graph` };
-      if (!test) return { kind: "pass", detail: `${inv} @ ${sym} (no oracle)` };
-      if (verb === "test" && ctx.cfg.oracleDomain !== false) {
-        const a = await analyzeOracle(ctx.cfg, test);
+      if (oracle.kind === "shadow") {
+        const model = dbtModel(ctx.graph, sym);
+        if (typeof model === "string") return { kind: "fail", detail: model };
+        if (model.dbt?.chokepoint !== true)
+          return { kind: "fail", detail: `dbt model "${sym}" is not declared as a chokepoint` };
+
+        const bypasses = dbtShadowReport(ctx.graph).violations.filter(
+          (violation) => violation.chokepoint === sym,
+        ).length;
+        if (bypasses) {
+          const noun = bypasses === 1 ? "bypass" : "bypasses";
+          const violations = bypasses === 1 ? "violation" : "violations";
+          return {
+            kind: "fail",
+            detail: `${bypasses} shadow ${noun}; individual ${violations} reported below`,
+            accountedBy: "dbt-shadow",
+          };
+        }
+        return { kind: "pass", detail: `${inv} @ ${sym} (shadow closed)` };
+      }
+      if (oracle.kind === "dbt-schema") {
+        if (boundary.invariant.kind === "named")
+          return { kind: "fail", detail: "`via dbt schema` requires a structured unique(...) or not_null(...) invariant" };
+        const schemaInvariant = boundary.invariant;
+        const model = dbtModel(ctx.graph, sym);
+        if (typeof model === "string") return { kind: "fail", detail: model };
+        const materialized = model.dbt!.materialized;
+        if (materialized !== "table" && materialized !== "incremental")
+          return {
+            kind: "fail",
+            detail: `dbt schema constraints require table or incremental materialization; "${sym}" is ${materialized ?? "unset"}`,
+          };
+        if (model.dbt!.contractEnforced !== true)
+          return { kind: "fail", detail: `dbt model "${sym}" does not enforce its schema contract` };
+
+        const columns = new Set(model.dbt!.columns.map((column) => column.name));
+        for (const column of schemaInvariantColumns(schemaInvariant))
+          if (!columns.has(column))
+            return { kind: "fail", detail: `dbt model "${sym}" has no column "${column}"` };
+
+        if (!model.dbt!.constraints.some((constraint) =>
+          schemaConstraintProves(schemaInvariant, constraint)
+        )) return {
+          kind: "fail",
+          detail: `dbt schema does not declare ${inv} on model "${sym}"`,
+        };
+        return { kind: "pass", detail: `${inv} @ ${sym} via dbt schema` };
+      }
+      if (oracle.kind === "dbt-test") {
+        const model = dbtModel(ctx.graph, sym);
+        if (typeof model === "string") return { kind: "fail", detail: model };
+
+        const tests = ctx.graph.nodes.filter((n) =>
+          n.label === oracle.name &&
+          n.dbt?.resourceType === "test"
+        );
+        if (tests.length === 0)
+          return { kind: "fail", detail: `dbt test "${oracle.name}" not found in the graph` };
+        if (tests.length > 1)
+          return { kind: "fail", detail: `dbt test "${oracle.name}" is ambiguous across ${tests.length} manifest nodes` };
+        if (!tests[0].dbt!.dependsOn.includes(model.dbt!.uniqueId))
+          return { kind: "fail", detail: `dbt test "${oracle.name}" does not depend on model "${sym}"` };
+
+        if (ctx.fast) return { kind: "skip", detail: "dbt test binding valid (--fast)" };
+        if (!ctx.cfg.test || !ctx.cfg.test.length)
+          return { kind: "skip", detail: "no test runner configured (config.test)" };
+        const result = runNamedTest(ctx.cfg, ctx.root, oracle.name);
+        if (!result.ok) return { kind: "fail", detail: result.detail };
+        return { kind: "pass", detail: `${inv} @ ${sym} via dbt test "${oracle.name}"` };
+      }
+      if (!ctx.graph.nodes.some((n) => n.kind === "symbol" && n.label === sym))
+        return { kind: "fail", detail: `chokepoint symbol "${sym}" not found in the code graph` };
+      if (oracle.kind === "none") return { kind: "pass", detail: `${inv} @ ${sym} (no oracle)` };
+      if (oracle.kind === "test" && ctx.cfg.oracleDomain !== false) {
+        const a = await analyzeOracle(ctx.cfg, oracle.name);
         if (a.verdict === "literal")
-          return { kind: "fail", detail: `[oracle] "${test}" iterates a LITERAL domain (${a.detail}) — a sampling oracle, not totality. Derive its domain from the live SSOT behind \`${sym}\` (or, if it is a source-property guard, declare it \`via guard\` not \`via test\`).` };
+          return { kind: "fail", detail: `[oracle] "${oracle.name}" iterates a LITERAL domain (${a.detail}) — a sampling oracle, not totality. Derive its domain from the live SSOT behind \`${sym}\` (or, if it is a source-property guard, declare it \`via guard\` not \`via test\`).` };
         if (a.verdict === "no-iteration")
-          return { kind: "fail", detail: `[oracle] "${test}" performs NO domain iteration (${a.detail}) — a source-grep / hand-enumerated cases, not totality. Loop the live domain behind \`${sym}\`, or — if it is a genuine source-property guard — declare it \`via guard "${test}"\` instead of \`via test\`.` };
+          return { kind: "fail", detail: `[oracle] "${oracle.name}" performs NO domain iteration (${a.detail}) — a source-grep / hand-enumerated cases, not totality. Loop the live domain behind \`${sym}\`, or — if it is a genuine source-property guard — declare it \`via guard "${oracle.name}"\` instead of \`via test\`.` };
         if (a.verdict === "not-found")
-          return { kind: "fail", detail: `[oracle] "${test}" — no describe() with this EXACT title found, so the meta-oracle cannot analyze its domain (the runner alone would still pass on an it()-name match, silently skipping analysis). Anchor the claim to the oracle's exact describe title, or declare it \`passes test\`/\`via guard\` if it is not a domain totality.` };
+          return { kind: "fail", detail: `[oracle] "${oracle.name}" — no describe() with this EXACT title found, so the meta-oracle cannot analyze its domain (the runner alone would still pass on an it()-name match, silently skipping analysis). Anchor the claim to the oracle's exact describe title, or declare it \`passes test\`/\`via guard\` if it is not a domain totality.` };
       }
       if (ctx.fast) return { kind: "skip", detail: "boundary oracle (--fast)" };
       if (!ctx.cfg.test || !ctx.cfg.test.length) return { kind: "skip", detail: "no test runner configured (config.test)" };
-      const r = execNamedTest(ctx.cfg, ctx.root, test);
+      const r = runNamedTest(ctx.cfg, ctx.root, oracle.name);
       if (!r.ok) return { kind: "fail", detail: r.detail };
-      return { kind: "pass", detail: `${inv} @ ${sym}${verb === "guard" ? " (source-property guard)" : ""}` };
+      return { kind: "pass", detail: `${inv} @ ${sym}${oracle.kind === "guard" ? " (source-property guard)" : ""}` };
     },
   },
   {
@@ -257,7 +378,7 @@ export const CLAIM_FORMS: ClaimForm[] = [
       }
       if (ctx.fast) return { kind: "skip", detail: "parity oracle (--fast)" };
       if (!ctx.cfg.test || !ctx.cfg.test.length) return { kind: "skip", detail: "no test runner configured (config.test)" };
-      const r = execNamedTest(ctx.cfg, ctx.root, oracle);
+      const r = runNamedTest(ctx.cfg, ctx.root, oracle);
       if (!r.ok) return { kind: "fail", detail: r.detail };
       return { kind: "pass", detail: `${inv}: ${f} ≡ ${g} over ${domain}` };
     },
@@ -298,7 +419,12 @@ export const CLAIM_FORMS: ClaimForm[] = [
         if (!form || !cm)
           return { kind: "fail", detail: `word "${word}": commitment "${commitment}" matches no claim form (a word is a contract — no silent skips)` };
         const r = await form.evaluate(child, cm);
-        if (r.kind === "fail") return { kind: "fail", detail: `word "${word}": commitment "${commitment}" failed${r.detail ? ` — ${r.detail}` : ""}` };
+        if (r.kind === "fail")
+          return {
+            kind: "fail",
+            detail: `word "${word}": commitment "${commitment}" failed${r.detail ? ` — ${r.detail}` : ""}`,
+            accountedBy: r.accountedBy,
+          };
         if (r.kind === "skip") skipped++; else green++;
       }
       // A word verifies NOTHING it skipped: if any commitment was skipped (unrunnable in this

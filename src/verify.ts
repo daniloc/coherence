@@ -6,7 +6,8 @@ import { join } from "node:path";
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import type { Config, Graph } from "./types.ts";
-import { CLAIM_FORMS, type ClaimCtx } from "./phrasebook.ts";
+import { dbtShadowReport } from "./dbt-shadows.ts";
+import { CLAIM_FORMS, runNamedTest, type ClaimCtx } from "./phrasebook.ts";
 import { ownerOf } from "./walk.ts";
 
 const hashOf = (s: string) => createHash("sha256").update(s).digest("hex").slice(0, 16);
@@ -50,7 +51,13 @@ export async function runVerify(cfg: Config, graph: Graph, opts: { fast?: boolea
     tc = r.status === 0 ? { pass: true, detail: "" } : { pass: false, detail: tail.slice(0, 200) };
     return tc;
   };
-  type Sig = { kind: "pass" | "fail" | "skip"; claim: string; node: string; detail?: string };
+  type Sig = {
+    kind: "pass" | "fail" | "skip";
+    claim: string;
+    node: string;
+    detail?: string;
+    accountedBy?: "dbt-shadow";
+  };
   // The claim grammar is a declarative registry (src/phrasebook.ts): an ordered list of
   // ClaimForms, first match wins (the order IS the historical precedence). evalClaim is now
   // a thin loop — build the per-claim context, find the first matching form, adapt its
@@ -64,7 +71,16 @@ export async function runVerify(cfg: Config, graph: Graph, opts: { fast?: boolea
     };
     for (const form of CLAIM_FORMS) {
       const m = form.match(claim);
-      if (m) { const r = await form.evaluate(ctx, m); return { kind: r.kind, claim, node, detail: r.detail }; }
+      if (m) {
+        const r = await form.evaluate(ctx, m);
+        return {
+          kind: r.kind,
+          claim,
+          node,
+          detail: r.detail,
+          accountedBy: r.accountedBy,
+        };
+      }
     }
     return { kind: "skip", claim, node, detail: "no verifier (dialect gap)" };
   };
@@ -79,9 +95,16 @@ export async function runVerify(cfg: Config, graph: Graph, opts: { fast?: boolea
   // Scope the (advisory) symbol-doc coverage to the touched components too, so a
   // staged run doesn't dump every undocumented symbol in the repo as a job.
   const symbols = graph.nodes.filter((n) => n.kind === "symbol" && (!opts.only || (n.path != null && opts.only.has(ownerOf(n.path, compDirs)))));
+  // dbt resources already carry their derivable model shape in the manifest and their
+  // authored intent in the sidecar. Treating each one as a missing source docblock
+  // duplicates the richer dbt view and floods the advisory job queue.
+  const documentableSymbols = symbols.filter((n) => !n.dbt);
   const sigs: Sig[] = [];
   for (const c of comps) { const dir = c.id.slice(2); const diskDir = dir === "." ? root : join(root, dir); for (const cl of c.claims || []) sigs.push(await evalClaim(cl, diskDir, c.label)); }
   const red = sigs.filter((s) => s.kind === "fail").length;
+  const claimFailures = sigs.filter(
+    (s) => s.kind === "fail" && s.accountedBy !== "dbt-shadow",
+  ).length;
   console.log(`claims: ${sigs.length} · ${sigs.filter((s) => s.kind === "pass").length} green · ${red} red · ${sigs.filter((s) => s.kind === "skip").length} skipped`);
   for (const s of sigs) if (s.kind !== "pass") console.log(`  ${s.kind === "fail" ? "✗" : "·"} [${s.node}] ${s.claim}${s.detail ? ` — ${s.detail}` : ""}`);
 
@@ -108,9 +131,9 @@ export async function runVerify(cfg: Config, graph: Graph, opts: { fast?: boolea
   // every export produces stale busywork and a perpetually-red baseline that trains
   // contributors to ignore the gate. Undocumented symbols still surface as jobs.
   const compGaps = comps.filter((c) => !(c.claims && c.claims.length));
-  const docGaps = symbols.filter((s) => !s.prose || !String(s.prose).trim());
+  const docGaps = documentableSymbols.filter((s) => !s.prose || !String(s.prose).trim());
   const whyGaps = comps.filter((c) => !c.why || !String(c.why).trim());
-  console.log(`coverage: components ${comps.length - compGaps.length}/${comps.length} claimed, ${comps.length - whyGaps.length}/${comps.length} with why · symbols ${symbols.length - docGaps.length}/${symbols.length} documented (advisory)`);
+  console.log(`coverage: components ${comps.length - compGaps.length}/${comps.length} claimed, ${comps.length - whyGaps.length}/${comps.length} with why · symbols ${documentableSymbols.length - docGaps.length}/${documentableSymbols.length} documented (advisory)`);
   for (const c of compGaps) { console.log(`  ✗ [coverage] component "${c.label}" has no claims`); jobs.push({ kind: "generate-claims", id: c.id, name: c.label }); }
   for (const c of whyGaps) { console.log(`  ✗ [coverage] component "${c.label}" states no rationale (why)`); jobs.push({ kind: "author-why", id: c.id, name: c.label }); }
   // advisory only — emitted as jobs, never gated
@@ -126,6 +149,80 @@ export async function runVerify(cfg: Config, graph: Graph, opts: { fast?: boolea
   if (totalInv) console.log(`invariants: ${totalInv - invGaps.length}/${totalInv} anchored by a boundary claim`);
   const covGaps = compGaps.length + whyGaps.length + invGaps.length;
 
+  const shadows = dbtShadowReport(graph);
+  if (shadows.chokepoints) {
+    console.log(`dbt shadows: ${shadows.chokepoints} chokepoint${shadows.chokepoints === 1 ? "" : "s"} · ${shadows.privateModels} private model${shadows.privateModels === 1 ? "" : "s"} · ${shadows.violations.length} bypass${shadows.violations.length === 1 ? "" : "es"}`);
+    for (const violation of shadows.violations)
+      console.log(`  ✗ [dbt shadow] ${violation.consumer} depends on ${violation.privateModel}, which is private behind ${violation.chokepoint}; depend on ${violation.chokepoint} instead`);
+  }
+  if (shadows.observers) {
+    console.log(`dbt observers: ${shadows.observers} declared · ${shadows.observerViolations.length} model read${shadows.observerViolations.length === 1 ? "" : "s"}`);
+    for (const violation of shadows.observerViolations)
+      console.log(`  ✗ [dbt observer] ${violation.consumer} depends on observer ${violation.observer}; observers must be leaves`);
+  }
+
+  const dbtNodesByUniqueId = new Map(
+    graph.nodes.filter((node) => node.dbt).map((node) => [node.dbt!.uniqueId, node]),
+  );
+  const dbtParities = graph.nodes.flatMap((node) => node.dbt?.parities ?? []);
+  const dbtParityRuns = new Map<string, { ok: boolean; detail: string }>();
+  let dbtParityRed = 0;
+  let dbtParityGreen = 0;
+  if (dbtParities.length) {
+    for (const parity of dbtParities) {
+      const left = dbtNodesByUniqueId.get(parity.left)?.label ?? parity.left;
+      const right = dbtNodesByUniqueId.get(parity.right)?.label ?? parity.right;
+      if (opts.fast) {
+        console.log(`  · [dbt parity] ${parity.name}: ${left} ≡ ${right} via ${parity.oracle} (--fast)`);
+        continue;
+      }
+      let result = dbtParityRuns.get(parity.oracle);
+      if (!result) {
+        result = cfg.test.length
+          ? runNamedTest(cfg, root, parity.oracle)
+          : { ok: false, detail: "no test runner configured (config.test)" };
+        dbtParityRuns.set(parity.oracle, result);
+      }
+      if (result.ok) {
+        dbtParityGreen++;
+        console.log(`  ✓ [dbt parity] ${parity.name}: ${left} ≡ ${right} via ${parity.oracle}`);
+      } else {
+        dbtParityRed++;
+        console.log(`  ✗ [dbt parity] ${parity.name}: ${left} ≡ ${right} via ${parity.oracle}${result.detail ? ` — ${result.detail}` : ""}`);
+      }
+    }
+    console.log(`dbt parity: ${dbtParities.length} declared · ${dbtParityGreen} green · ${dbtParityRed} red${opts.fast ? ` · ${dbtParities.length} skipped` : ""}`);
+  }
+
+  const dbtRowContracts = graph.nodes.flatMap((node) =>
+    node.dbt?.rowContract ? [{ model: node.label, contract: node.dbt.rowContract }] : []
+  );
+  const dbtRowContractRuns = new Map<string, { ok: boolean; detail: string }>();
+  let dbtRowContractRed = 0;
+  let dbtRowContractGreen = 0;
+  for (const { model, contract } of dbtRowContracts) {
+    if (opts.fast) {
+      console.log(`  · [dbt row contract] ${model} by ${contract.discriminator} via ${contract.oracle} (--fast)`);
+      continue;
+    }
+    let result = dbtRowContractRuns.get(contract.oracle);
+    if (!result) {
+      result = cfg.test.length
+        ? runNamedTest(cfg, root, contract.oracle)
+        : { ok: false, detail: "no test runner configured (config.test)" };
+      dbtRowContractRuns.set(contract.oracle, result);
+    }
+    if (result.ok) {
+      dbtRowContractGreen++;
+      console.log(`  ✓ [dbt row contract] ${model} by ${contract.discriminator} via ${contract.oracle}`);
+    } else {
+      dbtRowContractRed++;
+      console.log(`  ✗ [dbt row contract] ${model} by ${contract.discriminator} via ${contract.oracle}${result.detail ? ` — ${result.detail}` : ""}`);
+    }
+  }
+  if (dbtRowContracts.length)
+    console.log(`dbt row contracts: ${dbtRowContracts.length} declared · ${dbtRowContractGreen} green · ${dbtRowContractRed} red${opts.fast ? ` · ${dbtRowContracts.length} skipped` : ""}`);
+
   const verifyJobs = jobs.filter((j) => j.kind === "verify-statement");
   const genJobs = jobs.filter((j) => j.kind === "generate-doc" || j.kind === "generate-claims");
   const authorJobs = jobs.filter((j) => j.kind === "author-why");
@@ -138,7 +235,7 @@ export async function runVerify(cfg: Config, graph: Graph, opts: { fast?: boolea
     if (authorJobs.length) { console.log(`\n AUTHOR — the WHY (NOT derivable — do not fabricate; needs a human/attested author):`); for (const j of authorJobs) console.log(`   [why] component "${j.name}" — states no rationale`); }
   }
 
-  const failures = red + broken + covGaps;
-  console.log(failures === 0 ? (verifyJobs.length ? `\n• ${verifyJobs.length} verification job(s) pending` : "\n✓ coherent") : `\n✗ ${failures} coherence failure(s) — ${red} claim · ${broken} broken · ${covGaps} coverage`);
+  const failures = claimFailures + broken + covGaps + shadows.violations.length + shadows.observerViolations.length + dbtParityRed + dbtRowContractRed;
+  console.log(failures === 0 ? (verifyJobs.length ? `\n• ${verifyJobs.length} verification job(s) pending` : "\n✓ coherent") : `\n✗ ${failures} coherence failure(s) — ${claimFailures} claim · ${broken} broken · ${covGaps} coverage · ${shadows.violations.length} dbt shadow · ${shadows.observerViolations.length} dbt observer · ${dbtParityRed} dbt parity · ${dbtRowContractRed} dbt row contract`);
   return failures === 0 ? 0 : 1;
 }

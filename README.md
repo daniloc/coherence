@@ -94,6 +94,11 @@ Full (every field the `Config` interface in `src/types.ts` accepts; defaults fro
   "oracleDomain": true,
   "language": "typescript",
   "platform": "cloudflare",
+  "dbt": {
+    "manifest": "target/manifest.json",
+    "snapshot": ".coherence/dbt-manifest.json",
+    "semantics": "coherence.dbt.json"
+  },
   "claudeMdPath": "../CLAUDE.md",
   "dictionary": "dictionary",
   "sources": ["src"],
@@ -123,6 +128,7 @@ Full (every field the `Config` interface in `src/types.ts` accepts; defaults fro
 | `oracleDomain` | `true` (anything but `false`) | The META-ORACLE gate: assert a `via test` oracle iterates a LIVE domain. Set `false` to disable the gate. |
 | `language` | `"typescript"` | Language adapter key. |
 | `platform` | `null` | Platform adapter key, or null. |
+| `dbt` | unset | Optional dbt graph contributor: generated `manifest`, committed normalized `snapshot`, and Coherence-owned `semantics` paths. Run `coherence dbt` after `dbt parse`; `coherence dbt --check` fails when the snapshot is stale. |
 | `components` | unset | Sub-component overrides for `decompose`/`drift` co-change analysis ONLY (globs relative to root; first match wins). The spec graph, verify, and coverage are untouched. |
 | `claudeMdPath` | `"CLAUDE.md"` | Path to the CLAUDE.md whose fenced block `coherence claude` owns. May be `../`-relative to escape the coherence root (repo-root CLAUDE.md above a sub-package). |
 | `dictionary` | `"dictionary"` | Dir (relative to the coherence root) holding the pattern dictionary — one `<Word>.md` per word. A `conforms to <Word>` claim expands the word's commitments against the declaring component. A project with no such dir simply has no words (see "The dictionary" below). |
@@ -140,6 +146,169 @@ Then author `*.spec.md` files (a folder containing one is a *node*). A spec is
 `## invariants` list, and an optional `## why` (protected rationale). Claims are a
 grammar, not prose — the parser (`src/walk.ts`) strips markdown-formatter escapes
 (`\_` → `_`) so a prettified spec still parses.
+
+### dbt projects
+
+dbt contributes a graph; it is not parsed as a source language. Coherence derives
+resources, dependencies, declared columns, and materialization from dbt's manifest.
+Meaning dbt cannot supply—roles, grain, chokepoints, observers, row contracts,
+parity, multiplicity, and filtering—lives in a separate `coherence.dbt.json`:
+
+```json
+{
+  "version": 1,
+  "scope": ["models/ledger/**"],
+  "roles": {
+    "LedgerEntryProducer": ["models/ledger/entries/**"],
+    "CanonicalLedger": ["model:ledger"]
+  },
+  "chokepoints": ["ledger"],
+  "observers": ["models/ledger/diagnostics/**"],
+  "models": {
+    "ledger": { "grain": ["entry_id"] }
+  },
+  "rowContracts": {
+    "unified_events": {
+      "discriminator": "event_type",
+      "variants": {
+        "invoice_finalized": {
+          "requiredColumns": ["event_id", "invoice_id", "event_timestamp"],
+          "predicates": ["invoice identity is resolved or explicitly unresolved"]
+        }
+      },
+      "via": "unified_events_row_contract"
+    }
+  },
+  "parities": {
+    "allocation becomes revenue entries": {
+      "between": ["usage_allocation", "revenue_entries"],
+      "via": "revenue_entries_match_allocation"
+    }
+  },
+  "relationships": [{
+    "from": "revenue_entries",
+    "to": "ledger",
+    "multiplicity": "one-to-one",
+    "filtering": "preserves"
+  }]
+}
+```
+
+Path selectors are glob patterns; `model:<name>` selects one exact model. Every
+model in `scope` must receive at least one role. Role selectors, model declarations,
+and relationships fail closed when they point at absent resources or non-edges.
+
+The declarations describe different guarantees and compose:
+
+| Declaration | Guarantee |
+| --- | --- |
+| `models.<name>.grain` | The columns that stably identify one row at this boundary. |
+| `relationships` | The multiplicity and filtering behavior of one direct dbt dependency. Grain says what one row is; a relationship says what the next model may do to rows. |
+| spec invariant | The semantic rule owned by the boundary. It belongs in the model's `*.spec.md`, where an anchored boundary or executable declaration proves it. |
+| `rowContracts` | The required typed shape of each discriminator variant. |
+| `parities` / `via` | The exact repository-owned dbt test that proves agreement or row semantics on live data. |
+| `chokepoints` | The model whose upstream implementation becomes private, forcing downstream readers through the declared properties. |
+| `observers` | Terminal diagnostic models that may inspect private implementation data but may not become production inputs. |
+
+These are deliberately not substitutes for one another. A shadow controls *which
+path* may be read; grain and relationships describe *how rows map* along that path;
+row contracts and invariants describe *what rows mean*; the oracle proves those
+claims against warehouse data. A narrow chokepoint can therefore establish one
+property—for example invoice identity resolution—before feeding a larger event or
+ledger chokepoint that composes it with other proven properties.
+
+Each `rowContracts` entry names one model, a declared discriminator column, at least
+one variant, and one exact dbt test in `via`. Every variant has non-empty
+`requiredColumns` and may carry human-readable `predicates` labels for rules more
+specific than non-nullness. Coherence fails graph construction for unknown models,
+discriminator or required columns, or tests, and unless the test directly depends
+on the contracted model. It records variant, required-column, predicate,
+discriminator, and oracle changes in the structural ledger; removing a contract
+guarantee is a structural loss.
+
+Coherence does not generate SQL for row contracts. The named dbt test is the
+executable definition: it must reject unknown live discriminator values, null
+required fields, and every labeled predicate violation. A full `coherence verify`
+runs it through `config.test`; `--fast` validates the declaration but skips warehouse
+execution.
+
+Each entry in `parities` names two representations of the same fact and the exact
+dbt test that proves their agreement. Coherence fails graph construction unless
+both models and the test exist and the test directly depends on both models. A full
+`coherence verify` runs every declared parity oracle through `config.test`; `--fast`
+keeps the structural checks but skips execution. Adding, removing, or rewiring a dbt
+parity is first-class in the structural ledger, and removing one is a structural loss.
+
+Declaring a model as a `chokepoint` makes its upstream model subgraph private. Models
+inside that shadow can depend on one another, and the chokepoint can depend on all of
+them. Upstream peer branches may share those inputs while independently constructing
+facts. Once a model is transitively downstream of the chokepoint, however,
+`coherence verify` fails if it bypasses the chokepoint and reads a private upstream
+model directly. This makes the chokepoint's tested properties a layering guarantee
+for every downstream consumer without making sibling producers shadow one another.
+Traversal stops at another chokepoint, so nested boundaries compose instead of
+absorbing one another. Sources and tests are not hidden by this model-visibility rule.
+
+Bind a named spec property to that proof with:
+
+```markdown
+- boundary "every financial consumer crosses the canonical ledger" at ledger via shadow
+```
+
+`via shadow` is a built-in deterministic oracle: it requires `ledger` to resolve to
+exactly one dbt model declared as a chokepoint, then asks the derived DAG whether its
+shadow is closed. It runs under both normal and `--fast` verification. Every bypass
+remains an individual `dbt shadow` violation; the boundary claim points at that same
+evidence and is not counted as an additional failure.
+
+Bind a row-level property to a dbt test with:
+
+```markdown
+- boundary "ledger balances globally" at ledger via dbt test "ledger_debits_equal_credits"
+```
+
+`via dbt test` uses the manifest as its meta-oracle. It fails closed unless the target
+resolves to exactly one dbt model, the named test resolves to exactly one active
+manifest node, and that test directly depends on the target model. `--fast` proves
+that binding but skips execution; a full verify runs the same exact name through
+`config.test` and still requires `config.testMatch` as positive evidence that it ran.
+
+For properties dbt can express structurally, make the invariant data and bind it
+directly to the model schema:
+
+```markdown
+- boundary unique(event_id) at unified_events via dbt schema
+- boundary not_null(recorded_at) at ledger via dbt schema
+```
+
+`via dbt schema` runs under normal and `--fast` verification. It requires the target
+to be exactly one table or incremental model with an enforced model contract, every
+named column to exist, and the normalized manifest to carry an equivalent constraint.
+A matching `primary_key` proves both `unique` over the same column set and `not_null`
+for each participating column. Unknown properties, missing columns, absent constraints,
+views, and unenforced contracts fail closed.
+
+This oracle proves the property is part of dbt's structured model contract; whether a
+particular warehouse physically enforces each constraint type remains adapter-specific.
+When the warehouse treats a constraint as metadata, retain an executable
+`via dbt test` claim for runtime assurance.
+
+`observers` uses the same path globs and `model:<name>` exact selectors as roles.
+Selectors fail closed when they match nothing. An observer may read models inside a
+chokepoint shadow without producing a bypass, but `coherence verify` fails any dbt
+model that depends on the observer. dbt tests may still inspect observers. This is
+why observer status is not an allowlist: it exchanges a read exemption for the
+stronger terminal-leaf guarantee, and its addition or removal is visible in
+`coherence log`.
+
+The normalized snapshot deliberately omits SQL text. Commit it so `coherence log`
+can reconstruct dbt structure at both git refs without running dbt in a detached
+worktree. The dbt structural ledger reports resources, dependencies, declared
+column shapes and constraints, roles, grain, observer classification, row contracts,
+materialization, parity, multiplicity, and filtering. Snapshot version 2 adds normalized
+model/column constraints; version 1 remains readable for historical ledgers but carries
+no constraint evidence. Rebuild the current snapshot with `coherence dbt` before using
+`via dbt schema`.
 
 ## The claim phrasebook (the `## works when` grammar)
 
@@ -162,7 +331,7 @@ run `coherence phrasebook` to see the source of truth.
 | imports | `<file> imports <specifier>` | deterministic | `main.ts imports ./registry` |
 | responds | `<url> responds <status> [with "<text>"]` | **live** (skipped under `--fast`; unreachable URL = skip, not fail) | `http://localhost:8787/health responds 200 with "ok"` |
 | passes test | `passes test "<name>"` | executable (skipped under `--fast`) | `passes test "write policy totality"` |
-| boundary | `boundary "<invariant>" at <chokepoint> [via (test\|guard) "<oracle>"]` | hybrid — anchoring + chokepoint-symbol check + meta-oracle run even under `--fast`; the oracle test run is skipped under `--fast` | `boundary "fail-closed writes" at applyWritePolicy via test "write policy totality"` |
+| boundary | `boundary ("<invariant>" \| unique(<columns>) \| not_null(<column>)) at <chokepoint> [via test "<oracle>" \| via guard "<oracle>" \| via shadow \| via dbt test "<oracle>" \| via dbt schema]` | hybrid — anchoring plus a source test, source guard, DAG shadow proof, manifest-bound dbt test, or structured dbt constraint | `boundary unique(event_id) at unified_events via dbt schema` |
 | parity | `parity "<invariant>" over <domain> between <fnA> and <fnB> via test "<oracle>"` | hybrid — anchoring + domain/projection symbols must exist + the parity meta-oracle runs even under `--fast`; the oracle test run is skipped under `--fast` | `parity "disclosure faithfulness" over TOOL_NAMES between toolActivity and messageProvenance via test "live equals settled"` |
 | conforms to | `conforms to <Word>` | hybrid — expands a dictionary word's commitments against the declaring component (see "The dictionary" below) | `conforms to OwnedScope` |
 
@@ -185,8 +354,12 @@ Notes, from the implementing code:
 - **boundary** asserts a self-enforcing boundary's anatomy *as a unit*: the named
   invariant, the chokepoint SYMBOL exists in the code graph, and (if given) the
   oracle passes — `via test` additionally passes the meta-oracle (next section);
-  `via guard` is exempt from it (see the escape-hatch section). It **anchors** the
-  named invariant for the coverage gate.
+  `via guard` is exempt from it (see the escape-hatch section); `via shadow`
+  requires a declared dbt chokepoint and proves its DAG shadow is closed; `via
+  dbt test` proves an exact test-to-model attachment from the manifest before
+  executing it; `via dbt schema` matches `unique(...)` and `not_null(...)`
+  structurally against a contract-bound dbt constraint. It **anchors** the
+  normalized invariant for the coverage gate.
 - **parity** generalizes the boundary totality pattern from COVERAGE to AGREEMENT:
   `<fnA>` and `<fnB>` are declared two projections of ONE enumerated domain and must
   agree over it (the drift class where a live view and a settled view — or a server
@@ -400,7 +573,7 @@ source you named genuinely the complete domain?"** If `app.routes` is not actual
 where every route registers, no oracle over it can save you. That last step stays
 human judgment — name your SSOT deliberately.
 
-## Authoring a boundary — the checklist
+## Authoring a source/test boundary — the checklist
 
 To add `boundary "<inv>" at <chokepoint> via test|guard "<oracle>"`:
 
@@ -682,7 +855,8 @@ outside (your why-essays, conventions, doctrine — the WHY, which the graph can
 derive). If the markers are absent it **refuses to touch the file** and prints the
 marker pair to add — opting in is explicit. `config.claudeMdPath` moves the splice
 target (e.g. a repo-root CLAUDE.md above a sub-package). The generated invariants
-table is rendered from every `boundary … via (test|guard)` claim, parsed by the
+table is rendered from every `boundary` claim (including `via shadow`, `via dbt
+test`, and `via dbt schema`), parsed by the
 single `BOUNDARY_RE` in `src/boundary.ts` (shared by `verify`, `structural`, and
 `render-claude` — one home for the grammar).
 
