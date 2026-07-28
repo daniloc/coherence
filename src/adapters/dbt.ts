@@ -7,7 +7,7 @@
 // multiplicity, filtering) stays in a separate sidecar and is checked against the graph.
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
-import type { Config, DbtParity, GraphEdge, GraphNode } from "../types.ts";
+import type { Config, DbtConstraint, DbtParity, GraphEdge, GraphNode } from "../types.ts";
 import { globToRe } from "../decompose.ts";
 
 export interface DbtResource {
@@ -17,6 +17,7 @@ export interface DbtResource {
   originalFilePath?: string;
   dependsOn: string[];
   columns: Array<{ name: string; dataType: string | null }>;
+  constraints?: DbtConstraint[];
   materialized?: string;
   uniqueKey?: string | string[];
   incrementalStrategy?: string;
@@ -24,7 +25,7 @@ export interface DbtResource {
 }
 
 export interface DbtSnapshot {
-  version: 1;
+  version: 1 | 2;
   project: string;
   resources: DbtResource[];
 }
@@ -57,7 +58,8 @@ interface RawResource {
   name?: unknown;
   original_file_path?: unknown;
   depends_on?: { nodes?: unknown };
-  columns?: Record<string, { name?: unknown; data_type?: unknown }>;
+  constraints?: unknown;
+  columns?: Record<string, { name?: unknown; data_type?: unknown; constraints?: unknown }>;
   config?: {
     materialized?: unknown;
     unique_key?: unknown;
@@ -76,6 +78,19 @@ const uniqueKey = (v: unknown): string | string[] | undefined => {
   if (typeof v === "string") return v;
   if (Array.isArray(v) && v.every((x) => typeof x === "string")) return [...v];
   return undefined;
+};
+
+const constraints = (value: unknown, implicitColumns: string[] = []): DbtConstraint[] => {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((candidate): DbtConstraint[] => {
+    if (!candidate || typeof candidate !== "object" || Array.isArray(candidate)) return [];
+    const raw = candidate as { type?: unknown; columns?: unknown };
+    const type = text(raw.type);
+    const columns = Array.isArray(raw.columns) && raw.columns.every((column) => typeof column === "string")
+      ? [...raw.columns].sort()
+      : [...implicitColumns].sort();
+    return type && columns.length ? [{ type, columns }] : [];
+  });
 };
 
 /** Pure, deterministic projection of dbt's large manifest onto Coherence structure. */
@@ -98,13 +113,22 @@ export function normalizeDbtManifest(raw: unknown): DbtSnapshot {
     const dependsOn = Array.isArray(candidate.depends_on?.nodes)
       ? candidate.depends_on!.nodes!.filter((x): x is string => typeof x === "string").sort()
       : [];
-    const columns = Object.values(candidate.columns ?? {})
+    const columnEntries = Object.entries(candidate.columns ?? {});
+    const columns = columnEntries
       .map((c) => ({
-        name: text(c.name) ?? "",
-        dataType: text(c.data_type) ?? null,
+        name: text(c[1].name) ?? c[0],
+        dataType: text(c[1].data_type) ?? null,
       }))
       .filter((c) => c.name)
       .sort((a, b) => a.name.localeCompare(b.name));
+    const normalizedConstraints = [
+      ...constraints(candidate.constraints),
+      ...columnEntries.flatMap(([key, column]) =>
+        constraints(column.constraints, [text(column.name) ?? key])
+      ),
+    ].sort((a, b) =>
+      a.type.localeCompare(b.type) || a.columns.join("\0").localeCompare(b.columns.join("\0"))
+    );
     resources.push({
       uniqueId,
       resourceType,
@@ -112,6 +136,7 @@ export function normalizeDbtManifest(raw: unknown): DbtSnapshot {
       originalFilePath: text(candidate.original_file_path),
       dependsOn,
       columns,
+      ...(normalizedConstraints.length ? { constraints: normalizedConstraints } : {}),
       materialized: text(candidate.config?.materialized),
       uniqueKey: uniqueKey(candidate.config?.unique_key),
       incrementalStrategy: text(candidate.config?.incremental_strategy),
@@ -122,7 +147,7 @@ export function normalizeDbtManifest(raw: unknown): DbtSnapshot {
   }
   resources.sort((a, b) => a.uniqueId.localeCompare(b.uniqueId));
   return {
-    version: 1,
+    version: 2,
     project: text(manifest.metadata?.project_name) ?? "",
     resources,
   };
@@ -198,7 +223,8 @@ export async function dbtGraphFragment(
   if (!cfg.dbt) return { nodes: [], edges: [] };
   const snapshot = await readJson<DbtSnapshot>(join(cfg.root, cfg.dbt.snapshot), "dbt snapshot");
   const semantics = await readJson<DbtSemantics>(join(cfg.root, cfg.dbt.semantics), "dbt semantics");
-  if (snapshot.version !== 1) throw new Error(`unsupported dbt snapshot version ${String((snapshot as { version?: unknown }).version)}`);
+  if (snapshot.version !== 1 && snapshot.version !== 2)
+    throw new Error(`unsupported dbt snapshot version ${String((snapshot as { version?: unknown }).version)}`);
   if (semantics.version !== 1) throw new Error(`unsupported dbt semantics version ${String((semantics as { version?: unknown }).version)}`);
 
   const resources = snapshot.resources;
@@ -333,6 +359,10 @@ export async function dbtGraphFragment(
         resourceType: r.resourceType,
         dependsOn: [...r.dependsOn],
         columns: r.columns.map((c) => ({ ...c })),
+        constraints: (r.constraints ?? []).map((constraint) => ({
+          type: constraint.type,
+          columns: [...constraint.columns],
+        })),
         roles: assignedRoles,
         chokepoint: chokepoints.has(r.uniqueId) ? true : undefined,
         shadowedBy: shadowedBy.has(r.uniqueId) ? [...shadowedBy.get(r.uniqueId)!].sort() : undefined,

@@ -135,3 +135,14 @@ test("renderClaude — a `via dbt test` boundary identifies the manifest oracle"
   const block = renderClaude(g, "2026-07-28");
   assert.match(block, /\| ledger balances \| Money \| `ledger` \| `dbt test: ledger_balances` \|/);
 });
+
+test("renderClaude — a structured invariant names the dbt schema oracle", () => {
+  const g = graph([
+    comp(".", {
+      label: "Money",
+      claims: ["boundary unique(event_id) at unified_events via dbt schema"],
+    }),
+  ]);
+  const block = renderClaude(g, "2026-07-28");
+  assert.match(block, /\| unique\(event_id\) \| Money \| `unified_events` \| `dbt schema` \|/);
+});

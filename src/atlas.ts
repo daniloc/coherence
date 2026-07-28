@@ -18,7 +18,7 @@
 import type { Config, Graph } from "./types.ts";
 import { scanSources } from "./sidecar.ts";
 import { allBoundaries, boundariesAt } from "./structural.ts";
-import { boundaryOracleLabel, formatBoundaryVia } from "./boundary.ts";
+import { boundaryOracleLabel, formatBoundaryInvariant, formatBoundaryVia } from "./boundary.ts";
 import { writeFile, mkdir } from "node:fs/promises";
 import { join } from "node:path";
 
@@ -103,7 +103,7 @@ export async function atlas(cfg: Config, graph: Graph, mode: "render" | "check")
   out.push("\n  ── flags ──");
   if (drift.length) {
     out.push(`  ✗ ATLAS DRIFT — ${drift.length} spec boundary chokepoint(s) with NO transition entry:`);
-    for (const sym of drift) out.push(`      ${pad(sym, 28)} (boundary "${claims.get(sym)!.inv}", ${claims.get(sym)!.component})`);
+    for (const sym of drift) out.push(`      ${pad(sym, 28)} (boundary ${formatBoundaryInvariant(claims.get(sym)!)}, ${claims.get(sym)!.component})`);
   } else out.push("  ✓ no drift — every spec boundary chokepoint is mapped (or a declared within-chart non-transition).");
   if (dangling.length) { out.push(`  ✗ DANGLING — ${dangling.length} mapped symbol(s) no longer in source:`); for (const e of dangling) out.push(`      ${e.sym}`); }
   else out.push("  ✓ no dangling edges — every mapped symbol exists in source.");

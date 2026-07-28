@@ -9,7 +9,7 @@ import {
   type DbtSnapshot,
 } from "../src/adapters/dbt.ts";
 import { dbtShadowReport } from "../src/dbt-shadows.ts";
-import { diffGraphs } from "../src/structural.ts";
+import { diffGraphs, renderDiff } from "../src/structural.ts";
 import { runVerify } from "../src/verify.ts";
 import { cfg, cleanup, graph, runCaptured, tmpProject } from "./_helpers.ts";
 import type { GraphEdge, GraphNode } from "../src/types.ts";
@@ -23,8 +23,13 @@ const rawManifest = {
       name: "usage",
       original_file_path: "models/usage.sql",
       depends_on: { nodes: ["source.money.billing.usage"] },
+      constraints: [{ type: "unique", columns: ["usage_id", "amount"] }],
       columns: {
-        usage_id: { name: "usage_id", data_type: "text" },
+        usage_id: {
+          name: "usage_id",
+          data_type: "text",
+          constraints: [{ type: "not_null" }, { type: "unique" }],
+        },
         amount: { name: "amount", data_type: "numeric" },
       },
       config: {
@@ -115,7 +120,7 @@ test("normalizeDbtManifest keeps deterministic structure, not compiled SQL", () 
     },
   });
 
-  assert.equal(snapshot.version, 1);
+  assert.equal(snapshot.version, 2);
   assert.equal(snapshot.project, "money");
   assert.deepEqual(snapshot.resources.map((r) => r.uniqueId), [
     "model.money.revenue_entries",
@@ -130,6 +135,11 @@ test("normalizeDbtManifest keeps deterministic structure, not compiled SQL", () 
   ]);
   assert.equal(usage.materialized, "incremental");
   assert.equal(usage.contractEnforced, true);
+  assert.deepEqual(usage.constraints, [
+    { type: "not_null", columns: ["usage_id"] },
+    { type: "unique", columns: ["amount", "usage_id"] },
+    { type: "unique", columns: ["usage_id"] },
+  ]);
   assert.equal("rawCode" in usage, false);
 });
 
@@ -377,7 +387,7 @@ test("dbt semantics fail closed when a declared relationship is not a real depen
 });
 
 const shadowManifest = {
-  version: 1 as const,
+  version: 2 as const,
   project: "money",
   resources: [
     {
@@ -558,6 +568,128 @@ const dbtOracleManifest = {
   ],
 };
 
+const schemaManifest = {
+  version: 2 as const,
+  project: "money",
+  resources: [{
+    uniqueId: "model.money.facts",
+    resourceType: "model",
+    name: "facts",
+    originalFilePath: "models/facts.sql",
+    dependsOn: [],
+    columns: [
+      { name: "event_id", dataType: "text" },
+      { name: "recorded_at", dataType: "timestamp" },
+    ],
+    materialized: "table",
+    contractEnforced: true,
+    constraints: [
+      { type: "unique", columns: ["event_id"] },
+      { type: "not_null", columns: ["recorded_at"] },
+    ],
+  }],
+};
+
+const schemaSemantics = {
+  version: 1,
+  scope: ["models/**"],
+  roles: { Model: ["models/**"] },
+};
+
+const runDbtSchemaBoundary = async (
+  invariant: string,
+  manifest: typeof schemaManifest = schemaManifest,
+) => {
+  const invariantName = invariant.startsWith('"') ? invariant.slice(1, -1) : invariant;
+  const root = await tmpProject({
+    "money.spec.md": [
+      "# Money",
+      "Revenue facts.",
+      "",
+      "## invariants",
+      `- ${invariantName}`,
+      "",
+      "## works when",
+      `- boundary ${invariant} at facts via dbt schema`,
+      "",
+      "## why",
+      `${invariantName} keeps facts addressable.`,
+      "",
+    ].join("\n"),
+    ".coherence/dbt-manifest.json": JSON.stringify(manifest),
+    "coherence.dbt.json": JSON.stringify(schemaSemantics),
+  });
+  try {
+    const config = cfg(root, {
+      dbt: {
+        manifest: "target/manifest.json",
+        snapshot: ".coherence/dbt-manifest.json",
+        semantics: "coherence.dbt.json",
+      },
+    });
+    const g = await buildGraph(config);
+    return await runCaptured(() => runVerify(config, g, { fast: true }));
+  } finally {
+    await cleanup(root);
+  }
+};
+
+test("`via dbt schema` proves structured unique and not-null invariants", async () => {
+  const unique = await runDbtSchemaBoundary("unique(event_id)");
+  assert.equal(unique.code, 0);
+  assert.match(unique.out, /claims: 1 · 1 green · 0 red · 0 skipped/);
+
+  const notNull = await runDbtSchemaBoundary("not_null(recorded_at)");
+  assert.equal(notNull.code, 0);
+});
+
+test("a primary key schema constraint entails unique and not-null", async () => {
+  const primaryKeyManifest = {
+    ...schemaManifest,
+    resources: schemaManifest.resources.map((resource) => ({
+      ...resource,
+      constraints: [{ type: "primary_key", columns: ["event_id"] }],
+    })),
+  };
+
+  assert.equal((await runDbtSchemaBoundary("unique(event_id)", primaryKeyManifest)).code, 0);
+  assert.equal((await runDbtSchemaBoundary("not_null(event_id)", primaryKeyManifest)).code, 0);
+});
+
+test("`via dbt schema` fails closed when the property is absent or cannot be contract-bound", async () => {
+  const prose = await runDbtSchemaBoundary('"facts stay unique"');
+  assert.equal(prose.code, 1);
+  assert.match(prose.out, /`via dbt schema` requires a structured unique\(\.\.\.\) or not_null\(\.\.\.\) invariant/);
+
+  const noConstraint = {
+    ...schemaManifest,
+    resources: schemaManifest.resources.map((resource) => ({ ...resource, constraints: [] })),
+  };
+  const missing = await runDbtSchemaBoundary("unique(event_id)", noConstraint);
+  assert.equal(missing.code, 1);
+  assert.match(missing.out, /dbt schema does not declare unique\(event_id\) on model "facts"/);
+
+  const noColumn = await runDbtSchemaBoundary("unique(missing)", schemaManifest);
+  assert.equal(noColumn.code, 1);
+  assert.match(noColumn.out, /dbt model "facts" has no column "missing"/);
+
+  const noContract = {
+    ...schemaManifest,
+    resources: schemaManifest.resources.map((resource) => ({ ...resource, contractEnforced: false })),
+  };
+  const unenforced = await runDbtSchemaBoundary("unique(event_id)", noContract);
+  assert.equal(unenforced.code, 1);
+  assert.match(unenforced.out, /dbt model "facts" does not enforce its schema contract/);
+
+  const view = {
+    ...schemaManifest,
+    resources: schemaManifest.resources.map((resource) => ({ ...resource, materialized: "view" })),
+  };
+  const unsupported = await runDbtSchemaBoundary("unique(event_id)", view);
+  assert.equal(unsupported.code, 1);
+  assert.match(unsupported.out, /dbt schema constraints require table or incremental materialization; "facts" is view/);
+});
+
 const runDbtTestBoundary = async (
   manifest: typeof dbtOracleManifest,
   oracle = "c_contract",
@@ -690,17 +822,19 @@ const dbtNode = (
     resourceType: uniqueId.split(".")[0],
     dependsOn: [],
     columns: [],
+    constraints: [],
     roles: [],
     ...over,
   },
 });
 
-test("structural dbt diff explains dependencies, columns, grain, and relationship rewiring", () => {
+test("structural dbt diff explains dependencies, columns, constraints, grain, and relationship rewiring", async () => {
   const beforeNode = dbtNode("model.money.entries", {
     dependsOn: ["model.money.usage"],
     columns: [{ name: "entry_id", dataType: "text" }],
     roles: ["LedgerEntryProducer"],
     grain: ["entry_id"],
+    constraints: [{ type: "unique", columns: ["entry_id"] }],
   });
   const afterNode = dbtNode("model.money.entries", {
     dependsOn: ["model.money.usage", "model.money.discounts"],
@@ -710,6 +844,7 @@ test("structural dbt diff explains dependencies, columns, grain, and relationshi
     ],
     roles: ["LedgerEntryProducer"],
     grain: ["entry_id", "discount_id"],
+    constraints: [],
   });
   const edge = (multiplicity: NonNullable<GraphEdge["dbt"]>["multiplicity"]): GraphEdge => ({
     id: "d:model.money.entries->d:model.money.usage:dbt-depends-on",
@@ -729,6 +864,7 @@ test("structural dbt diff explains dependencies, columns, grain, and relationshi
   assert.equal(d.dbtChanged.length, 1);
   assert.deepEqual(d.dbtChanged[0].dependenciesAdded, ["model.money.discounts"]);
   assert.deepEqual(d.dbtChanged[0].columnsAdded, ["discount_id:text"]);
+  assert.deepEqual(d.dbtChanged[0].constraintsRemoved, ["unique(entry_id)"]);
   assert.deepEqual(d.dbtChanged[0].grainBefore, ["entry_id"]);
   assert.deepEqual(d.dbtChanged[0].grainAfter, ["entry_id", "discount_id"]);
   assert.equal(d.dbtRelationshipsRewired.length, 1);
@@ -736,6 +872,9 @@ test("structural dbt diff explains dependencies, columns, grain, and relationshi
   assert.equal(d.dbtRelationshipsRewired[0].target, "usage");
   assert.equal(d.dbtRelationshipsRewired[0].before.multiplicity, "one-to-many");
   assert.equal(d.dbtRelationshipsRewired[0].after.multiplicity, "many-to-many");
+  const rendered = await runCaptured(async () => renderDiff(d, "A", "B"));
+  assert.equal(rendered.code, 1);
+  assert.match(rendered.out, /constraints -unique\(entry_id\)  \(PROPERTY REMOVED\)/);
 });
 
 test("structural dbt diff treats removed parity as a loss", async () => {

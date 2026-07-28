@@ -11,7 +11,14 @@ import { spawnSync } from "node:child_process";
 import { mkdtemp, readFile, readdir, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, relative, resolve } from "node:path";
-import { formatBoundaryVia, parseBoundary, type Boundary } from "./boundary.ts";
+import {
+  boundaryInvariantName,
+  formatBoundary,
+  formatBoundaryInvariant,
+  formatBoundaryVia,
+  parseBoundary,
+  type Boundary,
+} from "./boundary.ts";
 import { parseParity, type Parity } from "./parity.ts";
 import { loadConfig } from "./config.ts";
 import { buildGraph } from "./derive.ts";
@@ -136,7 +143,7 @@ function ledgerOf(node: GraphNode): Ledger {
   for (const c of node.claims ?? []) {
     const b = parseBoundary(c);
     const p = b ? null : parseParity(c);
-    if (b) boundaries.set(b.inv, b);
+    if (b) boundaries.set(boundaryInvariantName(b), b);
     else if (p) parities.set(p.inv, p);
     else claims.add(c);
   }
@@ -235,6 +242,8 @@ export interface StructuralDiff {
     dependenciesRemoved: string[];
     columnsAdded: string[];
     columnsRemoved: string[];
+    constraintsAdded: string[];
+    constraintsRemoved: string[];
     rolesAdded: string[];
     rolesRemoved: string[];
     grainBefore?: string[];
@@ -293,6 +302,10 @@ const stringSetDelta = (before: Iterable<string>, after: Iterable<string>) => {
 };
 
 const columnsOf = (n: GraphNode) => (n.dbt?.columns ?? []).map((c) => `${c.name}:${c.dataType ?? "?"}`);
+const constraintsOf = (n: GraphNode) =>
+  (n.dbt?.constraints ?? []).map((constraint) =>
+    `${constraint.type}(${constraint.columns.join(", ")})`
+  );
 
 export function diffGraphs(before: Graph, after: Graph): StructuralDiff {
   const A = ledgersOf(before), B = ledgersOf(after);
@@ -346,6 +359,7 @@ export function diffGraphs(before: Graph, after: Graph): StructuralDiff {
     if (!a) continue;
     const dependencies = stringSetDelta(a.dbt!.dependsOn, b.dbt!.dependsOn);
     const columns = stringSetDelta(columnsOf(a), columnsOf(b));
+    const constraints = stringSetDelta(constraintsOf(a), constraintsOf(b));
     const roles = stringSetDelta(a.dbt!.roles, b.dbt!.roles);
     const grainBefore = a.dbt!.grain;
     const grainAfter = b.dbt!.grain;
@@ -354,6 +368,7 @@ export function diffGraphs(before: Graph, after: Graph): StructuralDiff {
     if (
       dependencies.added.length || dependencies.removed.length ||
       columns.added.length || columns.removed.length ||
+      constraints.added.length || constraints.removed.length ||
       roles.added.length || roles.removed.length ||
       grainChanged || materializedChanged
     ) {
@@ -364,6 +379,8 @@ export function diffGraphs(before: Graph, after: Graph): StructuralDiff {
         dependenciesRemoved: dependencies.removed,
         columnsAdded: columns.added,
         columnsRemoved: columns.removed,
+        constraintsAdded: constraints.added,
+        constraintsRemoved: constraints.removed,
         rolesAdded: roles.added,
         rolesRemoved: roles.removed,
         grainBefore,
@@ -410,14 +427,15 @@ export function diffGraphs(before: Graph, after: Graph): StructuralDiff {
   return d;
 }
 
-const fmtB = (b: Boundary) => `"${b.inv}" at ${b.chokepoint}${formatBoundaryVia(b)}`;
+const fmtB = (b: Boundary) => formatBoundary(b).slice("boundary ".length);
 const fmtP = (p: Parity) => `"${p.inv}" over ${p.domain} between ${p.f} and ${p.g} via test "${p.oracle}"`;
 
 /** Render the diff; return the count of LOSSES (removed invariants/boundaries/parities/components). */
 export function renderDiff(d: StructuralDiff, fromLabel: string, toLabel: string): number {
   console.log(`\n  STRUCTURAL LEDGER — ${fromLabel} → ${toLabel}\n`);
   const dbtShapeLosses = d.dbtChanged.reduce((n, x) =>
-    n + x.columnsRemoved.length + x.rolesRemoved.length + (x.grainBefore?.length && !x.grainAfter?.length ? 1 : 0), 0);
+    n + x.columnsRemoved.length + x.constraintsRemoved.length + x.rolesRemoved.length +
+    (x.grainBefore?.length && !x.grainAfter?.length ? 1 : 0), 0);
   const losses = d.componentsRemoved.length + d.invRemoved.length + d.boundaryRemoved.length + d.parityRemoved.length
     + d.dbtResourcesRemoved.length + d.dbtRelationshipsRemoved.length + d.dbtParitiesRemoved.length + dbtShapeLosses;
   const line = (mark: string, s: string) => console.log(`  ${mark} ${s}`);
@@ -431,7 +449,7 @@ export function renderDiff(d: StructuralDiff, fromLabel: string, toLabel: string
   for (const x of d.boundaryAdded) line("+", `boundary ${fmtB(x.b)} (${x.comp})`);
   for (const x of d.boundaryRemoved) line("–", `boundary ${fmtB(x.b)} (${x.comp})  (ANCHOR REMOVED)`);
   for (const x of d.boundaryRewired) {
-    line("~", `boundary "${x.inv}" (${x.comp}) rewired:`);
+    line("~", `boundary ${formatBoundaryInvariant(x.before)} (${x.comp}) rewired:`);
     const cp = x.before.chokepoint !== x.after.chokepoint ? `chokepoint ${x.before.chokepoint} → ${x.after.chokepoint}` : "";
     const or = formatBoundaryVia(x.before) !== formatBoundaryVia(x.after)
       ? `oracle${formatBoundaryVia(x.before)} →${formatBoundaryVia(x.after)}` : "";
@@ -462,6 +480,8 @@ export function renderDiff(d: StructuralDiff, fromLabel: string, toLabel: string
     if (x.dependenciesRemoved.length) console.log(`      dependencies -${x.dependenciesRemoved.join(", -")}`);
     if (x.columnsAdded.length) console.log(`      columns +${x.columnsAdded.join(", +")}`);
     if (x.columnsRemoved.length) console.log(`      columns -${x.columnsRemoved.join(", -")}  (SHAPE REMOVED)`);
+    if (x.constraintsAdded.length) console.log(`      constraints +${x.constraintsAdded.join(", +")}`);
+    if (x.constraintsRemoved.length) console.log(`      constraints -${x.constraintsRemoved.join(", -")}  (PROPERTY REMOVED)`);
     if (x.rolesAdded.length) console.log(`      roles +${x.rolesAdded.join(", +")}`);
     if (x.rolesRemoved.length) console.log(`      roles -${x.rolesRemoved.join(", -")}  (CLASSIFICATION REMOVED)`);
     if (JSON.stringify(x.grainBefore ?? []) !== JSON.stringify(x.grainAfter ?? []))

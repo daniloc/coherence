@@ -9,6 +9,11 @@ export interface DbtParity {
   oracle: string;
 }
 
+export interface DbtConstraint {
+  type: string;
+  columns: string[];
+}
+
 export interface GraphNode {
   id: string; parent?: string; label: string; kind: string;
   sub?: string; path?: string; line?: number; claimed?: boolean; claims?: string[];
@@ -20,6 +25,7 @@ export interface GraphNode {
     resourceType: string;
     dependsOn: string[];
     columns: Array<{ name: string; dataType: string | null }>;
+    constraints: DbtConstraint[];
     roles: string[];
     chokepoint?: true;
     shadowedBy?: string[];

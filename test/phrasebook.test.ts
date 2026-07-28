@@ -38,6 +38,7 @@ test("registry — every canonical claim line matches exactly ONE form (no ambig
     'boundary "x" at Choke via guard "g"',
     'boundary "x" at Choke via shadow',
     'boundary "x" at Choke via dbt test "model_contract"',
+    "boundary unique(event_id) at unified_events via dbt schema",
     'parity "x" over DOMAIN between f and g via test "t"',
     "conforms to OwnedScope",
   ];
@@ -49,32 +50,51 @@ test("registry — every canonical claim line matches exactly ONE form (no ambig
 
 test("boundary grammar — `via shadow` is strict and carries no external oracle name", () => {
   assert.deepEqual(parseBoundary('boundary "plain" at c'), {
-    inv: "plain",
+    invariant: { kind: "named", name: "plain" },
     chokepoint: "c",
     oracle: { kind: "none" },
   });
   assert.deepEqual(parseBoundary('boundary "tested" at c via test "totality"'), {
-    inv: "tested",
+    invariant: { kind: "named", name: "tested" },
     chokepoint: "c",
     oracle: { kind: "test", name: "totality" },
   });
   assert.deepEqual(parseBoundary('boundary "guarded" at c via guard "source check"'), {
-    inv: "guarded",
+    invariant: { kind: "named", name: "guarded" },
     chokepoint: "c",
     oracle: { kind: "guard", name: "source check" },
   });
   assert.deepEqual(parseBoundary('boundary "outside consumers cross c" at c via shadow'), {
-    inv: "outside consumers cross c",
+    invariant: { kind: "named", name: "outside consumers cross c" },
     chokepoint: "c",
     oracle: { kind: "shadow" },
   });
   assert.deepEqual(parseBoundary('boundary "c satisfies its row contract" at c via dbt test "c_contract"'), {
-    inv: "c satisfies its row contract",
+    invariant: { kind: "named", name: "c satisfies its row contract" },
     chokepoint: "c",
     oracle: { kind: "dbt-test", name: "c_contract" },
   });
+  assert.deepEqual(parseBoundary("boundary unique(event_id) at unified_events via dbt schema"), {
+    invariant: { kind: "unique", columns: ["event_id"] },
+    chokepoint: "unified_events",
+    oracle: { kind: "dbt-schema" },
+  });
+  assert.deepEqual(parseBoundary("boundary unique(customer_id, event_id) at unified_events via dbt schema"), {
+    invariant: { kind: "unique", columns: ["customer_id", "event_id"] },
+    chokepoint: "unified_events",
+    oracle: { kind: "dbt-schema" },
+  });
+  assert.deepEqual(parseBoundary("boundary not_null(recorded_at) at ledger via dbt schema"), {
+    invariant: { kind: "not_null", column: "recorded_at" },
+    chokepoint: "ledger",
+    oracle: { kind: "dbt-schema" },
+  });
   assert.equal(parseBoundary('boundary "x" at c via shadow "named"'), null);
   assert.equal(parseBoundary('boundary "x" at c via dbt test'), null);
+  assert.equal(parseBoundary('boundary "x" at c via dbt schema "named"'), null);
+  assert.equal(parseBoundary("boundary unique() at c via dbt schema"), null);
+  assert.equal(parseBoundary("boundary not_null(a, b) at c via dbt schema"), null);
+  assert.equal(parseBoundary("boundary arbitrary(a) at c via dbt schema"), null);
   assert.equal(parseBoundary('boundary "x" at c via test'), null);
   assert.equal(parseBoundary('boundary "x" at c via guard'), null);
 });

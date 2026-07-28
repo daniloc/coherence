@@ -13,14 +13,53 @@
 import { readFile, readdir, stat } from "node:fs/promises";
 import { join } from "node:path";
 import { spawnSync } from "node:child_process";
-import type { Config, Graph } from "./types.ts";
-import { BOUNDARY_RE, parseBoundary } from "./boundary.ts";
+import type { Config, Graph, GraphNode } from "./types.ts";
+import {
+  BOUNDARY_RE,
+  boundaryInvariantName,
+  parseBoundary,
+  type BoundaryInvariant,
+} from "./boundary.ts";
 import { dbtShadowReport } from "./dbt-shadows.ts";
 import { PARITY_RE } from "./parity.ts";
 import { analyzeOracle, analyzeParityOracle } from "./oracle-domain.ts";
 import { unescapeMd } from "./walk.ts";
 
 const fileExists = async (p: string) => { try { await stat(p); return true; } catch { return false; } };
+
+const dbtModel = (graph: Graph, name: string): GraphNode | string => {
+  const models = graph.nodes.filter((node) =>
+    node.kind === "symbol" &&
+    node.label === name &&
+    node.dbt?.resourceType === "model"
+  );
+  if (models.length === 0) return `chokepoint "${name}" is not a dbt model in the graph`;
+  if (models.length > 1) return `chokepoint "${name}" is ambiguous across ${models.length} dbt models`;
+  return models[0];
+};
+
+const schemaInvariantColumns = (invariant: BoundaryInvariant): string[] =>
+  invariant.kind === "unique"
+    ? invariant.columns
+    : invariant.kind === "not_null"
+      ? [invariant.column]
+      : [];
+
+const schemaConstraintProves = (
+  invariant: Exclude<BoundaryInvariant, { kind: "named" }>,
+  constraint: { type: string; columns: string[] },
+): boolean => {
+  if (invariant.kind === "not_null") {
+    return (
+      (constraint.type === "not_null" && constraint.columns.length === 1) ||
+      constraint.type === "primary_key"
+    ) && constraint.columns.includes(invariant.column);
+  }
+  return (
+    constraint.type === "unique" ||
+    constraint.type === "primary_key"
+  ) && JSON.stringify(constraint.columns) === JSON.stringify(invariant.columns);
+};
 
 /** The verdict a claim form returns — adapted into verify's `Sig` (which adds claim + node). */
 export interface ClaimResult {
@@ -205,7 +244,7 @@ export const CLAIM_FORMS: ClaimForm[] = [
   },
   {
     name: "boundary",
-    grammar: 'boundary "<invariant>" at <chokepoint> [via test "<oracle>" | via guard "<oracle>" | via shadow | via dbt test "<oracle>"]',
+    grammar: 'boundary ("<invariant>" | unique(<columns>) | not_null(<column>)) at <chokepoint> [via test "<oracle>" | via guard "<oracle>" | via shadow | via dbt test "<oracle>" | via dbt schema]',
     example: 'boundary "fail-closed writes" at applyWritePolicy via test "write policy totality"',
     tier: "hybrid",
     match: (l) => l.match(BOUNDARY_RE),
@@ -214,22 +253,17 @@ export const CLAIM_FORMS: ClaimForm[] = [
     // exists, and (if given) the oracle passes. `via test` additionally runs the META-ORACLE
     // (live-domain analysis, even under --fast); `via guard` is exempt (source-property
     // oracle); `via shadow` binds to the dbt DAG's chokepoint-shadow proof; `via dbt
-    // test` binds an active manifest test directly to the target model.
+    // test` binds an active manifest test directly to the target model; `via dbt
+    // schema` proves a structured invariant from a contract-bound manifest constraint.
     evaluate: async (ctx, m) => {
       const boundary = parseBoundary(m[0])!;
-      const { inv, chokepoint: sym, oracle } = boundary;
+      const { chokepoint: sym, oracle } = boundary;
+      const inv = boundaryInvariantName(boundary);
       ctx.anchor(inv);
       if (oracle.kind === "shadow") {
-        const models = ctx.graph.nodes.filter((n) =>
-          n.kind === "symbol" &&
-          n.label === sym &&
-          n.dbt?.resourceType === "model"
-        );
-        if (models.length === 0)
-          return { kind: "fail", detail: `chokepoint "${sym}" is not a dbt model in the graph` };
-        if (models.length > 1)
-          return { kind: "fail", detail: `chokepoint "${sym}" is ambiguous across ${models.length} dbt models` };
-        if (models[0].dbt?.chokepoint !== true)
+        const model = dbtModel(ctx.graph, sym);
+        if (typeof model === "string") return { kind: "fail", detail: model };
+        if (model.dbt?.chokepoint !== true)
           return { kind: "fail", detail: `dbt model "${sym}" is not declared as a chokepoint` };
 
         const bypasses = dbtShadowReport(ctx.graph).violations.filter(
@@ -246,16 +280,37 @@ export const CLAIM_FORMS: ClaimForm[] = [
         }
         return { kind: "pass", detail: `${inv} @ ${sym} (shadow closed)` };
       }
+      if (oracle.kind === "dbt-schema") {
+        if (boundary.invariant.kind === "named")
+          return { kind: "fail", detail: "`via dbt schema` requires a structured unique(...) or not_null(...) invariant" };
+        const schemaInvariant = boundary.invariant;
+        const model = dbtModel(ctx.graph, sym);
+        if (typeof model === "string") return { kind: "fail", detail: model };
+        const materialized = model.dbt!.materialized;
+        if (materialized !== "table" && materialized !== "incremental")
+          return {
+            kind: "fail",
+            detail: `dbt schema constraints require table or incremental materialization; "${sym}" is ${materialized ?? "unset"}`,
+          };
+        if (model.dbt!.contractEnforced !== true)
+          return { kind: "fail", detail: `dbt model "${sym}" does not enforce its schema contract` };
+
+        const columns = new Set(model.dbt!.columns.map((column) => column.name));
+        for (const column of schemaInvariantColumns(schemaInvariant))
+          if (!columns.has(column))
+            return { kind: "fail", detail: `dbt model "${sym}" has no column "${column}"` };
+
+        if (!model.dbt!.constraints.some((constraint) =>
+          schemaConstraintProves(schemaInvariant, constraint)
+        )) return {
+          kind: "fail",
+          detail: `dbt schema does not declare ${inv} on model "${sym}"`,
+        };
+        return { kind: "pass", detail: `${inv} @ ${sym} via dbt schema` };
+      }
       if (oracle.kind === "dbt-test") {
-        const models = ctx.graph.nodes.filter((n) =>
-          n.kind === "symbol" &&
-          n.label === sym &&
-          n.dbt?.resourceType === "model"
-        );
-        if (models.length === 0)
-          return { kind: "fail", detail: `chokepoint "${sym}" is not a dbt model in the graph` };
-        if (models.length > 1)
-          return { kind: "fail", detail: `chokepoint "${sym}" is ambiguous across ${models.length} dbt models` };
+        const model = dbtModel(ctx.graph, sym);
+        if (typeof model === "string") return { kind: "fail", detail: model };
 
         const tests = ctx.graph.nodes.filter((n) =>
           n.label === oracle.name &&
@@ -265,7 +320,7 @@ export const CLAIM_FORMS: ClaimForm[] = [
           return { kind: "fail", detail: `dbt test "${oracle.name}" not found in the graph` };
         if (tests.length > 1)
           return { kind: "fail", detail: `dbt test "${oracle.name}" is ambiguous across ${tests.length} manifest nodes` };
-        if (!tests[0].dbt!.dependsOn.includes(models[0].dbt!.uniqueId))
+        if (!tests[0].dbt!.dependsOn.includes(model.dbt!.uniqueId))
           return { kind: "fail", detail: `dbt test "${oracle.name}" does not depend on model "${sym}"` };
 
         if (ctx.fast) return { kind: "skip", detail: "dbt test binding valid (--fast)" };

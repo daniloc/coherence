@@ -24,7 +24,7 @@ import type { Config } from "./types.ts";
 // DELIBERATELY NOT GENERATED (stays authored, outside the fences):
 //   - all the WHY: design-principle essays, conventions, vocabulary, tech-stack notes.
 import type { Graph } from "./types.ts";
-import { boundaryOracleLabel, parseBoundary } from "./boundary.ts";
+import { boundaryInvariantName, boundaryOracleLabel, parseBoundary } from "./boundary.ts";
 
 export const CLAUDE_BEGIN = "<!-- coherence:begin -->";
 export const CLAUDE_END = "<!-- coherence:end -->";
@@ -42,7 +42,7 @@ export function renderClaude(graph: Graph, stamp: string): string {
       const b = parseBoundary(claim);
       if (b) boundaries.push({
         comp: c.label,
-        name: b.inv,
+        name: boundaryInvariantName(b),
         chokepoint: b.chokepoint,
         oracle: boundaryOracleLabel(b) || "—",
       });
