@@ -55,6 +55,31 @@ test("diffGraphs — additions are tracked but are not losses", () => {
   assert.equal(d.invRemoved.length + d.boundaryRemoved.length + d.componentsRemoved.length, 0);
 });
 
+test("renderDiff — `via shadow` remains first-class boundary syntax", async () => {
+  const before = graph([comp(".", { label: "Money", why: "r" })]);
+  const after = graph([comp(".", {
+    label: "Money",
+    claims: ['boundary "canonical ledger access" at ledger via shadow'],
+    invariants: ["canonical ledger access"],
+    why: "r",
+  })]);
+  const result = await runCaptured(async () => renderDiff(diffGraphs(before, after), "A", "B"));
+  assert.match(result.out, /\+ boundary "canonical ledger access" at ledger via shadow \(Money\)/);
+  assert.doesNotMatch(result.out, /via shadow ""/);
+});
+
+test("renderDiff — `via dbt test` remains first-class boundary syntax", async () => {
+  const before = graph([comp(".", { label: "Money", why: "r" })]);
+  const after = graph([comp(".", {
+    label: "Money",
+    claims: ['boundary "ledger balances" at ledger via dbt test "ledger_balances"'],
+    invariants: ["ledger balances"],
+    why: "r",
+  })]);
+  const result = await runCaptured(async () => renderDiff(diffGraphs(before, after), "A", "B"));
+  assert.match(result.out, /\+ boundary "ledger balances" at ledger via dbt test "ledger_balances" \(Money\)/);
+});
+
 test("renderDiff — counts losses (the number --strict gates on)", async () => {
   const before = graph([comp(".", { label: "Hive", claims: ['boundary "egress" at seal via guard "g"'], invariants: ["egress"], why: "r" })]);
   const dropped = graph([comp(".", { label: "Hive", claims: [], invariants: [], why: "r" })]);
@@ -118,7 +143,7 @@ test("allBoundaries — keyed by chokepoint symbol, first declaration wins", () 
   assert.equal(all.size, 2);
   assert.equal(all.get("seal")!.inv, "x");
   assert.equal(all.get("seal")!.component, "A");
-  assert.equal(all.get("mint")!.verb, "guard");
+  assert.deepEqual(all.get("mint")!.oracle, { kind: "guard", name: "g" });
 });
 
 // ── parity claims in the ledger — agreement anchors are first-class ──────────────────

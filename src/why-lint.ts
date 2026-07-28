@@ -19,6 +19,7 @@
 // one (character count, which would flatten the load signal — a spec carrying
 // thirteen boundaries earns more bytes than one carrying one).
 import type { Graph, GraphNode } from "./types.ts";
+import { boundaryOracleName } from "./boundary.ts";
 import { allBoundaries } from "./structural.ts";
 
 const ORACLE_VERB =
@@ -53,7 +54,11 @@ interface AnchorFinding { component: string; kind: "unanchored-paragraph" | "una
 function checkMechanismRestatement(graph: Graph): MechanismFinding[] {
   const boundaries = allBoundaries(graph);
   const symbols = new Set<string>();
-  for (const b of boundaries.values()) { symbols.add(b.chokepoint); if (b.oracle) symbols.add(b.oracle); }
+  for (const b of boundaries.values()) {
+    symbols.add(b.chokepoint);
+    const oracle = boundaryOracleName(b);
+    if (oracle) symbols.add(oracle);
+  }
   if (!symbols.size) return [];
   const symRe = new RegExp(`\\b(${[...symbols].map(escapeRe).join("|")})\\b`);
 

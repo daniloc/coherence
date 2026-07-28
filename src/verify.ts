@@ -51,7 +51,13 @@ export async function runVerify(cfg: Config, graph: Graph, opts: { fast?: boolea
     tc = r.status === 0 ? { pass: true, detail: "" } : { pass: false, detail: tail.slice(0, 200) };
     return tc;
   };
-  type Sig = { kind: "pass" | "fail" | "skip"; claim: string; node: string; detail?: string };
+  type Sig = {
+    kind: "pass" | "fail" | "skip";
+    claim: string;
+    node: string;
+    detail?: string;
+    accountedBy?: "dbt-shadow";
+  };
   // The claim grammar is a declarative registry (src/phrasebook.ts): an ordered list of
   // ClaimForms, first match wins (the order IS the historical precedence). evalClaim is now
   // a thin loop — build the per-claim context, find the first matching form, adapt its
@@ -65,7 +71,16 @@ export async function runVerify(cfg: Config, graph: Graph, opts: { fast?: boolea
     };
     for (const form of CLAIM_FORMS) {
       const m = form.match(claim);
-      if (m) { const r = await form.evaluate(ctx, m); return { kind: r.kind, claim, node, detail: r.detail }; }
+      if (m) {
+        const r = await form.evaluate(ctx, m);
+        return {
+          kind: r.kind,
+          claim,
+          node,
+          detail: r.detail,
+          accountedBy: r.accountedBy,
+        };
+      }
     }
     return { kind: "skip", claim, node, detail: "no verifier (dialect gap)" };
   };
@@ -87,6 +102,9 @@ export async function runVerify(cfg: Config, graph: Graph, opts: { fast?: boolea
   const sigs: Sig[] = [];
   for (const c of comps) { const dir = c.id.slice(2); const diskDir = dir === "." ? root : join(root, dir); for (const cl of c.claims || []) sigs.push(await evalClaim(cl, diskDir, c.label)); }
   const red = sigs.filter((s) => s.kind === "fail").length;
+  const claimFailures = sigs.filter(
+    (s) => s.kind === "fail" && s.accountedBy !== "dbt-shadow",
+  ).length;
   console.log(`claims: ${sigs.length} · ${sigs.filter((s) => s.kind === "pass").length} green · ${red} red · ${sigs.filter((s) => s.kind === "skip").length} skipped`);
   for (const s of sigs) if (s.kind !== "pass") console.log(`  ${s.kind === "fail" ? "✗" : "·"} [${s.node}] ${s.claim}${s.detail ? ` — ${s.detail}` : ""}`);
 
@@ -183,7 +201,7 @@ export async function runVerify(cfg: Config, graph: Graph, opts: { fast?: boolea
     if (authorJobs.length) { console.log(`\n AUTHOR — the WHY (NOT derivable — do not fabricate; needs a human/attested author):`); for (const j of authorJobs) console.log(`   [why] component "${j.name}" — states no rationale`); }
   }
 
-  const failures = red + broken + covGaps + shadows.violations.length + dbtParityRed;
-  console.log(failures === 0 ? (verifyJobs.length ? `\n• ${verifyJobs.length} verification job(s) pending` : "\n✓ coherent") : `\n✗ ${failures} coherence failure(s) — ${red} claim · ${broken} broken · ${covGaps} coverage · ${shadows.violations.length} dbt shadow · ${dbtParityRed} dbt parity`);
+  const failures = claimFailures + broken + covGaps + shadows.violations.length + dbtParityRed;
+  console.log(failures === 0 ? (verifyJobs.length ? `\n• ${verifyJobs.length} verification job(s) pending` : "\n✓ coherent") : `\n✗ ${failures} coherence failure(s) — ${claimFailures} claim · ${broken} broken · ${covGaps} coverage · ${shadows.violations.length} dbt shadow · ${dbtParityRed} dbt parity`);
   return failures === 0 ? 0 : 1;
 }

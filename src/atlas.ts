@@ -8,7 +8,7 @@
 //     cannot be constructed — and the `via guard` is the source-totality evidence it rides
 //     on. A bare `via guard` does NOT make a violation unrepresentable (you can still write
 //     the raw call; the guard only rejects it at build), so it is NOT tier-1 on its own.
-//   - tier-2 (totality-checked) for a `via guard` OR `via test` claim NOT marked enshrined.
+//   - tier-2 (totality-checked) for any oracle-backed claim NOT marked enshrined.
 //   - tier-3 (convention) when no governing claim exists — a latent tear if it's a security
 //     crossing.
 // FAIL-CLOSED: a transition marked `enshrined` with no backing `via guard` claim is an
@@ -18,6 +18,7 @@
 import type { Config, Graph } from "./types.ts";
 import { scanSources } from "./sidecar.ts";
 import { allBoundaries, boundariesAt } from "./structural.ts";
+import { boundaryOracleLabel, formatBoundaryVia } from "./boundary.ts";
 import { writeFile, mkdir } from "node:fs/promises";
 import { join } from "node:path";
 
@@ -57,13 +58,14 @@ export async function atlas(cfg: Config, graph: Graph, mode: "render" | "check")
     // kept (that pick is spec-line-order-dependent, so a benign doc reorder could otherwise
     // flip a legitimate tier-1 into a false over-claim). `c` still supplies the display note.
     const claimSym = claims.get(sym) ? sym : (anchoredBy as string);
-    const guardBacked = boundariesAt(graph, claimSym).some((b) => b.verb === "guard");
-    if (enshrined && guardBacked) return { tier: 1, label: "enshrined", note: c.oracle + via, overclaim: false };
+    const guardBacked = boundariesAt(graph, claimSym).some((b) => b.oracle.kind === "guard");
+    const oracle = boundaryOracleLabel(c);
+    if (enshrined && guardBacked) return { tier: 1, label: "enshrined", note: oracle + via, overclaim: false };
     if (enshrined)
       // marked enshrined but the backing claim is `via test`, not `via guard` — no source-
       // totality guard to ride on. Render at its real evidence tier (2) and fail-closed.
-      return { tier: 2, label: "totality-checked", note: `${c.oracle}${via} — MARKED enshrined but backing claim is \`via ${c.verb}\`, not \`via guard\``, overclaim: true };
-    return { tier: 2, label: "totality-checked", note: c.oracle + via, overclaim: false };
+      return { tier: 2, label: "totality-checked", note: `${oracle}${via} — MARKED enshrined but backing claim is \`${formatBoundaryVia(c).trim() || "no oracle"}\`, not \`via guard\``, overclaim: true };
+    return { tier: 2, label: "totality-checked", note: oracle + via, overclaim: false };
   };
 
   const edges = Object.entries(transitions).map(([sym, def]) => ({

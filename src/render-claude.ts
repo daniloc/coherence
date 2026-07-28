@@ -24,7 +24,7 @@ import type { Config } from "./types.ts";
 // DELIBERATELY NOT GENERATED (stays authored, outside the fences):
 //   - all the WHY: design-principle essays, conventions, vocabulary, tech-stack notes.
 import type { Graph } from "./types.ts";
-import { parseBoundary } from "./boundary.ts";
+import { boundaryOracleLabel, parseBoundary } from "./boundary.ts";
 
 export const CLAUDE_BEGIN = "<!-- coherence:begin -->";
 export const CLAUDE_END = "<!-- coherence:end -->";
@@ -40,7 +40,12 @@ export function renderClaude(graph: Graph, stamp: string): string {
   for (const c of comps) {
     for (const claim of c.claims ?? []) {
       const b = parseBoundary(claim);
-      if (b) boundaries.push({ comp: c.label, name: b.inv, chokepoint: b.chokepoint, oracle: b.oracle || "—" });
+      if (b) boundaries.push({
+        comp: c.label,
+        name: b.inv,
+        chokepoint: b.chokepoint,
+        oracle: boundaryOracleLabel(b) || "—",
+      });
     }
   }
 
@@ -84,7 +89,7 @@ export function renderClaude(graph: Graph, stamp: string): string {
   md.push("## Invariants → chokepoint → oracle (derived)", "");
   if (boundaries.length) {
     md.push("> Each named invariant, the chokepoint symbol that enforces it, and the oracle");
-    md.push("> (test or guard) that asserts it holds. Parsed from the `boundary` claims in the specs.", "");
+    md.push("> (test, guard, built-in shadow proof, or manifest-bound dbt test) that asserts it holds. Parsed from the `boundary` claims in the specs.", "");
     md.push("| Invariant | Component | Chokepoint | Oracle |");
     md.push("| --- | --- | --- | --- |");
     for (const b of boundaries) {

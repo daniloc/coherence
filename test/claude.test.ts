@@ -112,3 +112,26 @@ test("renderClaude — a `via guard` boundary appears in the invariants table wi
   // and the derived count includes BOTH boundary claims
   assert.match(block, /2 boundary claims/);
 });
+
+test("renderClaude — a `via shadow` boundary names the built-in oracle", () => {
+  const g = graph([
+    comp(".", {
+      label: "Money",
+      claims: ['boundary "canonical ledger access" at ledger via shadow'],
+    }),
+  ]);
+  const block = renderClaude(g, "2026-07-28");
+  assert.match(block, /\| canonical ledger access \| Money \| `ledger` \| `shadow` \|/);
+  assert.match(block, /1 boundary claims/);
+});
+
+test("renderClaude — a `via dbt test` boundary identifies the manifest oracle", () => {
+  const g = graph([
+    comp(".", {
+      label: "Money",
+      claims: ['boundary "ledger balances" at ledger via dbt test "ledger_balances"'],
+    }),
+  ]);
+  const block = renderClaude(g, "2026-07-28");
+  assert.match(block, /\| ledger balances \| Money \| `ledger` \| `dbt test: ledger_balances` \|/);
+});

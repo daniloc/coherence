@@ -199,6 +199,30 @@ fails if it bypasses the chokepoint and reads a private upstream model directly.
 Traversal stops at another chokepoint, so nested boundaries compose instead of
 absorbing one another. Sources and tests are not hidden by this model-visibility rule.
 
+Bind a named spec property to that proof with:
+
+```markdown
+- boundary "every financial consumer crosses the canonical ledger" at ledger via shadow
+```
+
+`via shadow` is a built-in deterministic oracle: it requires `ledger` to resolve to
+exactly one dbt model declared as a chokepoint, then asks the derived DAG whether its
+shadow is closed. It runs under both normal and `--fast` verification. Every bypass
+remains an individual `dbt shadow` violation; the boundary claim points at that same
+evidence and is not counted as an additional failure.
+
+Bind a row-level property to a dbt test with:
+
+```markdown
+- boundary "ledger balances globally" at ledger via dbt test "ledger_debits_equal_credits"
+```
+
+`via dbt test` uses the manifest as its meta-oracle. It fails closed unless the target
+resolves to exactly one dbt model, the named test resolves to exactly one active
+manifest node, and that test directly depends on the target model. `--fast` proves
+that binding but skips execution; a full verify runs the same exact name through
+`config.test` and still requires `config.testMatch` as positive evidence that it ran.
+
 The normalized snapshot deliberately omits SQL text. Commit it so `coherence log`
 can reconstruct dbt structure at both git refs without running dbt in a detached
 worktree. The dbt structural ledger reports resources, dependencies, declared
@@ -225,7 +249,7 @@ run `coherence phrasebook` to see the source of truth.
 | imports | `<file> imports <specifier>` | deterministic | `main.ts imports ./registry` |
 | responds | `<url> responds <status> [with "<text>"]` | **live** (skipped under `--fast`; unreachable URL = skip, not fail) | `http://localhost:8787/health responds 200 with "ok"` |
 | passes test | `passes test "<name>"` | executable (skipped under `--fast`) | `passes test "write policy totality"` |
-| boundary | `boundary "<invariant>" at <chokepoint> [via (test\|guard) "<oracle>"]` | hybrid — anchoring + chokepoint-symbol check + meta-oracle run even under `--fast`; the oracle test run is skipped under `--fast` | `boundary "fail-closed writes" at applyWritePolicy via test "write policy totality"` |
+| boundary | `boundary "<invariant>" at <chokepoint> [via test "<oracle>" \| via guard "<oracle>" \| via shadow \| via dbt test "<oracle>"]` | hybrid — anchoring plus a source test, source guard, DAG shadow proof, or manifest-bound dbt test | `boundary "ledger balances globally" at ledger via dbt test "ledger_debits_equal_credits"` |
 | parity | `parity "<invariant>" over <domain> between <fnA> and <fnB> via test "<oracle>"` | hybrid — anchoring + domain/projection symbols must exist + the parity meta-oracle runs even under `--fast`; the oracle test run is skipped under `--fast` | `parity "disclosure faithfulness" over TOOL_NAMES between toolActivity and messageProvenance via test "live equals settled"` |
 | conforms to | `conforms to <Word>` | hybrid — expands a dictionary word's commitments against the declaring component (see "The dictionary" below) | `conforms to OwnedScope` |
 
@@ -248,8 +272,10 @@ Notes, from the implementing code:
 - **boundary** asserts a self-enforcing boundary's anatomy *as a unit*: the named
   invariant, the chokepoint SYMBOL exists in the code graph, and (if given) the
   oracle passes — `via test` additionally passes the meta-oracle (next section);
-  `via guard` is exempt from it (see the escape-hatch section). It **anchors** the
-  named invariant for the coverage gate.
+  `via guard` is exempt from it (see the escape-hatch section); `via shadow`
+  requires a declared dbt chokepoint and proves its DAG shadow is closed; `via
+  dbt test` proves an exact test-to-model attachment from the manifest before
+  executing it. It **anchors** the named invariant for the coverage gate.
 - **parity** generalizes the boundary totality pattern from COVERAGE to AGREEMENT:
   `<fnA>` and `<fnB>` are declared two projections of ONE enumerated domain and must
   agree over it (the drift class where a live view and a settled view — or a server
@@ -463,7 +489,7 @@ source you named genuinely the complete domain?"** If `app.routes` is not actual
 where every route registers, no oracle over it can save you. That last step stays
 human judgment — name your SSOT deliberately.
 
-## Authoring a boundary — the checklist
+## Authoring a source/test boundary — the checklist
 
 To add `boundary "<inv>" at <chokepoint> via test|guard "<oracle>"`:
 
@@ -745,7 +771,8 @@ outside (your why-essays, conventions, doctrine — the WHY, which the graph can
 derive). If the markers are absent it **refuses to touch the file** and prints the
 marker pair to add — opting in is explicit. `config.claudeMdPath` moves the splice
 target (e.g. a repo-root CLAUDE.md above a sub-package). The generated invariants
-table is rendered from every `boundary … via (test|guard)` claim, parsed by the
+table is rendered from every `boundary` claim (including `via shadow` and `via dbt
+test`), parsed by the
 single `BOUNDARY_RE` in `src/boundary.ts` (shared by `verify`, `structural`, and
 `render-claude` — one home for the grammar).
 

@@ -471,6 +471,168 @@ test("a dbt chokepoint hides its upstream shadow from outside consumers", async 
   }
 });
 
+const closedShadowManifest = {
+  ...shadowManifest,
+  resources: shadowManifest.resources.map((resource) =>
+    resource.uniqueId === "model.money.e"
+      ? { ...resource, dependsOn: ["model.money.c"] }
+      : resource
+  ),
+};
+
+const runShadowBoundary = async (
+  manifest: typeof shadowManifest,
+  chokepoint: string,
+) => {
+  const invariant = `outside consumers cross ${chokepoint}`;
+  const root = await tmpProject({
+    "money.spec.md": [
+      "# Money",
+      "Revenue facts.",
+      "",
+      "## invariants",
+      `- ${invariant}`,
+      "",
+      "## works when",
+      `- boundary "${invariant}" at ${chokepoint} via shadow`,
+      "",
+      "## why",
+      "The canonical model owns access to its upstream facts.",
+      "",
+    ].join("\n"),
+    ".coherence/dbt-manifest.json": JSON.stringify(manifest),
+    "coherence.dbt.json": JSON.stringify(shadowSemantics),
+  });
+  try {
+    const config = cfg(root, {
+      dbt: {
+        manifest: "target/manifest.json",
+        snapshot: ".coherence/dbt-manifest.json",
+        semantics: "coherence.dbt.json",
+      },
+    });
+    const g = await buildGraph(config);
+    return await runCaptured(() => runVerify(config, g, { fast: true }));
+  } finally {
+    await cleanup(root);
+  }
+};
+
+test("`via shadow` binds a boundary property to the dbt shadow oracle without double-counting bypasses", async () => {
+  const result = await runShadowBoundary(shadowManifest, "c");
+
+  assert.equal(result.code, 1);
+  assert.match(result.out, /\[Money\] boundary "outside consumers cross c" at c via shadow — 1 shadow bypass; individual violation reported below/);
+  assert.match(result.out, /\[dbt shadow\] e depends on a, which is private behind c; depend on c instead/);
+  assert.match(result.out, /✗ 1 coherence failure\(s\) — 0 claim · 0 broken · 0 coverage · 1 dbt shadow · 0 dbt parity/);
+});
+
+test("`via shadow` passes when the declared dbt chokepoint has no bypasses", async () => {
+  const result = await runShadowBoundary(closedShadowManifest, "c");
+
+  assert.equal(result.code, 0);
+  assert.match(result.out, /claims: 1 · 1 green · 0 red · 0 skipped/);
+  assert.match(result.out, /dbt shadows: 1 chokepoint · 2 private models · 0 bypasses/);
+});
+
+test("`via shadow` fails closed when its target is not a declared dbt chokepoint", async () => {
+  const result = await runShadowBoundary(closedShadowManifest, "d");
+
+  assert.equal(result.code, 1);
+  assert.match(result.out, /dbt model "d" is not declared as a chokepoint/);
+  assert.match(result.out, /✗ 1 coherence failure\(s\) — 1 claim · 0 broken · 0 coverage · 0 dbt shadow · 0 dbt parity/);
+});
+
+const dbtOracleManifest = {
+  ...closedShadowManifest,
+  resources: [
+    ...closedShadowManifest.resources,
+    {
+      uniqueId: "test.money.c_contract",
+      resourceType: "test",
+      name: "c_contract",
+      originalFilePath: "tests/c_contract.sql",
+      dependsOn: ["model.money.c"],
+      columns: [],
+    },
+  ],
+};
+
+const runDbtTestBoundary = async (
+  manifest: typeof dbtOracleManifest,
+  oracle = "c_contract",
+  fast = true,
+) => {
+  const invariant = "c satisfies its row contract";
+  const root = await tmpProject({
+    "money.spec.md": [
+      "# Money",
+      "Revenue facts.",
+      "",
+      "## invariants",
+      `- ${invariant}`,
+      "",
+      "## works when",
+      `- boundary "${invariant}" at c via dbt test "${oracle}"`,
+      "",
+      "## why",
+      "The canonical model owns its row contract.",
+      "",
+    ].join("\n"),
+    ".coherence/dbt-manifest.json": JSON.stringify(manifest),
+    "coherence.dbt.json": JSON.stringify(shadowSemantics),
+    "runner.js": "console.log('COHERENCE_TEST_PASSED', process.argv[2]);\n",
+  });
+  try {
+    const config = cfg(root, {
+      test: ["node", join(root, "runner.js")],
+      testMatch: "COHERENCE_TEST_PASSED",
+      dbt: {
+        manifest: "target/manifest.json",
+        snapshot: ".coherence/dbt-manifest.json",
+        semantics: "coherence.dbt.json",
+      },
+    });
+    const g = await buildGraph(config);
+    return await runCaptured(() => runVerify(config, g, { fast }));
+  } finally {
+    await cleanup(root);
+  }
+};
+
+test("`via dbt test` validates an exact test-to-model binding under `--fast`", async () => {
+  const result = await runDbtTestBoundary(dbtOracleManifest);
+
+  assert.equal(result.code, 0);
+  assert.match(result.out, /boundary "c satisfies its row contract" at c via dbt test "c_contract" — dbt test binding valid \(--fast\)/);
+  assert.match(result.out, /claims: 1 · 0 green · 0 red · 1 skipped/);
+});
+
+test("`via dbt test` executes the existing named-test runner during full verification", async () => {
+  const result = await runDbtTestBoundary(dbtOracleManifest, "c_contract", false);
+
+  assert.equal(result.code, 0);
+  assert.match(result.out, /claims: 1 · 1 green · 0 red · 0 skipped/);
+});
+
+test("`via dbt test` fails closed for unknown or detached tests", async () => {
+  const unknown = await runDbtTestBoundary(dbtOracleManifest, "missing");
+  assert.equal(unknown.code, 1);
+  assert.match(unknown.out, /dbt test "missing" not found in the graph/);
+
+  const detachedManifest = {
+    ...dbtOracleManifest,
+    resources: dbtOracleManifest.resources.map((resource) =>
+      resource.uniqueId === "test.money.c_contract"
+        ? { ...resource, dependsOn: ["model.money.a"] }
+        : resource
+    ),
+  };
+  const detached = await runDbtTestBoundary(detachedManifest);
+  assert.equal(detached.code, 1);
+  assert.match(detached.out, /dbt test "c_contract" does not depend on model "c"/);
+});
+
 test("dbt chokepoints fail closed when they name an unknown model", async () => {
   const root = await tmpProject({
     ".coherence/dbt-manifest.json": JSON.stringify(shadowManifest),

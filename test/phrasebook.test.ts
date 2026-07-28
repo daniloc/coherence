@@ -7,6 +7,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { CLAIM_FORMS, parseWord, reEscape } from "../src/phrasebook.ts";
+import { parseBoundary } from "../src/boundary.ts";
 
 test("registry — order IS the historical precedence (typechecks → conforms to)", () => {
   assert.deepEqual(
@@ -35,6 +36,8 @@ test("registry — every canonical claim line matches exactly ONE form (no ambig
     'http://localhost:8787/health responds 200 with "ok"',
     'passes test "write policy totality"',
     'boundary "x" at Choke via guard "g"',
+    'boundary "x" at Choke via shadow',
+    'boundary "x" at Choke via dbt test "model_contract"',
     'parity "x" over DOMAIN between f and g via test "t"',
     "conforms to OwnedScope",
   ];
@@ -42,6 +45,38 @@ test("registry — every canonical claim line matches exactly ONE form (no ambig
     const hits = CLAIM_FORMS.filter((f) => f.match(l));
     assert.equal(hits.length, 1, `"${l}" should match exactly one form, matched: ${hits.map((h) => h.name).join(", ")}`);
   }
+});
+
+test("boundary grammar — `via shadow` is strict and carries no external oracle name", () => {
+  assert.deepEqual(parseBoundary('boundary "plain" at c'), {
+    inv: "plain",
+    chokepoint: "c",
+    oracle: { kind: "none" },
+  });
+  assert.deepEqual(parseBoundary('boundary "tested" at c via test "totality"'), {
+    inv: "tested",
+    chokepoint: "c",
+    oracle: { kind: "test", name: "totality" },
+  });
+  assert.deepEqual(parseBoundary('boundary "guarded" at c via guard "source check"'), {
+    inv: "guarded",
+    chokepoint: "c",
+    oracle: { kind: "guard", name: "source check" },
+  });
+  assert.deepEqual(parseBoundary('boundary "outside consumers cross c" at c via shadow'), {
+    inv: "outside consumers cross c",
+    chokepoint: "c",
+    oracle: { kind: "shadow" },
+  });
+  assert.deepEqual(parseBoundary('boundary "c satisfies its row contract" at c via dbt test "c_contract"'), {
+    inv: "c satisfies its row contract",
+    chokepoint: "c",
+    oracle: { kind: "dbt-test", name: "c_contract" },
+  });
+  assert.equal(parseBoundary('boundary "x" at c via shadow "named"'), null);
+  assert.equal(parseBoundary('boundary "x" at c via dbt test'), null);
+  assert.equal(parseBoundary('boundary "x" at c via test'), null);
+  assert.equal(parseBoundary('boundary "x" at c via guard'), null);
 });
 
 test("dialect gap — a line matching no form is recognized by NONE (verify then skips it)", () => {

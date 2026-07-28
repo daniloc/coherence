@@ -11,7 +11,7 @@ import { spawnSync } from "node:child_process";
 import { mkdtemp, readFile, readdir, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, relative, resolve } from "node:path";
-import { parseBoundary, type Boundary } from "./boundary.ts";
+import { formatBoundaryVia, parseBoundary, type Boundary } from "./boundary.ts";
 import { parseParity, type Parity } from "./parity.ts";
 import { loadConfig } from "./config.ts";
 import { buildGraph } from "./derive.ts";
@@ -315,7 +315,10 @@ export function diffGraphs(before: Graph, after: Graph): StructuralDiff {
     for (const [inv, bnd] of b.boundaries) {
       const prev = a.boundaries.get(inv);
       if (!prev) d.boundaryAdded.push({ comp: label, b: bnd });
-      else if (prev.chokepoint !== bnd.chokepoint || prev.oracle !== bnd.oracle || prev.verb !== bnd.verb)
+      else if (
+        prev.chokepoint !== bnd.chokepoint ||
+        formatBoundaryVia(prev) !== formatBoundaryVia(bnd)
+      )
         d.boundaryRewired.push({ comp: label, inv, before: prev, after: bnd });
     }
     for (const [inv, bnd] of a.boundaries) if (!b.boundaries.has(inv)) d.boundaryRemoved.push({ comp: label, b: bnd });
@@ -407,7 +410,7 @@ export function diffGraphs(before: Graph, after: Graph): StructuralDiff {
   return d;
 }
 
-const fmtB = (b: Boundary) => `"${b.inv}" at ${b.chokepoint}${b.oracle ? ` via ${b.verb} "${b.oracle}"` : ""}`;
+const fmtB = (b: Boundary) => `"${b.inv}" at ${b.chokepoint}${formatBoundaryVia(b)}`;
 const fmtP = (p: Parity) => `"${p.inv}" over ${p.domain} between ${p.f} and ${p.g} via test "${p.oracle}"`;
 
 /** Render the diff; return the count of LOSSES (removed invariants/boundaries/parities/components). */
@@ -430,8 +433,8 @@ export function renderDiff(d: StructuralDiff, fromLabel: string, toLabel: string
   for (const x of d.boundaryRewired) {
     line("~", `boundary "${x.inv}" (${x.comp}) rewired:`);
     const cp = x.before.chokepoint !== x.after.chokepoint ? `chokepoint ${x.before.chokepoint} → ${x.after.chokepoint}` : "";
-    const or = x.before.oracle !== x.after.oracle || x.before.verb !== x.after.verb
-      ? `oracle ${x.before.verb} "${x.before.oracle}" → ${x.after.verb} "${x.after.oracle}"` : "";
+    const or = formatBoundaryVia(x.before) !== formatBoundaryVia(x.after)
+      ? `oracle${formatBoundaryVia(x.before)} →${formatBoundaryVia(x.after)}` : "";
     for (const s of [cp, or].filter(Boolean)) console.log(`      ${s}`);
   }
 
