@@ -27,6 +27,8 @@ import { buildPromiseModel, derivePromiseBase, buildReview, formatLedger, graphF
 import { renderContract } from "./render-contract.ts";
 import { readStatus } from "./status.ts";
 import { CLAIM_FORMS, loadDictionary } from "./phrasebook.ts";
+import { appendDecision, renderJournal, readJournal } from "./decisions.ts";
+import { printHooks, runHook } from "./hooks.ts";
 
 const cmd = process.argv[2];
 const argv = process.argv.slice(3);
@@ -39,7 +41,12 @@ const sinceIdx = argv.indexOf("--since");
 const since = sinceIdx >= 0 ? argv[sinceIdx + 1] : null;
 const diffIdx = argv.indexOf("--diff");
 const diffRef = diffIdx >= 0 ? argv[diffIdx + 1] : null;
-const positional = argv.filter((a, i) => !a.startsWith("--") && argv[i - 1] !== "--since" && argv[i - 1] !== "--apply" && argv[i - 1] !== "--diff");
+// `--over` is REPEATABLE on purpose: a decision with three rejected alternatives is
+// a better record than one with a comma-joined string nobody can split reliably.
+const VALUED = new Set(["--since", "--apply", "--diff", "--over", "--because", "--agent", "--job", "--file", "--for", "--session", "--branch"]);
+const many = (flag: string): string[] => argv.reduce<string[]>((acc, a, i) => (a === flag && argv[i + 1] !== undefined ? [...acc, argv[i + 1]] : acc), []);
+const one = (flag: string): string | null => { const v = many(flag); return v.length ? v[v.length - 1] : null; };
+const positional = argv.filter((a, i) => !a.startsWith("--") && !VALUED.has(argv[i - 1] ?? ""));
 
 // Exit AFTER stdout has drained. `process.exit()` terminates the process before
 // asynchronously-buffered writes flush when stdout is a pipe or file (it only
@@ -173,6 +180,57 @@ if (cmd === "graph") {
 } else if (cmd === "log") {
   // The temporal ledger: what did refA → refB do to the invariant/boundary set.
   await exit(await structuralLog(cfg, positional[0] ?? "HEAD", positional[1] ?? null, strict));
+} else if (cmd === "decide" || cmd === "blocked") {
+  // The write half of the decision journal. Deliberately the cheapest thing in the
+  // CLI to call: one shell line, no server, no session. Anything an agent has to set
+  // up before it can log is a thing it will skip while it is busy.
+  const chose = positional[0];
+  const because = one("--because");
+  if (!chose || !because) {
+    console.error(cmd === "decide"
+      ? 'usage: coherence decide "<what you chose>" --over "<alternative>" [--over ...] --because "<why>" [--agent X] [--job Y] [--file p]'
+      : 'usage: coherence blocked "<what you could not do>" --because "<why>" [--agent X] [--job Y]');
+    await exit(2);
+  }
+  const rec = appendDecision(cfg, {
+    kind: cmd === "decide" ? "decision" : "blocked",
+    chose: chose!, over: many("--over"), because: because!,
+    agent: one("--agent") ?? undefined, job: one("--job") ?? undefined,
+    session: one("--session") ?? undefined, files: many("--file"),
+  });
+  console.log(`${rec.id}  ${rec.kind}  [${rec.agent} · ${rec.commit ?? "no-commit"}${rec.dirty ? "+dirty" : ""}]`);
+  await exit(0);
+} else if (cmd === "retract") {
+  // A retraction is an APPEND, never an edit. History is refuted here, not rewritten —
+  // an entry that quietly changed its mind is indistinguishable from one that was
+  // always right, and the difference is the whole value of the journal.
+  const id = positional[0];
+  const because = one("--because");
+  if (!id || !because) { console.error('usage: coherence retract <id> --because "<what refuted it>" [--for "<what replaced it>"]'); await exit(2); }
+  const known = readJournal(cfg).records.some((r) => r.id === id);
+  if (!known) { console.error(`no decision ${id} in the journal — run \`coherence decisions\` to see the ids`); await exit(2); }
+  const rec = appendDecision(cfg, {
+    kind: "retraction", chose: one("--for") ?? `(withdrawn: ${id})`, because: because!,
+    supersedes: id!, agent: one("--agent") ?? undefined, job: one("--job") ?? undefined,
+    session: one("--session") ?? undefined,
+  });
+  console.log(`${rec.id}  retracts ${id}`);
+  await exit(0);
+} else if (cmd === "decisions") {
+  // The read half — the artifact. Scope it to one job or one agent when five of them
+  // ran; unscoped it is every decision the repo has ever recorded.
+  const { text } = renderJournal(cfg, {
+    job: one("--job"), agent: one("--agent"), session: one("--session"), branch: one("--branch"),
+    sessions: argv.includes("--sessions"), markdown: argv.includes("--md"),
+  });
+  console.log(text);
+  await exit(0);
+} else if (cmd === "hooks") {
+  printHooks(cfg);
+  await exit(0);
+} else if (cmd === "hook") {
+  // The hook BODY, so nothing has to be written to disk or kept in sync with a script.
+  await exit(await runHook(cfg, positional[0] ?? ""));
 } else if (cmd === "onboard") {
   await onboard(cfg, await buildGraph(cfg));
 } else if (cmd === "decompose") {
@@ -291,7 +349,12 @@ if (cmd === "graph") {
   }
   await exit(0);
 } else {
-  console.error("usage: coherence <graph|overview|docs|claude|verify|panel|scene|contract|review|log|decompose|drift|scaffold|onboard|lint-sinks|conventions|atlas|contracts|why-lint|phrasebook> [options]");
+  console.error("usage: coherence <graph|overview|docs|claude|verify|panel|scene|contract|review|log|decide|blocked|retract|decisions|hooks|hook|decompose|drift|scaffold|onboard|lint-sinks|conventions|atlas|contracts|why-lint|phrasebook> [options]");
+  console.error("  decide \"<chose>\" --over \"<alt>\" --because \"<why>\"   log one decision (append-only; gates nothing)");
+  console.error("  blocked \"<what>\" --because \"<why>\"                 log what you could NOT do — first-class, not a footnote");
+  console.error("  retract <id> --because \"<what refuted it>\"          withdraw a decision by appending, never by editing");
+  console.error("  decisions [--job|--agent|--session|--branch|--sessions|--md]  the MERGED timeline across every session and branch");
+  console.error("  hooks                                               print the settings.json hooks block + agent instructions");
   console.error("  panel [--no-watch | --once]                  live TUI over the graph + status record");
   console.error("  scene [--diff <ref>]                         persistent isometric worksite (_scene.html); --diff renders a review vs <ref>");
   console.error("  contract                                     the promise graph — graded gates + reliance ledger (_contract.html)");

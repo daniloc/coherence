@@ -543,6 +543,74 @@ Two warnings:
   is theater. Walk the actual TypeScript program (the compilation surface) the way
   `oracle-domain.ts` itself does, and assert over symbols, not strings.
 
+## The decision journal — what an agent CHOSE, and what it chose that OVER
+
+Five subagents at 400k tokens each produce more context than anything can read, and
+the report each one hands back is written by the agent that did the work — so it
+records what was *concluded*, never what was *considered and dropped*. The transcript
+has that information and is unreadable; the report is readable and has lost it.
+
+The journal is the third option: each agent emits a line per decision **as it makes
+it**, and you read the merged result.
+
+```sh
+coherence hooks     # print the .claude/settings.json block + what agents get told
+```
+
+`SubagentStart` mints a session id per agent and injects the instruction. Then:
+
+```sh
+coherence decide "species gas physics as its own commit" \
+  --over "bundle it with the habitat work" --over "keep the single lifeFraction path" \
+  --because "it MOVES THE ATMOSPHERE; trajectory-moving changes land alone" --session s-abc
+
+coherence blocked "measure the converged CO2" --because "sub-cycling is unbuilt" --session s-abc
+coherence retract d-dfa936a6 --because "the sweep RAN: 5/8 on a re-roll" --session s-abc
+
+coherence decisions [--job X] [--agent Y] [--session S] [--branch B] [--sessions] [--md]
+```
+
+**`--over` is the field that matters.** What was REJECTED is what stops the next agent
+re-litigating a settled question. It is also the field every gate-shaped design drops.
+An empty `over` renders as *"(nothing — forced, or no alternative considered)"* — a
+forced choice and an unexamined one must not look alike.
+
+**Retraction is an APPEND, never an edit**, and it crosses session files: agent B
+withdrawing agent A's verdict is the single most valuable thing that can happen in a
+fan-out. Retractions get their own render section, because a retraction shown as an
+absence is invisible.
+
+### Storage: one append-only file per agent session
+
+`.coherence/decisions/<session>.jsonl`. **Commit the folder** — it is the record, not a
+cache. Three reasons for the split:
+
+1. **Two branches merge cleanly.** Distinct filenames never conflict; one shared JSONL
+   conflicts on every parallel branch — exactly what five concurrent agents create.
+2. **Attribution is structural.** The file *is* the session.
+3. **Concurrent append stops being a question.** Separate files cannot interleave.
+   (Measured anyway: `appendFileSync` at 8 concurrent writers x 300 lines, 200 B–64 KB,
+   is 2400/2400 intact, 0 torn, 0 missing. The same probe with a
+   read-then-write-at-offset writer loses 1242 of 2400, so it can see loss when loss
+   exists. No lock — and a lock is a thing five agents can deadlock on.)
+
+`coherence decisions` is the cohering read: every session file merged into ONE timeline
+ordered by time, across agents, jobs and branches.
+
+### It gates nothing, deliberately
+
+The moment this can fail a build it acquires an incentive to be complete, and **a
+complete journal is a transcript again** — which is the thing it exists to compress.
+`SubagentStop` reports what was logged and never blocks.
+
+### Why a CLI and not an MCP server
+
+An MCP tool's schema is loaded into the context of every agent that might call it —
+five agents, five copies, paid every turn whether or not a decision gets made. A shell
+line costs nothing until it runs, has no server lifecycle to fail, and works from any
+agent that can run Bash. A mechanism that spends context to save context is
+self-defeating.
+
 ## Commands
 
 - `coherence phrasebook` — print the claim-form table (name, grammar, tier, example)
