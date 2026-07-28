@@ -8,7 +8,7 @@ import { createHash } from "node:crypto";
 import type { Config, Graph } from "./types.ts";
 import { CLAIM_FORMS, type ClaimCtx } from "./phrasebook.ts";
 import { ownerOf } from "./walk.ts";
-import { recordVerify } from "./status.ts";
+import { recordVerify, readStatus } from "./status.ts";
 
 const hashOf = (s: string) => createHash("sha256").update(s).digest("hex").slice(0, 16);
 const jobsPath = (cfg: Config) => join(cfg.root, ".coherence", "verify-jobs.json");
@@ -38,6 +38,16 @@ export async function applyVerdicts(cfg: Config, verdictsPath: string): Promise<
   return drift === 0 ? 0 : 1;
 }
 
+// Advisories exist to be READ. A 17-line dump every run is scrolled past, so the lists
+// are capped — but the overflow is always ANNOUNCED, never silently dropped: a truncated
+// list that looks complete is worse than no list.
+const ADVISORY_LIST_CAP = 8;
+function listCapped<T>(items: T[], line: (t: T) => string): void {
+  for (const t of items.slice(0, ADVISORY_LIST_CAP)) console.log(line(t));
+  const rest = items.length - ADVISORY_LIST_CAP;
+  if (rest > 0) console.log(`  · … and ${rest} more (not shown)`);
+}
+
 export async function runVerify(cfg: Config, graph: Graph, opts: { fast?: boolean; only?: Set<string> }): Promise<number> {
   const root = cfg.root;
   // Invariants ANCHORED by a `boundary "<name>" ...` claim, per component label. The
@@ -51,7 +61,10 @@ export async function runVerify(cfg: Config, graph: Graph, opts: { fast?: boolea
     tc = r.status === 0 ? { pass: true, detail: "" } : { pass: false, detail: tail.slice(0, 200) };
     return tc;
   };
-  type Sig = { kind: "pass" | "fail" | "skip"; claim: string; node: string; detail?: string };
+  type Sig = { kind: "pass" | "fail" | "skip"; claim: string; node: string; detail?: string; declaredKind?: string };
+  // Undeclared (the default) leaves the whole mechanism off: kinds are neither required
+  // nor checked, and every existing spec in the world parses unchanged.
+  const kindPolicy = cfg.claimKinds;
   // The claim grammar is a declarative registry (src/phrasebook.ts): an ordered list of
   // ClaimForms, first match wins (the order IS the historical precedence). evalClaim is now
   // a thin loop — build the per-claim context, find the first matching form, adapt its
@@ -59,15 +72,25 @@ export async function runVerify(cfg: Config, graph: Graph, opts: { fast?: boolea
   // boundary + `conforms to` forms anchor invariants via ctx.anchor so the coverage gate
   // sees them (including boundaries reached transitively through a dictionary word).
   const evalClaim = async (claim: string, nodeDir: string, node: string): Promise<Sig> => {
+    // A claim may carry a trailing KIND — `... via test "t" [structural]`. Stripped here,
+    // in ONE place, so no form's grammar has to tolerate it and an unkinded spec parses
+    // exactly as before. What a kind MEANS is the project's business (config.claimKinds);
+    // an unknown one is red because a typo must not silently grade as unkinded.
+    const km = /\s*\[([A-Za-z][\w-]*)\]\s*$/.exec(claim);
+    const declaredKind = km ? km[1] : undefined;
+    const body = km ? claim.slice(0, km.index) : claim;
+    if (kindPolicy && declaredKind && !kindPolicy[declaredKind])
+      return { kind: "fail", claim, node, declaredKind,
+        detail: `unknown claim kind "${declaredKind}" — config.claimKinds declares: ${Object.keys(kindPolicy).join(", ")}` };
     const ctx: ClaimCtx = {
       cfg, graph, root, nodeDir, node, fast: !!opts.fast, typecheck, wordStack: [],
       anchor: (inv) => { let set = anchored.get(node); if (!set) { set = new Set(); anchored.set(node, set); } set.add(inv); },
     };
     for (const form of CLAIM_FORMS) {
-      const m = form.match(claim);
-      if (m) { const r = await form.evaluate(ctx, m); return { kind: r.kind, claim, node, detail: r.detail }; }
+      const m = form.match(body);
+      if (m) { const r = await form.evaluate(ctx, m); return { kind: r.kind, claim, node, detail: r.detail, declaredKind }; }
     }
-    return { kind: "skip", claim, node, detail: "no verifier (dialect gap)" };
+    return { kind: "skip", claim, node, detail: "no verifier (dialect gap)", declaredKind };
   };
 
   // `only` (verify --staged/--since) scopes the run to the components whose dirs
@@ -85,6 +108,73 @@ export async function runVerify(cfg: Config, graph: Graph, opts: { fast?: boolea
   const red = sigs.filter((s) => s.kind === "fail").length;
   console.log(`claims: ${sigs.length} · ${sigs.filter((s) => s.kind === "pass").length} green · ${red} red · ${sigs.filter((s) => s.kind === "skip").length} skipped`);
   for (const s of sigs) if (s.kind !== "pass") console.log(`  ${s.kind === "fail" ? "✗" : "·"} [${s.node}] ${s.claim}${s.detail ? ` — ${s.detail}` : ""}`);
+
+  // ── KINDS. Advisory by design: adoption is gradual, so an unkinded claim in a project
+  // that HAS declared kinds is reported, never failed. A `warn` kind is listed every time
+  // it is used — that tier exists to make a category the project distrusts impossible to
+  // use quietly, not impossible to use.
+  if (kindPolicy) {
+    const warnKinds = new Set(Object.entries(kindPolicy).filter(([, v]) => v.policy === "warn").map(([k]) => k));
+    const warned = sigs.filter((s) => s.declaredKind && warnKinds.has(s.declaredKind));
+    const unkinded = sigs.filter((s) => !s.declaredKind);
+    console.log(`kinds: ${sigs.length - unkinded.length}/${sigs.length} declared` + (warned.length ? ` · ${warned.length} on a warned kind` : ""));
+    // Grouped by kind, so the project's `why` is stated ONCE. Repeating a paragraph of
+    // rationale per claim is how the rationale stops being read.
+    for (const k of warnKinds) {
+      const of = warned.filter((s) => s.declaredKind === k);
+      if (!of.length) continue;
+      const why = kindPolicy[k]?.why;
+      console.log(`  ! kind "${k}" — ${of.length} claim(s)${why ? `: ${why}` : ""}`);
+      listCapped(of, (s) => `      [${s.node}] ${s.claim}`);
+    }
+    listCapped(unkinded, (s) => `  · [${s.node}] ${s.claim} — no kind declared (advisory)`);
+  }
+
+  // ── REFUTATIONS. A claim nobody has watched fail is not evidence. `## refutations`
+  // records the observed negative control per invariant; this reports the gap. Advisory:
+  // the harness cannot know whether an unrefuted claim is lazy or merely young.
+  //
+  // The per-invariant list appears only once the project has declared its FIRST
+  // refutation. Before that the count alone is the message: an advisory that prints
+  // a line per invariant on a project that has never used the feature is a nag, and a
+  // nag that fires every run on every project is one people learn to scroll past.
+  {
+    const invs: string[] = [], refs: string[] = [];
+    for (const c of comps) { for (const i of (c as any).invariants || []) invs.push(i); for (const r of (c as any).refutations || []) refs.push(r); }
+    if (invs.length) {
+      const refuted = new Set(refs.map((r) => r.split(":")[0].trim()));
+      const missing = invs.filter((i) => !refuted.has(i));
+      console.log(`refutations: ${invs.length - missing.length}/${invs.length} invariants carry an observed negative control`
+        + (refs.length ? "" : " — none declared; see README `## refutations`"));
+      if (refs.length) listCapped(missing, (i) => `  · [refutation] "${i}" — never observed failing (advisory)`);
+    }
+  }
+
+  // ── THE DECORATION FILTER. Neither signal is worth much alone: a claim that has never
+  // been red may simply be a good invariant, and a claim with no recorded refutation may
+  // simply be young. TOGETHER they are the honest suspect list — nothing has ever made
+  // this fail, and nobody has ever tried. Advisory, and deliberately quiet when the
+  // record is new (a first run has no history to report).
+  {
+    const prior = await readStatus(cfg);
+    const hist = new Map((prior.verify?.claims || []).map((c) => [`${c.node} ${c.claim}`, c]));
+    const seasoned = sigs.filter((sg) => {
+      const h = hist.get(`${sg.node} ${sg.claim}`);
+      return h && (h.runs ?? 0) >= 3 && !h.everFailed;
+    });
+    if (seasoned.length) {
+      const refs = new Set<string>();
+      for (const c of comps) for (const r of (c as any).refutations || []) refs.add(r.split(":")[0].trim());
+      const bare = seasoned.filter((sg) => { const m = /^boundary\s+"([^"]+)"/.exec(sg.claim); return !m || !refs.has(m[1]); });
+      if (bare.length) {
+        console.log(`never red: ${bare.length} claim(s) green every run so far, with no recorded refutation`);
+        listCapped(bare, (sg) => {
+          const h = hist.get(`${sg.node} ${sg.claim}`)!;
+          return `  · [never-red] [${sg.node}] ${sg.claim} — ${h.runs} run(s), never observed failing`;
+        });
+      }
+    }
+  }
 
   const jobs: Array<Record<string, any>> = [];
   let narr: { statements: any[] } | null = null;

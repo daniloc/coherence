@@ -133,11 +133,13 @@ Full (every field the `Config` interface in `src/types.ts` accepts; defaults fro
 | `atlas` | unset | Trust-manifold data: `charts` (trust domain → description), `transitions` (chokepoint symbol → crossing; each may set `enshrined: true` — see below), `nonTransition` (within-chart boundaries), `knownPending` (mapped symbols tolerated as not-yet-in-source). A transition's `enshrined: true` is an **explicit** attestation that the illegal value at that crossing is unrepresentable (a runtime-branded capability), promoting it to tier-1 — it is NOT inferred from a claim's verb, and it MUST be backed by a `via guard` boundary claim (an `enshrined` marker with no backing guard fails `atlas --check`). |
 | `novelty` | unset | Thresholds for `log`'s novelty-vs-anchor advisory: `minSurface` (8), `minLoc` (400), `ratio` (12). |
 | `artifacts` | unset | Deploy units for `contracts`: unit name → path globs. A file may belong to several (shared vocabulary typically does). |
+| `claimKinds` | unset | The kinds a claim may declare via a trailing `[kind]`, and each kind's policy: `{ "measured": { "policy": "warn", "why": "…" } }`. `pin` gates normally; `warn` gates but reports every run. An **undeclared** kind fails the run. Unset = feature off, no output, no behaviour change. See "Claim kinds" below. |
 | `contracts` | unset | Declared cross-unit data contracts: name → `{ producer, consumer, type, description? }` (all symbols). `contracts --check` fails a contract that dangles or that no boundary/parity claim anchors. |
 
 Then author `*.spec.md` files (a folder containing one is a *node*). A spec is
 `# Name`, a one-line intent, an optional `## works when` claim list, an optional
-`## invariants` list, and an optional `## why` (protected rationale). Claims are a
+`## invariants` list, an optional `## refutations` list, and an optional `## why`
+(protected rationale). Claims are a
 grammar, not prose — the parser (`src/walk.ts`) strips markdown-formatter escapes
 (`\_` → `_`) so a prettified spec still parses.
 
@@ -272,6 +274,76 @@ a chokepoint with a totality oracle" a *checkable property* — a boundary shipp
 its oracle fails loud instead of rotting silently. The intent is to encode the doctrine
 *convert block-lists into chokepoints; fail closed; one home; a totality oracle* as
 machinery rather than prose, so a codebase inherits it by construction.
+
+### `## refutations` — the observed negative control
+
+A spec may declare a `## refutations` section: one line per invariant, recording the
+experiment that made it go **red**.
+
+```markdown
+## invariants
+- one write site per shared scalar
+
+## refutations
+- one write site per shared scalar: deleted sumChannel's total check -> RED, "1 failed | 3 passed"
+```
+
+Verify reports the gap (`refutations: 1/2 invariants carry an observed negative
+control`) and names the uncovered ones. It never fails on it — **a refutation is a
+thing you did, and coherence cannot know whether you did it.** The section exists
+because a green claim and an unfalsifiable claim are indistinguishable from the
+outside, and only one of them is evidence. Free-form after the `invariant: ` prefix;
+record what you broke and what the run said.
+
+### Claim kinds — what a claim is ALLOWED to assert
+
+Coherence exists to prevent behavioural drift. On a **simulation** — or anything whose
+current behaviour is a guess — that same act pins bad behaviour in place, and the
+damage is invisible until a later subsystem contradicts it. A claim asserting
+`landFraction ≈ 0.37` goes red when the model gets *better*.
+
+The fix is not for coherence to have an opinion. **The project declares its own kinds
+and their policy**; coherence enforces what was declared and nothing else:
+
+```json
+"claimKinds": {
+  "structural": { "policy": "pin" },
+  "mathematical": { "policy": "pin" },
+  "measured": { "policy": "warn", "why": "chaotic system — a measured value pins today's bug" }
+}
+```
+
+A claim carries its kind as a trailing `[bracket]`:
+
+```markdown
+## works when
+- boundary "one write site" at applyFlux via test "flux totality" [structural]
+- passes test "sea level p50 within 2 m" [measured]
+```
+
+The suffix is stripped in **one** place before form matching, so no claim form's
+grammar changes and an unkinded claim behaves exactly as it did in 0.10.0.
+
+| policy | effect |
+| --- | --- |
+| `pin` | normal — the claim gates as usual |
+| `warn` | the claim still gates, but every run reports it and prints the project's own `why` |
+| *(undeclared kind)* | **RED** — a typo'd kind must not silently grade as unkinded |
+
+The whole feature is **off unless `claimKinds` is configured**: no config, no output,
+no behaviour change.
+
+### The never-red advisory
+
+Verify flags claims that are green on every run, have never once been red, and carry
+no recorded refutation. That combination is not proof of correctness — it is equally
+the signature of a claim nothing can break. Requires 3+ recorded runs (a `skip` is
+not a run), so it stays quiet on a young project.
+
+Backed by sticky history in the status record: `everFailed` is set on the first red
+and is **never** cleared, along with `lastFailAt` / `lastFailCommit`. A claim that has
+ever been red has been shown to be capable of going red — that fact is worth more than
+its current colour.
 
 ## The meta-oracle: what it proves — and what it does NOT
 

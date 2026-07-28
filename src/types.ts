@@ -6,6 +6,7 @@ export interface GraphNode {
   id: string; parent?: string; label: string; kind: string;
   sub?: string; path?: string; line?: number; claimed?: boolean; claims?: string[];
   invariants?: string[]; // named properties the component upholds (## invariants); each anchored by a `boundary` claim
+  refutations?: string[]; // observed negative controls (## refutations): `<invariant>: <what was broken> -> <what was seen>`
   prose?: string; // the WHAT — derivable from code, regenerable
   why?: string;   // the WHY — rationale/intent, authored + protected
 }
@@ -25,7 +26,7 @@ export interface Graph {
 }
 
 /** A raw spec parsed from a *.spec.md file. */
-export interface ParsedSpec { name: string; intent: string; claims: string[]; prose: string; why: string; invariants: string[]; }
+export interface ParsedSpec { name: string; intent: string; claims: string[]; prose: string; why: string; invariants: string[]; refutations: string[]; }
 
 /** How to read a language's code — symbols, imports, and where docblocks live. */
 export interface LanguageAdapter {
@@ -51,6 +52,18 @@ export interface Config {
   typecheck: string[];      // command for the `typechecks` claim
   test: string[];           // base command for `passes test "<name>"` claims (name appended as final arg). Empty = claim skips.
   testMatch?: string;       // optional regex the test output MUST contain to count as a pass. Guards runners (e.g. vitest -t) that exit 0 when the named test matched nothing — without it, a deleted/renamed test silently stays green.
+  // CLAIM KINDS — what a claim is ALLOWED to assert, declared BY THE PROJECT.
+  // Coherence prevents behavioural drift, which is right for most projects and
+  // dangerous for some: in a simulation a claim that pins a MEASURED VALUE does not
+  // prevent regression, it LOCKS IN today's behaviour, and nothing detects that until
+  // a later system is built on top of it. But a golden-output pin is exactly correct
+  // in a compiler. So coherence holds NO OPINION — the project names its kinds and
+  // their policy, and the harness enforces what was named.
+  //   pin  — a claim of this kind is normal (default for anything declared)
+  //   warn — allowed, but every use is reported (the "are you sure?" tier)
+  // Unset (the default) disables the whole mechanism: kinds are neither required nor
+  // checked, and existing specs are unaffected.
+  claimKinds?: Record<string, { policy: "pin" | "warn"; why?: string }>;
   oracleDomain?: boolean;   // META-ORACLE: also assert a boundary's oracle test iterates a LIVE domain (not a literal/source-grep). Default true; set false to disable the gate (still classifies for the report).
   language: string;         // language adapter key
   platform: string | null;  // platform adapter key, or null

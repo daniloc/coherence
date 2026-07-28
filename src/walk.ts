@@ -37,14 +37,23 @@ export function parseSpec(text: string): ParsedSpec {
   const iv = lines.findIndex((l) => /^##\s+invariants\s*$/i.test(l));
   let ive = -1;
   if (iv >= 0) { ive = lines.length; for (let j = iv + 1; j < lines.length; j++) { if (/^##\s+/.test(lines[j])) { ive = j; break; } const c = /^-\s+(.+?)\s*$/.exec(lines[j]); if (c) invariants.push(c[1]); } }
+  // ## refutations — the OBSERVED negative control for an invariant: what was broken,
+  // and what was seen when it broke. Same bullet shape as ## invariants, keyed by the
+  // invariant name. A claim nobody has watched fail is not evidence, so this is where
+  // the evidence lives; verify reports coverage over it.
+  const refutations: string[] = [];
+  const rf = lines.findIndex((l) => /^##\s+refutations\s*$/i.test(l));
+  let rfe = -1;
+  if (rf >= 0) { rfe = lines.length; for (let j = rf + 1; j < lines.length; j++) { if (/^##\s+/.test(lines[j])) { rfe = j; break; } const c = /^-\s+(.+?)\s*$/.exec(lines[j]); if (c) refutations.push(c[1]); } }
   const prose: string[] = [];
   for (let k = (intentLine >= 0 ? intentLine + 1 : i); k < lines.length; k++) {
     if (ws >= 0 && k >= ws && k < we) continue;
     if (wy >= 0 && k >= wy && k < wye) continue;
     if (iv >= 0 && k >= iv && k < ive) continue;
+    if (rf >= 0 && k >= rf && k < rfe) continue;
     prose.push(lines[k]);
   }
-  return { name, intent, claims, prose: prose.join("\n").trim(), why, invariants };
+  return { name, intent, claims, prose: prose.join("\n").trim(), why, invariants, refutations };
 }
 
 /** One declared trust zone from a `## zones` section (PROMISE GRAPH topology). Parsed here
