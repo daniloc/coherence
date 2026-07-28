@@ -151,8 +151,8 @@ grammar, not prose — the parser (`src/walk.ts`) strips markdown-formatter esca
 
 dbt contributes a graph; it is not parsed as a source language. Coherence derives
 resources, dependencies, declared columns, and materialization from dbt's manifest.
-Meaning dbt cannot supply—roles, grain, chokepoints, parity, multiplicity, and
-filtering—lives in a separate `coherence.dbt.json`:
+Meaning dbt cannot supply—roles, grain, chokepoints, observers, row contracts,
+parity, multiplicity, and filtering—lives in a separate `coherence.dbt.json`:
 
 ```json
 {
@@ -163,8 +163,21 @@ filtering—lives in a separate `coherence.dbt.json`:
     "CanonicalLedger": ["model:ledger"]
   },
   "chokepoints": ["ledger"],
+  "observers": ["models/ledger/diagnostics/**"],
   "models": {
     "ledger": { "grain": ["entry_id"] }
+  },
+  "rowContracts": {
+    "unified_events": {
+      "discriminator": "event_type",
+      "variants": {
+        "invoice_finalized": {
+          "requiredColumns": ["event_id", "invoice_id", "event_timestamp"],
+          "predicates": ["invoice identity is resolved or explicitly unresolved"]
+        }
+      },
+      "via": "unified_events_row_contract"
+    }
   },
   "parities": {
     "allocation becomes revenue entries": {
@@ -184,6 +197,40 @@ filtering—lives in a separate `coherence.dbt.json`:
 Path selectors are glob patterns; `model:<name>` selects one exact model. Every
 model in `scope` must receive at least one role. Role selectors, model declarations,
 and relationships fail closed when they point at absent resources or non-edges.
+
+The declarations describe different guarantees and compose:
+
+| Declaration | Guarantee |
+| --- | --- |
+| `models.<name>.grain` | The columns that stably identify one row at this boundary. |
+| `relationships` | The multiplicity and filtering behavior of one direct dbt dependency. Grain says what one row is; a relationship says what the next model may do to rows. |
+| spec invariant | The semantic rule owned by the boundary. It belongs in the model's `*.spec.md`, where an anchored boundary or executable declaration proves it. |
+| `rowContracts` | The required typed shape of each discriminator variant. |
+| `parities` / `via` | The exact repository-owned dbt test that proves agreement or row semantics on live data. |
+| `chokepoints` | The model whose upstream implementation becomes private, forcing downstream readers through the declared properties. |
+| `observers` | Terminal diagnostic models that may inspect private implementation data but may not become production inputs. |
+
+These are deliberately not substitutes for one another. A shadow controls *which
+path* may be read; grain and relationships describe *how rows map* along that path;
+row contracts and invariants describe *what rows mean*; the oracle proves those
+claims against warehouse data. A narrow chokepoint can therefore establish one
+property—for example invoice identity resolution—before feeding a larger event or
+ledger chokepoint that composes it with other proven properties.
+
+Each `rowContracts` entry names one model, a declared discriminator column, at least
+one variant, and one exact dbt test in `via`. Every variant has non-empty
+`requiredColumns` and may carry human-readable `predicates` labels for rules more
+specific than non-nullness. Coherence fails graph construction for unknown models,
+discriminator or required columns, or tests, and unless the test directly depends
+on the contracted model. It records variant, required-column, predicate,
+discriminator, and oracle changes in the structural ledger; removing a contract
+guarantee is a structural loss.
+
+Coherence does not generate SQL for row contracts. The named dbt test is the
+executable definition: it must reject unknown live discriminator values, null
+required fields, and every labeled predicate violation. A full `coherence verify`
+runs it through `config.test`; `--fast` validates the declaration but skips warehouse
+execution.
 
 Each entry in `parities` names two representations of the same fact and the exact
 dbt test that proves their agreement. Coherence fails graph construction unless
@@ -243,13 +290,22 @@ particular warehouse physically enforces each constraint type remains adapter-sp
 When the warehouse treats a constraint as metadata, retain an executable
 `via dbt test` claim for runtime assurance.
 
+`observers` uses the same path globs and `model:<name>` exact selectors as roles.
+Selectors fail closed when they match nothing. An observer may read models inside a
+chokepoint shadow without producing a bypass, but `coherence verify` fails any dbt
+model that depends on the observer. dbt tests may still inspect observers. This is
+why observer status is not an allowlist: it exchanges a read exemption for the
+stronger terminal-leaf guarantee, and its addition or removal is visible in
+`coherence log`.
+
 The normalized snapshot deliberately omits SQL text. Commit it so `coherence log`
 can reconstruct dbt structure at both git refs without running dbt in a detached
 worktree. The dbt structural ledger reports resources, dependencies, declared
-column shapes and constraints, roles, grain, materialization, parity, multiplicity,
-and filtering. Snapshot version 2 adds normalized model/column constraints; version 1
-remains readable for historical ledgers but carries no constraint evidence. Rebuild the
-current snapshot with `coherence dbt` before using `via dbt schema`.
+column shapes and constraints, roles, grain, observer classification, row contracts,
+materialization, parity, multiplicity, and filtering. Snapshot version 2 adds normalized
+model/column constraints; version 1 remains readable for historical ledgers but carries
+no constraint evidence. Rebuild the current snapshot with `coherence dbt` before using
+`via dbt schema`.
 
 ## The claim phrasebook (the `## works when` grammar)
 
