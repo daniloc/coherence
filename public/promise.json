@@ -1,0 +1,18 @@
+{
+  "root": "coherence",
+  "intent": "",
+  "generatedAt": "2026-07-14T02:35:00.099Z",
+  "head": "5e56635",
+  "dirty": true,
+  "zones": [],
+  "components": [],
+  "review": {
+    "base": "1150478",
+    "events": [],
+    "outside": {
+      "added": 0,
+      "removed": 0,
+      "changed": 2
+    }
+  }
+}

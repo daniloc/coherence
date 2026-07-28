@@ -462,6 +462,25 @@ Two warnings:
   `--staged` (working changes vs HEAD + untracked) or `--since <ref>` **scopes** the
   run to the components whose dirs changed — fast edit-loop reconciliation of just what
   you touched (claims + boundary anchoring + coverage), instead of the whole tree.
+- `coherence panel [--no-watch | --once]` — the **operator's instrument panel**: a
+  zero-dependency TUI over the graph + the status record (see "The status record and
+  the panel" below). Masthead (identity, enforcement-ladder tier bar, claim lights,
+  freshness, drift arrows), a component list (worst-light-wins), and a drill-in per
+  component (the invariant → chokepoint → oracle table with per-row verdicts, `w` for
+  the `## why` pager). Watch mode (default on a TTY) re-runs the scoped fast tier on
+  file change and streams what flipped. `--once` prints a static snapshot (also what a
+  non-TTY stdout gets).
+- `coherence scene` — the **perceptual layer**: render the project as a persistent
+  isometric worksite (`_scene.html` + a machine-readable `scene.json`) so a human
+  *perceives* the codebase as a familiar place rather than reading it as propositions.
+  Mass maps to code reality (files/symbols), the amber wireframe is the claimed surface,
+  a gate's material encodes its enforcement tier, and light/heat come live from the
+  status record + git churn. Its soul is **stable geography**: lot positions live in
+  `<outputDir>/scene-layout.json`, which is **append-only** — a component, once placed,
+  never moves; a new one takes the next vacant lot on a fixed outward spiral; a removed
+  one's lot stays reserved forever. **Commit `scene-layout.json`** — it is the shared
+  memory of the place, and the whole point is that change is perceived against a scene
+  that otherwise holds still. Always regenerates (no `--check`): the scene is a dashboard.
 - `coherence log [<refA> [<refB>]]` — the **temporal ledger**: the structural diff of
   the invariant/boundary set between two refs (default `HEAD` → working tree). The graph
   is a snapshot; this is the transaction view — which `## invariants` and `boundary`
@@ -590,6 +609,44 @@ optional `corrected` text as the suggested replacement — and exits nonzero unt
 narrative is fixed. The judge (whoever wrote the verdicts) and the notary (the
 harness recording them) are deliberately separate — axiom #5.
 
+### The status record and the panel
+
+Historically the richest signal the harness computes — per-claim verdicts, coverage,
+tier grades, the drift trajectory — was printed to stdout and evaporated at process
+exit, so nothing human-facing could ever show *health*. Now every instrument **files a
+report**: `verify` (both tiers), `atlas`, and `drift` write their findings into
+**`.coherence/status.json`**, each section stamped with its own ISO time + short
+commit + dirty flag. The record is the last known truth, honestly dated — never a
+claim about the present. Machine-readable by design (`jq`-able; the panel is just one
+consumer).
+
+Three merge rules keep the record honest (`src/status.ts`):
+
+- **A skip never clobbers a real verdict.** A `--fast` run skips the executable tier;
+  overwriting last week's oracle PASS with "skipped (--fast)" would erase the last
+  known truth. The old verdict survives with its own stamp — its age is visible, not
+  laundered.
+- **Scoped runs (`--staged`/`--since`) replace only what they touched**; out-of-scope
+  records ride through and keep aging.
+- **Full-tree runs drop ghost rows** — a claim deleted from a spec leaves the record.
+
+`coherence panel` renders the record live. The lights encode the honesty rules: a
+pass recorded at another commit degrades to **stale** (`◐`, shown with age — never
+re-badged green); a fail stays a fail however old (the worst known truth); tier-skips
+render as "not run", never as health; **dialect-gap skips get their own mark** (`?`)
+so a typo'd verb is a visible light instead of a silent no-op; and every `via guard`
+row carries a **⚑ human eye** flag, because the meta-oracle never analyzed it. The
+fast and full tiers age independently in the masthead (`fast 40s · full 2d`) — an
+unrefreshed green is itself a health fact. The tier bar renders the atlas's
+enshrined/totality-checked/convention distribution: the enforcement ladder made
+visible, deliberately *not* collapsed into a fake single score.
+
+The panel re-runs nothing in-process: `r`/`R`/`a`/`d` (and watch mode's file-change
+trigger, which runs `verify --fast --staged` — exactly the pre-commit tier, scoped to
+what changed) spawn the CLI as a child, let it file its report, and re-read the
+record — judge and notary stay separate, and the panel works identically on a record
+some other process (CI, an agent's run) filed.
+
 ### The two enforcement points
 
 Wire the fast tier as a pre-commit governor and mirror the full tier in CI. The
@@ -710,5 +767,8 @@ live/literal/no-iteration path), the **spec parser** (`walk.ts`), the **claim +
 boundary + coverage engine** end-to-end (`verify.ts`, including the `testMatch`
 rule that stops a renamed test from silently staying green and the
 unanchored-invariant ratchet), the **CLAUDE.md fence splicer** (never clobbers an
-un-opted-in file), and the **structural ledger** (`structural.ts` — a dropped
-boundary/invariant is a loss `--strict` gates on).
+un-opted-in file), the **structural ledger** (`structural.ts` — a dropped
+boundary/invariant is a loss `--strict` gates on), the **status record's merge rules**
+(`status.ts` — a skip must never clobber a real verdict; scoped runs replace only what
+they touched), and the **panel's pure core** (`panel.ts` — light derivation incl.
+staleness degradation, model assembly, and the frame renderer with colors off).

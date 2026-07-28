@@ -1,0 +1,16 @@
+{
+  "root": "coherence",
+  "intent": "",
+  "generatedAt": "2026-07-11T16:40:14.531Z",
+  "head": "5e56635",
+  "dirty": true,
+  "grid": {
+    "cols": 0,
+    "rows": 0
+  },
+  "components": [],
+  "verify": null,
+  "diff": {
+    "base": "5e56635"
+  }
+}

@@ -8,6 +8,7 @@ import { createHash } from "node:crypto";
 import type { Config, Graph } from "./types.ts";
 import { CLAIM_FORMS, type ClaimCtx } from "./phrasebook.ts";
 import { ownerOf } from "./walk.ts";
+import { recordVerify } from "./status.ts";
 
 const hashOf = (s: string) => createHash("sha256").update(s).digest("hex").slice(0, 16);
 const jobsPath = (cfg: Config) => join(cfg.root, ".coherence", "verify-jobs.json");
@@ -140,5 +141,34 @@ export async function runVerify(cfg: Config, graph: Graph, opts: { fast?: boolea
 
   const failures = red + broken + covGaps;
   console.log(failures === 0 ? (verifyJobs.length ? `\n• ${verifyJobs.length} verification job(s) pending` : "\n✓ coherent") : `\n✗ ${failures} coherence failure(s) — ${red} claim · ${broken} broken · ${covGaps} coverage`);
+
+  // File the report (`.coherence/status.json`) — the run record the panel (and any
+  // other consumer) reads. Coverage + invariant TOTALS are static full-tree graph
+  // facts, so a scoped run still records them honestly; per-claim verdicts and the
+  // gap list merge inside recordVerify (scoped runs replace only what they touched).
+  // A failed write must never fail the verify itself (read-only checkout, etc.).
+  try {
+    const allComps = graph.nodes.filter((n) => n.kind === "component");
+    const allSymbols = graph.nodes.filter((n) => n.kind === "symbol");
+    await recordVerify(cfg, {
+      tier: opts.fast ? "fast" : "full",
+      scope: opts.only ? comps.map((c) => c.label) : null,
+      sigs,
+      coverage: {
+        components: allComps.length,
+        claimed: allComps.filter((c) => c.claims && c.claims.length).length,
+        withWhy: allComps.filter((c) => c.why && String(c.why).trim()).length,
+        symbols: allSymbols.length,
+        documented: allSymbols.filter((s) => s.prose && String(s.prose).trim()).length,
+      },
+      invTotal: allComps.reduce((n, c) => n + (c.invariants?.length ?? 0), 0),
+      invGaps,
+      narrative: narr?.statements
+        ? { statements: narr.statements.length, unchanged: narr.statements.filter((s: any) => s.status === "ok").length, pending: narr.statements.filter((s: any) => s.status === "pending").length, broken }
+        : null,
+      jobs: jobs.length,
+      failures,
+    });
+  } catch { /* the record is best-effort; the console report already happened */ }
   return failures === 0 ? 0 : 1;
 }

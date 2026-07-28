@@ -47,6 +47,39 @@ export function parseSpec(text: string): ParsedSpec {
   return { name, intent, claims, prose: prose.join("\n").trim(), why, invariants };
 }
 
+/** One declared trust zone from a `## zones` section (PROMISE GRAPH topology). Parsed here
+ *  because walk.ts is the single home of spec-section parsing; the promise layer is the only
+ *  consumer, so zones ride as their own standalone parse rather than through ParsedSpec/the
+ *  graph (nothing else needs them, and the graph stays untouched). */
+export interface ParsedZone { name: string; intent: string; inside: string | null }
+
+/** Parse a `## zones` section — same shape as `## invariants`: a bullet list, and the
+ *  DECLARED ORDER is the canonical trust order (most-trusted first). Each line is either
+ *  `- <name>: <intent>` or `- <name> inside <parent>: <intent>` (the `: <intent>` is
+ *  optional — a bare `- <name>` or `- <name> inside <parent>` is a zone with "" intent).
+ *  Single-home doctrine: only the ENTRY component's zones are authoritative, so this is run
+ *  against the entry spec alone — a `## zones` in a non-entry spec is simply never read
+ *  (ignored, not an error). Returns [] when the spec has no zones section. */
+export function parseZones(text: string): ParsedZone[] {
+  const lines = text.split("\n");
+  const zs = lines.findIndex((l) => /^##\s+zones\s*$/i.test(l));
+  if (zs < 0) return [];
+  const zones: ParsedZone[] = [];
+  for (let j = zs + 1; j < lines.length; j++) {
+    if (/^##\s+/.test(lines[j])) break;
+    const c = /^-\s+(.+?)\s*$/.exec(lines[j]);
+    if (!c) continue;
+    // Split the optional `: <intent>` tail off the `<name> [inside <parent>]` head.
+    const colon = c[1].indexOf(":");
+    const head = (colon >= 0 ? c[1].slice(0, colon) : c[1]).trim();
+    const intent = colon >= 0 ? c[1].slice(colon + 1).trim() : "";
+    const im = /^(\S+)\s+inside\s+(\S+)$/.exec(head);
+    if (im) zones.push({ name: im[1], intent, inside: im[2] });
+    else zones.push({ name: head.split(/\s+/)[0], intent, inside: null });
+  }
+  return zones;
+}
+
 export async function findSpec(dir: string): Promise<string | null> {
   const e = await readdir(dir).catch(() => []);
   const s = e.find((f) => f.endsWith(".spec.md"));

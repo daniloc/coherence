@@ -18,6 +18,7 @@
 import type { Config, Graph } from "./types.ts";
 import { scanSources } from "./sidecar.ts";
 import { allBoundaries, boundariesAt } from "./structural.ts";
+import { recordAtlas } from "./status.ts";
 import { writeFile, mkdir } from "node:fs/promises";
 import { join } from "node:path";
 
@@ -148,6 +149,18 @@ export async function atlas(cfg: Config, graph: Graph, mode: "render" | "check")
   L.push("");
   await mkdir(join(cfg.root, cfg.outputDir), { recursive: true });
   await writeFile(join(cfg.root, cfg.outputDir, "atlas.md"), L.join("\n"));
+
+  // File the tier grades into the status record (best-effort — never fails the run).
+  try {
+    await recordAtlas(cfg, {
+      tiers: { enshrined: counts[0], checked: counts[1], convention: counts[2] },
+      crossings: edges.map((e) => ({ sym: e.sym, from: e.from, to: e.to, tier: e.tier, security: !!e.security, note: e.note, translates: e.translates, present: e.present, pending: e.pending })),
+      drift,
+      dangling: dangling.map((e) => e.sym),
+      overclaimed: overclaimed.map((e) => e.sym),
+      tier3Security: tier3sec.map((e) => e.sym),
+    });
+  } catch { /* record is best-effort */ }
 
   if (mode === "check") {
     if (drift.length || dangling.length || overclaimed.length) {

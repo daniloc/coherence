@@ -1,0 +1,541 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>coherence — scene</title>
+<style>
+  :root{
+    /* a warmer game-map palette than near-black: a quiet slate terrain the plates sit on */
+    --bg:#0a0e13; --panel:#101823; --line:#22323f; --ink:#cad7e3; --dim:#7d8d9b; --dimmer:#4e5c69;
+    --amber:#e6a83c; --amber-soft:#f2c169; --red:#ff453a; --warm:#ffd36e; --steel:#aab6c2;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--ink);overflow-x:hidden}
+  body{
+    font:14px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif; min-height:100vh;
+    /* atmosphere: a cool wash from above, a faint warm terrain-glow rising from below */
+    background:
+      radial-gradient(120% 80% at 50% -10%, #13202c 0%, rgba(19,32,44,0) 55%),
+      radial-gradient(150% 95% at 50% 120%, #1c150a 0%, rgba(28,21,10,0) 52%),
+      var(--bg);
+  }
+  .wrap{max-width:1280px;margin:0 auto;padding:0 14px 56px}
+  /* ── masthead ─────────────────────────────────────────────────── */
+  header.mh{
+    position:sticky;top:0;z-index:6;display:flex;gap:14px;align-items:baseline;flex-wrap:wrap;
+    padding:12px 16px;margin:0 -14px 4px;
+    background:linear-gradient(180deg,rgba(10,14,19,.96),rgba(10,14,19,.82));
+    border-bottom:1px solid var(--line);backdrop-filter:blur(6px);
+  }
+  .mh .root{font:600 15px ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.02em}
+  .mh .intent{color:var(--dim);font-size:12.5px;max-width:56ch;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .mh .facts{margin-left:auto;display:flex;gap:16px;align-items:baseline;font:11.5px ui-monospace,monospace;color:var(--dim);flex-wrap:wrap}
+  .mh .facts b{color:var(--ink);font-weight:600}
+  .mh .facts .k{color:var(--dimmer);text-transform:uppercase;letter-spacing:.08em;font-size:9.5px;margin-right:5px}
+  .mh .fails.hot b{color:var(--red)}
+  /* ── stage ────────────────────────────────────────────────────── */
+  #stage{position:relative;margin-top:8px}
+  svg#scene{width:100%;height:auto;display:block;overflow:visible;user-select:none}
+  svg#scene .slab{cursor:pointer}
+  svg#scene .slab:hover .hilite{opacity:1}
+  .hilite{opacity:0;transition:opacity .12s}
+  .parcel{transition:fill-opacity .12s}
+  @keyframes failpulse{0%,100%{opacity:.55}50%{opacity:1}}
+  .fdot{animation:failpulse 1.6s ease-in-out infinite}
+  /* ── turntable (the map-rotate control) ───────────────────────── */
+  #turntable{
+    position:absolute;top:10px;left:10px;z-index:8;display:flex;gap:6px;align-items:center;
+    padding:5px 7px;border:1px solid var(--line);border-radius:10px;background:rgba(16,24,35,.9);
+    font:11px ui-monospace,monospace;color:var(--dim);
+  }
+  #turntable button{
+    width:26px;height:26px;display:flex;align-items:center;justify-content:center;cursor:pointer;
+    border:1px solid var(--line);border-radius:7px;background:#141d28;color:var(--ink);font-size:14px;line-height:1;
+  }
+  #turntable button:hover{border-color:var(--amber);color:var(--amber-soft)}
+  #turntable button:active{background:#1b2733}
+  #turntable .facing{min-width:38px;text-align:center;letter-spacing:.06em}
+  /* ── tooltip ──────────────────────────────────────────────────── */
+  #tip{
+    position:fixed;pointer-events:none;z-index:20;max-width:280px;opacity:0;transform:translateY(3px);
+    transition:opacity .1s;padding:9px 11px;border:1px solid var(--line);border-radius:9px;
+    background:rgba(16,24,35,.97);box-shadow:0 12px 34px rgba(0,0,0,.55);font-size:12px;
+  }
+  #tip .t{font:600 13px ui-monospace,monospace;margin-bottom:3px}
+  #tip .r{color:var(--dim);display:flex;gap:8px;justify-content:space-between}
+  #tip .r b{color:var(--ink);font-weight:600}
+  #tip .lvl{font-size:11px;margin-top:4px}
+  #tip .parcelrow{font:11.5px ui-monospace,monospace;color:var(--ink)}
+  #tip .parcelrow .tag{font-size:10px;padding:0 5px;border-radius:4px;margin-left:6px;border:1px solid}
+  #tip .tag.claimed{color:var(--warm);border-color:#5a4a24}
+  #tip .tag.unclaimed{color:var(--dim);border-color:var(--dimmer)}
+  /* ── pinned detail card ───────────────────────────────────────── */
+  #card{
+    position:fixed;top:64px;right:16px;z-index:15;width:340px;max-height:calc(100vh - 96px);
+    display:none;flex-direction:column;border:1px solid var(--line);border-radius:12px;overflow:hidden;
+    background:linear-gradient(180deg,#131c27,#0e151d);box-shadow:0 22px 60px rgba(0,0,0,.6);
+  }
+  #card.on{display:flex}
+  #card .hd{padding:12px 14px;border-bottom:1px solid var(--line);display:flex;align-items:flex-start;gap:8px}
+  #card .hd .ct{font:600 14px ui-monospace,monospace}
+  #card .hd .ci{color:var(--dim);font-size:12px;margin-top:2px}
+  #card .x{margin-left:auto;color:var(--dim);cursor:pointer;border:1px solid var(--line);border-radius:6px;padding:1px 7px;font-size:13px}
+  #card .x:hover{color:var(--ink);border-color:var(--dim)}
+  #card .bd{padding:10px 14px 16px;overflow-y:auto;font-size:12.5px}
+  #card h4{font:600 9.5px system-ui;text-transform:uppercase;letter-spacing:.1em;color:var(--dimmer);margin:14px 0 6px}
+  #card h4:first-child{margin-top:2px}
+  #card .stat{display:flex;gap:14px;color:var(--dim);font:12px ui-monospace,monospace;flex-wrap:wrap}
+  #card .stat b{color:var(--ink)}
+  .gate{display:grid;grid-template-columns:auto 1fr;gap:2px 8px;padding:7px 0;border-top:1px solid rgba(255,255,255,.05)}
+  .gate:first-of-type{border-top:0}
+  .gate .m{font:600 10px system-ui;text-transform:uppercase;letter-spacing:.06em;align-self:start;padding:1px 6px;border-radius:5px;border:1px solid}
+  .gate .m.steel{color:#bcc8d4;border-color:#46545f}
+  .gate .m.scaffold{color:var(--amber);border-color:#5a4a24}
+  .gate .m.breached{color:var(--red);border-color:#5e2622;background:rgba(255,69,58,.08)}
+  .gate .inv{font:600 12.5px ui-monospace,monospace;color:var(--ink)}
+  .gate .flow{grid-column:2;color:var(--dim);font:11px ui-monospace,monospace}
+  .gate .flow .arw{color:var(--dimmer)}
+  .gate .flow .vd.pass{color:#5fbf7a}.gate .flow .vd.fail{color:var(--red)}.gate .flow .vd.stale{color:var(--amber)}.gate .flow .vd.unknown{color:var(--dimmer)}
+  .gate .eye{color:var(--amber);font-size:11px}
+  .redlist li{color:var(--red);font:12px ui-monospace,monospace;list-style:none}
+  .redlist{margin:0;padding:0}
+  .samp{color:var(--dim);font:11.5px ui-monospace,monospace;word-break:break-all;line-height:1.7}
+  .samp span{border:1px solid rgba(255,255,255,.08);border-radius:4px;padding:0 5px;margin:0 3px 3px 0;display:inline-block}
+  .why{color:#aeb9c4;font:12.5px/1.55 system-ui;white-space:pre-wrap;border-left:2px solid #5a4a24;padding-left:10px}
+  .why.empty{color:var(--dimmer);font-style:italic;border-color:var(--dimmer)}
+  /* ── legend ───────────────────────────────────────────────────── */
+  #legend{
+    position:fixed;left:16px;bottom:16px;z-index:12;width:238px;
+    border:1px solid var(--line);border-radius:10px;background:rgba(14,21,29,.94);overflow:hidden;
+  }
+  #legend summary{list-style:none;cursor:pointer;padding:8px 11px;font:600 10.5px system-ui;text-transform:uppercase;letter-spacing:.09em;color:var(--dim)}
+  #legend summary::-webkit-details-marker{display:none}
+  #legend summary::after{content:"+";float:right;color:var(--dimmer)}
+  #legend[open] summary::after{content:"\2212"}
+  #legend .lb{padding:0 11px 11px;font-size:11px;color:var(--dim)}
+  #legend .row{display:flex;align-items:center;gap:8px;margin:6px 0}
+  #legend .sw{width:16px;height:14px;border-radius:2px;flex:none;border:1px solid rgba(255,255,255,.1)}
+  #legend .dot{width:14px;height:14px;border-radius:50%;flex:none}
+  footer{color:var(--dimmer);font-size:11px;padding:22px 16px 0;font-family:ui-monospace,monospace}
+</style></head>
+<body>
+<div class="wrap">
+  <header class="mh">
+    <span class="root">coherence</span>
+    <span class="intent"></span>
+    <span class="facts">
+      <span class="fact"><span class="k">head</span><b>5e56635*</b></span>
+      <span class="fact"><span class="k">fast</span><b data-age="">—</b></span>
+      <span class="fact"><span class="k">full</span><b data-age="">—</b></span>
+      <span class="fact fails"><span class="k">fails</span><b>0</b></span>
+    </span>
+  </header>
+  <div id="stage">
+    <div id="turntable" aria-label="rotate the map">
+      <button id="rot-ccw" type="button" class="rot" title="rotate left (←)" aria-label="rotate left">&#8634;</button>
+      <span class="facing" id="facing">0&deg;</span>
+      <button id="rot-cw" type="button" class="rot" title="rotate right (→)" aria-label="rotate right">&#8635;</button>
+    </div>
+    <svg id="scene" role="img" aria-label="isometric hex board of coherence"></svg>
+  </div>
+  <footer>Generated at <span id="stamp">2026-07-11 16:40Z</span> — do not edit; run the harness.</footer>
+</div>
+
+<div id="tip" aria-hidden="true"></div>
+<aside id="card" aria-live="polite"></aside>
+<details id="legend">
+  <summary>legend</summary>
+  <div class="lb">
+    <div class="row"><span class="sw" style="background:#ffd36e"></span>lit parcel — a claimed file, verified fresh</div>
+    <div class="row"><span class="sw" style="background:#61798f"></span>dim parcel — claimed, passes exist but stale</div>
+    <div class="row"><span class="sw" style="background:#333f4b"></span>dark parcel — claimed, nothing verified</div>
+    <div class="row"><span class="sw" style="background:#1a2029"></span>unlit tile — unclaimed mass (honest absence)</div>
+    <div class="row"><span class="sw" style="border:1px dashed #e6a83c;background:transparent"></span>amber dashed rim — the blueprint envelope</div>
+    <div class="row"><span class="dot" style="background:#aab6c2"></span>steel token — an oracle holding green</div>
+    <div class="row"><span class="dot" style="background:transparent;border:1px dashed #cdd6df"></span>scaffold token — provisional gate</div>
+    <div class="row"><span class="dot" style="background:#ff453a"></span>breached token — a gate not holding</div>
+    <div class="row"><span class="sw" style="background:linear-gradient(0deg,transparent 40%,#ff453a 40% 60%,transparent 60%)"></span>red rim tick — unanchored invariant</div>
+    <div class="row"><span class="dot" style="background:radial-gradient(circle,#ff453a 0 45%,transparent 48%)"></span>red dot — failing claim</div>
+    <div class="row"><span style="color:#e6a83c">⚑</span>gate needs a human eye</div>
+  </div>
+</details>
+
+<script id="scene-data" type="application/json">{"root":"coherence","intent":"","generatedAt":"2026-07-11T16:40:14.531Z","head":"5e56635","dirty":true,"grid":{"cols":0,"rows":0},"components":[],"verify":null,"diff":{"base":"5e56635"}}</script>
+<script>
+(function(){
+  "use strict";
+  // The SVG namespace, assembled so the literal external-URL substring never appears in
+  // the document (the artifact must contain zero http(s):// — enforced by the tests).
+  var NS = "http" + "://www.w3.org/2000/svg";
+  var M = JSON.parse(document.getElementById("scene-data").textContent);
+  var svg = document.getElementById("scene");
+
+  // ── tiny helpers ───────────────────────────────────────────────
+  function el(tag, at, kids){
+    var e = document.createElementNS(NS, tag), k;
+    if(at) for(k in at){ if(at[k] != null) e.setAttribute(k, at[k]); }
+    if(kids) for(var i=0;i<kids.length;i++){ var c=kids[i]; if(c!=null) e.appendChild(typeof c==="string"?document.createTextNode(c):c); }
+    return e;
+  }
+  function clear(g){ while(g.firstChild) g.removeChild(g.firstChild); }
+  function pts(a){ var s=""; for(var i=0;i<a.length;i++){ s += (i?" ":"") + a[i].x.toFixed(1) + "," + a[i].y.toFixed(1); } return s; }
+  function lp(a,b,t){ return { x:a.x+(b.x-a.x)*t, y:a.y+(b.y-a.y)*t }; }
+
+  // ── the isometric turntable ─────────────────────────────────────
+  // ANG counts 60° steps of view rotation about the plaza (0,0). Rotation happens in
+  // CUBE space (the clean 60° symmetry) then projects; it is pure view state — the
+  // persisted axial lots are never mutated, only re-read each render.
+  var R = 46, SQ3 = Math.sqrt(3), SQUASH = 0.58, EXT = 12;  // R = hex pitch · EXT = plate thickness
+  var ANG = 0;
+  // axial (q,r) → rotate N·60° in cube coords ((x,y,z)→(-z,-x,-y) per step) → axial
+  function rotAxial(q, r, n){
+    var x = q, z = r, y = -q - r;                    // axial → cube (y = -x - z)
+    n = ((n % 6) + 6) % 6;
+    for(var i=0;i<n;i++){ var nx=-z, ny=-x, nz=-y; x=nx; y=ny; z=nz; }
+    return { q:x, r:z };                             // cube → axial
+  }
+  // flat-top hex layout (Red Blob): x = 1.5·q·R · y = √3·(r + q/2)·R — the flat plane
+  function layout(q, r){ return { x: R*1.5*q, y: R*SQ3*(r + q/2) }; }
+  // project a flat-plane point at height z to screen: squash y for the god-view tilt,
+  // then lift by z for the plate's extrusion
+  function proj(fx, fy, z){ return { x:fx, y:fy*SQUASH - z }; }
+  // six flat-top hex corners (angles 0,60,…300) around a flat-plane centre, projected at z
+  function hexCorners(cx, cy, s, z){
+    var a=[]; for(var i=0;i<6;i++){ var t=Math.PI/180*(60*i); a.push(proj(cx+s*Math.cos(t), cy+s*Math.sin(t), z)); } return a;
+  }
+
+  // ── palette ─────────────────────────────────────────────────────
+  var C = {
+    floorFill:"rgba(120,150,170,.045)", floorEdge:"#17242f",
+    plateTop:"#141d27", plateRim:"#2c3b48",
+    sideS:"#0d141c", sideE:"#0a1017", sideEdge:"#243240",
+    amber:"#e6a83c", amberSoft:"#f2c169",
+    red:"#ff453a", steel:"#aab6c2", steelEdge:"#46545f", scaffold:"#cdd6df",
+    link:"#27404e",
+    parcelEdge:"#0c1219", slotEdge:"#1c2833",
+    unclaimed:"#1a2029"
+  };
+  // the claimed parcel is the lamp — luminance is the verification signal
+  var LAMP      = { lit:"#ffd36e", dim:"#61798f", dark:"#333f4b" };
+  var LAMP_EDGE = { lit:"#c19a48", dim:"#3c4b5a", dark:"#2b3540" };
+
+  function massOf(c){ return c.mass.files + c.mass.symbols; }
+
+  // plate size (centre-to-corner) ∝ mass^0.25 normalised to the largest, so a 10×
+  // district reads ~1.8× the radius — clearly bigger, never towering. Capped at
+  // 0.82·R < the hex pitch so plates on adjacent lots can never collide.
+  var mMax = 1;
+  for(var i=0;i<M.components.length;i++) mMax = Math.max(mMax, massOf(M.components[i]));
+  var PS_MAX = R*0.82, PS_MIN = R*0.34;
+  function plateSize(c){ return Math.max(PS_MIN, PS_MAX * Math.pow(Math.max(1,massOf(c))/mMax, 0.25)); }
+
+  // triangular lattice of a flat-top hexagon: 6 wedges (centre → adjacent corners), each
+  // subdivided into k² small triangles ⇒ 6k² parcels total. Returns each parcel with its
+  // centroid distance/angle from centre so the caller can fill CENTRE-OUT deterministically.
+  function resK(n){ var k=1; while(6*k*k < n) k++; return k; }
+  function latticeTris(cx, cy, s, k){
+    var tris = [];
+    var tri = function(p,q,r){
+      var g = { x:(p.x+q.x+r.x)/3, y:(p.y+q.y+r.y)/3 };
+      return { c:[p,q,r], d:Math.sqrt((g.x-cx)*(g.x-cx)+(g.y-cy)*(g.y-cy)), a:Math.atan2(g.y-cy, g.x-cx) };
+    };
+    for(var w=0;w<6;w++){
+      var a0=Math.PI/180*(60*w), a1=Math.PI/180*(60*(w+1));
+      var A={x:cx,y:cy}, B={x:cx+s*Math.cos(a0),y:cy+s*Math.sin(a0)}, D={x:cx+s*Math.cos(a1),y:cy+s*Math.sin(a1)};
+      var P = function(ii,jj){ return { x:A.x+(ii/k)*(B.x-A.x)+(jj/k)*(D.x-A.x), y:A.y+(ii/k)*(B.y-A.y)+(jj/k)*(D.y-A.y) }; };
+      for(var ii=0;ii<k;ii++) for(var jj=0;jj<k-ii;jj++){
+        tris.push(tri(P(ii,jj), P(ii+1,jj), P(ii,jj+1)));                 // up-triangle
+        if(ii+jj < k-1) tris.push(tri(P(ii+1,jj), P(ii,jj+1), P(ii+1,jj+1))); // down-triangle
+      }
+    }
+    tris.sort(function(a,b){ return (a.d-b.d) || (a.a-b.a); });
+    return tris;
+  }
+
+  // ── static defs + the three redrawn layers ──────────────────────
+  var defs = el("defs");
+  defs.appendChild((function(){                       // soft bloom for lit marks + fail dots
+    var f=el("filter",{id:"bloom",x:"-60%",y:"-60%",width:"220%",height:"220%"});
+    f.appendChild(el("feGaussianBlur",{"in":"SourceGraphic",stdDeviation:"1.6",result:"b"}));
+    var mg=el("feMerge"); mg.appendChild(el("feMergeNode",{"in":"b"})); mg.appendChild(el("feMergeNode",{"in":"SourceGraphic"})); f.appendChild(mg); return f;
+  })());
+  var hg=el("radialGradient",{id:"heat",cx:"50%",cy:"50%",r:"50%"});
+  hg.appendChild(el("stop",{offset:"0%","stop-color":"#ff8a3f","stop-opacity":".72"}));
+  hg.appendChild(el("stop",{offset:"100%","stop-color":"#ff8a3f","stop-opacity":"0"})); defs.appendChild(hg);
+  svg.appendChild(defs);
+
+  var gFloor=el("g"), gLink=el("g"), gPlate=el("g");
+  svg.appendChild(gFloor); svg.appendChild(gLink); svg.appendChild(gPlate);
+
+  // the board: every axial cell in the bounded region AROUND the occupied lots (lots can
+  // be negative, so we derive the floor from the lots themselves — not from grid 0..cols).
+  var q0=1e9,q1=-1e9,r0=1e9,r1=-1e9;
+  for(var i=0;i<M.components.length;i++){
+    var lo=M.components[i].lot;
+    if(lo.x<q0)q0=lo.x; if(lo.x>q1)q1=lo.x; if(lo.y<r0)r0=lo.y; if(lo.y>r1)r1=lo.y;
+  }
+  if(q0>q1){ q0=q1=r0=r1=0; }                         // no components → a single plaza tile
+  var floorCells=[];
+  for(var q=q0-1;q<=q1+1;q++) for(var r=r0-1;r<=r1+1;r++) floorCells.push({q:q,r:r});
+
+  var byDir={}; for(var i=0;i<M.components.length;i++) byDir[M.components[i].dir]=i;
+
+  var pinnedIdx=-1;
+
+  // ── render one frame at the current ANG (called on load and every rotation) ──────────
+  function render(){
+    clear(gFloor); clear(gLink); clear(gPlate);
+    var minX=1e9,minY=1e9,maxX=-1e9,maxY=-1e9;
+    function seen(p){ if(p.x<minX)minX=p.x; if(p.x>maxX)maxX=p.x; if(p.y<minY)minY=p.y; if(p.y>maxY)maxY=p.y; }
+
+    // rotated flat-plane centres (the board rotates WITH the turntable)
+    var pos=[];
+    for(var i=0;i<M.components.length;i++){
+      var rc=rotAxial(M.components[i].lot.x, M.components[i].lot.y, ANG), ct=layout(rc.q, rc.r);
+      pos[i]={ fx:ct.x, fy:ct.y, ps:plateSize(M.components[i]) };
+    }
+
+    // the terrain: faint hex tiles, snapped and aligned — the place that holds still
+    for(var f=0;f<floorCells.length;f++){
+      var frc=rotAxial(floorCells[f].q, floorCells[f].r, ANG), fct=layout(frc.q, frc.r);
+      var fc=hexCorners(fct.x, fct.y, R*0.94, 0);
+      for(var q2=0;q2<6;q2++) seen(fc[q2]);
+      gFloor.appendChild(el("polygon",{points:pts(fc),fill:C.floorFill,stroke:C.floorEdge,"stroke-width":.7}));
+    }
+
+    // links: single thin clean lines between plate centres (deduped per pair)
+    var drawn={};
+    for(var i=0;i<M.components.length;i++){
+      var c=M.components[i], a=proj(pos[i].fx,pos[i].fy,EXT);
+      for(var j=0;j<(c.links||[]).length;j++){
+        var t=byDir[c.links[j]]; if(t==null) continue;
+        var key=Math.min(i,t)+"-"+Math.max(i,t); if(drawn[key]) continue; drawn[key]=1;
+        var b=proj(pos[t].fx,pos[t].fy,EXT);
+        gLink.appendChild(el("line",{x1:a.x,y1:a.y,x2:b.x,y2:b.y,stroke:C.link,"stroke-width":1,opacity:.75}));
+      }
+    }
+
+    // painter's order recomputed for THIS angle: back-to-front = increasing screen y
+    var order=M.components.map(function(_,k){return k;}).sort(function(a,b){
+      return (pos[a].fy-pos[b].fy) || (pos[a].fx-pos[b].fx);
+    });
+    for(var oi=0;oi<order.length;oi++) drawPlate(order[oi], pos, seen);
+
+    // viewBox: fit to content, then balance to a ~16:10 landscape, centred
+    var padX=40, padY=32;
+    var vx=minX-padX, vy=minY-padY, vw=(maxX-minX)+padX*2, vh=(maxY-minY)+padY*2;
+    var AR=1.6;
+    if(vw/vh > AR){ var nh=vw/AR; vy -= (nh-vh)/2; vh=nh; }
+    else { var nw=vh*AR; vx -= (nw-vw)/2; vw=nw; }
+    svg.setAttribute("viewBox", vx.toFixed(1)+" "+vy.toFixed(1)+" "+vw.toFixed(1)+" "+vh.toFixed(1));
+  }
+
+  // ── one district plate ──────────────────────────────────────────
+  function drawPlate(idx, pos, seen){
+    var c=M.components[idx], fx=pos[idx].fx, fy=pos[idx].fy, ps=pos[idx].ps, lvl=c.light.level;
+    var g=el("g",{"class":"slab","data-idx":idx});
+
+    // heat: a soft warm underglow pooling beneath the plate — churn landing right now
+    if(c.heat>0){
+      var hc=proj(fx,fy,0), hr=R*(0.66+0.7*c.heat);
+      g.appendChild(el("ellipse",{cx:hc.x,cy:hc.y+3,rx:hr,ry:hr*0.5,fill:"url(#heat)",opacity:(0.1+0.5*c.heat).toFixed(3)}));
+    }
+
+    var top=hexCorners(fx,fy,ps,EXT), bot=hexCorners(fx,fy,ps,0);
+    // the three FRONT side faces (edges 0-1,1-2,2-3 always face the viewer — plate
+    // orientation is fixed, only lots rotate) — the uniform extrusion depth cue
+    for(var s=0;s<3;s++){
+      var n2=s+1, shade=(s===1?C.sideE:C.sideS);
+      g.appendChild(el("polygon",{points:pts([top[s],top[n2],bot[n2],bot[s]]),fill:shade,stroke:C.sideEdge,"stroke-width":.6}));
+    }
+    // the plate top: a clean dark board the parcels tile onto
+    g.appendChild(el("polygon",{points:pts(top),fill:C.plateTop,stroke:C.plateRim,"stroke-width":.9}));
+
+    // parcels: the triangular lattice, one FILE per tile, filled centre-out. Inset from
+    // the rim (×0.9) so a clean plate frame shows around the parcel field.
+    var pieces=c.pieces||[], len=pieces.length, k=resK(Math.max(1,len));
+    var tris=latticeTris(fx,fy,ps*0.9,k);
+    for(var ti=0;ti<tris.length;ti++){
+      var poly=[proj(tris[ti].c[0].x,tris[ti].c[0].y,EXT),proj(tris[ti].c[1].x,tris[ti].c[1].y,EXT),proj(tris[ti].c[2].x,tris[ti].c[2].y,EXT)];
+      if(ti<len){
+        var pc=pieces[ti], fill=pc.claimed ? (LAMP[lvl]||LAMP.dark) : C.unclaimed;
+        var edge=pc.claimed ? (LAMP_EDGE[lvl]||LAMP_EDGE.dark) : C.parcelEdge;
+        var at={ "class":"parcel", points:pts(poly), fill:fill, stroke:edge, "stroke-width":.5,
+                 "data-file":pc.label, "data-claimed":pc.claimed?"1":"0" };
+        if(pc.claimed && lvl==="lit"){ at.filter="url(#bloom)"; }  // fresh verification glows
+        g.appendChild(el("polygon",at));
+      } else {
+        g.appendChild(el("polygon",{ "class":"parcel slot", points:pts(poly), fill:"none", stroke:C.slotEdge, "stroke-width":.5 }));
+      }
+    }
+
+    // the blueprint envelope: dashed amber tracing the plate rim — the spec made visible
+    g.appendChild(el("polygon",{points:pts(top),fill:"none",stroke:C.amber,"stroke-width":1.1,"stroke-dasharray":"5 3","stroke-linejoin":"round"}));
+
+    var cen=proj(fx,fy,EXT);
+    // fails: small pulsing red dots in a quiet row near the plate centre (count in the card)
+    var failN=Math.min(c.light.fails,5);
+    for(var kk=0;kk<failN;kk++){
+      var u=failN===1?0:(kk-(failN-1)/2);
+      g.appendChild(el("circle",{"class":"fdot",cx:cen.x+u*7,cy:cen.y-3,r:2.6,fill:C.red,filter:"url(#bloom)"}));
+    }
+
+    // unanchored invariants: red ticks crossing the FRONT-LEFT rim (edge 2→3) — spec
+    // rules no gate anchors, flagged on the boundary itself
+    var tickN=Math.min(c.unanchored.length,4), uA=top[2], uB=top[3];
+    var udx=uB.x-uA.x, udy=uB.y-uA.y, uln=Math.hypot(udx,udy)||1, unx=-udy/uln*4.5, uny=udx/uln*4.5;
+    for(var kk=0;kk<tickN;kk++){
+      var up=lp(uA,uB,0.22+0.56*(tickN===1?0.5:kk/(tickN-1)));
+      g.appendChild(el("line",{x1:up.x-unx,y1:up.y-uny,x2:up.x+unx,y2:up.y+uny,stroke:C.red,"stroke-width":1.7,"stroke-linecap":"round"}));
+    }
+
+    // gates: tidy status TOKENS seated on the frontmost rim (edge 1→2), one vocabulary —
+    // steel (solid, sturdy) · scaffold (hollow, dashed, provisional) · breached (red,
+    // alarmed, pulsing). ⚑ marks a gate the meta-oracle never analysed (human-eye).
+    // A management sim never lets icons PILE, and never lets them TOUCH either: the row
+    // is laid out by ACTUAL widths, not slots. Visible tokens sit at a fixed pitch; the
+    // overflow chip (a rounded capsule reading "+N", with a single inline ⚑ when any
+    // HIDDEN gate needs a human eye) is placed AFTER the last token offset by its own
+    // half-width, so capsule and tokens can never intersect. The visible count starts
+    // from fit = floor(edge/pitch) capped at 5 (token SIZE is scene-constant, the COUNT
+    // adapts) and drops further until tokens + capsule genuinely fit the edge — alarms
+    // are never the ones hidden: breached first, then steel, then scaffold (stable sort,
+    // same-material gates keep authored order). The pinned card keeps the full list —
+    // the chip is the affordance, the card the drill-down.
+    var gates=c.gates||[], eA=top[1], eB=top[2];
+    if(gates.length){
+      var RANK={breached:0,steel:1,scaffold:2};
+      var sorted=gates.slice().sort(function(a,b){ return (RANK[a.material]!=null?RANK[a.material]:9)-(RANK[b.material]!=null?RANK[b.material]:9); });
+      var edgeLen=Math.hypot(eB.x-eA.x,eB.y-eA.y), ux=(eB.x-eA.x)/edgeLen, uy=(eB.y-eA.y)/edgeLen;
+      var PITCH=10, HALF=4.6, GAP=4, usable=edgeLen-4;      // 2px corner inset each side
+      var eyeFrom=function(n){ for(var kh=n;kh<sorted.length;kh++){ if(sorted[kh].humanEye) return true; } return false; };
+      var chipFor=function(n){ var s="+"+(sorted.length-n)+(eyeFrom(n)?" \u2691":""); return { lbl:s, w:Math.max(13,6+4.6*s.length) }; };
+      var fit=Math.max(1,Math.min(5,Math.floor(usable/PITCH)));
+      var visN, hidden=0, chip=null;
+      if(sorted.length<=fit){ visN=sorted.length; }
+      else {
+        // width-aware reservation: shed tokens until tokens + capsule fit the edge
+        visN=Math.min(fit,sorted.length);
+        do { visN--; chip=chipFor(visN); }
+        while(visN>1 && HALF+(visN-1)*PITCH+PITCH/2+GAP+chip.w > usable);
+        if(visN<1){ visN=1; chip=chipFor(1); }   // at least one token always shows (the alarm)
+        hidden=sorted.length-visN;
+      }
+      // centre the whole row on the rim line (tokens snap ONTO the edge, inset from corners)
+      var rowW = hidden ? HALF+(visN-1)*PITCH+PITCH/2+GAP+chip.w : 2*HALF+(visN-1)*PITCH;
+      var start=Math.max(2,(edgeLen-rowW)/2);
+      var at=function(d){ return { x:eA.x+ux*d, y:eA.y+uy*d }; };
+      for(var kk=0;kk<visN;kk++){
+        var gt=sorted[kk], tp=at(start+HALF+kk*PITCH);
+        if(gt.material==="steel"){
+          g.appendChild(el("circle",{"class":"gtoken",cx:tp.x,cy:tp.y,r:4.2,fill:C.steel,stroke:C.steelEdge,"stroke-width":1}));
+        } else if(gt.material==="scaffold"){
+          g.appendChild(el("circle",{"class":"gtoken",cx:tp.x,cy:tp.y,r:4.2,fill:"none",stroke:C.scaffold,"stroke-width":1.3,"stroke-dasharray":"2.2 2"}));
+        } else {
+          g.appendChild(el("circle",{"class":"gtoken fdot",cx:tp.x,cy:tp.y,r:4.6,fill:C.red,stroke:"#7a2420","stroke-width":1,filter:"url(#bloom)"}));
+        }
+        if(gt.humanEye){        // a VISIBLE human-eye gate keeps its own flag, snapped
+          // ABOVE its token: baseline just clear of the token's top edge, never dipping
+          // onto the plate face below the rim
+          var fl=el("text",{x:tp.x,y:(tp.y-HALF-2).toFixed(1),"text-anchor":"middle","font-size":"10",fill:C.amber});
+          fl.textContent="\u2691"; g.appendChild(fl);
+        }
+      }
+      if(hidden){
+        var bc=at(start+HALF+(visN-1)*PITCH+PITCH/2+GAP+chip.w/2), bh=9.5;
+        var bg=el("g",{"class":"gate-badge"});
+        bg.appendChild(el("rect",{x:(bc.x-chip.w/2).toFixed(1),y:(bc.y-bh/2).toFixed(1),width:chip.w.toFixed(1),height:bh,rx:4.5,fill:"#141d28",stroke:C.steelEdge,"stroke-width":1}));
+        var bt=el("text",{x:bc.x,y:bc.y+2.6,"text-anchor":"middle","font-size":"7.5",fill:C.steel,"font-family":"ui-monospace,monospace"});
+        bt.textContent=chip.lbl; bg.appendChild(bt);   // the hidden-eye ⚑ rides INSIDE the label
+        g.appendChild(bg);
+      }
+    }
+
+    // selection ring (pinned) + hover highlight — the satisfying game-legible affordances
+    if(idx===pinnedIdx){
+      g.appendChild(el("polygon",{points:pts(top),fill:"none",stroke:C.amberSoft,"stroke-width":2.2,"stroke-linejoin":"round"}));
+    }
+    g.appendChild(el("polygon",{"class":"hilite",points:pts(top),fill:"none",stroke:C.amberSoft,"stroke-width":1.4}));
+
+    for(var q3=0;q3<6;q3++){ seen(top[q3]); seen(bot[q3]); }
+    gPlate.appendChild(g);
+  }
+
+  render();
+
+  // ── turntable controls: buttons + ArrowLeft/ArrowRight, 60° per step ──
+  var facing=document.getElementById("facing");
+  function rotate(d){ ANG=((ANG+d)%6+6)%6; if(facing) facing.textContent=(ANG*60)+"\u00b0"; render(); }
+  document.getElementById("rot-ccw").addEventListener("click",function(){ rotate(-1); });
+  document.getElementById("rot-cw").addEventListener("click",function(){ rotate(1); });
+
+  // ── masthead ages (computed at VIEW time, so a stale file honestly shows its age) ──
+  function age(iso){
+    if(!iso) return "never";
+    var s=Math.max(0,(Date.now()-new Date(iso).getTime())/1000);
+    if(s<90) return Math.round(s)+"s"; if(s<5400) return Math.round(s/60)+"m";
+    if(s<172800) return Math.round(s/3600)+"h"; return Math.round(s/86400)+"d";
+  }
+  var ageEls=document.querySelectorAll(".facts [data-age]");
+  for(var i=0;i<ageEls.length;i++) ageEls[i].textContent=age(ageEls[i].getAttribute("data-age"));
+
+  // ── interaction: hover tooltip (district OR parcel) · click pins a card · keys rotate ──
+  var tip=document.getElementById("tip"), card=document.getElementById("card");
+  function pj(v){ return v.files+v.symbols; }
+  function E(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+  function tipHtml(c){
+    var lit=c.light.level, extra=(c.light.fails?(" · "+c.light.fails+" failing"):"")+(c.light.stale?(" · "+c.light.stale+" stale"):"");
+    return "<div class='t'>"+E(c.label)+"</div>"+
+      (c.intent?"<div class='r' style='color:var(--dim)'>"+E(c.intent)+"</div>":"")+
+      "<div class='r'><span>mass</span><b>"+pj(c.mass)+"</b></div>"+
+      "<div class='r'><span>claimed</span><b>"+pj(c.claimed)+" / "+pj(c.mass)+"</b></div>"+
+      "<div class='lvl' style='color:"+(lit==="lit"?"#ffd36e":lit==="dim"?"#8fb0d6":"#7d8d9b")+"'>"+lit+extra+"</div>";
+  }
+  function fileTip(par, c){
+    var claimed=par.getAttribute("data-claimed")==="1";
+    return "<div class='t'>"+E(c.label)+"</div>"+
+      "<div class='parcelrow'>"+E(par.getAttribute("data-file"))+
+      "<span class='tag "+(claimed?"claimed":"unclaimed")+"'>"+(claimed?"claimed":"unclaimed")+"</span></div>";
+  }
+  function cardHtml(c){
+    var gates=(c.gates||[]).map(function(gt){
+      return "<div class='gate'><span class='m "+gt.material+"'>"+E(gt.material)+"</span>"+
+        "<span class='inv'>"+E(gt.inv)+(gt.humanEye?" <span class='eye' title='needs a human eye'>⚑</span>":"")+"</span>"+
+        "<span class='flow'>"+E(gt.chokepoint)+" <span class='arw'>→</span> "+
+        (gt.verb?E(gt.verb):"no oracle")+(gt.oracle?" “"+E(gt.oracle)+"”":"")+
+        " <span class='arw'>→</span> <span class='vd "+gt.verdict+"'>"+E(gt.verdict)+"</span></span></div>";
+    }).join("") || "<div class='samp'>no boundary gates declared</div>";
+    var unanch=(c.unanchored||[]).length?"<h4>unanchored invariants</h4><ul class='redlist'>"+c.unanchored.map(function(u){return "<li>⚑ "+E(u)+"</li>";}).join("")+"</ul>":"";
+    var samp=(c.unclaimedSample||[]).length?"<h4>outside the blueprint</h4><div class='samp'>"+c.unclaimedSample.map(function(s){return "<span>"+E(s)+"</span>";}).join("")+"</div>":"";
+    var why=c.why?"<h4>why</h4><div class='why'>"+E(c.why)+"</div>":"<h4>why</h4><div class='why empty'>— no rationale authored (itself a visible gap)</div>";
+    return "<div class='hd'><div><div class='ct'>"+E(c.label)+"</div><div class='ci'>"+E(c.intent||"")+"</div></div><span class='x' role='button' title='close'>×</span></div>"+
+      "<div class='bd'><div class='stat'><span>mass <b>"+pj(c.mass)+"</b></span><span>claimed <b>"+pj(c.claimed)+"</b></span><span>files <b>"+(c.pieces||[]).length+"</b></span><span>light <b>"+E(c.light.level)+"</b></span><span>heat <b>"+Math.round(c.heat*100)+"%</b></span></div>"+
+      "<h4>gates</h4>"+gates+unanch+samp+why+"</div>";
+  }
+  function pin(idx){ pinnedIdx=idx; card.innerHTML=cardHtml(M.components[idx]); card.classList.add("on"); render(); }
+  function unpin(){ pinnedIdx=-1; card.classList.remove("on"); render(); }
+
+  svg.addEventListener("mousemove",function(e){
+    var t=e.target;
+    var sl=t.closest?t.closest(".slab"):null;
+    if(!sl){ tip.style.opacity=0; return; }
+    var c=M.components[+sl.getAttribute("data-idx")];
+    var par=t.closest?t.closest(".parcel"):null;
+    tip.innerHTML=(par && par.getAttribute("data-file"))?fileTip(par,c):tipHtml(c);
+    tip.style.opacity=1;
+    var x=e.clientX+16, y=e.clientY+16;
+    if(x>innerWidth-300) x=e.clientX-296;
+    tip.style.left=x+"px"; tip.style.top=y+"px";
+  });
+  svg.addEventListener("mouseleave",function(){ tip.style.opacity=0; });
+  svg.addEventListener("click",function(e){
+    var b=e.target.closest?e.target.closest(".slab"):null;
+    if(b) pin(+b.getAttribute("data-idx")); else unpin();
+  });
+  card.addEventListener("click",function(e){ if(e.target.classList.contains("x")) unpin(); });
+  document.addEventListener("keydown",function(e){
+    if(e.key==="Escape"){ unpin(); tip.style.opacity=0; }
+    else if(e.key==="ArrowLeft"){ rotate(-1); }
+    else if(e.key==="ArrowRight"){ rotate(1); }
+  });
+})();
+</script>
+</body></html>

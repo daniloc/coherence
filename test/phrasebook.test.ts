@@ -11,7 +11,7 @@ import { CLAIM_FORMS, parseWord, reEscape } from "../src/phrasebook.ts";
 test("registry — order IS the historical precedence (typechecks → conforms to)", () => {
   assert.deepEqual(
     CLAIM_FORMS.map((f) => f.name),
-    ["typechecks", "exists", "imports", "responds", "passes test", "boundary", "conforms to"],
+    ["typechecks", "exists", "imports", "responds", "passes test", "boundary", "lives in", "conforms to"],
   );
 });
 
@@ -35,6 +35,8 @@ test("registry — every canonical claim line matches exactly ONE form (no ambig
     'http://localhost:8787/health responds 200 with "ok"',
     'passes test "write policy totality"',
     'boundary "x" at Choke via guard "g"',
+    'boundary "x" at Choke crossing agent-mcp -> storage via test "t"',
+    "lives in owner-trusted",
     "conforms to OwnedScope",
   ];
   for (const l of lines) {

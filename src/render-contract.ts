@@ -1,0 +1,690 @@
+// render-contract.ts — PromiseModel → one self-contained `_contract.html`.
+//
+// The subject here is NOT code but the PROMISE NETWORK: components making guarantees at
+// their perimeters (gates) and relying on one another's guarantees (double-entry reliance).
+// Where the scene renderer draws a project's spatial BODY, this renderer draws its
+// ANATOMY — a canonical VERTICAL INSTRUMENT with the same form for EVERY project, the way
+// a balance sheet has the same rows for every company. There is ZERO invented geography:
+// every position is a function of DECLARED ORDER (axioms 1 & 2), so a human can rederive
+// each mark's place from the committed spec text alone.
+//
+// THE GOVERNING PRINCIPLE (learned against real data, the hard way): AGGREGATE BY
+// DEFAULT, ITEMIZE BY EXCEPTION, EXPAND ON DEMAND. The first cut itemized everything —
+// 16 identical U chips on one row (an alarm flood carrying one bit), 17 same-fact arcs
+// (a hairball), chips overflowing into the neighbouring column (literal overlap). That
+// violated doctrines the scene renderer already paid for: tokens never pile, no ink
+// without its own action, links on demand. The redesign:
+//
+//   · COLLAPSED ROWS ARE THE DEFAULT. Each component is ONE quiet line — name · a state
+//     sentence composed from AGGREGATES across the lanes ("16 gates · all U — never
+//     assessed · 16% unaccounted · 1 naked reliance"). A fully clean component says almost
+//     nothing (the dark-board steady state, axiom 6). CLICK expands the row into the full
+//     anatomy: every gate chip (with its tooltip), the reliance list as text lines, the
+//     accounted-mass numbers, the untruncated intent. A second click or Escape collapses.
+//     A standing view of 8 components reads like a balance sheet: 8 lines under bands.
+//   · LANES BY CONSTRUCTION. A row is a CSS GRID line — [name] · [gates] · [exposure] ·
+//     [mass] are real grid tracks, not absolute x offsets, so one lane can NEVER intrude
+//     into another: the layout engine owns the boundary. Within the gates lane content is
+//     bounded too: ONE summary capsule ("16 · U" when uniform, else the compact grade
+//     histogram "12U 3D 1C") plus individual chips ONLY for exceptions — breaches
+//     (verdict==="fail") always, and gates whose grade is WORSE than the row's modal
+//     grade — shed width-aware into a "+N" capsule (the scene's gate-token discipline).
+//     Expanded rows may show every chip, flex-wrapped to as many lines as needed, never
+//     overlapping anything.
+//   · ZONE BANDS descend in DECLARED ORDER — declared order IS trust order, so the most-
+//     trusted region tops the sheet and exposure sinks. A zone with an inside-pointer
+//     renders as a NESTED band (indented, faint inset plate) literally inside its parent.
+//     Components with zone:null gather in a final "undeclared residence" band: exposure
+//     made foreground, not shrill.
+//   · GATE CHIPS keep one vocabulary: the GRADE LETTER loud; ⚑ appended for verb=guard;
+//     a red pulsing BREACH treatment for verdict==="fail" (red reserved for breach alone;
+//     the pulse respects prefers-reduced-motion); a dashed capsule edge for UNPLACED
+//     (crossing===null). The tooltip walks inv → chokepoint → oracle → verdict (+freshest
+//     age) → crossing → reliants — the full posting behind the letter.
+//   · ARCS: EXCEPTION + DEMAND. The left gutter (an SVG overlay on the instrument's own
+//     padding) draws ONLY NAKED arcs by default — they are findings, red and loud. Covered
+//     (quiet thin) and crossing-null (dim dashed) arcs draw only while a row they touch is
+//     hovered, expanded, or selected; the same-fact flood ("undeclared residence", 17
+//     times) collapses instead into ONE line of exposure ink on each affected row
+//     ("N reliances unassessable — residence undeclared"). Hovering a row lights every
+//     arc it touches, both directions, and relates the counterpart rows.
+//   · GRADE PALETTE — one ordinal family: A near-invisible calm, B cooler, C amber
+//     (human-judged), D loud dark-warning, U a distinct violet (unassessed still prints —
+//     axiom 3, never blank). Breach red is reserved for a failing verdict and nothing else.
+//
+// THE REVIEW VIEW (model.review non-null) keeps the SAME anatomy and adds:
+//   · a masthead "review vs <base>" chip and, when the diff touched files the graph does
+//     not own, an "N changes outside the map" tally chip (axiom 5: counted, never dropped).
+//   · THE LEDGER PANEL, GROUPED BY KIND with count headers so a real review's 24 events
+//     scan in one screen: the alarm kinds (demoted/naked/withdrawn/razed) arrive EXPANDED;
+//     the good-news kinds (covered/placed/sealed/promoted/arrived/rezoned) arrive
+//     COLLAPSED to a header line ("PLACED 12"), expandable by click. "placed" = an
+//     existing gate's crossing was finally declared (unplaced → placed); "sealed" fires
+//     from ANY uncovered prior state, not just naked. A kind outside the vocabulary still
+//     prints — a neutral fallback chip, never a blank badge, and defensively expanded.
+//     Each entry: comp:inv, a from→to delta when present, the detail sentence, the BLAST
+//     list ("→ held by: a, b, c") naming who now holds a degraded asset. Clicking an entry
+//     selects its component — row + chips + arcs light, every untouched row recedes.
+//     Inline, a demoted gate chip wears its "A→C" delta wherever that chip renders.
+//
+// The whole document is self-contained: inline CSS, inline ES5 JS, the model embedded as
+// a JSON blob, ZERO external resources (no http(s):// anywhere). The rows and the ledger
+// are built CLIENT-SIDE from the blob — the marks exist only after the script runs, which
+// is exactly what the DOM-stub test harness drives. Keyboard: Escape collapses everything
+// and clears the selection. Dark-themed by design.
+import type { PromiseModel, RenderContract } from "./promise-model.ts";
+
+const esc = (s: unknown) =>
+  String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+
+// Embed the model as text inside a <script type=application/json> block. Escaping `<` (and
+// the U+2028/U+2029 line/paragraph separators JSON.parse tolerates but the HTML/JS parser
+// does not) means a hostile label like `</script>` or `<script>` can never break out or
+// appear live — it survives the round-trip as < and JSON.parse restores it verbatim.
+const embed = (m: PromiseModel) =>
+  JSON.stringify(m).replace(/</g, "\\u003c").replace(/\u2028/g, "\\u2028").replace(/\u2029/g, "\\u2029");
+
+export const renderContract: RenderContract = (model: PromiseModel, stamp: string): string => {
+  const head = model.head ? esc(model.head) + (model.dirty ? "*" : "") : "—";
+  // REVIEW CHROME is SERVER-conditional (mirrors render-scene): a standing anatomy carries
+  // none of it — no masthead review chip, no outside tally, no ledger shell. The client
+  // guards the ledger build on M.review, so the two facts can never disagree.
+  const review = model.review;
+  const reviewMast = review
+    ? `<span class="rv-chip" title="derived against a base ref">review vs ${esc(review.base)}</span>`
+    : "";
+  const outN = review ? review.outside.added + review.outside.removed + review.outside.changed : 0;
+  const outsideMast = (review && outN > 0)
+    ? `<span class="outside-chip" title="outside the graph — +${review.outside.added} added −${review.outside.removed} removed ~${review.outside.changed} changed">${outN} change${outN === 1 ? "" : "s"} outside the map</span>`
+    : "";
+  // the ledger is an HTML aside, present ONLY in a review; the client populates its <ol>.
+  const ledgerAside = review
+    ? `<aside id="ledger" aria-label="the review ledger"><h2>ledger — review vs ${esc(review.base)}</h2><ol id="ledger-list"></ol></aside>`
+    : "";
+
+  return `<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${esc(model.root)} — contract</title>
+<style>
+  :root{
+    --bg:#0b0f14; --panel:#101823; --line:#22323f; --ink:#d3dde7; --dim:#8595a3; --dimmer:#4e5c6a;
+    --amber:#e6a83c; --amber-soft:#f2c169; --red:#ff453a; --red-soft:#ff6b60; --violet:#c3a8f2;
+    --steel:#45586a;
+  }
+  *{box-sizing:border-box}
+  /* TYPE: bumped a notch from the first cut — real density read cramped at 14/1.5 */
+  html,body{margin:0;background:var(--bg);color:var(--ink);
+    font:15px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif;}
+  body{
+    background:radial-gradient(120% 60% at 50% -10%, #12202c 0%, rgba(18,32,44,0) 55%), var(--bg);
+    min-height:100vh;
+  }
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+  /* ── masthead ─────────────────────────────────────────────────── */
+  header.mh{
+    position:sticky;top:0;z-index:6;display:flex;gap:14px;align-items:baseline;flex-wrap:wrap;
+    padding:10px 16px;background:linear-gradient(180deg,rgba(11,15,20,.96),rgba(11,15,20,.82));
+    border-bottom:1px solid var(--line);backdrop-filter:blur(6px);
+  }
+  .mh .root{font:600 15.5px ui-monospace,monospace;letter-spacing:.02em}
+  .mh .intent{color:var(--dim);font-size:13px;max-width:52ch;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .mh .rv-chip{color:var(--violet);font:600 12px ui-monospace,monospace;border:1px solid #4a3a68;border-radius:6px;padding:1px 8px;background:rgba(195,168,242,.07)}
+  .mh .outside-chip{color:var(--amber-soft);font:600 12px ui-monospace,monospace;border:1px solid #5a4a24;border-radius:6px;padding:1px 8px;background:rgba(230,168,60,.06);cursor:help}
+  .mh .facts{margin-left:auto;display:flex;gap:16px;align-items:baseline;font:12px ui-monospace,monospace;color:var(--dim);flex-wrap:wrap}
+  .mh .facts b{color:var(--ink);font-weight:600}
+  .mh .facts .k{color:var(--dimmer);text-transform:uppercase;letter-spacing:.08em;font-size:9.5px;margin-right:5px}
+  /* ── stage: TWO LAYOUT TRACKS — instrument + ledger. The ledger is NOT an overlay: it
+        owns its own grid track (auto: the panel's width when present, nothing when
+        absent) and is sticky WITHIN that track, so row content can never run beneath
+        the panel at any viewport width. ── */
+  #stage{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:20px;align-items:start;
+    padding:20px 16px 60px;max-width:1360px;margin:0 auto}
+  /* below the two-track threshold the ledger stops sharing the width: one column, the
+     panel in flow after the instrument — content can never slide beneath it */
+  @media (max-width:1100px){
+    #stage{grid-template-columns:minmax(0,1fr)}
+    #ledger{position:static;width:auto;max-height:none}
+  }
+  /* the arc gutter is an SVG OVERLAY on the instrument's own left padding — the rows never
+     enter it, the arcs never leave it */
+  #instrument{min-width:0;position:relative;padding-left:78px}
+  svg#arcs{position:absolute;left:0;top:0;width:78px;height:100%;overflow:visible}
+  /* ── zone bands ───────────────────────────────────────────────── */
+  .band{margin-bottom:16px}
+  .band.nested{margin-left:20px;background:rgba(120,150,180,.028);border-radius:8px;padding:2px 8px 6px}
+  .band-hd{display:flex;gap:10px;align-items:baseline;padding:6px 4px 6px 10px;border-left:3px solid #2a3b49}
+  .band-name{font:600 12px ui-monospace,monospace;letter-spacing:.05em;color:var(--ink)}
+  .band-name.undeclared{color:var(--amber-soft)}
+  .band-intent{color:var(--dim);font-size:12px}
+  /* ── component rows: LANES BY CONSTRUCTION — real grid tracks, so the gates lane can
+        never intrude into the exposure lane (the layout engine owns the boundary). The
+        track MINIMUMS sum well under the narrowest instrument column the two-track stage
+        can produce (≥1100px viewport ⇒ ~600px of row width), because minimums that
+        exceed the column make the last track overflow the row — the occlusion class in
+        another costume. Below 1100px the ledger leaves the side track entirely (media
+        query at the stage), so the row never has less than that. ── */
+  .crow{display:grid;grid-template-columns:minmax(120px,1.1fr) minmax(140px,1.05fr) minmax(150px,.95fr) minmax(80px,140px);
+    gap:2px 16px;align-items:center;padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.045);
+    border-radius:6px;cursor:pointer}
+  .crow:hover{background:rgba(255,255,255,.02)}
+  .crow.active .row-name,.crow.related .row-name,.crow.selected .row-name{color:var(--amber-soft)}
+  .crow.receded{opacity:.3}                      /* untouched rows recede on selection */
+  .c-name{min-width:0}
+  .row-name{font:600 13.5px ui-monospace,monospace;color:var(--ink);display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .c-gates{display:flex;gap:6px;align-items:center;overflow:hidden;min-width:0}
+  .c-exposure{display:flex;gap:10px;flex-wrap:wrap;min-width:0}
+  .c-mass{min-width:0}
+  /* ── the gate vocabulary: summary capsule · exception chips · overflow badge ── */
+  .gsum{display:inline-block;font:600 11px ui-monospace,monospace;border:1px solid;border-radius:6px;
+    padding:1.5px 8px;white-space:nowrap;cursor:help}
+  .gnote{color:var(--dimmer);font-size:11px;white-space:nowrap}
+  .gchip{display:inline-flex;gap:4px;align-items:center;border:1px solid;border-radius:6px;
+    padding:1.5px 7px;font:700 12px ui-monospace,monospace;white-space:nowrap;cursor:help}
+  .gchip .guard{font-size:10px;color:var(--amber);font-weight:400}
+  .gchip .chip-delta{font:600 9.5px ui-monospace,monospace;color:var(--red-soft)}
+  .gate-badge{font:600 10.5px ui-monospace,monospace;color:var(--dim);border:1px solid var(--dimmer);border-radius:6px;padding:0 6px;white-space:nowrap}
+  /* ONE ordinal grade family — shared by capsules and chips (colour rides the element) */
+  .grade-A{color:#7a9a8c;border-color:#2c3a34;background:rgba(120,150,140,.05)}
+  .grade-B{color:#8fb0d6;border-color:#33475a;background:rgba(96,132,172,.09)}
+  .grade-C{color:var(--amber);border-color:#5a4a24;background:rgba(230,168,60,.11)}
+  .grade-D{color:#f2894c;border-color:#7a3a22;background:rgba(224,96,44,.16)}
+  .grade-U{color:var(--violet);border-color:#4a3a68;background:rgba(195,168,242,.11)}
+  .gchip.unplaced{border-style:dashed}           /* UNPLACED — no declared wall */
+  .gchip.breach{color:var(--red-soft);border-color:#7a2420;background:rgba(255,69,58,.15)}
+  @keyframes breachpulse{0%,100%{opacity:.55}50%{opacity:1}}
+  .gchip.breach{animation:breachpulse 1.7s ease-in-out infinite}
+  @media (prefers-reduced-motion: reduce){ .gchip.breach{animation:none;opacity:1} }
+  .gchip.sel,.gsum.sel{outline:1.6px solid var(--amber-soft)}
+  /* exposure ink — ABSENCE is foreground; nothing at all when the row is clean.
+     A long mark WRAPS INSIDE ITS OWN LANE — never nowrap: a nowrap span overflows its
+     grid track and runs across the mass strip and under the ledger (the collision class
+     the user flagged). The row's height is driven by its tallest cell (normal grid auto
+     flow; no lane is absolutely positioned), so a two-line exposure cell pushes the whole
+     row taller and every other lane stays vertically centered in the taller row. */
+  .ink{font:11px ui-monospace,monospace;overflow-wrap:anywhere}
+  .ink-unacc{color:var(--amber)} .ink-naked{color:var(--red)} .ink-undecl{color:var(--violet)}
+  /* mass strip — accounted vs unaccounted, denominator honest (width only, no height games) */
+  .mass-frame{height:8px;border:1px solid #22323f;border-radius:2px;background:rgba(230,168,60,.10);overflow:hidden}
+  .mass-acc{height:100%;background:var(--steel)}
+  /* ── the expanded anatomy (grid-spanning detail area; display gated by .open) ── */
+  .c-detail{grid-column:1/-1;display:none;padding:8px 4px 10px 6px;border-top:1px dashed rgba(255,255,255,.07);cursor:default}
+  .crow.open .c-detail{display:block}
+  .d-intent{color:#aeb9c4;font-size:13px;line-height:1.55;margin-bottom:8px}
+  .d-h{font:600 10px system-ui;text-transform:uppercase;letter-spacing:.1em;color:var(--dimmer);margin:10px 0 5px}
+  .d-gates{display:flex;flex-wrap:wrap;gap:6px}   /* every chip, wrapped, never overlapping */
+  .rline{font:12px ui-monospace,monospace;padding:1.5px 0}
+  .rl-covered{color:var(--dim)} .rl-naked{color:var(--red-soft)} .rl-undecl{color:#8a97a4}
+  .d-mass{color:var(--dim);font:11.5px ui-monospace,monospace;margin-top:8px}
+  /* ── reliance arcs (the gutter overlay) ───────────────────────── */
+  .rarc{fill:none}
+  .rarc.covered{stroke:#3a4c5a;stroke-width:1;opacity:.55}
+  .rarc.naked{stroke:var(--red);stroke-width:1.7;opacity:.85}
+  .rarc.undeclared{stroke:#5a6874;stroke-width:1;stroke-dasharray:4 3;opacity:.55}
+  .rarc.lit{opacity:1;stroke-width:2.2}
+  .arc-anchor{fill:#3a4c5a}
+  .arc-anchor.naked{fill:var(--red)}
+  /* ── the ledger panel: GROUPED BY KIND, scannable in one screen. Sticky inside its OWN
+        grid track — never fixed, never floating over the instrument. ── */
+  #ledger{width:350px;position:sticky;top:58px;max-height:calc(100vh - 78px);overflow:auto;
+    border:1px solid var(--line);border-radius:12px;background:linear-gradient(180deg,#121b26,#0d141d)}
+  #ledger h2{margin:0;padding:12px 14px;font:600 11px system-ui;text-transform:uppercase;letter-spacing:.1em;color:var(--dim);border-bottom:1px solid var(--line)}
+  #ledger ol{list-style:none;margin:0;padding:6px}
+  .lgroup{margin-bottom:4px;border-radius:9px}
+  .lgroup.alarm{background:rgba(255,69,58,.03)}
+  .lg-hd{display:flex;align-items:center;gap:8px;padding:7px 10px;cursor:pointer;border-radius:8px}
+  .lg-hd:hover{background:rgba(255,255,255,.025)}
+  .lg-count{font:600 11.5px ui-monospace,monospace;color:var(--dim)}
+  .lg-body{list-style:none;margin:0;padding:0 4px 4px 12px;display:none}
+  .lgroup.open .lg-body{display:block}
+  .kind{display:inline-block;font:600 9.5px system-ui;text-transform:uppercase;letter-spacing:.06em;padding:1px 7px;border-radius:5px;border:1px solid}
+  /* the closed KIND vocabulary — GOOD NEWS in the green register (placed a teal-leaning
+     green: "a wall was finally declared" reads as good news yet stays distinct), calm
+     blues/violet next, the ALARM family warm/red. An unknown kind falls back to the
+     neutral chip — a badge always prints, never a blank. */
+  .kind-covered{color:#5fbf7a;border-color:#2e5c3e} .kind-sealed{color:#5fbf7a;border-color:#2e5c3e}
+  .kind-placed{color:#54c9b0;border-color:#255a4f}
+  .kind-promoted{color:#8fb0d6;border-color:#33475a} .kind-arrived{color:#8fb0d6;border-color:#33475a}
+  .kind-rezoned{color:var(--violet);border-color:#4a3a68}
+  .kind-demoted{color:var(--red-soft);border-color:#7a2420} .kind-naked{color:var(--red-soft);border-color:#7a2420}
+  .kind-withdrawn{color:var(--amber-soft);border-color:#5a4a24} .kind-razed{color:var(--red-soft);border-color:#7a2420}
+  .kind-unknown{color:var(--dim);border-color:var(--dimmer)}
+  .levent{padding:8px 10px;border-radius:9px;border:1px solid transparent;cursor:pointer;margin-bottom:3px}
+  .levent:hover{border-color:var(--line);background:rgba(255,255,255,.02)}
+  .levent.on{border-color:var(--amber-soft);background:rgba(242,193,105,.06)}
+  .levent .cinv{font:600 12px ui-monospace,monospace;color:var(--ink)}
+  .levent .delta{font:11.5px ui-monospace,monospace;color:var(--dim);margin-left:6px}
+  .levent .delta .arw{color:var(--dimmer)}
+  .levent .detail{display:block;color:var(--dim);font-size:12px;margin-top:3px;line-height:1.5}
+  .levent .blast{display:block;color:var(--red-soft);font:11.5px ui-monospace,monospace;margin-top:3px}
+  footer{color:var(--dimmer);font:11px ui-monospace,monospace;padding:0 16px 20px;text-align:right;max-width:1360px;margin:0 auto}
+</style></head>
+<body>
+  <header class="mh">
+    <span class="root">${esc(model.root)}</span>
+    <span class="intent">${esc(model.intent)}</span>
+    ${reviewMast}${outsideMast}
+    <span class="facts">
+      <span class="fact"><span class="k">head</span><b>${head}</b></span>
+      <span class="fact"><span class="k">zones</span><b>${model.zones.length}</b></span>
+      <span class="fact"><span class="k">components</span><b>${model.components.length}</b></span>
+    </span>
+  </header>
+  <main id="stage">
+    <section id="instrument" aria-label="promise anatomy of ${esc(model.root)}">
+      <svg id="arcs" aria-hidden="true"></svg>
+      <div id="bands"></div>
+    </section>
+    ${ledgerAside}
+  </main>
+  <footer>Generated at <span id="stamp">${esc(stamp)}</span> — do not edit; run the harness.</footer>
+
+<script id="contract-data" type="application/json">${embed(model)}</script>
+<script>
+(function(){
+  "use strict";
+  // The SVG namespace, assembled so the literal external-URL substring never appears in the
+  // document (the artifact must contain zero http(s):// — pinned by the tests).
+  var NS = "http" + "://www.w3.org/2000/svg";
+  var M = JSON.parse(document.getElementById("contract-data").textContent);
+  var REVIEW = M.review || null;                 // non-null → this is a REVIEW anatomy
+  var instrument = document.getElementById("instrument");
+  var bandsHost = document.getElementById("bands");
+  var svg = document.getElementById("arcs");
+
+  // ── tiny helpers ───────────────────────────────────────────────
+  function el(tag, at){ var e=document.createElementNS(NS, tag), k; if(at) for(k in at){ if(at[k]!=null) e.setAttribute(k, at[k]); } return e; }
+  function hel(tag, cls){ var e=document.createElement(tag); if(cls) e.className=cls; return e; }
+  function txt(e, s){ e.appendChild(document.createTextNode(String(s))); return e; }
+  function cl(t, sel){ return t && t.closest ? t.closest(sel) : null; }
+  function age(iso){
+    if(!iso) return "never";
+    var s=Math.max(0,(Date.now()-new Date(iso).getTime())/1000);
+    if(s<90) return Math.round(s)+"s"; if(s<5400) return Math.round(s/60)+"m";
+    if(s<172800) return Math.round(s/3600)+"h"; return Math.round(s/86400)+"d";
+  }
+  var GRADES="ABCDU";
+  function rank(g){ var r=GRADES.indexOf(g); return r<0?GRADES.length:r; }  // A best … U worst-ranked
+
+  // ── zone tree in DECLARED order (declared order == trust order) ────────────────────────
+  var zones = M.zones || [], zByName = {};
+  for(var zi=0; zi<zones.length; zi++) zByName[zones[zi].name] = zones[zi];
+  var kidz = {}, roots = [];
+  for(var zj=0; zj<zones.length; zj++){
+    var z = zones[zj];
+    if(z.inside != null && zByName[z.inside]) (kidz[z.inside] = kidz[z.inside] || []).push(z);
+    else roots.push(z);                           // a root zone (or one whose parent is absent)
+  }
+  var zoneOrder = [];
+  function dfs(z, d){ zoneOrder.push({ z:z, depth:d }); var ch=kidz[z.name]||[]; for(var i=0;i<ch.length;i++) dfs(ch[i], d+1); }
+  for(var zr=0; zr<roots.length; zr++) dfs(roots[zr], 0);
+
+  var inZone = {}, undeclared = [], byDir = {};
+  for(var ci=0; ci<M.components.length; ci++){
+    var c0 = M.components[ci]; byDir[c0.dir] = c0;
+    if(c0.zone != null && zByName[c0.zone]) (inZone[c0.zone] = inZone[c0.zone] || []).push(c0);
+    else undeclared.push(c0);
+  }
+
+  // review events indexed by component, for inline chip deltas (a demoted gate wears A→C)
+  var evByComp = {};
+  if(REVIEW) for(var ei=0; ei<REVIEW.events.length; ei++){ var ev0=REVIEW.events[ei]; (evByComp[ev0.comp]=evByComp[ev0.comp]||[]).push(ev0); }
+  function demotedDelta(dir, inv){
+    var es = evByComp[dir]; if(!es) return null;
+    for(var i=0;i<es.length;i++){ if(es[i].kind==="demoted" && es[i].inv===inv) return (es[i].from||"?")+"\\u2192"+(es[i].to||"?"); }
+    return null;
+  }
+
+  // ── state ──────────────────────────────────────────────────────
+  var ROWEL = {}, SLOT = {}, CHIPS = {}, ROWS = [], ENTRIES = [];
+  var EXPANDED = {}, HOVER = null, SELECTED = null;
+  var slotY = 8;                                  // fallback anchor cursor (no-layout path)
+
+  // ── gate aggregation: the row's ONE-capsule summary + its exceptions ──────────────────
+  // Histogram over grades; MODAL = the most common grade, ties broken toward the BETTER
+  // grade so the worse half of a tie itemizes as exceptions (exposure never hides in a
+  // tie). EXCEPTIONS = every breach (verdict fail — always itemized) plus every gate whose
+  // grade is WORSE than modal. Everything else is one aggregate datum: 16 identical U
+  // chips carry one bit and read as an alarm flood — the flood collapses to "16 · U".
+  function gateAgg(gates){
+    var counts = {}, i;
+    for(i=0;i<gates.length;i++) counts[gates[i].grade] = (counts[gates[i].grade]||0)+1;
+    var distinct = [], g;
+    for(g in counts){ if(counts.hasOwnProperty(g)) distinct.push(g); }
+    distinct.sort(function(a,b){ return (counts[b]-counts[a]) || (rank(a)-rank(b)); });
+    var modal = distinct.length ? distinct[0] : null;
+    var uniform = distinct.length===1, text;
+    if(uniform) text = gates.length + " \\u00b7 " + modal;
+    else { var parts=[]; for(i=0;i<distinct.length;i++) parts.push(counts[distinct[i]]+distinct[i]); text = parts.join(" "); }
+    var exceptions = [];
+    for(i=0;i<gates.length;i++){
+      var gt = gates[i];
+      if(gt.verdict==="fail" || rank(gt.grade) > rank(modal)) exceptions.push(gt);
+    }
+    exceptions.sort(function(a,b){
+      var af=a.verdict==="fail"?0:1, bf=b.verdict==="fail"?0:1;      // breaches itemize first
+      return (af-bf) || (rank(b.grade)-rank(a.grade));               // then worst grade first
+    });
+    return { text:text, modal:modal, uniform:uniform, exceptions:exceptions };
+  }
+  // a uniform row earns one plain-language note — the state sentence's verb
+  function gateNote(agg){
+    if(!agg.uniform) return null;
+    if(agg.modal==="U") return "never assessed";
+    if(agg.modal==="D") return "never verified";
+    return null;
+  }
+
+  function chipTip(gt){
+    return gt.inv + " \\u2192 " + gt.chokepoint + " \\u2192 " + (gt.oracle || "no oracle") +
+      " \\u2192 " + gt.verdict + (gt.freshest ? " (" + age(gt.freshest) + ")" : "") +
+      " \\u2192 " + (gt.crossing ? gt.crossing.from + "\\u2192" + gt.crossing.to : "UNPLACED") +
+      ((gt.reliants && gt.reliants.length) ? " \\u2192 held by " + gt.reliants.join(", ") : " \\u2192 held by none");
+  }
+
+  // one gate chip — the shared vocabulary for collapsed exceptions AND the expanded roster
+  function makeChip(dir, gt){
+    var breach = gt.verdict==="fail", unplaced = !gt.crossing, guard = gt.verb==="guard";
+    var chip = hel("span", "gchip grade-"+gt.grade+(breach?" breach":"")+(unplaced?" unplaced":""));
+    chip.setAttribute("data-dir", dir); chip.setAttribute("data-inv", gt.inv);
+    chip.setAttribute("title", chipTip(gt));
+    var gl = hel("span","grade"); txt(gl, gt.grade); chip.appendChild(gl);
+    if(guard){ var fl = hel("span","guard"); txt(fl, "\\u2691"); chip.appendChild(fl); }
+    var delta = REVIEW ? demotedDelta(dir, gt.inv) : null;
+    if(delta){ var dl = hel("span","chip-delta"); txt(dl, delta); chip.appendChild(dl); }
+    (CHIPS[dir] = CHIPS[dir] || []).push(chip);
+    return chip;
+  }
+
+  // exposure marks for a row — small foreground ink; EMPTY when the row is clean.
+  // The same-fact arc flood (crossing-null reliances) collapses to ONE line here.
+  function exposure(c){
+    var out = [], lines = c.mass.lines, unacc = lines - c.accounted.lines;
+    if(lines>0 && unacc>0) out.push({ text: Math.round(unacc/lines*100) + "% unaccounted", cls:"ink-unacc" });
+    var naked = 0, undecl = 0, relies = c.relies || [];
+    for(var i=0;i<relies.length;i++){
+      if(relies[i].crossing == null) undecl++;
+      else if(relies[i].via == null) naked++;
+    }
+    if(naked>0) out.push({ text: naked + " naked relian" + (naked===1?"ce":"ces"), cls:"ink-naked" });
+    if(undecl>0) out.push({ text: undecl + " relian" + (undecl===1?"ce":"ces") + " unassessable \\u2014 residence undeclared", cls:"ink-undecl" });
+    else if(c.zone == null) out.push({ text:"residence undeclared", cls:"ink-undecl" });
+    return out;
+  }
+
+  // ── one COLLAPSED row (the default): name · capsule+exceptions · ink · mass ───────────
+  function buildRow(c){
+    var row = hel("div","crow"); row.setAttribute("data-dir", c.dir);
+    ROWEL[c.dir] = row; ROWS.push(row);
+    SLOT[c.dir] = slotY + 20; slotY += 41;         // fallback arc anchor (layout-free path)
+
+    var cName = hel("div","c-name");
+    var nm = hel("span","row-name"); txt(nm, c.label || c.dir); cName.appendChild(nm);
+    row.appendChild(cName);
+
+    // GATES LANE — bounded by construction: one capsule, exception chips shed width-aware
+    // into a "+N" badge (hard cap 4), inside a grid track the next lane can never share.
+    var cGates = hel("div","c-gates");
+    var gates = c.gates || [];
+    var pct = c.mass.lines>0 ? Math.min(100, Math.round(c.accounted.lines/c.mass.lines*100)) : 0;
+    if(gates.length){
+      var agg = gateAgg(gates);
+      var sum = hel("span","gsum grade-"+agg.modal);
+      txt(sum, agg.text);
+      var breachN = 0; for(var bi=0;bi<gates.length;bi++) if(gates[bi].verdict==="fail") breachN++;
+      sum.setAttribute("title", gates.length+" gate"+(gates.length===1?"":"s")+" \\u2014 "+agg.text+(breachN?(" \\u00b7 "+breachN+" breached"):""));
+      cGates.appendChild(sum);
+      (CHIPS[c.dir] = CHIPS[c.dir] || []).push(sum);
+      var note = gateNote(agg);
+      if(note){ var nt = hel("span","gnote"); txt(nt, "\\u2014 "+note); cGates.appendChild(nt); }
+      // width-aware shed: capsule + note + chips + a reserve for the +N badge must fit the
+      // lane's minimum track (210px minus padding); beyond that, exceptions fold into +N
+      var budget = 200 - (agg.text.length*6.5 + 18) - (note ? note.length*5.5 : 0);
+      var used = 0, shown = 0, hidden = 0;
+      for(var xi=0; xi<agg.exceptions.length; xi++){
+        var gt = agg.exceptions[xi];
+        var w = 30 + (gt.verb==="guard"?9:0);
+        if(shown < 4 && used + w + 34 <= budget){ cGates.appendChild(makeChip(c.dir, gt)); used += w; shown++; }
+        else hidden++;
+      }
+      if(hidden){ var badge = hel("span","gate-badge"); txt(badge, "+"+hidden); badge.setAttribute("title", hidden+" more exception gate"+(hidden===1?"":"s")+" \\u2014 expand the row"); cGates.appendChild(badge); }
+    }
+    row.appendChild(cGates);
+
+    // EXPOSURE LANE — its own grid track, guaranteed; empty when clean (steady state quiet)
+    var cExp = hel("div","c-exposure");
+    var marks = exposure(c);
+    for(var mi=0; mi<marks.length; mi++){ var ink = hel("span","ink "+marks[mi].cls); txt(ink, marks[mi].text); cExp.appendChild(ink); }
+    row.appendChild(cExp);
+
+    // MASS LANE — accounted share as width (denominator honest); dashed-amber remainder
+    var cMass = hel("div","c-mass");
+    var frame = hel("div","mass-frame");
+    var acc = hel("div","mass-acc"); acc.style.width = pct+"%"; frame.appendChild(acc);
+    frame.setAttribute("title", c.accounted.lines+" / "+c.mass.lines+" lines accounted");
+    cMass.appendChild(frame);
+    row.appendChild(cMass);
+
+    // THE EXPANDED ANATOMY — everything the collapse aggregated away, on demand
+    var det = hel("div","c-detail");
+    var di = hel("div","d-intent"); txt(di, c.intent || "\\u2014 no intent authored (itself a visible gap)"); det.appendChild(di);
+    var gh = hel("div","d-h"); txt(gh, "gates"); det.appendChild(gh);
+    var dg = hel("div","d-gates");
+    if(gates.length){ for(var gi2=0; gi2<gates.length; gi2++) dg.appendChild(makeChip(c.dir, gates[gi2])); }
+    else { var none = hel("span","gnote"); txt(none, "no gates declared"); dg.appendChild(none); }
+    det.appendChild(dg);
+    var relies = c.relies || [];
+    if(relies.length){
+      var rh = hel("div","d-h"); txt(rh, "relies on"); det.appendChild(rh);
+      for(var ri2=0; ri2<relies.length; ri2++){
+        var r = relies[ri2], tgt = byDir[r.to], tlab = tgt ? (tgt.label||r.to) : r.to;
+        var kind, line;
+        if(r.crossing == null){ kind="rl-undecl"; line = "\\u2192 "+tlab+" \\u2014 unassessable (residence undeclared)"; }
+        else if(r.via == null){ kind="rl-naked"; line = "\\u2192 "+tlab+" \\u2014 NAKED (no gate on the "+r.crossing.from+"\\u2192"+r.crossing.to+" wall)"; }
+        else { kind="rl-covered"; line = "\\u2192 "+tlab+" \\u2014 covered via "+r.via; }
+        var rl = hel("div","rline "+kind); txt(rl, line); det.appendChild(rl);
+      }
+    }
+    var dm = hel("div","d-mass");
+    txt(dm, c.accounted.lines+" / "+c.mass.lines+" lines accounted ("+pct+"%) \\u00b7 "+c.accounted.files+" / "+c.mass.files+" files");
+    det.appendChild(dm);
+    row.appendChild(det);
+    return row;
+  }
+
+  // ── bands: declared order top-to-bottom; nesting drawn; the exposure band last ────────
+  function buildBand(name, intent, depth, comps, undecl){
+    var sec = hel("section","band"+(depth>0?" nested":""));
+    sec.setAttribute("data-zone", name);
+    if(depth>1) sec.style.marginLeft = (depth*20)+"px";     // deeper nesting indents further
+    var hd = hel("div","band-hd");
+    var bn = hel("span","band-name"+(undecl?" undeclared":"")); txt(bn, name); hd.appendChild(bn);
+    if(intent){ var bi2 = hel("span","band-intent"); txt(bi2, intent); hd.appendChild(bi2); }
+    sec.appendChild(hd);
+    slotY += 36;
+    for(var i=0;i<comps.length;i++) sec.appendChild(buildRow(comps[i]));
+    slotY += 14;
+    bandsHost.appendChild(sec);
+  }
+  for(var bi3=0; bi3<zoneOrder.length; bi3++){
+    var zo = zoneOrder[bi3];
+    buildBand(zo.z.name, zo.z.intent, zo.depth, inZone[zo.z.name] || [], false);
+  }
+  if(undeclared.length) buildBand("undeclared residence", "components with no declared zone \\u2014 exposure, made foreground", 0, undeclared, true);
+
+  // ── ARCS: EXCEPTION + DEMAND ───────────────────────────────────────────────────────────
+  // Default draws ONLY naked arcs (they are findings). Covered and crossing-null arcs draw
+  // only while a row that touches them is ACTIVE (hovered, expanded, or selected). Anchors
+  // come from live layout when a layout engine exists (so expanded rows stay connected),
+  // else from the deterministic slot cursor — either way the arc joins the same two rows.
+  var GX = 76;
+  function relCls(r){ return r.crossing==null ? "undeclared" : (r.via==null ? "naked" : "covered"); }
+  function anchorY(dir){
+    var e = ROWEL[dir];
+    if(e && e.getBoundingClientRect && svg.getBoundingClientRect){
+      try{
+        var a = e.getBoundingClientRect(), b = svg.getBoundingClientRect();
+        if(a && b && (a.height || a.top)) return (a.top - b.top) + Math.min(a.height, 41)/2;
+      }catch(_e){}
+    }
+    return SLOT[dir];
+  }
+  function isActive(dir){ return dir===HOVER || dir===SELECTED || !!EXPANDED[dir]; }
+  var ARCS = [];
+  function redrawArcs(){
+    while(svg.firstChild) svg.removeChild(svg.firstChild);
+    ARCS = [];
+    var H = Math.max(slotY+20, 120);
+    svg.setAttribute("viewBox", "0 0 "+GX+" "+H);
+    for(var i=0;i<M.components.length;i++){
+      var c = M.components[i], relies = c.relies || [];
+      for(var j=0;j<relies.length;j++){
+        var r = relies[j];
+        if(ROWEL[r.to]==null || c.dir===r.to) continue;      // arcs join two real rows
+        var cls = relCls(r);
+        if(cls!=="naked" && !isActive(c.dir) && !isActive(r.to)) continue;   // demand only
+        var y1 = anchorY(c.dir), y2 = anchorY(r.to);
+        var bulge = 14 + Math.min(48, Math.abs(y1-y2)*0.3), cx = GX - bulge;
+        var lit = (c.dir===HOVER||r.to===HOVER||c.dir===SELECTED||r.to===SELECTED);
+        var a = el("path", { "class":"rarc "+cls+(lit?" lit":""),
+          d:"M "+GX+" "+y1.toFixed(1)+" C "+cx.toFixed(1)+" "+y1.toFixed(1)+" "+cx.toFixed(1)+" "+y2.toFixed(1)+" "+GX+" "+y2.toFixed(1),
+          "data-from":c.dir, "data-to":r.to });
+        svg.appendChild(a);
+        svg.appendChild(el("circle", { "class":"arc-anchor"+(cls==="naked"?" naked":""), cx:GX, cy:y1.toFixed(1), r:2 }));
+        ARCS.push({ from:c.dir, to:r.to, cls:cls, el:a });
+      }
+    }
+  }
+
+  // ── THE LEDGER, GROUPED BY KIND (review only) ──────────────────────────────────────────
+  var ledgerList = REVIEW ? document.getElementById("ledger-list") : null;
+  if(REVIEW && ledgerList){
+    var ALARM = { demoted:1, naked:1, withdrawn:1, razed:1 };
+    var KNOWN = { covered:1, placed:1, withdrawn:1, promoted:1, demoted:1, naked:1, sealed:1, arrived:1, razed:1, rezoned:1 };
+    // group by kind, first-occurrence order — the model is already severity-ordered, so
+    // the alarm groups arrive first without re-sorting; each group is one header line
+    // (KIND badge + count) over its entries.
+    var groups = {}, order = [];
+    for(var li=0; li<REVIEW.events.length; li++){
+      var e = REVIEW.events[li];
+      var kind = (typeof e.kind === "string" && e.kind) ? e.kind : "event";
+      if(!groups[kind]){ groups[kind] = []; order.push(kind); }
+      groups[kind].push(e);
+    }
+    for(var oi=0; oi<order.length; oi++){
+      var kind2 = order[oi], evs = groups[kind2];
+      var known = !!KNOWN[kind2], alarm = !!ALARM[kind2];
+      // alarms EXPANDED by default; good news COLLAPSED to its count; an unknown kind is
+      // defensively expanded (what we cannot classify must not also be hidden)
+      var open = alarm || !known;
+      var grp = hel("li","lgroup"+(alarm?" alarm":"")+(open?" open":""));
+      grp.setAttribute("data-kind", kind2);
+      var hd = hel("div","lg-hd");
+      var badge = hel("span","kind kind-"+(known?kind2:"unknown")); txt(badge, kind2); hd.appendChild(badge);
+      var cnt = hel("span","lg-count"); txt(cnt, evs.length); hd.appendChild(cnt);
+      grp.appendChild(hd);
+      var body = hel("ol","lg-body");
+      for(var vi=0; vi<evs.length; vi++){
+        var e2 = evs[vi];
+        var item = hel("li","levent"+(alarm?" alarm":""));
+        item.setAttribute("data-comp", e2.comp);
+        if(e2.inv) item.setAttribute("data-inv", e2.inv);
+        var cinv = hel("span","cinv"); txt(cinv, e2.comp + (e2.inv ? ": " + e2.inv : "")); item.appendChild(cinv);
+        if(e2.from != null || e2.to != null){
+          var dl = hel("span","delta");
+          txt(dl, e2.from!=null?e2.from:"?");
+          var arw = hel("span","arw"); txt(arw, " \\u2192 "); dl.appendChild(arw);
+          txt(dl, e2.to!=null?e2.to:"?");
+          item.appendChild(dl);
+        }
+        var det = hel("span","detail"); txt(det, e2.detail); item.appendChild(det);
+        if(e2.blast && e2.blast.length){ var bl = hel("span","blast"); txt(bl, "\\u2192 held by: " + e2.blast.join(", ")); item.appendChild(bl); }
+        ENTRIES.push(item);
+        body.appendChild(item);
+      }
+      grp.appendChild(body);
+      ledgerList.appendChild(grp);
+    }
+    // delegation: a header click toggles its group; an entry click selects its component
+    ledgerList.addEventListener("click", function(ev2){
+      var hd2 = cl(ev2.target, ".lg-hd");
+      if(hd2){
+        var grp2 = cl(hd2, ".lgroup");
+        if(grp2){ if(grp2.classList.contains("open")) grp2.classList.remove("open"); else grp2.classList.add("open"); }
+        return;
+      }
+      var it = cl(ev2.target, ".levent"); if(!it) return;
+      for(var i=0;i<ENTRIES.length;i++) ENTRIES[i].classList.remove("on");
+      it.classList.add("on");
+      selectComp(it.getAttribute("data-comp"));
+    });
+  }
+
+  // ── selection / hover / expand (event delegation; no per-node listeners) ───────────────
+  function clearRowMarks(){
+    for(var i=0;i<ROWS.length;i++){ ROWS[i].classList.remove("active"); ROWS[i].classList.remove("related"); }
+  }
+  function setHover(dir){
+    if(dir===HOVER) return;
+    clearRowMarks();
+    HOVER = (dir && ROWEL[dir]) ? dir : null;
+    if(HOVER) ROWEL[HOVER].classList.add("active");
+    redrawArcs();
+    if(HOVER){
+      for(var i=0;i<ARCS.length;i++){
+        if(ARCS[i].from!==HOVER && ARCS[i].to!==HOVER) continue;
+        var other = ARCS[i].from===HOVER ? ARCS[i].to : ARCS[i].from;    // both directions
+        if(ROWEL[other]) ROWEL[other].classList.add("related");
+      }
+    }
+  }
+  function clearSelect(){
+    if(SELECTED==null) return;
+    for(var i=0;i<ROWS.length;i++){ ROWS[i].classList.remove("selected"); ROWS[i].classList.remove("receded"); }
+    var chips = CHIPS[SELECTED]||[]; for(var c=0;c<chips.length;c++) chips[c].classList.remove("sel");
+    for(var n=0;n<ENTRIES.length;n++) ENTRIES[n].classList.remove("on");
+    SELECTED = null;
+  }
+  function selectComp(dir){
+    clearSelect();
+    if(!dir || !ROWEL[dir]){ redrawArcs(); return; }
+    SELECTED = dir;
+    for(var i=0;i<ROWS.length;i++){ if(ROWS[i]!==ROWEL[dir]) ROWS[i].classList.add("receded"); }
+    ROWEL[dir].classList.add("selected");
+    var chips = CHIPS[dir]||[]; for(var c=0;c<chips.length;c++) chips[c].classList.add("sel");
+    redrawArcs();
+  }
+  function toggleRow(dir){
+    if(!ROWEL[dir]) return;
+    if(EXPANDED[dir]){ delete EXPANDED[dir]; ROWEL[dir].classList.remove("open"); }
+    else { EXPANDED[dir]=1; ROWEL[dir].classList.add("open"); }
+    redrawArcs();
+  }
+
+  instrument.addEventListener("click", function(e){
+    if(cl(e.target, ".c-detail")) return;          // touching the anatomy never collapses it
+    var row = cl(e.target, ".crow"); if(!row) return;
+    toggleRow(row.getAttribute("data-dir"));
+  });
+  instrument.addEventListener("mousemove", function(e){
+    var row = cl(e.target, ".crow");
+    setHover(row ? row.getAttribute("data-dir") : null);
+  });
+  instrument.addEventListener("mouseleave", function(){ setHover(null); });
+
+  // ESCAPE: collapse every expanded row, drop the selection, quiet the arcs — back to the
+  // balance-sheet steady state in one keystroke.
+  document.addEventListener("keydown", function(e){
+    if(e.key!=="Escape") return;
+    clearSelect();
+    for(var d in EXPANDED){ if(EXPANDED.hasOwnProperty(d) && ROWEL[d]) ROWEL[d].classList.remove("open"); }
+    EXPANDED = {};
+    setHover(null);
+    redrawArcs();
+  });
+
+  redrawArcs();
+})();
+</script>
+</body></html>
+`;
+};

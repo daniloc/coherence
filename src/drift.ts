@@ -19,17 +19,18 @@
 import { spawnSync } from "node:child_process";
 import type { Config, Graph } from "./types.ts";
 import { BULK, componentMap, readCommitLog } from "./decompose.ts";
+import { recordDrift } from "./status.ts";
 
 const HIST = 400;   // recent commits to read — direction, not all-time archaeology
 const WINDOWS = 8;  // trajectory buckets, oldest → newest
 const RECENT = 12;  // gestures listed
 const SPARK = "▁▂▃▄▅▆▇█";
 
-function spark(vals: number[], lo: number, hi: number): string {
+export function spark(vals: number[], lo: number, hi: number): string {
   if (hi <= lo) return SPARK[0].repeat(vals.length);
   return vals.map((v) => SPARK[Math.max(0, Math.min(SPARK.length - 1, Math.round(((v - lo) / (hi - lo)) * (SPARK.length - 1))))]).join("");
 }
-const arrow = (first: number, last: number, eps: number): string => last > first + eps ? "▲" : last < first - eps ? "▼" : "▬";
+export const arrow = (first: number, last: number, eps: number): string => last > first + eps ? "▲" : last < first - eps ? "▼" : "▬";
 
 interface Window { locality: number; spread: number }
 type Kind = "converge" | "couple" | "smear" | "prune";
@@ -114,8 +115,16 @@ function analyze(cfg: Config, graph: Graph) {
 
 export async function drift(cfg: Config, graph: Graph): Promise<number> {
   const a = analyze(cfg, graph);
+  // Best-effort trajectory record for the status file (the panel's drift strip).
+  const record = (verdict: string) => recordDrift(cfg, {
+    devCommits: a.devCommits,
+    locality: a.windows.map((w) => w.locality),
+    spread: a.windows.map((w) => w.spread),
+    seams: a.seams,
+    verdict,
+  }).catch(() => {});
   console.log(`direction — architectural trajectory (where is the agent driving?)`);
-  if (a.devCommits < 4) { console.log(`  only ${a.devCommits} mapped development commits in the last ${HIST} — not enough history to read a direction.`); return 0; }
+  if (a.devCommits < 4) { console.log(`  only ${a.devCommits} mapped development commits in the last ${HIST} — not enough history to read a direction.`); await record("insufficient history"); return 0; }
   const pruneNote = a.prunes ? ` · ${a.prunes} prune${a.prunes === 1 ? "" : "s"} excluded` : "";
   console.log(`  ${a.devCommits} development commits · ${a.windows.length} windows · oldest → newest${pruneNote}`);
   console.log("");
@@ -163,6 +172,7 @@ export async function drift(cfg: Config, graph: Graph): Promise<number> {
     : decohering ? "toward wider SPREAD, but recent gestures are mostly converge/couple — likely cross-cutting or one-off work, not a smearing trend; read the seam, not the slope"
     : "flat — no clear ordering pressure either way";
   const seamNote = a.seams.length ? ` Hot seam: ${a.seams[0][0]} — if that pair keeps co-changing, it's a candidate to collapse into one home.` : "";
+  await record(`LOCALITY ${verdictLoc}, SPREAD ${verdictSpr} — driving ${dir}`);
   console.log(`  verdict: LOCALITY ${verdictLoc}, SPREAD ${verdictSpr} over ${a.devCommits} development commits (prunes excluded) — the agent is driving ${dir}.${seamNote}`);
   console.log("");
   console.log("  (advisory — direction, not a grade; coherence sees gesture SHAPE, not intent. A");

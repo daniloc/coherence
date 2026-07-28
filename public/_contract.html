@@ -1,0 +1,436 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>coherence — contract</title>
+<style>
+  :root{
+    --bg:#0b0f14; --panel:#101823; --line:#22323f; --ink:#cdd8e3; --dim:#7f8f9d; --dimmer:#4a5866;
+    --amber:#e6a83c; --amber-soft:#f2c169; --red:#ff453a; --red-soft:#ff6b60; --violet:#c3a8f2;
+    --steel:#45586a; --gutter:#0d151e;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--ink);
+    font:14px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;}
+  body{
+    /* a quiet wash from above — the instrument reads as an object on a dark board */
+    background:radial-gradient(120% 60% at 50% -10%, #12202c 0%, rgba(18,32,44,0) 55%), var(--bg);
+    min-height:100vh;
+  }
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+  /* ── masthead ─────────────────────────────────────────────────── */
+  header.mh{
+    position:sticky;top:0;z-index:6;display:flex;gap:14px;align-items:baseline;flex-wrap:wrap;
+    padding:9px 16px;background:linear-gradient(180deg,rgba(11,15,20,.96),rgba(11,15,20,.82));
+    border-bottom:1px solid var(--line);backdrop-filter:blur(6px);
+  }
+  .mh .root{font:600 15px ui-monospace,monospace;letter-spacing:.02em}
+  .mh .intent{color:var(--dim);font-size:12.5px;max-width:52ch;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .mh .rv-chip{color:var(--violet);font:600 12px ui-monospace,monospace;border:1px solid #4a3a68;border-radius:6px;padding:1px 8px;background:rgba(195,168,242,.07)}
+  .mh .outside-chip{color:var(--amber-soft);font:600 11.5px ui-monospace,monospace;border:1px solid #5a4a24;border-radius:6px;padding:1px 8px;background:rgba(230,168,60,.06);cursor:help}
+  .mh .facts{margin-left:auto;display:flex;gap:16px;align-items:baseline;font:11.5px ui-monospace,monospace;color:var(--dim);flex-wrap:wrap}
+  .mh .facts b{color:var(--ink);font-weight:600}
+  .mh .facts .k{color:var(--dimmer);text-transform:uppercase;letter-spacing:.08em;font-size:9.5px;margin-right:5px}
+  /* ── stage: the instrument beside the ledger ──────────────────── */
+  #stage{display:flex;gap:18px;align-items:flex-start;padding:18px 16px 60px;max-width:1440px;margin:0 auto}
+  #instrument{flex:1 1 auto;min-width:0}
+  svg#anatomy{width:100%;height:auto;max-width:1010px;display:block;user-select:none}
+  /* ── the anatomy marks (styled by class; the client sets only geometry) ──────── */
+  .band-bg{fill:rgba(120,150,180,.028)}
+  .band-accent{fill:#2a3b49}
+  .band-name{fill:var(--ink);font:600 11px ui-monospace,monospace;letter-spacing:.04em}
+  .band-intent{fill:var(--dim);font:11px system-ui}
+  .band-name.undeclared{fill:var(--amber-soft)}       /* the exposure band names itself in amber */
+  .row-sep{stroke:rgba(255,255,255,.045);stroke-width:1}
+  .crow-hit{fill:transparent;cursor:pointer}
+  .row-name{fill:var(--ink);font:600 12.5px ui-monospace,monospace}
+  .row-intent{fill:var(--dim);font:10.5px system-ui}
+  .crow.active .row-name,.crow.related .row-name{fill:var(--amber-soft)}
+  .crow.selected .row-name{fill:var(--amber-soft)}
+  .crow.receded{opacity:.3}                            /* untouched rows recede on selection */
+  /* gate chips — ONE ordinal family; the grade letter is the loud datum */
+  .gchip{cursor:default}
+  .chip-bg{stroke-width:1}
+  .grade{font:700 12px ui-monospace,monospace}
+  .guard{font-size:10px;fill:var(--amber)}
+  .chip-delta{font:9px ui-monospace,monospace;fill:var(--red-soft)}   /* review: a demoted A→C */
+  .grade-A .chip-bg{fill:rgba(120,150,140,.05);stroke:#2c3a34}  .grade-A .grade{fill:#7a9a8c}
+  .grade-B .chip-bg{fill:rgba(96,132,172,.09);stroke:#33475a}   .grade-B .grade{fill:#8fb0d6}
+  .grade-C .chip-bg{fill:rgba(230,168,60,.11);stroke:#5a4a24}   .grade-C .grade{fill:var(--amber)}
+  .grade-D .chip-bg{fill:rgba(224,96,44,.16);stroke:#7a3a22}    .grade-D .grade{fill:#f2894c}
+  .grade-U .chip-bg{fill:rgba(195,168,242,.11);stroke:#4a3a68}  .grade-U .grade{fill:var(--violet)}
+  .gchip.unplaced .chip-bg{stroke-dasharray:3 2.4}             /* UNPLACED — no declared wall */
+  .gchip.breach .chip-bg{fill:rgba(255,69,58,.15);stroke:#7a2420}
+  .gchip.breach .grade{fill:var(--red-soft)}
+  .gchip.sel .chip-bg{stroke:var(--amber-soft);stroke-width:1.6}
+  @keyframes breachpulse{0%,100%{opacity:.55}50%{opacity:1}}
+  .gchip.breach .chip-bg{animation:breachpulse 1.7s ease-in-out infinite}
+  @media (prefers-reduced-motion: reduce){ .gchip.breach .chip-bg{animation:none;opacity:1} }
+  /* exposure ink — ABSENCE is foreground; each mark actionable, colour-keyed */
+  .ink{font:10px ui-monospace,monospace}
+  .ink-unacc{fill:var(--amber)} .ink-naked{fill:var(--red)} .ink-undecl{fill:var(--violet)}
+  /* mass strip — accounted vs unaccounted, denominator honest */
+  .mass-acc{fill:var(--steel)}
+  .mass-unacc{fill:rgba(230,168,60,.16);stroke:#5a4a24;stroke-width:.7;stroke-dasharray:2.4 2}
+  .mass-frame{fill:none;stroke:#22323f;stroke-width:.7}
+  /* reliance arcs — the gutter margin */
+  .rarc{fill:none}
+  .rarc.covered{stroke:#3a4c5a;stroke-width:1;opacity:.5}
+  .rarc.naked{stroke:var(--red);stroke-width:1.7;opacity:.85}
+  .rarc.undeclared{stroke:#5a6874;stroke-width:1;stroke-dasharray:4 3;opacity:.5}
+  .rarc.lit{opacity:1;stroke-width:2.2}
+  .arc-anchor{fill:#3a4c5a}
+  .arc-anchor.naked{fill:var(--red)}
+  /* ── the ledger panel ─────────────────────────────────────────── */
+  #ledger{flex:0 0 340px;position:sticky;top:56px;max-height:calc(100vh - 76px);overflow:auto;
+    border:1px solid var(--line);border-radius:12px;background:linear-gradient(180deg,#121b26,#0d141d)}
+  #ledger h2{margin:0;padding:12px 14px;font:600 10.5px system-ui;text-transform:uppercase;letter-spacing:.1em;color:var(--dim);border-bottom:1px solid var(--line)}
+  #ledger ol{list-style:none;margin:0;padding:6px}
+  .levent{padding:9px 10px;border-radius:9px;border:1px solid transparent;cursor:pointer;margin-bottom:4px}
+  .levent:hover{border-color:var(--line);background:rgba(255,255,255,.02)}
+  .levent.on{border-color:var(--amber-soft);background:rgba(242,193,105,.06)}
+  .levent .kind{display:inline-block;font:600 9px system-ui;text-transform:uppercase;letter-spacing:.06em;padding:1px 6px;border-radius:5px;border:1px solid;margin-right:7px;vertical-align:middle}
+  .levent .cinv{font:600 11.5px ui-monospace,monospace;color:var(--ink)}
+  .levent .delta{font:11px ui-monospace,monospace;color:var(--dim);margin-left:6px}
+  .levent .delta .arw{color:var(--dimmer)}
+  .levent .detail{display:block;color:var(--dim);font-size:11.5px;margin-top:3px;line-height:1.45}
+  .levent .blast{display:block;color:var(--red-soft);font:11px ui-monospace,monospace;margin-top:3px}
+  /* the closed KIND vocabulary — each a fixed chip; alarms in the warm/red register */
+  .kind-covered{color:#5fbf7a;border-color:#2e5c3e} .kind-sealed{color:#5fbf7a;border-color:#2e5c3e}
+  .kind-promoted{color:#8fb0d6;border-color:#33475a} .kind-arrived{color:#8fb0d6;border-color:#33475a}
+  .kind-rezoned{color:var(--violet);border-color:#4a3a68}
+  .kind-demoted{color:var(--red-soft);border-color:#7a2420} .kind-naked{color:var(--red-soft);border-color:#7a2420}
+  .kind-withdrawn{color:var(--amber-soft);border-color:#5a4a24} .kind-razed{color:var(--red-soft);border-color:#7a2420}
+  .levent.alarm{background:rgba(255,69,58,.03)}
+  /* ── tooltip + footer ─────────────────────────────────────────── */
+  #tip{position:fixed;pointer-events:none;z-index:20;max-width:320px;opacity:0;transform:translateY(3px);
+    transition:opacity .1s;padding:8px 10px;border:1px solid var(--line);border-radius:9px;
+    background:rgba(16,24,35,.98);box-shadow:0 12px 34px rgba(0,0,0,.55);font:11.5px ui-monospace,monospace;color:var(--ink)}
+  footer{color:var(--dimmer);font:10.5px ui-monospace,monospace;padding:0 16px 20px;text-align:right;max-width:1440px;margin:0 auto}
+</style></head>
+<body>
+  <header class="mh">
+    <span class="root">coherence</span>
+    <span class="intent"></span>
+    <span class="rv-chip" title="derived against a base ref">review vs 1150478</span><span class="outside-chip" title="outside the graph — +0 added −0 removed ~2 changed">2 changes outside the map</span>
+    <span class="facts">
+      <span class="fact"><span class="k">head</span><b>5e56635*</b></span>
+      <span class="fact"><span class="k">zones</span><b>0</b></span>
+      <span class="fact"><span class="k">components</span><b>0</b></span>
+    </span>
+  </header>
+  <main id="stage">
+    <section id="instrument"><svg id="anatomy" role="img" aria-label="promise anatomy of coherence"></svg></section>
+    <aside id="ledger" aria-label="the review ledger"><h2>ledger — review vs 1150478</h2><ol id="ledger-list"></ol></aside>
+  </main>
+  <footer>Generated at <span id="stamp">2026-07-14 02:35Z</span> — do not edit; run the harness.</footer>
+  <div id="tip" aria-hidden="true"></div>
+
+<script id="contract-data" type="application/json">{"root":"coherence","intent":"","generatedAt":"2026-07-14T02:35:00.099Z","head":"5e56635","dirty":true,"zones":[],"components":[],"review":{"base":"1150478","events":[],"outside":{"added":0,"removed":0,"changed":2}}}</script>
+<script>
+(function(){
+  "use strict";
+  // The SVG namespace, assembled so the literal external-URL substring never appears in the
+  // document (the artifact must contain zero http(s):// — pinned by the tests).
+  var NS = "http" + "://www.w3.org/2000/svg";
+  var M = JSON.parse(document.getElementById("contract-data").textContent);
+  var REVIEW = M.review || null;                 // non-null → this is a REVIEW anatomy
+  var svg = document.getElementById("anatomy");
+  var tip = document.getElementById("tip");
+
+  // ── tiny helpers ───────────────────────────────────────────────
+  function el(tag, at, kids){
+    var e = document.createElementNS(NS, tag), k;
+    if(at) for(k in at){ if(at[k] != null) e.setAttribute(k, at[k]); }
+    if(kids) for(var i=0;i<kids.length;i++){ var c=kids[i]; if(c!=null) e.appendChild(typeof c==="string"?document.createTextNode(c):c); }
+    return e;
+  }
+  function hel(tag, cls){ var e=document.createElement(tag); if(cls) e.className=cls; return e; }
+  function tnode(s){ return document.createTextNode(String(s)); }
+  function cl(t, sel){ return t && t.closest ? t.closest(sel) : null; }
+  function age(iso){
+    if(!iso) return "never";
+    var s=Math.max(0,(Date.now()-new Date(iso).getTime())/1000);
+    if(s<90) return Math.round(s)+"s"; if(s<5400) return Math.round(s/60)+"m";
+    if(s<172800) return Math.round(s/3600)+"h"; return Math.round(s/86400)+"d";
+  }
+
+  // ── LAYOUT: canonical, ordinal, rederivable ────────────────────────────────────────────
+  // Every y here comes from DECLARED ORDER alone — no measured pixel, no solver, no invented
+  // place (axioms 1,2). The vertical cursor descends band by band, row by row, exactly as
+  // the spec is declared, so the anatomy of a project is a total function of its spec text.
+  var W=1010, PADX=6, PADY=18, HDR_H=30, ROW_H=34, BAND_GAP=12, INDENT=20;
+  var GX=66;                          // arc gutter width; content lives to its right
+  var COL_GATES=384, COL_EXP=650, COL_MASS=808, MASS_W=180;
+
+  // zone tree in DECLARED order (declared order == trust order); an inside-pointer nests one deeper.
+  var zones = M.zones || [];
+  var zByName = {};
+  for(var zi=0; zi<zones.length; zi++) zByName[zones[zi].name] = zones[zi];
+  var kids = {}, roots = [];
+  for(var zj=0; zj<zones.length; zj++){
+    var z = zones[zj];
+    if(z.inside != null && zByName[z.inside]) (kids[z.inside] = kids[z.inside] || []).push(z);
+    else roots.push(z);                                 // a root zone (or one whose parent is absent)
+  }
+  var zoneOrder = [];                                    // {zone, depth} depth-first, declared order preserved
+  function dfs(z, d){ zoneOrder.push({ z:z, depth:d }); var ch=kids[z.name]||[]; for(var i=0;i<ch.length;i++) dfs(ch[i], d+1); }
+  for(var zr=0; zr<roots.length; zr++) dfs(roots[zr], 0);
+
+  // components → their band (model order preserved); zone:null (or dangling zone) → undeclared
+  var inZone = {}, undeclared = [];
+  for(var ci=0; ci<M.components.length; ci++){
+    var c = M.components[ci];
+    if(c.zone != null && zByName[c.zone]) (inZone[c.zone] = inZone[c.zone] || []).push(c);
+    else undeclared.push(c);
+  }
+
+  // walk the bands, assigning each row a fixed slot; rowY[dir] is a row's centre y
+  var y = PADY, bands = [], rowY = {}, rowMeta = {}, rowIdx = {}, flat = [];
+  function emitBand(name, intent, depth, comps, undecl){
+    var band = { name:name, intent:intent, depth:depth, undecl:!!undecl, top:y, rows:[] };
+    y += HDR_H;
+    for(var i=0;i<comps.length;i++){
+      var c = comps[i];
+      rowY[c.dir] = y + ROW_H/2; rowIdx[c.dir] = flat.length; rowMeta[c.dir] = c;
+      band.rows.push({ c:c, top:y });
+      flat.push(c.dir);
+      y += ROW_H;
+    }
+    band.bottom = y;
+    bands.push(band);
+    y += BAND_GAP;
+  }
+  for(var bi=0; bi<zoneOrder.length; bi++){
+    var zo = zoneOrder[bi];
+    emitBand(zo.z.name, zo.z.intent, zo.depth, inZone[zo.z.name] || [], false);
+  }
+  if(undeclared.length) emitBand("undeclared residence", "components with no declared zone — exposure, made foreground", 0, undeclared, true);
+  var H = y + PADY;
+  svg.setAttribute("viewBox", "0 0 " + W + " " + H);
+  svg.setAttribute("width", W);
+  svg.setAttribute("height", H.toFixed(0));
+
+  // ── layers: bands (behind) · rows · arcs (gutter, on top so a lit arc pops) ──
+  var gBands = el("g"), gRows = el("g"), gArcs = el("g");
+  svg.appendChild(gBands); svg.appendChild(gRows); svg.appendChild(gArcs);
+
+  var ROWG = {};       // dir → row <g>
+  var CHIPS = {};      // dir → [chip <g>]
+  var ARCS = [];       // { from, to, cls, el }
+
+  // events indexed by component, for inline review marks (demoted deltas)
+  var evByComp = {};
+  if(REVIEW) for(var ei=0; ei<REVIEW.events.length; ei++){ var ev=REVIEW.events[ei]; (evByComp[ev.comp]=evByComp[ev.comp]||[]).push(ev); }
+  function demotedDelta(dir, inv){
+    var es = evByComp[dir]; if(!es) return null;
+    for(var i=0;i<es.length;i++){ if(es[i].kind==="demoted" && es[i].inv===inv) return (es[i].from||"?")+"→"+(es[i].to||"?"); }
+    return null;
+  }
+
+  // ── BANDS ──────────────────────────────────────────────────────
+  for(var bj=0; bj<bands.length; bj++){
+    var b = bands[bj], indent = b.depth*INDENT, bx = GX + indent;
+    // a NESTED band sits on a faint inset plate + accent bar — containment drawn, not inferred
+    if(b.depth>0){
+      gBands.appendChild(el("rect", { "class":"band-bg", x:bx, y:b.top, width:(W-bx-PADX).toFixed(1), height:(b.bottom-b.top).toFixed(1), rx:6 }));
+    }
+    gBands.appendChild(el("rect", { "class":"band-accent", x:bx, y:b.top+4, width:3, height:(b.bottom-b.top-8).toFixed(1) }));
+    var nm = el("text", { "class":"band-name"+(b.undecl?" undeclared":""), x:(bx+12).toFixed(1), y:(b.top+18).toFixed(1) });
+    nm.appendChild(tnode(b.name)); gBands.appendChild(nm);
+    if(b.intent){
+      var it = el("text", { "class":"band-intent", x:(bx+12+b.name.length*7.2+14).toFixed(1), y:(b.top+18).toFixed(1) });
+      it.appendChild(tnode(b.intent)); gBands.appendChild(it);
+    }
+    for(var ri=0; ri<b.rows.length; ri++) drawRow(b.rows[ri].c, b.rows[ri].top, indent);
+  }
+
+  // ── ONE CANONICAL ROW POSE ─────────────────────────────────────
+  // [nameplate + intent] · [gate chips] · [exposure ink] · [mass strip] — identical always.
+  function drawRow(c, top, indent){
+    var cy = top + ROW_H/2, nameX = GX + indent + 10;
+    var g = el("g", { "class":"crow", "data-dir":c.dir });
+    ROWG[c.dir] = g; CHIPS[c.dir] = [];
+    g.appendChild(el("rect", { "class":"crow-hit", x:0, y:top, width:W, height:ROW_H }));
+    g.appendChild(el("line", { "class":"row-sep", x1:GX, y1:top+ROW_H, x2:W-PADX, y2:top+ROW_H }));
+
+    // nameplate: label (bold) over its intent (dim) — the two lines fit the row height
+    var lbl = c.label || c.dir; if(lbl.length>26) lbl = lbl.slice(0,25)+"…";
+    var tn = el("text", { "class":"row-name", x:nameX.toFixed(1), y:(cy-2).toFixed(1) });
+    tn.appendChild(tnode(lbl)); g.appendChild(tn);
+    if(c.intent){
+      var intent = c.intent; if(intent.length>40) intent = intent.slice(0,39)+"…";
+      var ti = el("text", { "class":"row-intent", x:nameX.toFixed(1), y:(cy+11).toFixed(1) });
+      ti.appendChild(tnode(intent)); g.appendChild(ti);
+    }
+
+    // gate chips — the grade letter loud; ⚑ for a guard; breach for a fail; dashed if UNPLACED
+    var gates = c.gates || [], gx = COL_GATES;
+    for(var gi=0; gi<gates.length; gi++){
+      var gt = gates[gi], guard = gt.verb==="guard", breach = gt.verdict==="fail", unplaced = !gt.crossing;
+      var cw = 24 + (guard?11:0);
+      var delta = REVIEW ? demotedDelta(c.dir, gt.inv) : null;
+      var chip = el("g", { "class":"gchip grade-"+gt.grade+(breach?" breach":"")+(unplaced?" unplaced":""), "data-dir":c.dir, "data-inv":gt.inv });
+      var ttl = el("title"); ttl.appendChild(tnode(chipTip(gt))); chip.appendChild(ttl);
+      chip.appendChild(el("rect", { "class":"chip-bg", x:gx, y:(cy-11).toFixed(1), width:cw, height:22, rx:6 }));
+      var gl = el("text", { "class":"grade", x:(gx+12).toFixed(1), y:(cy+4.5).toFixed(1), "text-anchor":"middle" });
+      gl.appendChild(tnode(gt.grade)); chip.appendChild(gl);
+      if(guard){ var fl = el("text", { "class":"guard", x:(gx+24).toFixed(1), y:(cy+4).toFixed(1) }); fl.appendChild(tnode("⚑")); chip.appendChild(fl); }
+      g.appendChild(chip); CHIPS[c.dir].push(chip);
+      gx += cw + 6;
+      if(delta){ var dl = el("text", { "class":"chip-delta", x:gx.toFixed(1), y:(cy+3.5).toFixed(1) }); dl.appendChild(tnode(delta)); g.appendChild(dl); gx += delta.length*6 + 6; }
+    }
+
+    // exposure ink — ABSENCE foreground; nothing at all when the row is clean (steady state)
+    var marks = exposure(c), ex = COL_EXP, ey0 = cy - (marks.length-1)*6;
+    for(var mi=0; mi<marks.length; mi++){
+      var mk = el("text", { "class":"ink "+marks[mi].cls, x:ex.toFixed(1), y:(ey0+mi*12+4).toFixed(1) });
+      mk.appendChild(tnode(marks[mi].text)); g.appendChild(mk);
+    }
+
+    // mass strip — accounted vs unaccounted, denominator honest (no height games)
+    var lines = c.mass.lines, acc = c.accounted.lines, accW = lines>0 ? MASS_W*Math.min(1, acc/lines) : 0;
+    g.appendChild(el("rect", { "class":"mass-frame", x:COL_MASS, y:(cy-4).toFixed(1), width:MASS_W, height:8, rx:1.5 }));
+    if(accW>0.3) g.appendChild(el("rect", { "class":"mass-acc", x:COL_MASS, y:(cy-4).toFixed(1), width:accW.toFixed(1), height:8, rx:1.5 }));
+    if(MASS_W-accW>0.3) g.appendChild(el("rect", { "class":"mass-unacc", x:(COL_MASS+accW).toFixed(1), y:(cy-4).toFixed(1), width:(MASS_W-accW).toFixed(1), height:8, rx:1.5 }));
+
+    gRows.appendChild(g);
+
+    // reliance arcs sourced from this row (drawn after all rows exist would be ideal, but
+    // rowY is fully known from layout already, so we can emit them now against final slots)
+    var relies = c.relies || [];
+    for(var yi=0; yi<relies.length; yi++){
+      var r = relies[yi]; if(rowY[r.to] == null) continue;             // relied-upon row must exist
+      // ARC CLASS by the double-entry verdict: crossing-null → undeclared (dim dashed);
+      // else via-null → NAKED (red, loud); else COVERED (quiet). Absence stays foreground.
+      var cls = (r.crossing == null) ? "undeclared" : (r.via == null ? "naked" : "covered");
+      drawArc(c.dir, r.to, cls);
+    }
+  }
+
+  function chipTip(gt){
+    return gt.inv + " → " + gt.chokepoint + " → " + (gt.oracle || "no oracle") +
+      " → " + gt.verdict + (gt.freshest ? " (" + age(gt.freshest) + ")" : "") +
+      " → " + (gt.crossing ? gt.crossing.from + "→" + gt.crossing.to : "UNPLACED") +
+      ((gt.reliants && gt.reliants.length) ? " → held by " + gt.reliants.join(", ") : " → held by none");
+  }
+
+  // exposure marks for a row — each entry is one small foreground text (nothing when clean)
+  function exposure(c){
+    var out = [], lines = c.mass.lines, unacc = lines - c.accounted.lines;
+    if(lines>0 && unacc>0) out.push({ text: Math.round(unacc/lines*100) + "% unaccounted", cls:"ink-unacc" });
+    var naked = 0, relies = c.relies || [];
+    for(var i=0;i<relies.length;i++){ if(relies[i].via == null && relies[i].crossing != null) naked++; }  // crossing-null is undeclared, not naked
+    if(naked>0) out.push({ text: naked + " naked relian" + (naked===1?"ce":"ces"), cls:"ink-naked" });
+    if(c.zone == null) out.push({ text:"residence undeclared", cls:"ink-undecl" });
+    return out;
+  }
+
+  // ── RELIANCE ARC — a curve in the left gutter from reliant row to relied-upon row ──
+  function drawArc(from, to, cls){
+    var y1 = rowY[from], y2 = rowY[to];
+    var bulge = 16 + Math.min(52, Math.abs(y1-y2)*0.34), cx = GX - bulge;
+    var d = "M " + GX + " " + y1.toFixed(1) + " C " + cx.toFixed(1) + " " + y1.toFixed(1) + " " + cx.toFixed(1) + " " + y2.toFixed(1) + " " + GX + " " + y2.toFixed(1);
+    var a = el("path", { "class":"rarc "+cls, d:d, "data-from":from, "data-to":to });
+    gArcs.appendChild(a);
+    gArcs.appendChild(el("circle", { "class":"arc-anchor"+(cls==="naked"?" naked":""), cx:GX, cy:y1.toFixed(1), r:2 }));
+    ARCS.push({ from:from, to:to, cls:cls, el:a });
+  }
+
+  // ── THE LEDGER PANEL (review only) — typed events, already severity-ordered ──
+  var ledgerList = REVIEW ? document.getElementById("ledger-list") : null;
+  if(REVIEW && ledgerList){
+    var ALARM = { demoted:1, naked:1, withdrawn:1, razed:1 };
+    for(var li=0; li<REVIEW.events.length; li++){
+      var e = REVIEW.events[li];
+      var item = hel("li", "levent" + (ALARM[e.kind]?" alarm":""));
+      item.setAttribute("data-comp", e.comp);
+      if(e.inv) item.setAttribute("data-inv", e.inv);
+      var badge = hel("span", "kind kind-"+e.kind); badge.appendChild(tnode(e.kind)); item.appendChild(badge);
+      var cinv = hel("span", "cinv"); cinv.appendChild(tnode(e.comp + (e.inv ? ": " + e.inv : ""))); item.appendChild(cinv);
+      if(e.from != null || e.to != null){
+        var dl = hel("span", "delta");
+        dl.appendChild(tnode((e.from!=null?e.from:"?")));
+        var arw = hel("span", "arw"); arw.appendChild(tnode(" → ")); dl.appendChild(arw);
+        dl.appendChild(tnode((e.to!=null?e.to:"?")));
+        item.appendChild(dl);
+      }
+      var det = hel("span", "detail"); det.appendChild(tnode(e.detail)); item.appendChild(det);
+      if(e.blast && e.blast.length){ var bl = hel("span", "blast"); bl.appendChild(tnode("→ held by: " + e.blast.join(", "))); item.appendChild(bl); }
+      ledgerList.appendChild(item);
+    }
+    // event delegation: click an entry → SELECT its component (row + chip + arcs light,
+    // every untouched row recedes). The panel is the drill-down; the anatomy is the picture.
+    ledgerList.addEventListener("click", function(ev){
+      var it = cl(ev.target, ".levent"); if(!it) return;
+      var mark; var items = ledgerList.children || [];
+      for(var i=0;i<items.length;i++){ if(items[i].classList) items[i].classList.remove("on"); }
+      it.classList.add("on");
+      selectComp(it.getAttribute("data-comp"));
+    });
+  }
+
+  // ── selection + hover state (event delegation; no per-node listeners) ───────────────────
+  var HOVER = null, SELECTED = null;
+  function arcsTouching(dir){ var out=[]; for(var i=0;i<ARCS.length;i++){ if(ARCS[i].from===dir||ARCS[i].to===dir) out.push(ARCS[i]); } return out; }
+
+  function clearHover(){
+    if(HOVER==null) return;
+    for(var d in ROWG){ if(ROWG.hasOwnProperty(d)){ ROWG[d].classList.remove("active"); ROWG[d].classList.remove("related"); } }
+    if(SELECTED==null) for(var a=0;a<ARCS.length;a++) ARCS[a].el.classList.remove("lit");
+    HOVER = null;
+  }
+  function setHover(dir){
+    clearHover();
+    if(!dir || !ROWG[dir]) return;
+    HOVER = dir; ROWG[dir].classList.add("active");
+    var arcs = arcsTouching(dir);
+    for(var i=0;i<arcs.length;i++){
+      arcs[i].el.classList.add("lit");
+      var other = arcs[i].from===dir ? arcs[i].to : arcs[i].from;   // relate the counterpart row both directions
+      if(ROWG[other]) ROWG[other].classList.add("related");
+    }
+  }
+
+  function clearSelect(){
+    if(SELECTED==null) return;
+    for(var d in ROWG){ if(ROWG.hasOwnProperty(d)){ ROWG[d].classList.remove("selected"); ROWG[d].classList.remove("receded"); } }
+    for(var a=0;a<ARCS.length;a++) ARCS[a].el.classList.remove("lit");
+    var chips = CHIPS[SELECTED]||[]; for(var c=0;c<chips.length;c++) chips[c].classList.remove("sel");
+    SELECTED = null;
+  }
+  function selectComp(dir){
+    clearHover(); clearSelect();
+    if(!dir || !ROWG[dir]) return;
+    SELECTED = dir;
+    for(var d in ROWG){ if(ROWG.hasOwnProperty(d) && d!==dir) ROWG[d].classList.add("receded"); }  // untouched rows recede
+    ROWG[dir].classList.remove("receded"); ROWG[dir].classList.add("selected");
+    var arcs = arcsTouching(dir); for(var i=0;i<arcs.length;i++) arcs[i].el.classList.add("lit");
+    var chips = CHIPS[dir]||[]; for(var c=0;c<chips.length;c++) chips[c].classList.add("sel");
+  }
+
+  // hover the instrument (delegation): the district under the pointer drives arc + tooltip
+  svg.addEventListener("mousemove", function(e){
+    var chip = cl(e.target, ".gchip"), row = cl(e.target, ".crow");
+    var dir = row ? row.getAttribute("data-dir") : null;
+    if(dir !== HOVER) setHover(dir);
+    if(chip){ showTip(chipTipFor(chip), e); }
+    else if(row){ var c = rowMeta[dir]; showTip((c && c.intent) ? c.label + " — " + c.intent : (c?c.label:""), e); }
+    else hideTip();
+  });
+  svg.addEventListener("mouseleave", function(){ setHover(null); hideTip(); });
+
+  function chipTipFor(chip){ var kk = chip.children || []; for(var i=0;i<kk.length;i++){ if((kk[i].tagName||"").toLowerCase()==="title") return kk[i].textContent; } return ""; }
+  function showTip(text, e){
+    if(!tip || !text){ hideTip(); return; }
+    tip.textContent = text; tip.style.opacity = 1;
+    var x=(e.clientX||0)+14, yv=(e.clientY||0)+14;
+    tip.style.left = x + "px"; tip.style.top = yv + "px";
+  }
+  function hideTip(){ if(tip) tip.style.opacity = 0; }
+
+  // ESCAPE clears the selection (and the tooltip) — the one keyboard affordance
+  document.addEventListener("keydown", function(e){
+    if(e.key==="Escape"){ clearSelect(); clearHover(); hideTip(); }
+  });
+})();
+</script>
+</body></html>

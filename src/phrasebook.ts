@@ -193,16 +193,18 @@ export const CLAIM_FORMS: ClaimForm[] = [
   },
   {
     name: "boundary",
-    grammar: 'boundary "<invariant>" at <chokepoint> [via (test|guard) "<oracle>"]',
-    example: 'boundary "fail-closed writes" at applyWritePolicy via test "write policy totality"',
+    grammar: 'boundary "<invariant>" at <chokepoint> [crossing <zone> -> <zone>] [via (test|guard) "<oracle>"]',
+    example: 'boundary "fail-closed writes" at applyWritePolicy crossing agent-mcp -> storage via test "write policy totality"',
     tier: "hybrid",
     match: (l) => l.match(BOUNDARY_RE),
     // The anti-entropy ratchet. Asserts the four-part anatomy of a self-enforcing boundary:
     // the invariant is named (and ANCHORED for the coverage gate), the chokepoint SYMBOL
     // exists, and (if given) the oracle passes. `via test` additionally runs the META-ORACLE
     // (live-domain analysis, even under --fast); `via guard` is exempt (source-property oracle).
+    // The optional `crossing` clause (groups 3/4) is PROMISE-GRAPH topology, not a runtime
+    // check — verify never evaluates it, so verb/oracle now read from groups 5/6.
     evaluate: async (ctx, m) => {
-      const inv = m[1], sym = m[2], verb = m[3], test = m[4];
+      const inv = m[1], sym = m[2], verb = m[5], test = m[6];
       ctx.anchor(inv);
       if (!ctx.graph.nodes.some((n) => n.kind === "symbol" && n.label === sym)) return { kind: "fail", detail: `chokepoint symbol "${sym}" not found in the code graph` };
       if (!test) return { kind: "pass", detail: `${inv} @ ${sym} (no oracle)` };
@@ -224,6 +226,22 @@ export const CLAIM_FORMS: ClaimForm[] = [
       if (ctx.cfg.testMatch && !new RegExp(ctx.cfg.testMatch).test(out)) return { kind: "fail", detail: `oracle "${test}" matched no run (testMatch)` };
       return { kind: "pass", detail: `${inv} @ ${sym}${verb === "guard" ? " (source-property guard)" : ""}` };
     },
+  },
+  {
+    name: "lives in",
+    grammar: "lives in <zone>",
+    example: "lives in owner-trusted",
+    tier: "deterministic",
+    // RESIDENCE — the PROMISE GRAPH's topology axiom 2: a component declares which trust
+    // zone it lives in, so a cross-component import can be graded (same-zone / covered /
+    // naked). Like a crossing, residence is a DECLARATION, not a runtime property, so verify
+    // asserts only that it is well-formed (a non-empty zone token) and passes. Its SEMANTIC
+    // validation (is the named zone declared? does the wall it opens have a gate?) lives in
+    // the promise layer (`coherence contract`), which owns zones — NOT here. Registering it
+    // is what keeps `lives in` from grading as U: an unregistered verb is a dialect-gap skip,
+    // which would wrongly report the topology as an unread claim.
+    match: (l) => l.match(/^lives in\s+(\S+)$/),
+    evaluate: (_ctx, m) => ({ kind: "pass", detail: `resides in ${m[1]}` }),
   },
   {
     name: "conforms to",

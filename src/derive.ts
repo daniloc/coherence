@@ -72,7 +72,14 @@ export async function buildGraph(cfg: Config): Promise<Graph> {
     for (const spec of lang.imports(src)) {
       if (spec.startsWith(".")) {
         const target = relative(root, resolve(join(root, dirname(f)), spec));
-        if (fileIds.has(target)) link(fileIds.get(f)!, fileIds.get(target)!, "imports");
+        // A specifier may name the file exactly (`./data.ts`, Node-style), omit the
+        // extension (`./data`, bundler-style), or name a directory (`./data` →
+        // data/index.ts). Try all three shapes — extensionless projects otherwise
+        // derive ZERO internal import edges, silently starving every consumer of
+        // the structure graph (decompose hubs, scene links).
+        const candidates = [target, ...lang.exts.map((e) => `${target}.${e}`), ...lang.exts.map((e) => join(target, `index.${e}`))];
+        const hit = candidates.find((t) => fileIds.has(t));
+        if (hit) link(fileIds.get(f)!, fileIds.get(hit)!, "imports");
       } else { const id = `x:${spec}`; add({ id, label: spec, kind: "external", sub: "module" }); link(fileIds.get(f)!, id, "imports"); }
     }
     for (const [bind, target] of Object.entries(targets)) if (new RegExp(`env\\.${bind}\\b`).test(src)) link(fileIds.get(f)!, target, "binds");

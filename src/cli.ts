@@ -19,6 +19,12 @@ import { lintSinks } from "./lint-sinks.ts";
 import { conventions } from "./conventions.ts";
 import { atlas } from "./atlas.ts";
 import { whyLint } from "./why-lint.ts";
+import { runPanel } from "./panel.ts";
+import { buildSceneModel, deriveBaseModel, mergeSceneDiff, symbolSetsByFile, diffTally, fileStats, graphPaths, deriveOutside } from "./scene.ts";
+import { renderScene } from "./render-scene.ts";
+import { buildPromiseModel, derivePromiseBase, buildReview, formatLedger, graphFilePaths } from "./promise.ts";
+import { renderContract } from "./render-contract.ts";
+import { readStatus } from "./status.ts";
 import { CLAIM_FORMS, loadDictionary } from "./phrasebook.ts";
 
 const cmd = process.argv[2];
@@ -30,7 +36,9 @@ const applyIdx = argv.indexOf("--apply");
 const applyPath = applyIdx >= 0 ? argv[applyIdx + 1] : null;
 const sinceIdx = argv.indexOf("--since");
 const since = sinceIdx >= 0 ? argv[sinceIdx + 1] : null;
-const positional = argv.filter((a, i) => !a.startsWith("--") && argv[i - 1] !== "--since" && argv[i - 1] !== "--apply");
+const diffIdx = argv.indexOf("--diff");
+const diffRef = diffIdx >= 0 ? argv[diffIdx + 1] : null;
+const positional = argv.filter((a, i) => !a.startsWith("--") && argv[i - 1] !== "--since" && argv[i - 1] !== "--apply" && argv[i - 1] !== "--diff");
 
 // Exit AFTER stdout has drained. `process.exit()` terminates the process before
 // asynchronously-buffered writes flush when stdout is a pipe or file (it only
@@ -184,6 +192,84 @@ if (cmd === "graph") {
 } else if (cmd === "atlas") {
   // Trust-graded manifold; tiers derived from boundary claims, charts/crossings from config.
   await exit(await atlas(cfg, await buildGraph(cfg), check ? "check" : "render"));
+} else if (cmd === "panel") {
+  // The operator's instrument panel: a live TUI over the graph + the status record
+  // (`.coherence/status.json`). Watch mode re-runs the fast tier on change; --once
+  // prints a static snapshot (also what non-TTY stdout gets).
+  await exit(await runPanel(cfg, { watch: !argv.includes("--no-watch"), once: argv.includes("--once") }));
+} else if (cmd === "scene") {
+  // The persistent spatial BODY: derive the SceneModel (append-only geography, honest
+  // mass, live light/heat) and render one self-contained _scene.html; also emit
+  // scene.json for agents/tools. No --check — the scene embeds live light/heat, so it
+  // is a dashboard, always regenerated (the STABLE part, the lots, persists in
+  // <outputDir>/scene-layout.json, which is meant to be committed).
+  //   --diff <ref>: a REVIEW scene — derive the base tree's model from a throwaway git
+  //   worktree and merge, so change renders against the SAME geography (added/removed/
+  //   changed against the base ref) instead of as text.
+  const graph = await buildGraph(cfg);
+  // Head content stats (tower heights) read ONCE and reused for both the model and the diff.
+  const headStats = await fileStats(cfg, graph.nodes.filter((n) => n.kind === "file"));
+  let model = await buildSceneModel(cfg, graph, await readStatus(cfg), headStats);
+  let tail = "";
+  if (diffRef) {
+    let base;
+    try {
+      base = await deriveBaseModel(cfg, diffRef);
+    } catch (e) {
+      console.error(`scene --diff: ${(e as Error).message}`);
+      await exit(1);
+    }
+    // Count the change OUTSIDE the graph (scripts/CI/docs) BEFORE the merge, then thread it
+    // in — the map never silently truncates.
+    const outside = deriveOutside(cfg, base!.ref, graphPaths(model, base!.model));
+    const headEnd = { syms: symbolSetsByFile(graph), stats: headStats };
+    model = mergeSceneDiff(model, base!.model, headEnd, base!.end, base!.ref, outside);
+    const t = diffTally(model);
+    const o = outside.added + outside.removed + outside.changed;
+    const outTail = o ? `, ${o} outside the map` : "";
+    tail = ` (diff vs ${base!.ref}: +${t.added} −${t.removed} ~${t.changed} files${outTail})`;
+  }
+  await writeOutputs();
+  await writeFile(out("scene.json"), JSON.stringify(model, null, 2));
+  await writeFile(out("_scene.html"), renderScene(model, stamp));
+  console.log(`scene: ${model.components.length} lot(s) on a ${model.grid.cols}×${model.grid.rows} grid → _scene.html${tail}`);
+  await exit(0);
+} else if (cmd === "contract") {
+  // The PROMISE GRAPH: derive the PromiseModel (declared zones, graded gates, the reliance
+  // double-entry) and render one self-contained _contract.html; also emit promise.json for
+  // agents/tools. Like the scene it embeds live grades, so it is always regenerated (no --check).
+  const graph = await buildGraph(cfg);
+  const model = await buildPromiseModel(cfg, graph, await readStatus(cfg));
+  await writeOutputs();
+  await writeFile(out("promise.json"), JSON.stringify(model, null, 2));
+  await writeFile(out("_contract.html"), renderContract(model, stamp));
+  console.log(`contract: ${model.components.length} component(s), ${model.zones.length} zone(s) → _contract.html`);
+  await exit(0);
+} else if (cmd === "review") {
+  // The contract diffed against a base ref: derive the base tree's PromiseModel from a
+  // throwaway worktree, diff, and print the event LEDGER to stdout; also write promise.json/
+  // _contract.html with `review` populated so the render carries the same ledger.
+  const ref = positional[0];
+  if (!ref) { console.error("usage: coherence review <ref>"); await exit(2); }
+  const graph = await buildGraph(cfg);
+  const status = await readStatus(cfg);
+  const headModel = await buildPromiseModel(cfg, graph, status);
+  let base;
+  try {
+    base = await derivePromiseBase(cfg, ref!, status);
+  } catch (e) {
+    console.error(`review: ${(e as Error).message}`);
+    await exit(1);
+  }
+  // Count the change OUTSIDE the contract (files no component owns at either end).
+  const owned = new Set([...graphFilePaths(graph), ...base!.ownedPaths]);
+  const outside = deriveOutside(cfg, base!.ref, owned);
+  const model = buildReview(headModel, base!.model, base!.ref, outside);
+  console.log(formatLedger(model));
+  await writeOutputs();
+  await writeFile(out("promise.json"), JSON.stringify(model, null, 2));
+  await writeFile(out("_contract.html"), renderContract(model, stamp));
+  await exit(0);
 } else if (cmd === "why-lint") {
   // Advisory: ## why prose restating a mechanism a boundary claim already anchors.
   await exit(whyLint(await buildGraph(cfg), check ? "check" : "report"));
@@ -200,7 +286,11 @@ if (cmd === "graph") {
   }
   await exit(0);
 } else {
-  console.error("usage: coherence <graph|overview|docs|claude|verify|log|decompose|drift|scaffold|onboard|lint-sinks|conventions|atlas|why-lint|phrasebook> [options]");
+  console.error("usage: coherence <graph|overview|docs|claude|verify|panel|scene|contract|review|log|decompose|drift|scaffold|onboard|lint-sinks|conventions|atlas|why-lint|phrasebook> [options]");
+  console.error("  panel [--no-watch | --once]                  live TUI over the graph + status record");
+  console.error("  scene [--diff <ref>]                         persistent isometric worksite (_scene.html); --diff renders a review vs <ref>");
+  console.error("  contract                                     the promise graph — graded gates + reliance ledger (_contract.html)");
+  console.error("  review <ref>                                 diff the contract vs <ref>; print the event ledger");
   console.error("  verify [--fast] [--staged | --since <ref>]   scope to changed components");
   console.error("  log [<refA> [<refB>]] [--strict]             structural diff of the invariant/boundary set");
   console.error("  scaffold <boundary|component|invariant> <name>");
