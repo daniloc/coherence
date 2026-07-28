@@ -47,6 +47,13 @@ One-line intent: what this component IS (a noun, the thing it owns).
 ## invariants
 - ${inv}
 
+## refutations
+<!-- Deliberately EMPTY. Break the chokepoint, run the oracle, then add one line:
+       ${inv}: <what you changed> -> RED, "<what the run printed>"
+     A green claim and an unfalsifiable claim look identical from outside; only
+     one is evidence. A pre-filled TODO here would score as covered, which is the
+     exact deception this section exists to remove. -->
+
 ## works when
 - chokepoint.ts exists at this node
 - ${claim}

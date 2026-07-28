@@ -7,6 +7,7 @@ export interface GraphNode {
   sub?: string; path?: string; line?: number; claimed?: boolean; claims?: string[];
   invariants?: string[]; // named properties the component upholds (## invariants); each anchored by a `boundary` claim
   refutations?: string[]; // observed negative controls (## refutations): `<invariant>: <what was broken> -> <what was seen>`
+  claimKinds?: Record<string, string>; // bare claim text -> the kind it declared via a trailing `[bracket]`
   prose?: string; // the WHAT — derivable from code, regenerable
   why?: string;   // the WHY — rationale/intent, authored + protected
 }
@@ -26,7 +27,7 @@ export interface Graph {
 }
 
 /** A raw spec parsed from a *.spec.md file. */
-export interface ParsedSpec { name: string; intent: string; claims: string[]; prose: string; why: string; invariants: string[]; refutations: string[]; }
+export interface ParsedSpec { name: string; intent: string; claims: string[]; claimKinds: Record<string, string>; prose: string; why: string; invariants: string[]; refutations: string[]; }
 
 /** How to read a language's code — symbols, imports, and where docblocks live. */
 export interface LanguageAdapter {

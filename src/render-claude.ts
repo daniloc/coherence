@@ -35,12 +35,19 @@ export function renderClaude(graph: Graph, stamp: string): string {
   const counts = graph.nodes.reduce<Record<string, number>>((a, n) => ((a[n.kind] = (a[n.kind] ?? 0) + 1), a), {});
 
   // collect every boundary claim across components for the invariants table
-  type Boundary = { comp: string; name: string; chokepoint: string; oracle: string };
+  type Boundary = { comp: string; name: string; chokepoint: string; oracle: string; kind: string; refuted: boolean };
   const boundaries: Boundary[] = [];
+  let anyKind = false, anyRefutation = false;
   for (const c of comps) {
+    // `## refutations` lines are keyed `<invariant>: <what was broken> -> <what was seen>`.
+    const refuted = new Set((c.refutations ?? []).map((r) => r.split(":")[0].trim()));
+    if (refuted.size) anyRefutation = true;
     for (const claim of c.claims ?? []) {
       const b = parseBoundary(claim);
-      if (b) boundaries.push({ comp: c.label, name: b.inv, chokepoint: b.chokepoint, oracle: b.oracle || "—" });
+      if (!b) continue;
+      const kind = c.claimKinds?.[claim] ?? "";
+      if (kind) anyKind = true;
+      boundaries.push({ comp: c.label, name: b.inv, chokepoint: b.chokepoint, oracle: b.oracle || "—", kind, refuted: refuted.has(b.inv) });
     }
   }
 
@@ -85,11 +92,24 @@ export function renderClaude(graph: Graph, stamp: string): string {
   if (boundaries.length) {
     md.push("> Each named invariant, the chokepoint symbol that enforces it, and the oracle");
     md.push("> (test or guard) that asserts it holds. Parsed from the `boundary` claims in the specs.", "");
-    md.push("| Invariant | Component | Chokepoint | Oracle |");
-    md.push("| --- | --- | --- | --- |");
+    // The KIND and REFUTED columns appear only for projects that use those features, so a
+    // spec tree that declares neither renders exactly the table it rendered before. They are
+    // here rather than in verify's transient output because this is the file a fresh agent
+    // reads: "this invariant is `measured`, so it could convict us for improving" and
+    // "nobody has ever watched this one fail" are the two facts that do not survive a
+    // context boundary on their own.
+    const cols = ["Invariant", "Component", "Chokepoint", "Oracle"];
+    if (anyKind) cols.push("Kind");
+    if (anyRefutation) cols.push("Refuted?");
+    md.push(`| ${cols.join(" | ")} |`);
+    md.push(`| ${cols.map(() => "---").join(" | ")} |`);
     for (const b of boundaries) {
-      md.push(`| ${esc(b.name)} | ${esc(b.comp)} | \`${esc(b.chokepoint)}\` | ${b.oracle === "—" ? "—" : `\`${esc(b.oracle)}\``} |`);
+      const row = [esc(b.name), esc(b.comp), `\`${esc(b.chokepoint)}\``, b.oracle === "—" ? "—" : `\`${esc(b.oracle)}\``];
+      if (anyKind) row.push(b.kind ? `\`${esc(b.kind)}\`` : "—");
+      if (anyRefutation) row.push(b.refuted ? "observed" : "—");
+      md.push(`| ${row.join(" | ")} |`);
     }
+    if (anyRefutation) md.push("", "_\"Refuted?\" = someone broke the chokepoint and watched this oracle go red. A `—` is a to-do, not an accusation._");
     md.push("");
   } else {
     md.push("_No `boundary` claims declared in the specs._", "");

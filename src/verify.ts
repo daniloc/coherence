@@ -71,14 +71,13 @@ export async function runVerify(cfg: Config, graph: Graph, opts: { fast?: boolea
   // ClaimResult into a Sig. A line matching NO form still skips as a dialect gap. The
   // boundary + `conforms to` forms anchor invariants via ctx.anchor so the coverage gate
   // sees them (including boundaries reached transitively through a dictionary word).
-  const evalClaim = async (claim: string, nodeDir: string, node: string): Promise<Sig> => {
-    // A claim may carry a trailing KIND — `... via test "t" [structural]`. Stripped here,
-    // in ONE place, so no form's grammar has to tolerate it and an unkinded spec parses
-    // exactly as before. What a kind MEANS is the project's business (config.claimKinds);
-    // an unknown one is red because a typo must not silently grade as unkinded.
-    const km = /\s*\[([A-Za-z][\w-]*)\]\s*$/.exec(claim);
-    const declaredKind = km ? km[1] : undefined;
-    const body = km ? claim.slice(0, km.index) : claim;
+  const evalClaim = async (claim: string, nodeDir: string, node: string, declaredKind?: string): Promise<Sig> => {
+    // The kind arrives ALREADY SEPARATED, stripped by parseSpec (src/walk.ts) at the single
+    // parse site. It is deliberately NOT re-parsed here: `claim` is the bare text, identical
+    // to what 0.10.0 saw, so every form's grammar, the coverage ratchet, and the status
+    // record's identity are untouched. What a kind MEANS is the project's business
+    // (config.claimKinds); an unknown one is red because a typo must not grade as unkinded.
+    const body = claim;
     if (kindPolicy && declaredKind && !kindPolicy[declaredKind])
       return { kind: "fail", claim, node, declaredKind,
         detail: `unknown claim kind "${declaredKind}" — config.claimKinds declares: ${Object.keys(kindPolicy).join(", ")}` };
@@ -104,7 +103,7 @@ export async function runVerify(cfg: Config, graph: Graph, opts: { fast?: boolea
   // staged run doesn't dump every undocumented symbol in the repo as a job.
   const symbols = graph.nodes.filter((n) => n.kind === "symbol" && (!opts.only || (n.path != null && opts.only.has(ownerOf(n.path, compDirs)))));
   const sigs: Sig[] = [];
-  for (const c of comps) { const dir = c.id.slice(2); const diskDir = dir === "." ? root : join(root, dir); for (const cl of c.claims || []) sigs.push(await evalClaim(cl, diskDir, c.label)); }
+  for (const c of comps) { const dir = c.id.slice(2); const diskDir = dir === "." ? root : join(root, dir); for (const cl of c.claims || []) sigs.push(await evalClaim(cl, diskDir, c.label, (c as any).claimKinds?.[cl])); }
   const red = sigs.filter((s) => s.kind === "fail").length;
   console.log(`claims: ${sigs.length} · ${sigs.filter((s) => s.kind === "pass").length} green · ${red} red · ${sigs.filter((s) => s.kind === "skip").length} skipped`);
   for (const s of sigs) if (s.kind !== "pass") console.log(`  ${s.kind === "fail" ? "✗" : "·"} [${s.node}] ${s.claim}${s.detail ? ` — ${s.detail}` : ""}`);

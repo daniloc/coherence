@@ -321,8 +321,17 @@ A claim carries its kind as a trailing `[bracket]`:
 - passes test "sea level p50 within 2 m" [measured]
 ```
 
-The suffix is stripped in **one** place before form matching, so no claim form's
-grammar changes and an unkinded claim behaves exactly as it did in 0.10.0.
+The suffix is stripped by the **parser** (`src/walk.ts`), at the single site where a
+spec becomes claims — so `claims` holds the bare text and the kind rides alongside in
+`claimKinds`. Every consumer downstream (`parseBoundary`, the coverage ratchet, the
+panel, the scene, the promise graph, and the status record's identity) sees the string
+it saw in 0.10.0. **Annotating an existing claim with a kind does not orphan its
+history**, exactly as the `crossing` clause does not.
+
+The generated CLAUDE.md invariant table grows a **Kind** and a **Refuted?** column
+when the project uses those features, and only then. That is where the two facts have
+to survive a context boundary: a fresh agent reading it learns "this one is `measured`,
+so it could convict us for improving" and "nobody has ever watched this one fail.
 
 | policy | effect |
 | --- | --- |

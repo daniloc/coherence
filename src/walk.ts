@@ -25,9 +25,18 @@ export function parseSpec(text: string): ParsedSpec {
   for (; i < lines.length; i++) { const m = /^#\s+(.+?)\s*$/.exec(lines[i]); if (m) { name = m[1]; i++; break; } }
   for (; i < lines.length; i++) { const l = lines[i].trim(); if (!l) continue; if (l.startsWith("#")) break; intent = l; intentLine = i; break; }
   const claims: string[] = [];
+  // A claim may carry a trailing KIND — `... via test "t" [structural]`. It is stripped
+  // HERE, at the single parse site, so every downstream consumer (parseBoundary, the
+  // coverage ratchet, panel/scene/structural/promise, the status record's identity)
+  // sees the exact string it saw before kinds existed. The precedent is the `crossing`
+  // clause in src/boundary.ts: a purely declarative annotation must not leak into claim
+  // identity, or annotating an existing claim orphans its history. Stripping it inside
+  // evalClaim instead — which is what the first cut did — silently dropped every kinded
+  // boundary out of the CLAUDE.md invariant table and the promise graph.
+  const claimKinds: Record<string, string> = {};
   const ws = lines.findIndex((l) => /^##\s+works when\s*$/i.test(l));
   let we = -1;
-  if (ws >= 0) { we = lines.length; for (let j = ws + 1; j < lines.length; j++) { if (/^##\s+/.test(lines[j])) { we = j; break; } const c = /^-\s+(.+?)\s*$/.exec(lines[j]); if (c) claims.push(unescapeMd(c[1])); } }
+  if (ws >= 0) { we = lines.length; for (let j = ws + 1; j < lines.length; j++) { if (/^##\s+/.test(lines[j])) { we = j; break; } const c = /^-\s+(.+?)\s*$/.exec(lines[j]); if (c) { const raw = unescapeMd(c[1]); const km = /\s*\[([A-Za-z][\w-]*)\]$/.exec(raw); const bare = km ? raw.slice(0, km.index) : raw; if (km) claimKinds[bare] = km[1]; claims.push(bare); } } }
   const wy = lines.findIndex((l) => /^##\s+why\s*$/i.test(l));
   let wye = -1, why = "";
   if (wy >= 0) { wye = lines.length; for (let j = wy + 1; j < lines.length; j++) if (/^##\s+/.test(lines[j])) { wye = j; break; } why = lines.slice(wy + 1, wye).join("\n").trim(); }
@@ -53,7 +62,7 @@ export function parseSpec(text: string): ParsedSpec {
     if (rf >= 0 && k >= rf && k < rfe) continue;
     prose.push(lines[k]);
   }
-  return { name, intent, claims, prose: prose.join("\n").trim(), why, invariants, refutations };
+  return { name, intent, claims, claimKinds, prose: prose.join("\n").trim(), why, invariants, refutations };
 }
 
 /** One declared trust zone from a `## zones` section (PROMISE GRAPH topology). Parsed here

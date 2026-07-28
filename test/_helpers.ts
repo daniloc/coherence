@@ -52,7 +52,7 @@ export function cfg(root: string, over: Partial<Config> = {}): Config {
 /** A component graph node (`c:<dir>`), shaped like derive.ts produces. */
 export function comp(
   dir: string,
-  o: { label?: string; intent?: string; claims?: string[]; invariants?: string[]; refutations?: string[]; why?: string } = {},
+  o: { label?: string; intent?: string; claims?: string[]; invariants?: string[]; refutations?: string[]; claimKinds?: Record<string, string>; why?: string } = {},
 ): GraphNode {
   return {
     id: `c:${dir}`,
@@ -63,6 +63,7 @@ export function comp(
     claims: o.claims ?? [],
     invariants: o.invariants && o.invariants.length ? o.invariants : undefined,
     refutations: o.refutations && o.refutations.length ? o.refutations : undefined,
+    claimKinds: o.claimKinds && Object.keys(o.claimKinds).length ? o.claimKinds : undefined,
     why: o.why,
   };
 }
