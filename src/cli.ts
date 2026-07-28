@@ -221,7 +221,7 @@ if (cmd === "graph") {
   // ran; unscoped it is every decision the repo has ever recorded.
   const { text } = renderJournal(cfg, {
     job: one("--job"), agent: one("--agent"), session: one("--session"), branch: one("--branch"),
-    sessions: argv.includes("--sessions"), markdown: argv.includes("--md"),
+    sessions: argv.includes("--sessions"), markdown: argv.includes("--md"), brief: argv.includes("--brief"),
   });
   console.log(text);
   await exit(0);
@@ -354,7 +354,7 @@ if (cmd === "graph") {
   console.error("  decide \"<chose>\" --over \"<alt>\" --because \"<why>\"   log one decision (append-only; gates nothing)");
   console.error("  blocked \"<what>\" --because \"<why>\"                 log what you could NOT do — first-class, not a footnote");
   console.error("  retract <id> --because \"<what refuted it>\"          withdraw a decision by appending, never by editing");
-  console.error("  decisions [--job|--agent|--session|--branch|--sessions|--md]  the MERGED timeline across every session and branch");
+  console.error("  decisions [--job|--agent|--session|--branch|--sessions|--md|--brief]  the MERGED timeline; --brief clips rationales for scanning");
   console.error("  hooks [--check]                                     print the hooks block; --check asks whether it has ever FIRED");
   console.error("  panel [--no-watch | --once]                  live TUI over the graph + status record");
   console.error("  scene [--diff <ref>]                         persistent isometric worksite (_scene.html); --diff renders a review vs <ref>");

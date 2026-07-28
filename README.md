@@ -581,6 +581,25 @@ coherence retract d-dfa936a6 --because "the sweep RAN: 5/8 on a re-roll" --sessi
 coherence decisions [--job X] [--agent Y] [--session S] [--branch B] [--sessions] [--md]
 ```
 
+### Length: cap the labels, never the evidence
+
+`chose` and `over` are labels. Over 200 chars, `decide` prints a note on **stderr** —
+that length means the rationale went in the title — and **writes the entry anyway**. A
+journal that can refuse a write is one an agent stops using mid-job, and the entry it
+drops is the one it was too busy to reword.
+
+**`because` is never capped**, and that is measured rather than assumed. On a real
+53-entry journal: `chose` p50 149 / p90 241 and `over` p50 94 / p90 175 — both already
+read as labels. But `because` p50 **609**, and every entry exceeded 250. Capping it
+there would have stripped **16 of 23 file:line citations and 22 of 33 measured
+numbers**, because the evidence sits at the END of a rationale, after the claim.
+That converts a checkable entry into an assertable one — the exact failure the journal
+exists to prevent.
+
+Readability is a RENDER problem, so it is solved at the render: `coherence decisions
+--brief` clips each rationale for scanning and **announces what it withheld**
+(`… (+412 chars — drop --brief for the evidence)`). Nothing on disk is ever shortened.
+
 **`--over` is the field that matters.** What was REJECTED is what stops the next agent
 re-litigating a settled question. It is also the field every gate-shaped design drops.
 An empty `over` renders as *"(nothing — forced, or no alternative considered)"* — a

@@ -20,15 +20,18 @@ export async function tmpProject(files: Record<string, string> = {}): Promise<st
 export const cleanup = (dir: string) => rm(dir, { recursive: true, force: true });
 
 /** Run an async fn with console.log captured; return its result code + the joined output. */
-export async function runCaptured(fn: () => Promise<number>): Promise<{ code: number; out: string }> {
-  const lines: string[] = [];
-  const orig = console.log;
+export async function runCaptured(fn: () => Promise<number>): Promise<{ code: number; out: string; err: string }> {
+  // `out` stays stdout-only so every existing caller keeps its meaning; `err` is
+  // separate because some notices belong on stderr and must NOT pollute a piped report.
+  const lines: string[] = [], errs: string[] = [];
+  const origLog = console.log, origErr = console.error;
   console.log = (...a: unknown[]) => { lines.push(a.map(String).join(" ")); };
+  console.error = (...a: unknown[]) => { errs.push(a.map(String).join(" ")); };
   try {
     const code = await fn();
-    return { code, out: lines.join("\n") };
+    return { code, out: lines.join("\n"), err: errs.join("\n") };
   } finally {
-    console.log = orig;
+    console.log = origLog; console.error = origErr;
   }
 }
 

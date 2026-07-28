@@ -16,9 +16,10 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
   openSession, appendDecision, readJournal, resolve, renderJournal, decisionsDir, newSessionId,
+  LABEL_SOFT_MAX,
 } from "../src/decisions.ts";
 import { checkHooks } from "../src/hooks.ts";
-import { runCaptured } from "./_helpers.ts";
+import { runCaptured, cleanup } from "./_helpers.ts";
 import type { Config } from "../src/types.ts";
 
 async function root(): Promise<Config> {
@@ -202,4 +203,51 @@ test("render — markdown NESTS the detail lines instead of making them sibling 
   assert.match(text, /^ {2}- over: Y$/m);
   assert.match(text, /^ {2}- because: measured$/m);
   await rm(cfg.root, { recursive: true, force: true });
+});
+
+// ── length: cap the LABELS, never the evidence ───────────────────────────────────
+
+test("length — an over-long `chose` warns and is written ANYWAY", async () => {
+  // A journal that can refuse a write is one an agent stops using mid-job, and the
+  // entry it drops is the one it was too busy to reword.
+  const cfg = await root();
+  const long = "x".repeat(LABEL_SOFT_MAX + 50);
+  const { err } = await runCaptured(async () => {
+    appendDecision(cfg, { kind: "decision", chose: long, because: "-", session: newSessionId(), now: T(1) });
+    return 0;
+  });
+  assert.match(err, /`chose` is 250 chars.*reads as rationale, not a label/s);
+  assert.equal(readJournal(cfg).records[0].chose, long, "written as given — the warning is advice, not a gate");
+  await cleanup(cfg.root);
+});
+
+test("length — `because` is NEVER capped on write, because the evidence lives at its end", async () => {
+  // Measured on the journal that motivated this: 16 of 23 file:line citations and 22 of
+  // 33 measured numbers sit past character 250. Capping there turns a checkable entry
+  // into an assertable one.
+  const cfg = await root();
+  const evidence = "the claim comes first, and the citation that makes it checkable comes last. "
+    .repeat(8) + "flux.ts:519 measured 0.38%";
+  const { err } = await runCaptured(async () => {
+    appendDecision(cfg, { kind: "decision", chose: "X", because: evidence, session: newSessionId(), now: T(1) });
+    return 0;
+  });
+  assert.equal(err.trim(), "", "no warning: a long rationale is the journal working");
+  assert.equal(readJournal(cfg).records[0].because, evidence);
+  assert.match(renderJournal(cfg).text, /flux\.ts:519 measured 0\.38%/, "the default render withholds nothing");
+  await cleanup(cfg.root);
+});
+
+test("--brief — clips the rationale for scanning and ANNOUNCES what it withheld", async () => {
+  const cfg = await root();
+  const long = "a".repeat(400) + " flux.ts:519";
+  appendDecision(cfg, { kind: "decision", chose: "X", over: ["Y"], because: long, session: newSessionId(), now: T(1) });
+
+  const brief = renderJournal(cfg, { brief: true }).text;
+  assert.ok(!brief.includes("flux.ts:519"), "the tail is clipped");
+  assert.match(brief, /\(\+\d+ chars — drop --brief for the evidence\)/, "and the reader is TOLD, with a count");
+  assert.match(brief, /over: Y/, "labels are never clipped — they are already short");
+
+  assert.match(renderJournal(cfg).text, /flux\.ts:519/, "without --brief nothing is withheld");
+  await cleanup(cfg.root);
 });
