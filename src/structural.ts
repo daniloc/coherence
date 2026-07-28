@@ -25,7 +25,7 @@ import { buildGraph } from "./derive.ts";
 import { ownerOf } from "./walk.ts";
 import { CONFORMS_RE, dictionaryDir, parseWord } from "./phrasebook.ts";
 import { noveltyVerdict, renderNovelty, scanSurface, surfaceSignals } from "./novelty.ts";
-import type { Config, DbtParity, Graph, GraphEdge, GraphNode } from "./types.ts";
+import type { Config, DbtParity, DbtRowContract, Graph, GraphEdge, GraphNode } from "./types.ts";
 
 /** Files changed vs `since` (a ref), or — when null — the working tree vs HEAD
  *  PLUS untracked files. Paths are relative to cfg.root (`--relative`). This is the
@@ -264,6 +264,22 @@ export interface StructuralDiff {
   dbtParitiesAdded: DbtParity[];
   dbtParitiesRemoved: DbtParity[];
   dbtParitiesRewired: Array<{ name: string; before: DbtParity; after: DbtParity }>;
+  dbtRowContractsAdded: Array<{ model: string; contract: DbtRowContract }>;
+  dbtRowContractsRemoved: Array<{ model: string; contract: DbtRowContract }>;
+  dbtRowContractsChanged: Array<{
+    model: string;
+    before: DbtRowContract;
+    after: DbtRowContract;
+    variantsAdded: string[];
+    variantsRemoved: string[];
+    variantChanges: Array<{
+      name: string;
+      requiredColumnsAdded: string[];
+      requiredColumnsRemoved: string[];
+      predicatesAdded: string[];
+      predicatesRemoved: string[];
+    }>;
+  }>;
 }
 
 const dbtNodes = (graph: Graph) =>
@@ -295,6 +311,13 @@ const dbtParities = (graph: Graph) => {
   ]));
 };
 
+const dbtRowContracts = (graph: Graph) =>
+  new Map(graph.nodes.flatMap((node) =>
+    node.dbt?.rowContract
+      ? [[node.dbt.uniqueId, { model: node.label, contract: node.dbt.rowContract }] as const]
+      : []
+  ));
+
 const stringSetDelta = (before: Iterable<string>, after: Iterable<string>) => {
   const a = new Set(before), b = new Set(after);
   return {
@@ -318,6 +341,7 @@ export function diffGraphs(before: Graph, after: Graph): StructuralDiff {
     dbtResourcesAdded: [], dbtResourcesRemoved: [], dbtChanged: [],
     dbtRelationshipsAdded: [], dbtRelationshipsRemoved: [], dbtRelationshipsRewired: [],
     dbtParitiesAdded: [], dbtParitiesRemoved: [], dbtParitiesRewired: [],
+    dbtRowContractsAdded: [], dbtRowContractsRemoved: [], dbtRowContractsChanged: [],
   };
   for (const label of B.keys()) if (!A.has(label)) d.componentsAdded.push(label);
   for (const label of A.keys()) if (!B.has(label)) d.componentsRemoved.push(label);
@@ -431,6 +455,49 @@ export function diffGraphs(before: Graph, after: Graph): StructuralDiff {
   }
   for (const [name, parity] of dbtParityA)
     if (!dbtParityB.has(name)) d.dbtParitiesRemoved.push(parity);
+
+  const rowA = dbtRowContracts(before), rowB = dbtRowContracts(after);
+  for (const [uniqueId, current] of rowB) {
+    const previous = rowA.get(uniqueId);
+    if (!previous) {
+      d.dbtRowContractsAdded.push(current);
+      continue;
+    }
+    if (JSON.stringify(previous.contract) === JSON.stringify(current.contract)) continue;
+    const variantsBefore = new Map(previous.contract.variants.map((variant) => [variant.name, variant]));
+    const variantsAfter = new Map(current.contract.variants.map((variant) => [variant.name, variant]));
+    const variantsAdded = [...variantsAfter.keys()].filter((name) => !variantsBefore.has(name)).sort();
+    const variantsRemoved = [...variantsBefore.keys()].filter((name) => !variantsAfter.has(name)).sort();
+    const variantChanges = [...variantsAfter.entries()].flatMap(([name, variant]) => {
+      const prior = variantsBefore.get(name);
+      if (!prior) return [];
+      const requiredColumns = stringSetDelta(prior.requiredColumns, variant.requiredColumns);
+      const predicates = stringSetDelta(prior.predicates, variant.predicates);
+      if (
+        !requiredColumns.added.length &&
+        !requiredColumns.removed.length &&
+        !predicates.added.length &&
+        !predicates.removed.length
+      ) return [];
+      return [{
+        name,
+        requiredColumnsAdded: requiredColumns.added,
+        requiredColumnsRemoved: requiredColumns.removed,
+        predicatesAdded: predicates.added,
+        predicatesRemoved: predicates.removed,
+      }];
+    });
+    d.dbtRowContractsChanged.push({
+      model: current.model,
+      before: previous.contract,
+      after: current.contract,
+      variantsAdded,
+      variantsRemoved,
+      variantChanges,
+    });
+  }
+  for (const [uniqueId, previous] of rowA)
+    if (!rowB.has(uniqueId)) d.dbtRowContractsRemoved.push(previous);
   return d;
 }
 
@@ -444,8 +511,16 @@ export function renderDiff(d: StructuralDiff, fromLabel: string, toLabel: string
     n + x.columnsRemoved.length + x.constraintsRemoved.length + x.rolesRemoved.length +
     (x.observerBefore && !x.observerAfter ? 1 : 0) +
     (x.grainBefore?.length && !x.grainAfter?.length ? 1 : 0), 0);
+  const dbtRowContractLosses = d.dbtRowContractsRemoved.length +
+    d.dbtRowContractsChanged.reduce((count, change) =>
+      count +
+      change.variantsRemoved.length +
+      change.variantChanges.reduce((variantCount, variant) =>
+        variantCount + variant.requiredColumnsRemoved.length + variant.predicatesRemoved.length, 0
+      ), 0);
   const losses = d.componentsRemoved.length + d.invRemoved.length + d.boundaryRemoved.length + d.parityRemoved.length
-    + d.dbtResourcesRemoved.length + d.dbtRelationshipsRemoved.length + d.dbtParitiesRemoved.length + dbtShapeLosses;
+    + d.dbtResourcesRemoved.length + d.dbtRelationshipsRemoved.length + d.dbtParitiesRemoved.length
+    + dbtShapeLosses + dbtRowContractLosses;
   const line = (mark: string, s: string) => console.log(`  ${mark} ${s}`);
 
   if (d.componentsAdded.length) for (const c of d.componentsAdded) line("+", `component ${c}`);
@@ -521,11 +596,37 @@ export function renderDiff(d: StructuralDiff, fromLabel: string, toLabel: string
     if (parity.before.oracle !== parity.after.oracle)
       console.log(`      oracle "${parity.before.oracle}" → "${parity.after.oracle}"`);
   }
+  for (const { model, contract } of d.dbtRowContractsAdded)
+    line("+", `dbt row contract ${model} by ${contract.discriminator} via test "${contract.oracle}"`);
+  for (const { model, contract } of d.dbtRowContractsRemoved)
+    line("–", `dbt row contract ${model} by ${contract.discriminator} via test "${contract.oracle}"  (CONTRACT REMOVED)`);
+  for (const change of d.dbtRowContractsChanged) {
+    line("~", `dbt row contract ${change.model}`);
+    if (change.before.discriminator !== change.after.discriminator)
+      console.log(`      discriminator ${change.before.discriminator} → ${change.after.discriminator}`);
+    if (change.before.oracle !== change.after.oracle)
+      console.log(`      oracle "${change.before.oracle}" → "${change.after.oracle}"`);
+    if (change.variantsAdded.length)
+      console.log(`      variant +${change.variantsAdded.join(", +")}`);
+    if (change.variantsRemoved.length)
+      console.log(`      variant -${change.variantsRemoved.join(", -")}  (CONTRACT REMOVED)`);
+    for (const variant of change.variantChanges) {
+      if (variant.requiredColumnsAdded.length)
+        console.log(`      ${variant.name} required columns +${variant.requiredColumnsAdded.join(", +")}`);
+      if (variant.requiredColumnsRemoved.length)
+        console.log(`      ${variant.name} required columns -${variant.requiredColumnsRemoved.join(", -")}  (CONTRACT REMOVED)`);
+      if (variant.predicatesAdded.length)
+        console.log(`      ${variant.name} predicates +${variant.predicatesAdded.join(", +")}`);
+      if (variant.predicatesRemoved.length)
+        console.log(`      ${variant.name} predicates -${variant.predicatesRemoved.join(", -")}  (CONTRACT REMOVED)`);
+    }
+  }
 
   const changed = losses + d.componentsAdded.length + d.invAdded.length + d.boundaryAdded.length + d.boundaryRewired.length
     + d.parityAdded.length + d.parityRewired.length + d.dbtResourcesAdded.length + d.dbtChanged.length
     + d.dbtRelationshipsAdded.length + d.dbtRelationshipsRewired.length
-    + d.dbtParitiesAdded.length + d.dbtParitiesRewired.length;
+    + d.dbtParitiesAdded.length + d.dbtParitiesRewired.length
+    + d.dbtRowContractsAdded.length + d.dbtRowContractsChanged.length;
   if (!changed && !d.claimDelta.length) console.log("  no structural change.");
   console.log(`\n  ${changed} structural change(s) · ${losses} loss(es) (removed invariant/boundary/parity/component)`);
   return losses;

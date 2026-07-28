@@ -294,6 +294,162 @@ test("coherence verify executes declared dbt parity oracles", async () => {
   }
 });
 
+const rowContractSemantics = {
+  ...semantics,
+  rowContracts: {
+    usage: {
+      discriminator: "usage_id",
+      variants: {
+        metered: {
+          requiredColumns: ["usage_id", "amount"],
+          predicates: ["amount is non-negative"],
+        },
+      },
+      via: "revenue_entries_balance",
+    },
+  },
+};
+
+test("dbt row contracts bind typed variants to one exact executable oracle", async () => {
+  const root = await tmpProject({
+    "money.spec.md": "# Money\nRevenue facts.\n\n## works when\n- typechecks\n\n## why\nReason.\n",
+    ".coherence/dbt-manifest.json": snapshotText(),
+    "coherence.dbt.json": JSON.stringify(rowContractSemantics),
+    "runner.js": "console.log('COHERENCE_TEST_PASSED', process.argv[2]);\n",
+  });
+  try {
+    const config = cfg(root, {
+      test: ["node", join(root, "runner.js")],
+      testMatch: "COHERENCE_TEST_PASSED",
+      dbt: {
+        manifest: "target/manifest.json",
+        snapshot: ".coherence/dbt-manifest.json",
+        semantics: "coherence.dbt.json",
+      },
+    });
+    const g = await buildGraph(config);
+    const usage = g.nodes.find((node) => node.dbt?.uniqueId === "model.money.usage");
+    assert.deepEqual(usage?.dbt?.rowContract, {
+      discriminator: "usage_id",
+      variants: [{
+        name: "metered",
+        requiredColumns: ["amount", "usage_id"],
+        predicates: ["amount is non-negative"],
+      }],
+      oracle: "revenue_entries_balance",
+    });
+
+    const result = await runCaptured(() => runVerify(config, g, { fast: false }));
+    assert.equal(result.code, 0);
+    assert.match(result.out, /✓ \[dbt row contract\] usage by usage_id via revenue_entries_balance/);
+    assert.match(result.out, /dbt row contracts: 1 declared · 1 green · 0 red/);
+  } finally {
+    await cleanup(root);
+  }
+});
+
+test("dbt row contracts fail closed on invalid models, columns, variants, and oracles", async () => {
+  const cases: Array<{ semantics: unknown; error: RegExp }> = [
+    {
+      semantics: {
+        ...rowContractSemantics,
+        rowContracts: {
+          missing: rowContractSemantics.rowContracts.usage,
+        },
+      },
+      error: /dbt row contract names unknown model "missing"/,
+    },
+    {
+      semantics: {
+        ...rowContractSemantics,
+        rowContracts: {
+          usage: {
+            ...rowContractSemantics.rowContracts.usage,
+            discriminator: "missing_column",
+          },
+        },
+      },
+      error: /dbt row contract for "usage" names unknown discriminator column "missing_column"/,
+    },
+    {
+      semantics: {
+        ...rowContractSemantics,
+        rowContracts: {
+          usage: {
+            ...rowContractSemantics.rowContracts.usage,
+            variants: {
+              metered: { requiredColumns: ["missing_column"] },
+            },
+          },
+        },
+      },
+      error: /dbt row contract for "usage" variant "metered" names unknown required column "missing_column"/,
+    },
+    {
+      semantics: {
+        ...rowContractSemantics,
+        rowContracts: {
+          usage: {
+            ...rowContractSemantics.rowContracts.usage,
+            variants: {},
+          },
+        },
+      },
+      error: /dbt row contract for "usage" must declare at least one variant/,
+    },
+    {
+      semantics: {
+        ...rowContractSemantics,
+        rowContracts: {
+          usage: {
+            ...rowContractSemantics.rowContracts.usage,
+            variants: {
+              metered: {
+                requiredColumns: ["usage_id"],
+                predicate: "misspelled",
+              },
+            },
+          },
+        },
+      },
+      error: /dbt row contract for "usage" variant "metered" has unknown field "predicate"/,
+    },
+    {
+      semantics: {
+        ...rowContractSemantics,
+        rowContracts: {
+          usage: {
+            ...rowContractSemantics.rowContracts.usage,
+            via: "missing_test",
+          },
+        },
+      },
+      error: /dbt row contract for "usage" names unknown test "missing_test"/,
+    },
+  ];
+
+  for (const example of cases) {
+    const root = await tmpProject({
+      ".coherence/dbt-manifest.json": snapshotText(),
+      "coherence.dbt.json": JSON.stringify(example.semantics),
+    });
+    try {
+      await assert.rejects(
+        buildGraph(cfg(root, {
+          dbt: {
+            manifest: "target/manifest.json",
+            snapshot: ".coherence/dbt-manifest.json",
+            semantics: "coherence.dbt.json",
+          },
+        })),
+        example.error,
+      );
+    } finally {
+      await cleanup(root);
+    }
+  }
+});
+
 test("dbt semantics fail closed on unclassified in-scope models", async () => {
   const root = await tmpProject({
     "money.spec.md": "# Money\nRevenue facts.\n\n## works when\n- typechecks\n\n## why\nReason.\n",
@@ -979,6 +1135,54 @@ test("structural dbt diff records observer classification and treats removal as 
   ).renderDiff(removed, "before", "after"));
   assert.equal(result.code, 1);
   assert.match(result.out, /observer true → false.*CLASSIFICATION REMOVED/);
+});
+
+test("structural dbt diff records row-contract variant and required-column changes", async () => {
+  const base = {
+    discriminator: "event_type",
+    variants: [{
+      name: "invoice",
+      requiredColumns: ["event_id"],
+      predicates: [],
+    }],
+    oracle: "event_contract",
+  };
+  const expanded = {
+    ...base,
+    variants: [
+      {
+        name: "invoice",
+        requiredColumns: ["amount", "event_id"],
+        predicates: ["amount is non-negative"],
+      },
+      {
+        name: "payment",
+        requiredColumns: ["event_id", "payment_id"],
+        predicates: [],
+      },
+    ],
+  };
+  const before = graph([dbtNode("model.money.events", { rowContract: base })]);
+  const after = graph([dbtNode("model.money.events", { rowContract: expanded })]);
+
+  const changed = diffGraphs(before, after);
+  assert.deepEqual(changed.dbtRowContractsChanged[0].variantsAdded, ["payment"]);
+  assert.deepEqual(changed.dbtRowContractsChanged[0].variantChanges, [{
+    name: "invoice",
+    requiredColumnsAdded: ["amount"],
+    requiredColumnsRemoved: [],
+    predicatesAdded: ["amount is non-negative"],
+    predicatesRemoved: [],
+  }]);
+
+  const removed = diffGraphs(after, before);
+  const result = await runCaptured(async () => (
+    await import("../src/structural.ts")
+  ).renderDiff(removed, "before", "after"));
+  assert.equal(result.code, 3);
+  assert.match(result.out, /variant -payment.*CONTRACT REMOVED/);
+  assert.match(result.out, /required columns -amount.*CONTRACT REMOVED/);
+  assert.match(result.out, /predicates -amount is non-negative.*CONTRACT REMOVED/);
 });
 
 test("structural dbt diff treats removed parity as a loss", async () => {

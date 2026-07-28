@@ -14,6 +14,16 @@ export interface DbtConstraint {
   columns: string[];
 }
 
+export interface DbtRowContract {
+  discriminator: string;
+  variants: Array<{
+    name: string;
+    requiredColumns: string[];
+    predicates: string[];
+  }>;
+  oracle: string;
+}
+
 export interface GraphNode {
   id: string; parent?: string; label: string; kind: string;
   sub?: string; path?: string; line?: number; claimed?: boolean; claims?: string[];
@@ -31,6 +41,7 @@ export interface GraphNode {
     observer?: true;
     shadowedBy?: string[];
     parities?: DbtParity[];
+    rowContract?: DbtRowContract;
     grain?: string[];
     materialized?: string;
     uniqueKey?: string | string[];

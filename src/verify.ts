@@ -194,6 +194,35 @@ export async function runVerify(cfg: Config, graph: Graph, opts: { fast?: boolea
     console.log(`dbt parity: ${dbtParities.length} declared · ${dbtParityGreen} green · ${dbtParityRed} red${opts.fast ? ` · ${dbtParities.length} skipped` : ""}`);
   }
 
+  const dbtRowContracts = graph.nodes.flatMap((node) =>
+    node.dbt?.rowContract ? [{ model: node.label, contract: node.dbt.rowContract }] : []
+  );
+  const dbtRowContractRuns = new Map<string, { ok: boolean; detail: string }>();
+  let dbtRowContractRed = 0;
+  let dbtRowContractGreen = 0;
+  for (const { model, contract } of dbtRowContracts) {
+    if (opts.fast) {
+      console.log(`  · [dbt row contract] ${model} by ${contract.discriminator} via ${contract.oracle} (--fast)`);
+      continue;
+    }
+    let result = dbtRowContractRuns.get(contract.oracle);
+    if (!result) {
+      result = cfg.test.length
+        ? runNamedTest(cfg, root, contract.oracle)
+        : { ok: false, detail: "no test runner configured (config.test)" };
+      dbtRowContractRuns.set(contract.oracle, result);
+    }
+    if (result.ok) {
+      dbtRowContractGreen++;
+      console.log(`  ✓ [dbt row contract] ${model} by ${contract.discriminator} via ${contract.oracle}`);
+    } else {
+      dbtRowContractRed++;
+      console.log(`  ✗ [dbt row contract] ${model} by ${contract.discriminator} via ${contract.oracle}${result.detail ? ` — ${result.detail}` : ""}`);
+    }
+  }
+  if (dbtRowContracts.length)
+    console.log(`dbt row contracts: ${dbtRowContracts.length} declared · ${dbtRowContractGreen} green · ${dbtRowContractRed} red${opts.fast ? ` · ${dbtRowContracts.length} skipped` : ""}`);
+
   const verifyJobs = jobs.filter((j) => j.kind === "verify-statement");
   const genJobs = jobs.filter((j) => j.kind === "generate-doc" || j.kind === "generate-claims");
   const authorJobs = jobs.filter((j) => j.kind === "author-why");
@@ -206,7 +235,7 @@ export async function runVerify(cfg: Config, graph: Graph, opts: { fast?: boolea
     if (authorJobs.length) { console.log(`\n AUTHOR — the WHY (NOT derivable — do not fabricate; needs a human/attested author):`); for (const j of authorJobs) console.log(`   [why] component "${j.name}" — states no rationale`); }
   }
 
-  const failures = claimFailures + broken + covGaps + shadows.violations.length + shadows.observerViolations.length + dbtParityRed;
-  console.log(failures === 0 ? (verifyJobs.length ? `\n• ${verifyJobs.length} verification job(s) pending` : "\n✓ coherent") : `\n✗ ${failures} coherence failure(s) — ${claimFailures} claim · ${broken} broken · ${covGaps} coverage · ${shadows.violations.length} dbt shadow · ${shadows.observerViolations.length} dbt observer · ${dbtParityRed} dbt parity`);
+  const failures = claimFailures + broken + covGaps + shadows.violations.length + shadows.observerViolations.length + dbtParityRed + dbtRowContractRed;
+  console.log(failures === 0 ? (verifyJobs.length ? `\n• ${verifyJobs.length} verification job(s) pending` : "\n✓ coherent") : `\n✗ ${failures} coherence failure(s) — ${claimFailures} claim · ${broken} broken · ${covGaps} coverage · ${shadows.violations.length} dbt shadow · ${shadows.observerViolations.length} dbt observer · ${dbtParityRed} dbt parity · ${dbtRowContractRed} dbt row contract`);
   return failures === 0 ? 0 : 1;
 }

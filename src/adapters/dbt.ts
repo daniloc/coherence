@@ -7,7 +7,7 @@
 // multiplicity, filtering) stays in a separate sidecar and is checked against the graph.
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
-import type { Config, DbtConstraint, DbtParity, GraphEdge, GraphNode } from "../types.ts";
+import type { Config, DbtConstraint, DbtParity, DbtRowContract, GraphEdge, GraphNode } from "../types.ts";
 import { globToRe } from "../decompose.ts";
 
 export interface DbtResource {
@@ -43,6 +43,14 @@ interface DbtSemantics {
     between: [string, string];
     via: string;
   }>;
+  rowContracts?: Record<string, {
+    discriminator: string;
+    variants: Record<string, {
+      requiredColumns: string[];
+      predicates?: string[];
+    }>;
+    via: string;
+  }>;
   models?: Record<string, { grain?: string[] }>;
   relationships?: Array<{
     from: string;
@@ -74,6 +82,8 @@ const MULTIPLICITIES = new Set<Multiplicity>(["one-to-one", "one-to-many", "many
 const FILTERING = new Set<Filtering>(["preserves", "narrows", "expands", "mixed"]);
 
 const text = (v: unknown): string | undefined => typeof v === "string" ? v : undefined;
+const record = (v: unknown): v is Record<string, unknown> =>
+  !!v && typeof v === "object" && !Array.isArray(v);
 
 const uniqueKey = (v: unknown): string | string[] | undefined => {
   if (typeof v === "string") return v;
@@ -324,6 +334,78 @@ export async function dbtGraphFragment(
     paritiesByOracle.set(oracle.uniqueId, current);
   }
 
+  if (semantics.rowContracts !== undefined && !record(semantics.rowContracts))
+    throw new Error("dbt rowContracts must be an object keyed by model name");
+  const rowContracts = new Map<string, DbtRowContract>();
+  for (const [modelName, rawDeclaration] of Object.entries(semantics.rowContracts ?? {})) {
+    const model = models.get(modelName);
+    if (!model) throw new Error(`dbt row contract names unknown model "${modelName}"`);
+    if (!record(rawDeclaration))
+      throw new Error(`dbt row contract for "${modelName}" must be an object`);
+    const unknownDeclarationField = Object.keys(rawDeclaration).find((key) =>
+      key !== "discriminator" && key !== "variants" && key !== "via"
+    );
+    if (unknownDeclarationField)
+      throw new Error(`dbt row contract for "${modelName}" has unknown field "${unknownDeclarationField}"`);
+    const declaration = rawDeclaration as {
+      discriminator?: unknown;
+      variants?: unknown;
+      via?: unknown;
+    };
+    if (typeof declaration.discriminator !== "string" || !declaration.discriminator)
+      throw new Error(`dbt row contract for "${modelName}" must name a discriminator column`);
+    const columns = new Set(model.columns.map((column) => column.name));
+    if (!columns.has(declaration.discriminator))
+      throw new Error(`dbt row contract for "${modelName}" names unknown discriminator column "${declaration.discriminator}"`);
+    if (!record(declaration.variants) || !Object.keys(declaration.variants).length)
+      throw new Error(`dbt row contract for "${modelName}" must declare at least one variant`);
+    if (typeof declaration.via !== "string" || !declaration.via)
+      throw new Error(`dbt row contract for "${modelName}" must name one test in "via"`);
+    const oracle = testByName(resources, declaration.via);
+    if (!oracle)
+      throw new Error(`dbt row contract for "${modelName}" names unknown test "${declaration.via}"`);
+    if (!oracle.dependsOn.includes(model.uniqueId))
+      throw new Error(`dbt row contract for "${modelName}" oracle "${oracle.name}" does not depend on ${modelName}`);
+
+    const variants: DbtRowContract["variants"] = [];
+    for (const [variantName, rawVariant] of Object.entries(declaration.variants)) {
+      if (!variantName.trim())
+        throw new Error(`dbt row contract for "${modelName}" has an empty variant name`);
+      if (!record(rawVariant))
+        throw new Error(`dbt row contract for "${modelName}" variant "${variantName}" must be an object`);
+      const unknownVariantField = Object.keys(rawVariant).find((key) =>
+        key !== "requiredColumns" && key !== "predicates"
+      );
+      if (unknownVariantField)
+        throw new Error(`dbt row contract for "${modelName}" variant "${variantName}" has unknown field "${unknownVariantField}"`);
+      const requiredColumns = rawVariant.requiredColumns;
+      const predicates = rawVariant.predicates ?? [];
+      if (
+        !Array.isArray(requiredColumns) ||
+        !requiredColumns.length ||
+        requiredColumns.some((column) => typeof column !== "string" || !column)
+      ) throw new Error(`dbt row contract for "${modelName}" variant "${variantName}" must declare requiredColumns`);
+      if (
+        !Array.isArray(predicates) ||
+        predicates.some((predicate) => typeof predicate !== "string" || !predicate)
+      ) throw new Error(`dbt row contract for "${modelName}" variant "${variantName}" predicates must be non-empty strings`);
+      for (const column of requiredColumns)
+        if (!columns.has(column))
+          throw new Error(`dbt row contract for "${modelName}" variant "${variantName}" names unknown required column "${column}"`);
+      variants.push({
+        name: variantName,
+        requiredColumns: [...new Set(requiredColumns)].sort(),
+        predicates: [...new Set(predicates)].sort(),
+      });
+    }
+    variants.sort((a, b) => a.name.localeCompare(b.name));
+    rowContracts.set(model.uniqueId, {
+      discriminator: declaration.discriminator,
+      variants,
+      oracle: oracle.name,
+    });
+  }
+
   const roles = new Map<string, string[]>();
   for (const [role, selectors] of Object.entries(semantics.roles ?? {})) {
     if (!Array.isArray(selectors) || selectors.some((s) => typeof s !== "string"))
@@ -385,6 +467,7 @@ export async function dbtGraphFragment(
         observer: observers.has(r.uniqueId) ? true : undefined,
         shadowedBy: shadowedBy.has(r.uniqueId) ? [...shadowedBy.get(r.uniqueId)!].sort() : undefined,
         parities: paritiesByOracle.get(r.uniqueId),
+        rowContract: rowContracts.get(r.uniqueId),
         grain: grain.get(r.uniqueId),
         materialized: r.materialized,
         uniqueKey: r.uniqueKey,
