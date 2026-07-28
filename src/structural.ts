@@ -12,10 +12,12 @@ import { mkdtemp, readFile, readdir, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, relative, resolve } from "node:path";
 import { parseBoundary, type Boundary } from "./boundary.ts";
+import { parseParity, type Parity } from "./parity.ts";
 import { loadConfig } from "./config.ts";
 import { buildGraph } from "./derive.ts";
 import { ownerOf } from "./walk.ts";
 import { CONFORMS_RE, dictionaryDir, parseWord } from "./phrasebook.ts";
+import { noveltyVerdict, renderNovelty, scanSurface, surfaceSignals } from "./novelty.ts";
 import type { Config, Graph, GraphNode } from "./types.ts";
 
 /** Files changed vs `since` (a ref), or — when null — the working tree vs HEAD
@@ -95,29 +97,54 @@ export async function affectedComponents(cfg: Config, graph: Graph, files: Set<s
   return hit;
 }
 
+// Git env vars a caller (lint-staged, a rebase, another hook) may have set that
+// would hijack our subcommands — most damagingly `git worktree add`, which
+// resolves a relative GIT_INDEX_FILE inside the new detached worktree and dies
+// with ".git/index: Not a directory". Scrub them so worktree/log ops always
+// target the real repo regardless of the invoking context.
+const GIT_ENV_SCRUB = [
+  "GIT_INDEX_FILE",
+  "GIT_DIR",
+  "GIT_WORK_TREE",
+  "GIT_OBJECT_DIRECTORY",
+  "GIT_COMMON_DIR",
+  "GIT_PREFIX",
+] as const;
+
+const scrubbedGitEnv = (): NodeJS.ProcessEnv => {
+  const env = { ...process.env };
+  for (const k of GIT_ENV_SCRUB) delete env[k];
+  return env;
+};
+
 const git = (args: string[], cwd: string) =>
-  spawnSync("git", args, { cwd, encoding: "utf8" });
+  spawnSync("git", args, { cwd, encoding: "utf8", env: scrubbedGitEnv() });
 
 export type { Boundary } from "./boundary.ts";
 interface Ledger {
   label: string;
   invariants: Set<string>;
   boundaries: Map<string, Boundary>; // keyed by invariant name
-  claims: Set<string>;               // non-boundary claims (exists/imports/…)
+  parities: Map<string, Parity>;     // parity claims, keyed by invariant name (first-class anchors)
+  claims: Set<string>;               // other claims (exists/imports/…)
 }
 
 function ledgerOf(node: GraphNode): Ledger {
   const boundaries = new Map<string, Boundary>();
+  const parities = new Map<string, Parity>();
   const claims = new Set<string>();
   for (const c of node.claims ?? []) {
     const b = parseBoundary(c);
+    const p = b ? null : parseParity(c);
     if (b) boundaries.set(b.inv, b);
+    else if (p) parities.set(p.inv, p);
     else claims.add(c);
   }
   return {
     label: node.label,
     invariants: new Set(node.invariants ?? []),
     boundaries,
+    parities,
     claims,
   };
 }
@@ -155,9 +182,12 @@ export function boundariesAt(graph: Graph, sym: string): Array<Boundary & { comp
   return out;
 }
 
-/** Build the graph as it exists at a git ref (null = the live working tree). */
-export async function graphAtRef(cfg: Config, ref: string | null): Promise<Graph> {
-  if (!ref) return buildGraph(cfg);
+/** Run `fn` against the project root AS IT EXISTS at a git ref (null = the live
+ *  working tree — no checkout). The temp worktree lives only for the callback, so a
+ *  caller can derive anything it needs from that tree (the graph, a surface scan) in
+ *  ONE checkout instead of one per artifact. */
+export async function withTreeAt<T>(cfg: Config, ref: string | null, fn: (projRoot: string) => Promise<T>): Promise<T> {
+  if (!ref) return fn(cfg.root);
   const top = git(["rev-parse", "--show-toplevel"], cfg.root);
   if (top.status !== 0) throw new Error(`not a git repo at ${cfg.root}: ${(top.stderr || "").trim()}`);
   const repoRoot = top.stdout.trim();
@@ -172,11 +202,16 @@ export async function graphAtRef(cfg: Config, ref: string | null): Promise<Graph
     throw new Error(`cannot check out "${ref}": ${(add.stderr || "").trim()}`);
   }
   try {
-    return await buildGraph(await loadConfig(join(tmp, relProject)));
+    return await fn(join(tmp, relProject));
   } finally {
     git(["worktree", "remove", "--force", tmp], cfg.root);
     await rm(tmp, { recursive: true, force: true }).catch(() => {});
   }
+}
+
+/** Build the graph as it exists at a git ref (null = the live working tree). */
+export async function graphAtRef(cfg: Config, ref: string | null): Promise<Graph> {
+  return withTreeAt(cfg, ref, async (root) => buildGraph(await loadConfig(root)));
 }
 
 export interface StructuralDiff {
@@ -187,6 +222,9 @@ export interface StructuralDiff {
   boundaryAdded: Array<{ comp: string; b: Boundary }>;
   boundaryRemoved: Array<{ comp: string; b: Boundary }>;
   boundaryRewired: Array<{ comp: string; inv: string; before: Boundary; after: Boundary }>;
+  parityAdded: Array<{ comp: string; p: Parity }>;
+  parityRemoved: Array<{ comp: string; p: Parity }>;
+  parityRewired: Array<{ comp: string; inv: string; before: Parity; after: Parity }>;
   claimDelta: Array<{ comp: string; added: number; removed: number }>;
 }
 
@@ -194,7 +232,8 @@ export function diffGraphs(before: Graph, after: Graph): StructuralDiff {
   const A = ledgersOf(before), B = ledgersOf(after);
   const d: StructuralDiff = {
     componentsAdded: [], componentsRemoved: [], invAdded: [], invRemoved: [],
-    boundaryAdded: [], boundaryRemoved: [], boundaryRewired: [], claimDelta: [],
+    boundaryAdded: [], boundaryRemoved: [], boundaryRewired: [],
+    parityAdded: [], parityRemoved: [], parityRewired: [], claimDelta: [],
   };
   for (const label of B.keys()) if (!A.has(label)) d.componentsAdded.push(label);
   for (const label of A.keys()) if (!B.has(label)) d.componentsRemoved.push(label);
@@ -211,6 +250,14 @@ export function diffGraphs(before: Graph, after: Graph): StructuralDiff {
         d.boundaryRewired.push({ comp: label, inv, before: prev, after: bnd });
     }
     for (const [inv, bnd] of a.boundaries) if (!b.boundaries.has(inv)) d.boundaryRemoved.push({ comp: label, b: bnd });
+    // parity claims — anchors like boundaries: added/removed/rewired, a removal is a LOSS
+    for (const [inv, par] of b.parities) {
+      const prev = a.parities.get(inv);
+      if (!prev) d.parityAdded.push({ comp: label, p: par });
+      else if (prev.domain !== par.domain || prev.f !== par.f || prev.g !== par.g || prev.oracle !== par.oracle)
+        d.parityRewired.push({ comp: label, inv, before: prev, after: par });
+    }
+    for (const [inv, par] of a.parities) if (!b.parities.has(inv)) d.parityRemoved.push({ comp: label, p: par });
     let added = 0, removed = 0;
     for (const c of b.claims) if (!a.claims.has(c)) added++;
     for (const c of a.claims) if (!b.claims.has(c)) removed++;
@@ -220,11 +267,12 @@ export function diffGraphs(before: Graph, after: Graph): StructuralDiff {
 }
 
 const fmtB = (b: Boundary) => `"${b.inv}" at ${b.chokepoint}${b.oracle ? ` via ${b.verb} "${b.oracle}"` : ""}`;
+const fmtP = (p: Parity) => `"${p.inv}" over ${p.domain} between ${p.f} and ${p.g} via test "${p.oracle}"`;
 
-/** Render the diff; return the count of LOSSES (removed invariants/boundaries/components). */
+/** Render the diff; return the count of LOSSES (removed invariants/boundaries/parities/components). */
 export function renderDiff(d: StructuralDiff, fromLabel: string, toLabel: string): number {
   console.log(`\n  STRUCTURAL LEDGER — ${fromLabel} → ${toLabel}\n`);
-  const losses = d.componentsRemoved.length + d.invRemoved.length + d.boundaryRemoved.length;
+  const losses = d.componentsRemoved.length + d.invRemoved.length + d.boundaryRemoved.length + d.parityRemoved.length;
   const line = (mark: string, s: string) => console.log(`  ${mark} ${s}`);
 
   if (d.componentsAdded.length) for (const c of d.componentsAdded) line("+", `component ${c}`);
@@ -243,22 +291,82 @@ export function renderDiff(d: StructuralDiff, fromLabel: string, toLabel: string
     for (const s of [cp, or].filter(Boolean)) console.log(`      ${s}`);
   }
 
+  for (const x of d.parityAdded) line("+", `parity ${fmtP(x.p)} (${x.comp})`);
+  for (const x of d.parityRemoved) line("–", `parity ${fmtP(x.p)} (${x.comp})  (AGREEMENT ANCHOR REMOVED)`);
+  for (const x of d.parityRewired) {
+    line("~", `parity "${x.inv}" (${x.comp}) rewired:`);
+    const dm = x.before.domain !== x.after.domain ? `domain ${x.before.domain} → ${x.after.domain}` : "";
+    const fg = x.before.f !== x.after.f || x.before.g !== x.after.g
+      ? `projections ${x.before.f}/${x.before.g} → ${x.after.f}/${x.after.g}` : "";
+    const or = x.before.oracle !== x.after.oracle ? `oracle "${x.before.oracle}" → "${x.after.oracle}"` : "";
+    for (const s of [dm, fg, or].filter(Boolean)) console.log(`      ${s}`);
+  }
+
   if (d.claimDelta.length) {
     const tot = d.claimDelta.reduce((n, c) => n + c.added + c.removed, 0);
     console.log(`\n  (${tot} non-boundary claim change(s) across ${d.claimDelta.length} component(s): ${d.claimDelta.map((c) => `${c.comp} +${c.added}/-${c.removed}`).join(", ")})`);
   }
 
-  const changed = losses + d.componentsAdded.length + d.invAdded.length + d.boundaryAdded.length + d.boundaryRewired.length;
+  const changed = losses + d.componentsAdded.length + d.invAdded.length + d.boundaryAdded.length + d.boundaryRewired.length
+    + d.parityAdded.length + d.parityRewired.length;
   if (!changed && !d.claimDelta.length) console.log("  no structural change.");
-  console.log(`\n  ${changed} structural change(s) · ${losses} loss(es) (removed invariant/boundary/component)`);
+  console.log(`\n  ${changed} structural change(s) · ${losses} loss(es) (removed invariant/boundary/parity/component)`);
   return losses;
 }
 
+/** Files changed refA → refB (refB null = the working tree, plus untracked). Paths
+ *  relative to cfg.root. The domain the novelty surface scan is scoped to. */
+export function changedBetween(cfg: Config, refA: string, refB: string | null): Set<string> {
+  const lines = (args: string[]) =>
+    (git(args, cfg.root).stdout || "").split("\n").map((s) => s.trim()).filter(Boolean);
+  if (refB) return new Set(lines(["diff", "--name-only", "--relative", refA, refB]));
+  return new Set([
+    ...lines(["diff", "--name-only", "--relative", refA]),
+    ...lines(["ls-files", "--others", "--exclude-standard"]),
+  ]);
+}
+
+/** LOC added/deleted refA → refB across CODE files (cfg.codeExt), with cfg.ignore dirs
+ *  and binary rows excluded. Untracked files (refB = null) are not counted — the
+ *  headline use is a committed ref range. */
+export function locDelta(cfg: Config, refA: string, refB: string | null): { added: number; deleted: number } {
+  const r = git(["diff", "--numstat", "--relative", refA, ...(refB ? [refB] : [])], cfg.root);
+  const extRe = new RegExp(`\\.(${cfg.codeExt.join("|")})$`);
+  const ignore = new Set(cfg.ignore);
+  let added = 0, deleted = 0;
+  for (const line of (r.stdout || "").split("\n")) {
+    const m = /^(\d+)\t(\d+)\t(.+)$/.exec(line.trim());
+    if (!m) continue; // binary rows are "-\t-\tpath"
+    const path = m[3];
+    if (!extRe.test(path)) continue;
+    if (path.split("/").some((seg) => ignore.has(seg))) continue;
+    added += Number(m[1]); deleted += Number(m[2]);
+  }
+  return { added, deleted };
+}
+
 export async function structuralLog(cfg: Config, refA: string, refB: string | null, strict: boolean): Promise<number> {
-  const before = await graphAtRef(cfg, refA);
-  const after = await graphAtRef(cfg, refB);
-  const d = diffGraphs(before, after);
+  // One checkout per ref: derive the graph AND the changed-file domain scan from the
+  // same tree (the novelty surface proxies need the file contents at each ref).
+  const changed = changedBetween(cfg, refA, refB);
+  const at = (ref: string | null) => withTreeAt(cfg, ref, async (root) => ({
+    graph: await buildGraph(await loadConfig(root)),
+    surface: await scanSurface(root, changed),
+  }));
+  const before = await at(refA);
+  const after = await at(refB);
+  const d = diffGraphs(before.graph, after.graph);
   const losses = renderDiff(d, refA, refB ?? "working tree");
+
+  // The novelty-vs-anchor advisory: behavioral surface added vs anchors added. Advisory
+  // only — it renders after the ledger and never touches the exit code.
+  const sig = surfaceSignals(
+    before.surface, after.surface,
+    locDelta(cfg, refA, refB),
+    { anchorsAdded: d.invAdded.length + d.boundaryAdded.length + d.parityAdded.length, componentsAdded: d.componentsAdded.length },
+  );
+  renderNovelty(sig, noveltyVerdict(sig, cfg.novelty));
+
   if (strict && losses) {
     console.log(`\n  ✗ --strict: ${losses} structural loss(es) — a dropped invariant/boundary must be intentional.`);
     return 1;

@@ -58,6 +58,29 @@ export interface Config {
   claudeMdPath?: string;    // path to the CLAUDE.md whose fenced block `coherence claude` owns (default: "CLAUDE.md" at cfg.root). Use a `../`-relative path when the authored CLAUDE.md lives outside the coherence root (e.g. a repo root above a sub-package); coherence still operates on cfg.root, only the splice target moves.
   dictionary?: string;      // dir (relative to cfg.root) holding the pattern dictionary — one `<Word>.md` per word, each a `# <Word>` heading + intent + `## commitments` claim list. A `conforms to <Word>` claim expands the word's commitments against the declaring component. Default "dictionary"; a project with no such dir simply has no words (the claim form still resolves — a missing word file goes RED, not skip).
 
+  novelty?: {
+    // Thresholds for the novelty-vs-anchor advisory `log` renders after the ledger diff.
+    // Surface = net-new exported symbols + net-new union/enum variants + net-new keyed-
+    // table keys across the ref range (test files excluded).
+    minSurface?: number; // advisory floor for the surface count (default 8)
+    minLoc?: number;     // LOC-added floor that can raise the zero-anchor alarm alone (default 400)
+    ratio?: number;      // anchors added are "keeping pace" while surface <= anchors * ratio (default 12)
+  };
+
+  // --- producer/consumer contracts across deploy artifacts (mechanisms 2a + 3) ---
+  // An invariant that SPANS deploy artifacts (e.g. a browser bundle and a Worker) is
+  // exactly what no single compiler run can see — only the whole-source graph can. The
+  // project declares its deploy units and its typed cross-unit message contracts here;
+  // `coherence contracts` owns the resolution, the anchoring gate, and the uncovered-
+  // surface detector.
+  artifacts?: Record<string, string[]>; // deploy unit name → path globs (a file may belong to several, e.g. shared/)
+  contracts?: Record<string, {
+    producer: string;     // chokepoint symbol that EMITS the typed message
+    consumer: string;     // chokepoint symbol that CONSUMES it
+    type: string;         // the shared vocabulary symbol (the contract's type/registry)
+    description?: string;
+  }>;
+
   // --- ratchet / atlas subcommands (lint-sinks · conventions · atlas) — all optional ---
   // The harness owns the MECHANISM (scan, classify, baseline, render, --check); the
   // project owns the DATA here. Absent → sensible defaults (the lints scan the whole

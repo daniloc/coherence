@@ -15,7 +15,8 @@ import { join } from "node:path";
 import { spawnSync } from "node:child_process";
 import type { Config, Graph } from "./types.ts";
 import { BOUNDARY_RE } from "./boundary.ts";
-import { analyzeOracle } from "./oracle-domain.ts";
+import { PARITY_RE } from "./parity.ts";
+import { analyzeOracle, analyzeParityOracle } from "./oracle-domain.ts";
 import { unescapeMd } from "./walk.ts";
 
 const fileExists = async (p: string) => { try { await stat(p); return true; } catch { return false; } };
@@ -99,6 +100,20 @@ export const CONFORMS_RE = /^conforms to\s+([A-Za-z][A-Za-z0-9_-]*)$/;
  *  to a test runner whose `-t <name>` treats the arg as a regex (vitest, jest). */
 export const reEscape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
+/** Run the configured test runner scoped to ONE named test — the shared executable arm
+ *  of `passes test`, `boundary … via test`, and `parity … via test`. The name is
+ *  regex-escaped for the runner's `-t`; exit 0 alone is not trusted (`testMatch`
+ *  requires positive evidence the named test actually ran — an exit-0 runner that
+ *  matched zero tests would otherwise pass a renamed/deleted oracle). Returns
+ *  `{ ok: true }` on a real pass, else the failure detail. */
+function execNamedTest(cfg: Config, root: string, name: string): { ok: boolean; detail: string } {
+  const r = spawnSync(cfg.test[0], [...cfg.test.slice(1), reEscape(name)], { cwd: root, encoding: "utf8", timeout: 120000 });
+  const out = (r.stderr || "") + (r.stdout || "");
+  if (r.status !== 0) return { ok: false, detail: out.split("\n").filter(Boolean).slice(-3).join(" | ").slice(0, 200) };
+  if (cfg.testMatch && !new RegExp(cfg.testMatch).test(out)) return { ok: false, detail: `test "${name}" matched no run (testMatch)` };
+  return { ok: true, detail: "" };
+}
+
 /** Scan the dictionary dir + cross-reference the graph's `conforms to` claims. Empty when
  *  the project has no dictionary dir (so the overview's Dictionary section is omitted). */
 export async function loadDictionary(cfg: Config, graph: Graph): Promise<DictEntry[]> {
@@ -178,17 +193,8 @@ export const CLAIM_FORMS: ClaimForm[] = [
     evaluate: (ctx, m) => {
       if (ctx.fast) return { kind: "skip", detail: "executable tier (--fast)" };
       if (!ctx.cfg.test || !ctx.cfg.test.length) return { kind: "skip", detail: "no test runner configured (config.test)" };
-      // The name is appended as the runner's `-t <name>` arg, which vitest/jest treat as a
-      // REGEX — escape it so a name with `+`/parens matches literally instead of silently
-      // matching nothing (which exit-0 runners report as a pass, not a failure).
-      const r = spawnSync(ctx.cfg.test[0], [...ctx.cfg.test.slice(1), reEscape(m[1])], { cwd: ctx.root, encoding: "utf8", timeout: 120000 });
-      const out = (r.stderr || "") + (r.stdout || "");
-      const tail = out.split("\n").filter(Boolean).slice(-3).join(" | ");
-      // exit 0 alone is not trusted: a runner that matched zero tests (renamed/deleted)
-      // can still exit 0. testMatch requires positive evidence the named test actually ran.
-      if (r.status !== 0) return { kind: "fail", detail: tail.slice(0, 200) };
-      if (ctx.cfg.testMatch && !new RegExp(ctx.cfg.testMatch).test(out)) return { kind: "fail", detail: `test "${m[1]}" matched no run (testMatch)` };
-      return { kind: "pass" };
+      const r = execNamedTest(ctx.cfg, ctx.root, m[1]);
+      return r.ok ? { kind: "pass" } : { kind: "fail", detail: r.detail };
     },
   },
   {
@@ -219,11 +225,8 @@ export const CLAIM_FORMS: ClaimForm[] = [
       }
       if (ctx.fast) return { kind: "skip", detail: "boundary oracle (--fast)" };
       if (!ctx.cfg.test || !ctx.cfg.test.length) return { kind: "skip", detail: "no test runner configured (config.test)" };
-      // Same regex-arg hazard as `passes test`: escape the oracle name for the runner's `-t`.
-      const r = spawnSync(ctx.cfg.test[0], [...ctx.cfg.test.slice(1), reEscape(test)], { cwd: ctx.root, encoding: "utf8", timeout: 120000 });
-      const out = (r.stderr || "") + (r.stdout || "");
-      if (r.status !== 0) return { kind: "fail", detail: out.split("\n").filter(Boolean).slice(-3).join(" | ").slice(0, 200) };
-      if (ctx.cfg.testMatch && !new RegExp(ctx.cfg.testMatch).test(out)) return { kind: "fail", detail: `oracle "${test}" matched no run (testMatch)` };
+      const r = execNamedTest(ctx.cfg, ctx.root, test);
+      if (!r.ok) return { kind: "fail", detail: r.detail };
       return { kind: "pass", detail: `${inv} @ ${sym}${verb === "guard" ? " (source-property guard)" : ""}` };
     },
   },
@@ -242,6 +245,40 @@ export const CLAIM_FORMS: ClaimForm[] = [
     // which would wrongly report the topology as an unread claim.
     match: (l) => l.match(/^lives in\s+(\S+)$/),
     evaluate: (_ctx, m) => ({ kind: "pass", detail: `resides in ${m[1]}` }),
+  },
+  {
+    name: "parity",
+    grammar: 'parity "<invariant>" over <domain> between <fnA> and <fnB> via test "<oracle>"',
+    example: 'parity "disclosure faithfulness" over TOOL_NAMES between toolActivity and messageProvenance via test "live equals settled"',
+    tier: "hybrid",
+    // The AGREEMENT ratchet — the boundary totality pattern generalized from coverage to
+    // parity. Two functions are declared PROJECTIONS OF ONE ENUMERATED DOMAIN and must
+    // agree over it: the invariant is named (and anchored, so a parity claim satisfies
+    // the invariant-coverage gate exactly like a boundary), the domain and BOTH
+    // projection symbols must exist in the code graph, and the oracle passes. The parity
+    // META-ORACLE runs even under --fast (source analysis, like the boundary's): the
+    // named describe must ENUMERATE the declared domain and DRIVE both projections —
+    // a one-sided or sample-list oracle fails the claim rather than wearing the label.
+    match: (l) => l.match(PARITY_RE),
+    evaluate: async (ctx, m) => {
+      const inv = m[1], domain = m[2], f = m[3], g = m[4], oracle = m[5];
+      ctx.anchor(inv);
+      for (const s of [domain, f, g])
+        if (!ctx.graph.nodes.some((n) => n.kind === "symbol" && n.label === s))
+          return { kind: "fail", detail: `symbol "${s}" not found in the code graph` };
+      if (ctx.cfg.oracleDomain !== false) {
+        const a = await analyzeParityOracle(ctx.cfg, oracle, domain, f, g);
+        if (a.verdict === "not-found")
+          return { kind: "fail", detail: `[parity] "${oracle}" — no describe() with this EXACT title found, so the parity meta-oracle cannot analyze it. Anchor the claim to the oracle's exact describe title.` };
+        if (a.verdict !== "ok")
+          return { kind: "fail", detail: `[parity] "${oracle}" ${a.detail} (${a.file}). Loop the declared domain and assert \`${f}\` ≡ \`${g}\` per member.` };
+      }
+      if (ctx.fast) return { kind: "skip", detail: "parity oracle (--fast)" };
+      if (!ctx.cfg.test || !ctx.cfg.test.length) return { kind: "skip", detail: "no test runner configured (config.test)" };
+      const r = execNamedTest(ctx.cfg, ctx.root, oracle);
+      if (!r.ok) return { kind: "fail", detail: r.detail };
+      return { kind: "pass", detail: `${inv}: ${f} ≡ ${g} over ${domain}` };
+    },
   },
   {
     name: "conforms to",
