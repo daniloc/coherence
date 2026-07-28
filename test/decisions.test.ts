@@ -190,3 +190,16 @@ test("hooks --check — no configuration at all is a different verdict from a de
   assert.ok(!/NEVER FIRED/.test(out), "not-installed and installed-but-dead need different fixes");
   await rm(cfg.root, { recursive: true, force: true });
 });
+
+test("render — markdown NESTS the detail lines instead of making them sibling bullets", async () => {
+  // A `- over: ...` at the same level as the decision it qualifies reads as a separate
+  // decision. That is the one misreading this format cannot afford.
+  const cfg = await root();
+  const s = newSessionId();
+  appendDecision(cfg, { kind: "decision", chose: "X", over: ["Y"], because: "measured", session: s, now: T(1) });
+  const { text } = renderJournal(cfg, { markdown: true });
+  assert.match(text, /^- \*\*X\*\*/m);
+  assert.match(text, /^ {2}- over: Y$/m);
+  assert.match(text, /^ {2}- because: measured$/m);
+  await rm(cfg.root, { recursive: true, force: true });
+});
