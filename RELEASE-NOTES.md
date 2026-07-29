@@ -16,11 +16,11 @@ evidence inside that record.
 ## v0.15.0 — the harness takes its own advice
 
 `coherence redundancy` had been printing the same finding on every run since it
-shipped: `src/cli.ts` spelled the command list twice — once as the usage banner's
-`<a|b|c>` literal, once as the `cmd === "…"` dispatch chain — with *nothing keeping
-the spellings equal*. 31 shared tokens, score 31.30, and the verdict "the two
-spellings ALREADY disagree", because the dispatch accepted `resolve` and the banner
-had never heard of it.
+shipped: `src/cli.ts` spelled the command list twice — once as the pipe-separated
+alternation literal in the usage banner, once as the `cmd === "…"` dispatch chain —
+with *nothing keeping the spellings equal*. 31 shared tokens, score 31.30, and the
+verdict "the two spellings ALREADY disagree", because the dispatch accepted
+`resolve` and the banner had never heard of it.
 
 It was right, and the cost was measurable. The banner produced v0.14.0's **only
 merge conflict** — two branches hand-editing the same line. Banner vs dispatch
