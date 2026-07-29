@@ -29,6 +29,7 @@ import { readStatus } from "./status.ts";
 import { CLAIM_FORMS, loadDictionary } from "./phrasebook.ts";
 import { appendDecision, renderJournal, readJournal, resolvableConjecture } from "./decisions.ts";
 import { printHooks, checkHooks, runHook } from "./hooks.ts";
+import { redundancy } from "./redundancy.ts";
 
 const cmd = process.argv[2];
 const argv = process.argv.slice(3);
@@ -397,6 +398,10 @@ if (cmd === "graph") {
   // Producer/consumer contracts across deploy artifacts + the uncovered cross-artifact
   // surface detector. Charts analog: artifacts/contracts are config data, mechanism here.
   await exit(await contracts(cfg, await buildGraph(cfg), check ? "check" : "render"));
+} else if (cmd === "redundancy") {
+  // Advisory: the UNDECLARED half of parity — one enumerated domain spelled in two places
+  // with nothing keeping the spellings equal. Ranked, capped, gates nothing (--all uncaps).
+  await exit(await redundancy(cfg, await buildGraph(cfg), { all: argv.includes("--all") }));
 } else if (cmd === "why-lint") {
   // Advisory: ## why prose restating a mechanism a boundary claim already anchors.
   await exit(whyLint(await buildGraph(cfg), check ? "check" : "report"));
@@ -413,7 +418,7 @@ if (cmd === "graph") {
   }
   await exit(0);
 } else {
-  console.error("usage: coherence <graph|overview|docs|claude|verify|panel|scene|contract|review|log|decide|blocked|conjecture|resolved|retract|decisions|hooks|hook|decompose|drift|scaffold|onboard|lint-sinks|conventions|atlas|contracts|why-lint|phrasebook> [options]");
+  console.error("usage: coherence <graph|overview|docs|claude|verify|panel|scene|contract|review|log|decide|blocked|conjecture|resolved|retract|decisions|hooks|hook|decompose|drift|scaffold|onboard|lint-sinks|conventions|atlas|contracts|redundancy|why-lint|phrasebook> [options]");
   console.error("  decide \"<chose>\" --over \"<alt>\" --because \"<why>\"   log one decision (append-only; gates nothing)");
   console.error("  blocked \"<what>\" --because \"<why>\"                 log what you could NOT do — first-class, not a footnote");
   console.error("  conjecture \"<surprising observation>\" --could-be \"<explanation>\" --discriminated-by \"<the test>\"");
@@ -432,5 +437,6 @@ if (cmd === "graph") {
   console.error("  lint-sinks | conventions [--check | --update-baseline]   ratchets (baseline in <outputDir>)");
   console.error("  atlas [--check]   trust-manifold render + drift gate     why-lint [--check]   ## why prose lint");
   console.error("  contracts [--check]   producer/consumer contracts across deploy artifacts + uncovered-surface detector");
+  console.error("  redundancy [--all]    ADVISORY: one enumerated domain spelled twice with no parity claim tying the spellings together");
   await exit(2);
 }

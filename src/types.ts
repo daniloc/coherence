@@ -81,6 +81,19 @@ export interface Config {
     ratio?: number;      // anchors added are "keeping pace" while surface <= anchors * ratio (default 12)
   };
 
+  redundancy?: {
+    // Thresholds for the `redundancy` advisory — UNDECLARED duplicated enumerated domains
+    // (the complement of a parity claim: nobody wrote anything down, and two spellings of
+    // one domain are free to drift). The detector is only as good as its floor, so every
+    // knob here trades recall away for precision: a wall of candidates is worse than
+    // silence. See src/redundancy.ts.
+    minShared?: number;   // tokens two sites must share to be a candidate at all (default 3)
+    containment?: number; // fraction of the SMALLER token set the overlap must cover (default 0.7)
+    minScore?: number;    // ranking floor for the default report (default 3.5; `--all` drops it)
+    maxDf?: number;       // a token at more than this many sites is project idiom, not a domain (default 6)
+    top?: number;         // how many ranked pairs the default report prints (default 10)
+  };
+
   // --- producer/consumer contracts across deploy artifacts (mechanisms 2a + 3) ---
   // An invariant that SPANS deploy artifacts (e.g. a browser bundle and a Worker) is
   // exactly what no single compiler run can see — only the whole-source graph can. The

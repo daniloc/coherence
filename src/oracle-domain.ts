@@ -56,7 +56,9 @@ const isTestFile = (name: string) =>
 // do NOT reuse cfg.ignore: a project commonly excludes its test dir (e.g. "__tests__") from
 // the spec GRAPH while that is exactly where the oracle tests we must read live. Reusing the
 // graph-ignore here would make every oracle resolve NOT-FOUND and the meta-oracle inert.
-const NOISE_DIRS = new Set(["node_modules", ".git", "dist", "build", "out", ".turbo", ".wrangler", ".next", "coverage", ".coherence"]);
+// Exported because redundancy.ts needs the SAME list and a second copy of it is exactly the
+// duplicated-domain finding that module exists to report (it flagged the copy, so the copy died).
+export const NOISE_DIRS = new Set(["node_modules", ".git", "dist", "build", "out", ".turbo", ".wrangler", ".next", "coverage", ".coherence"]);
 
 /** Locate candidate test files under root, skipping only true build/VCS noise. */
 async function findTestFiles(cfg: Config): Promise<string[]> {

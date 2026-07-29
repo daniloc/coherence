@@ -132,6 +132,7 @@ Full (every field the `Config` interface in `src/types.ts` accepts; defaults fro
 | `sinks` | unset | `safeSql`/`safeHtml` — regexes for interpolation expressions that are SAFE by construction. |
 | `atlas` | unset | Trust-manifold data: `charts` (trust domain → description), `transitions` (chokepoint symbol → crossing; each may set `enshrined: true` — see below), `nonTransition` (within-chart boundaries), `knownPending` (mapped symbols tolerated as not-yet-in-source). A transition's `enshrined: true` is an **explicit** attestation that the illegal value at that crossing is unrepresentable (a runtime-branded capability), promoting it to tier-1 — it is NOT inferred from a claim's verb, and it MUST be backed by a `via guard` boundary claim (an `enshrined` marker with no backing guard fails `atlas --check`). |
 | `novelty` | unset | Thresholds for `log`'s novelty-vs-anchor advisory: `minSurface` (8), `minLoc` (400), `ratio` (12). |
+| `redundancy` | unset | Thresholds for the `redundancy` advisory (undeclared duplicated domains): `minShared` (3), `containment` (0.7), `minScore` (3.5), `maxDf` (6), `top` (10). Every knob trades recall for precision — a wall of candidates is worse than silence. |
 | `artifacts` | unset | Deploy units for `contracts`: unit name → path globs. A file may belong to several (shared vocabulary typically does). |
 | `claimKinds` | unset | The kinds a claim may declare via a trailing `[kind]`, and each kind's policy: `{ "measured": { "policy": "warn", "why": "…" } }`. `pin` gates normally; `warn` gates but reports every run. An **undeclared** kind fails the run. Unset = feature off, no output, no behaviour change. See "Claim kinds" below. |
 | `contracts` | unset | Declared cross-unit data contracts: name → `{ producer, consumer, type, description? }` (all symbols). `contracts --check` fails a contract that dangles or that no boundary/parity claim anchors. |
@@ -862,6 +863,37 @@ self-defeating.
   contract or anchored claim covers — shared vocabulary two deploy units must agree on
   that nothing yet declares. (Import edges come from the graph, so today they cover the
   language adapter's extensions — `.ts`; a `.tsx`-only importer is not seen.)
+- `coherence redundancy [--all]` — the **undeclared half of parity**. A `parity` claim is
+  *declared*: somebody already suspected two projections should agree and wrote it down.
+  The defect class that actually costs time is the complement — nobody declared anything,
+  and two things that should have agreed quietly didn't (two decoders of one byte encoding
+  reading 56,317 and 158 violations of the same property; the *disagreement* was the whole
+  signal, and it took a human noticing a number looked absurd). Redundancy is the only
+  detector that reaches unknown-unknowns, because a divergence between two independent
+  computations is informative **without any prior claim about the value**.
+
+  So this scans for **one enumerated domain spelled more than once**: a string-literal
+  union, an enum, an interface's members, an object/`Record` literal's keys, a `switch`'s
+  case labels, an `x === "lit"` chain, an array of string literals, the **first column of a
+  markdown table**, and a bracketed `a|b|c` alternation inside a string or regex. Markdown
+  counts on purpose — a hand-kept doc table transcribing a code table is the one
+  duplication no compiler will ever see.
+
+  Three things keep it from becoming a wall. **Compiler-enforced pairs are collapsed, not
+  reported**: `const G: Record<Verdict, string>` cannot drift from `Verdict`, so tsc is
+  already the oracle and coherence has nothing to add (that pair is tier-1 on the ladder
+  above). **Test files are excluded**: a hand-copied domain inside an oracle is the boundary
+  meta-oracle's finding, not a second detector's. **Pairs a `parity` claim already names are
+  dropped** — the point is what nobody declared. What survives is ranked by shared-token
+  count, how much of that vocabulary appears at no third site, code↔prose vs code↔code, and
+  whether the two spellings **already disagree** (a transcription that has drifted is a
+  finding on its own evidence, with no oracle behind it).
+
+  Output is **advisory, ranked, and capped** — it always exits 0, and it would rather stay
+  silent than ship candidates. `--all` drops the floor so the tail can be judged rather than
+  trusted; thresholds live in `config.redundancy`. Findings are candidates, not defects:
+  the fix is to derive one spelling from the other (best), or to declare the `parity` claim
+  that was missing.
 - `coherence why-lint` — the **`## why` discipline**, two advisory checks against the
   graph the harness already holds:
   1. **mechanism-restatement** — a sentence that names an anchored chokepoint/oracle
