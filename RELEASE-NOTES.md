@@ -1,7 +1,7 @@
 # Release notes
 
-Newest first. Every release below shipped on 2026-07-28, in one burst, on top of
-v0.9.0 (2026-07-11).
+Newest first. v0.10.1 through v0.12.0 shipped on 2026-07-28 in one burst, on top of
+v0.9.0 (2026-07-11); v0.13.0 followed on 2026-07-29.
 
 The whole run has a single theme. Coherence gates a build on claims a project
 writes about itself, and every release here is a consequence of one uncomfortable
@@ -12,6 +12,69 @@ at; 0.11.x builds the record of what agents decided and why; 0.12.0 protects the
 evidence inside that record.
 
 ---
+
+## v0.13.0 — the abductive turn
+
+Everything before this release answers a question somebody already asked. This one
+is the first attempt at the other half: noticing that a question is owed.
+
+### `conjecture` / `resolved` — what an agent WONDERED
+
+The journal recorded `decide` (a choice made), `blocked` (could not determine) and
+`retract`. Nothing recorded a suspicion.
+
+    coherence conjecture "<the surprising observation>" \
+      --could-be "<explanation>" --discriminated-by "<the test that separates them>"
+    coherence resolved <id> --because "<what the test showed>" --as "<which won>"
+
+Three properties do the work. **`[instrument] the instrument is wrong` is injected
+as a candidate whether or not the author supplies it** — it is the highest-prior
+explanation for a surprising measurement and the one people skip. **An unresolved
+conjecture is loud**: its own section, its own count, capitalised, because a
+question someone stopped asking must not look like one they answered. And
+resolution is an append that crosses session files, so the agent who settles a
+question need not be the one who raised it.
+
+### `redundancy` — the parity claims nobody wrote
+
+`parity … over <domain> between <fnA> and <fnB>` already existed, but it is
+DECLARED: somebody had to already suspect two things should agree. This finds the
+complement — one enumerated domain spelled in more than one place, with nothing
+tying the spellings together — and ranks what it finds.
+
+Against this repo: 147 domain sites, 41 overlapping pairs, 5 above the reporting
+floor, 14 suppressed as compiler-enforced. It flagged the CLI usage banner and the
+command dispatch chain as "identical today, tied together by nothing." An hour
+later two feature branches both hand-edited that banner and produced the only merge
+conflict of the release. The detector was right, on this repo, about this repo,
+before it happened.
+
+### `observed` — a moved metric that nobody explained becomes a question
+
+    coherence observed "<label>" --value <n> --baseline <n> --threshold <n> [--why "…"]
+
+Inside the band, silence. Outside with a `--why`, the explanation lands in the
+journal instead of only in a source file. **Outside with no explanation, it opens a
+conjecture** — so a harness that noticed something hands coherence a question rather
+than printing to a terminal that scrolls away.
+
+Deduped on LABEL, not on content: a metric that sits outside its band for ten runs
+produces one open question, not ten. A metric drifting back inside its band does NOT
+auto-resolve, because a number wandering back is not an explanation.
+
+**The division of labour this settles:** the project owns what counts as notable —
+that is domain knowledge, a physics `notableDelta` — and coherence owns what happens
+when something notable goes unexplained.
+
+### `.coherence/` is no longer gitignored
+
+Found by dogfooding: this repo was ignoring the exact folder its own README tells
+consumers to commit, so the decision journal it had just written about itself was one
+clean checkout from gone. Now split — `verify-jobs.json` stays ignored because it is
+genuinely a cache; `decisions/` and `status.json` are the record and are tracked.
+
+356 tests.
+
 
 ## A note on v0.10.0
 
