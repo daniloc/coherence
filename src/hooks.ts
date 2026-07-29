@@ -45,9 +45,15 @@ export function agentInstructions(session: string): string {
     `  npx coherence conjecture "<the surprising observation>" --could-be "<explanation>" \\`,
     `    --discriminated-by "<the test that would separate them>" --session ${session}`,
     `  npx coherence resolved <id> --because "<what that test showed>" --as "<which candidate won>"`,
+    `  npx coherence dismiss <id> --because "<why it is not worth chasing>"`,
     "",
     'You need not supply "the instrument is wrong" — it is added for you. It is the',
     "highest-prior explanation for a surprising measurement and the one everyone skips.",
+    "",
+    "`dismiss` is NOT `resolved`. Use it when the question is real and nobody intends to",
+    "answer it — it renders in its own section, saying exactly that, and it stops the",
+    "advisories re-raising the same finding. Answering something you did not answer is the",
+    "one thing this journal cannot recover from.",
     "",
     "Two more verbs:",
     `  npx coherence blocked "<what you could not do>" --because "<why>" --session ${session}`,
@@ -108,6 +114,7 @@ export function stopReport(cfg: Config): string {
   return msg + (open.length
     ? `\n\n${open.length} OPEN CONJECTURE(S) in this repo — noticed, not yet chased.`
       + " If your work settled one, close it with `npx coherence resolved <id> --because ...`;"
+      + " if one is not worth chasing, `npx coherence dismiss <id> --because ...` retires it."
       + " `npx coherence decisions --open` lists them."
     : "");
 }

@@ -45,10 +45,13 @@
 // rather than trusted.
 import { readFile, readdir } from "node:fs/promises";
 import { join, relative } from "node:path";
+import { createHash } from "node:crypto";
 import ts from "typescript";
 import type { Config, Graph } from "./types.ts";
 import { parseParity } from "./parity.ts";
 import { isTestPath } from "./novelty.ts";
+import { readJournal } from "./decisions.ts";
+import { raiseFindings, formatRaise, type Finding } from "./raise.ts";
 // Imported, not re-typed: the first dogfood run of this very detector flagged the copy of
 // this list that used to live here against oracle-domain.ts's original — 10 shared tokens,
 // tied together by nothing. Deriving one side from the other is the fix the report asks for.
@@ -309,6 +312,42 @@ export const REDUNDANCY_DEFAULTS: Required<RedundancyOpts> = { minShared: 3, con
 
 const siteId = (s: DomainSite) => `${s.file}#${s.kind}:${s.name}@${s.line}`;
 
+// ── stable identity, for the journal ──────────────────────────────────────────────────
+//
+// `siteId` above is a WITHIN-RUN key: it separates two sites during pairing, and the line
+// is in it because two sites can otherwise be indistinguishable inside one file. That is
+// exactly the wrong key to write down. A question raised about a pair has to survive an
+// unrelated edit ten lines above it, so identity drops the line — the same call `cli.ts`
+// makes when it strips `data-line` before comparing graph.json, and for the same reason:
+// a line number is a navigation aid, never structure.
+
+/** The site's name with any POSITIONAL suffix replaced by a digest of its own tokens.
+ *
+ *  Alternation sites are named `alternation@<line>` — the line is INSIDE the name, so
+ *  dropping the `@line` from the id is not enough. Two ways to fix it and only one works:
+ *  stripping the suffix outright fuses every alternation in a file into one key (two real
+ *  findings collapse, and the second is swallowed), while digesting the token set keeps
+ *  them apart and does not move when the file does. A changed token set IS a different
+ *  enumeration, so re-keying on it is the honest behaviour rather than a leak. */
+export function stableSiteName(s: DomainSite): string {
+  const m = /^(.*)@\d+$/.exec(s.name);
+  if (!m) return s.name;
+  return `${m[1]}#${createHash("sha256").update(s.keys.join(" ")).digest("hex").slice(0, 6)}`;
+}
+
+/** A site, as a thing a reader can go and find: file, how it was spelled, what it is
+ *  called. No line, no token count, no score. */
+export const siteSubject = (s: DomainSite): string => `${s.file}#${s.kind}:${stableSiteName(s)}`;
+
+/** THE PAIR'S IDENTITY IS THE PAIR OF SITES, sorted so A|B and B|A are one question.
+ *
+ *  Everything else the report prints about a pair is excluded on purpose, and the score is
+ *  the one that matters: `df` is computed over the WHOLE TREE, so a token appearing in one
+ *  more unrelated file re-ranks every pair in the repo. A key holding the score would open
+ *  a fresh question on an edit that touched neither site. */
+export const pairSubject = (p: RedundancyPair): string =>
+  [siteSubject(p.a), siteSubject(p.b)].sort().join("|");
+
 /**
  * Pure — pair the sites and rank them. `declared` is the set of symbol names any parity
  * claim already names (domain / fnA / fnB): a declared agreement is not a finding, which
@@ -424,9 +463,18 @@ export function declaredParitySymbols(graph: Graph): Set<string> {
 const where = (s: DomainSite) => `${s.file}:${s.line}  ${s.kind} \`${s.name}\``;
 const list = (xs: string[], n = 8) => xs.slice(0, n).map((x) => `"${x}"`).join(", ") + (xs.length > n ? `, … (+${xs.length - n})` : "");
 
+/** THE REPORTING FLOOR, in one place. The render shows these and — separately — these are
+ *  the only pairs allowed to become journal entries. Sharing the function rather than
+ *  restating the filter is the point: "raise only what the advisory already reports" has
+ *  to be enforced by construction, or the two copies drift and raising quietly widens. */
+export function shownPairs(pairs: RedundancyPair[], opts: RedundancyOpts = {}): RedundancyPair[] {
+  const o = { ...REDUNDANCY_DEFAULTS, ...opts };
+  return pairs.filter((p) => p.score >= o.minScore).slice(0, o.top);
+}
+
 export function renderRedundancy(pairs: RedundancyPair[], suppressed: Suppressed, siteCount: number, opts: RedundancyOpts = {}): string {
   const o = { ...REDUNDANCY_DEFAULTS, ...opts };
-  const shown = pairs.filter((p) => p.score >= o.minScore).slice(0, o.top);
+  const shown = shownPairs(pairs, o);
   const out: string[] = ["\n  REDUNDANCY — the same enumerated domain, spelled more than once, declared nowhere\n"];
   out.push(`  ${siteCount} domain site(s) scanned · ${pairs.length} overlapping pair(s) · ${shown.length} above the reporting floor (score ≥ ${o.minScore})`);
   out.push(`  suppressed: ${suppressed.typeLinked} compiler-enforced (a type ties the two sites together) · ` +
@@ -456,11 +504,79 @@ export function renderRedundancy(pairs: RedundancyPair[], suppressed: Suppressed
   return out.join("\n");
 }
 
+// ── raising ───────────────────────────────────────────────────────────────────────────
+
+/** A pair, as a QUESTION. The render already forms this suspicion and then throws it away
+ *  by printing it — "either the difference is intended (say so), or one side drifted" is a
+ *  conjecture with two candidates, verbatim, scrolled past once per run forever.
+ *
+ *  The observation carries line numbers and a score because it is a SNAPSHOT of what was
+ *  seen; identity comes from `pairSubject`, which carries neither. Separating the two is
+ *  what lets the sentence be useful and the key be stable at the same time. */
+export function pairFindings(pairs: RedundancyPair[]): Finding[] {
+  return pairs.map((p) => {
+    const diverged = p.onlyA.length > 0 || p.onlyB.length > 0;
+    return {
+      advisory: "redundancy",
+      subject: pairSubject(p),
+      // A LABEL, not a paragraph. The lines, the kinds, the exclusivity count and the
+      // token diff all belong below, in `because`, which is uncapped — that is the same
+      // split `LABEL_SOFT_MAX` exists to enforce, and the journal warns when a `chose`
+      // starts reading as rationale. It warned here, three times, on the first raise.
+      observation:
+        `${p.a.file} \`${p.a.name}\` and ${p.b.file} \`${p.b.name}\` spell one`
+        + ` ${p.shared.length}-token domain, tied together by nothing`
+        + (diverged ? " — and it has ALREADY drifted" : ""),
+      because:
+        `A is ${p.a.kind} at ${p.a.file}:${p.a.line}; B is ${p.b.kind} at ${p.b.file}:${p.b.line}.`
+        + ` ${p.exclusive} of the ${p.shared.length} shared token(s) appear at no third site, so this is a`
+        + " private vocabulary rather than project idiom — the case where a divergence would mean"
+        + " something. Nothing in the type system and no parity claim keeps the two equal, so the only"
+        + " thing holding them together today is that somebody remembered."
+        + (p.onlyA.length ? ` Only in A: ${list(p.onlyA, 6)}.` : "")
+        + (p.onlyB.length ? ` Only in B: ${list(p.onlyB, 6)}.` : ""),
+      couldBe: diverged
+        ? [
+          "one side drifted — a token was added or renamed at one spelling and not at the other,"
+          + " and there was nothing there to notice",
+          "the difference is intended — the two sites describe overlapping but deliberately"
+          + " different domains, and nobody wrote that down",
+        ]
+        : [
+          "they agree today by maintenance, not by construction — the next edit to either one is"
+          + " free to break it silently",
+        ],
+      discriminatedBy:
+        `put the two token sets side by side. If one is derivable from the other, DERIVE it and the`
+        + ` pair stops existing — that is the tier-1 fix and it needs no claim. If they must agree`
+        + ` but cannot be derived, declare it: parity "<what must agree>" over <domain> between`
+        + ` <fnA> and <fnB> via test "<oracle>". If they must NOT agree, the pairing is this`
+        + ` detector's mistake — say so in the parity claim's absence by dismissing this question.`,
+      files: p.a.file === p.b.file ? [p.a.file] : [p.a.file, p.b.file],
+    };
+  });
+}
+
+export interface RedundancyCmdOpts extends RedundancyOpts { all?: boolean; raise?: boolean; raiseCap?: number; session?: string; agent?: string }
+
 /** The `coherence redundancy` command. Advisory: always returns 0. */
-export async function redundancy(cfg: Config, graph: Graph, opts: RedundancyOpts & { all?: boolean } = {}): Promise<number> {
+export async function redundancy(cfg: Config, graph: Graph, opts: RedundancyCmdOpts = {}): Promise<number> {
+  const { all, raise: doRaise, raiseCap, session, agent, ...thresholds } = opts;
   const sites = await collectSites(cfg);
-  const eff: RedundancyOpts = { ...(cfg.redundancy ?? {}), ...opts, ...(opts.all ? { minScore: 0, top: Number.MAX_SAFE_INTEGER } : {}) };
+  // `base` is the project's floor. `eff` is what the RENDER uses, and `--all` drops the
+  // floor to zero there so the precision of the tail can be judged rather than trusted.
+  const base: RedundancyOpts = { ...(cfg.redundancy ?? {}), ...thresholds };
+  const eff: RedundancyOpts = { ...base, ...(all ? { minScore: 0, top: Number.MAX_SAFE_INTEGER } : {}) };
   const { pairs, suppressed } = pairSites(sites, declaredParitySymbols(graph), eff);
   console.log(renderRedundancy(pairs, suppressed, sites.length, eff));
+
+  // RAISING READS `base`, NEVER `eff`. `--all` exists to expose the tail below the floor,
+  // and the tail is precisely what must not become questions — a flag whose job is to show
+  // more must not also mean write more, or the one command a curious person runs first is
+  // the one that fills their journal.
+  const report = raiseFindings(cfg, readJournal(cfg).records, pairFindings(shownPairs(pairs, base)), {
+    enabled: doRaise, cap: raiseCap, session, agent,
+  });
+  for (const line of formatRaise(report)) console.log(line);
   return 0;
 }

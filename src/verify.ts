@@ -9,6 +9,8 @@ import type { Config, Graph } from "./types.ts";
 import { CLAIM_FORMS, type ClaimCtx } from "./phrasebook.ts";
 import { ownerOf } from "./walk.ts";
 import { recordVerify, readStatus } from "./status.ts";
+import { readJournal } from "./decisions.ts";
+import { raiseFindings, formatRaise, type Finding } from "./raise.ts";
 
 const hashOf = (s: string) => createHash("sha256").update(s).digest("hex").slice(0, 16);
 const jobsPath = (cfg: Config) => join(cfg.root, ".coherence", "verify-jobs.json");
@@ -48,8 +50,118 @@ function listCapped<T>(items: T[], line: (t: T) => string): void {
   if (rest > 0) console.log(`  · … and ${rest} more (not shown)`);
 }
 
-export async function runVerify(cfg: Config, graph: Graph, opts: { fast?: boolean; only?: Set<string> }): Promise<number> {
+// ── the three advisories, as QUESTIONS ────────────────────────────────────────────────
+//
+// Each of these already forms a suspicion and then discards it by printing it. `raise.ts`
+// holds the mechanism and the identity doctrine; what lives here is the domain half — what
+// the finding IS, what could account for it, and the test that would settle it. Written as
+// free functions rather than inline so they are testable without running a whole verify.
+//
+// IDENTITY IS THE CLAIM (or the invariant) AND THE NODE THAT DECLARES IT. Everything else
+// the advisory prints is excluded, and the run count is the excluded field that matters:
+// "green for 14 runs" changes every run by construction, and it is the most tempting one
+// to include because it is what makes the finding feel urgent. It goes in the SENTENCE,
+// where volatility is free.
+
+/** A claim that is green every run and that nobody has ever watched fail. Neither signal
+ *  is worth much alone — a claim that has never been red may simply be a good invariant,
+ *  and one with no refutation may simply be young — but together they are the honest
+ *  suspect list, which is exactly the shape of a conjecture. */
+export function neverRedFinding(node: string, claim: string, runs: number): Finding {
+  return {
+    advisory: "never-red",
+    subject: `${node}::${claim}`,
+    // The run count belongs HERE, not in the subject: it is the urgency, and urgency is
+    // the most volatile thing about this finding.
+    observation: `[${node}] ${claim} — green on all ${runs} run(s), and never watched fail`,
+    because:
+      "nothing has ever made this claim fail, and nobody has ever tried. A green claim and an"
+      + " unfalsifiable one are indistinguishable from outside, so the evidence this claim offers"
+      + " is currently unbounded above and unbounded below.",
+    couldBe: [
+      "the invariant is genuinely hard to break — the chokepoint makes the illegal state"
+      + " unrepresentable, and green is the honest answer",
+      // Deliberately worded so `readsAsInstrumentDoubt` fires on "the test itself": for this
+      // finding the apparatus IS the suspect, and a specific wording beats the canonical
+      // line, which would otherwise be prepended in its place.
+      "the oracle is vacuous — the test itself asserts something that cannot fail, over an empty"
+      + " domain, through a regex that never matches, or past a guard that is never reached",
+    ],
+    discriminatedBy:
+      "break the chokepoint: make the illegal state this claim forbids, run the oracle, and record"
+      + " what it said. If it goes RED, the claim is load-bearing and the only gap was that nobody"
+      + " had tried — write the observed negative control into `## refutations` and this question is"
+      + " answered. If it stays GREEN, the oracle is not testing the claim, and what needs fixing is"
+      + " the oracle.",
+  };
+}
+
+/** A named invariant with no observed negative control. Broader and weaker than never-red
+ *  — it says nothing about how the claim has behaved — so it is raised LAST and only for
+ *  invariants never-red did not already name. */
+export function refutationFinding(comp: string, inv: string): Finding {
+  return {
+    advisory: "refutation",
+    subject: `${comp}::${inv}`,
+    observation: `invariant "${inv}" (${comp}) has never been observed failing — no entry in \`## refutations\``,
+    because:
+      "the spec asserts this property and something enforces it, but no one has recorded watching"
+      + " the enforcement go red. Until they have, the oracle's grip on the invariant is asserted"
+      + " rather than demonstrated.",
+    couldBe: [
+      "nobody has got to it — the invariant is young and the refutation is simply owed",
+      "the chokepoint cannot actually be broken from outside, and there is no negative control to"
+      + " run: the property is structural and the refutation should say THAT",
+    ],
+    discriminatedBy:
+      `break what enforces "${inv}", run its oracle, and write the result into \`## refutations\` as`
+      + " `<invariant>: <what was broken> -> <what was seen>`. If the break cannot be expressed, that"
+      + " is itself the finding and belongs in the same place.",
+  };
+}
+
+/** A claim on a kind the project flagged. The project decided this category is one it
+ *  distrusts; the advisory prints it every run and then forgets it. */
+export function warnedKindFinding(node: string, claim: string, kind: string, why?: string): Finding {
+  return {
+    advisory: "warned-kind",
+    // The KIND is not in the subject. If the claim is re-kinded it stops being warned and
+    // never re-raises anyway, so including it would only add a way for the key to move.
+    subject: `${node}::${claim}`,
+    // The project's `why` can run to a paragraph — planetizer's does — so it goes in
+    // `because`, never in the title. A `chose` that carries the rationale is the exact
+    // thing `LABEL_SOFT_MAX` warns about.
+    observation: `[${node}] ${claim} — declared \`[${kind}]\`, a kind this project flags`,
+    because:
+      `the project declared "${kind}" a category worth reporting on every use. That declaration is a`
+      + " standing suspicion about every claim carrying it, and this is one of them."
+      + (why ? ` The project's own words: ${why}` : ""),
+    couldBe: [
+      "the claim really does pin a value — it will go red when the subject gets BETTER, and what it"
+      + " needs is a band derived from the bar rather than a point taken from today's reading",
+      "the kind is mis-declared — the claim asserts a structural or mathematical property and the"
+      + ` \`[${kind}]\` tag is a leftover from when it was measured`,
+    ],
+    discriminatedBy:
+      "ask the question the kind exists for: would this assertion go red if the subject got BETTER?"
+      + " If yes it is a value-pin — replace the point with a band derived from the bar, and say what"
+      + " the bar is. If no, the kind is wrong and the claim should carry the one it actually is.",
+  };
+}
+
+export interface VerifyOpts {
+  fast?: boolean; only?: Set<string>;
+  raise?: boolean; raiseCap?: number; session?: string; agent?: string;
+}
+
+export async function runVerify(cfg: Config, graph: Graph, opts: VerifyOpts): Promise<number> {
   const root = cfg.root;
+  // Collected per advisory rather than in one list, so the concat below can state the
+  // PRIORITY explicitly. The cap is per run, so under it the order is the whole policy.
+  const neverRed: Finding[] = [], warnedKind: Finding[] = [], refutation: Finding[] = [];
+  // Which invariants never-red already named — the refutation advisory is a superset of it
+  // and would otherwise raise the same question twice under two keys.
+  const neverRedInvariants = new Set<string>();
   // Invariants ANCHORED by a `boundary "<name>" ...` claim, per component label. The
   // coverage gate fails any `## invariants` entry that nothing anchors (the ratchet).
   const anchored = new Map<string, Set<string>>();
@@ -124,6 +236,7 @@ export async function runVerify(cfg: Config, graph: Graph, opts: { fast?: boolea
       const why = kindPolicy[k]?.why;
       console.log(`  ! kind "${k}" — ${of.length} claim(s)${why ? `: ${why}` : ""}`);
       listCapped(of, (s) => `      [${s.node}] ${s.claim}`);
+      for (const s of of) warnedKind.push(warnedKindFinding(s.node, s.claim, k, why));
     }
     listCapped(unkinded, (s) => `  · [${s.node}] ${s.claim} — no kind declared (advisory)`);
   }
@@ -144,7 +257,19 @@ export async function runVerify(cfg: Config, graph: Graph, opts: { fast?: boolea
       const missing = invs.filter((i) => !refuted.has(i));
       console.log(`refutations: ${invs.length - missing.length}/${invs.length} invariants carry an observed negative control`
         + (refs.length ? "" : " — none declared; see README `## refutations`"));
-      if (refs.length) listCapped(missing, (i) => `  · [refutation] "${i}" — never observed failing (advisory)`);
+      // THE `refs.length` GATE IS THE REPORTING FLOOR, and raising honours it exactly.
+      // Before a project has declared its first refutation the count alone is the message
+      // — printing a line per invariant on a project that has never used the feature is a
+      // nag. Raising a QUESTION per invariant there would be the same nag with an id, and
+      // on a spec-heavy repo it is the single biggest source of first-run volume.
+      if (refs.length) {
+        listCapped(missing, (i) => `  · [refutation] "${i}" — never observed failing (advisory)`);
+        for (const c of comps) {
+          for (const i of ((c as any).invariants ?? []) as string[]) {
+            if (!refuted.has(i)) refutation.push(refutationFinding(c.label, i));
+          }
+        }
+      }
     }
   }
 
@@ -170,8 +295,36 @@ export async function runVerify(cfg: Config, graph: Graph, opts: { fast?: boolea
           const h = hist.get(`${sg.node} ${sg.claim}`)!;
           return `  · [never-red] [${sg.node}] ${sg.claim} — ${h.runs} run(s), never observed failing`;
         });
+        for (const sg of bare) {
+          neverRed.push(neverRedFinding(sg.node, sg.claim, hist.get(`${sg.node} ${sg.claim}`)!.runs ?? 0));
+          const m = /^boundary\s+"([^"]+)"/.exec(sg.claim);
+          if (m) neverRedInvariants.add(`${sg.node}::${m[1]}`);
+        }
       }
     }
+  }
+
+  // ── RAISING. One call, after every advisory has spoken, because the cap is per RUN and
+  // a per-advisory cap would let three detectors open nine questions between them while
+  // each believed it was being modest.
+  //
+  // THE ORDER IS THE POLICY, since under the cap only the head of this list is written:
+  //   1. never-red     — green every run AND never watched fail. Two independent weak
+  //                      signals agreeing is the honest suspect list.
+  //   2. warned-kind   — the project itself declared this category suspect. One claim, one
+  //                      concrete question, and the answer changes what the claim asserts.
+  //   3. refutation    — every invariant lacking a negative control. Broadest, weakest, and
+  //                      a strict superset of never-red's boundary claims, so it drops the
+  //                      ones already asked about rather than asking the same thing twice.
+  {
+    const findings = [
+      ...neverRed, ...warnedKind,
+      ...refutation.filter((f) => !neverRedInvariants.has(f.subject)),
+    ];
+    const report = raiseFindings(cfg, readJournal(cfg).records, findings, {
+      enabled: opts.raise, cap: opts.raiseCap, session: opts.session, agent: opts.agent,
+    });
+    for (const line of formatRaise(report)) console.log(line);
   }
 
   const jobs: Array<Record<string, any>> = [];

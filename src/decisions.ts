@@ -37,6 +37,17 @@
 // summary line shouts their count. The standing list of things this project noticed and
 // did not chase is worth more than any single entry on it.
 //
+// ...WHICH IS EXACTLY WHY A THIRD STATE EXISTS: DISMISSED. Once an ADVISORY can raise a
+// question (see `raise.ts`), questions arrive faster than anyone answers them, and the
+// only defence against a noisy one is a way to make it go away permanently. A dismissal
+// is that way, and it is deliberately NOT a resolution: "we answered this" and "we
+// decided not to ask" are different facts, and a render that files them together tells a
+// reader an unanswered question has an answer. It is the same distinction `resolve()`
+// already refuses to blur between a conjecture and a decision, one level further out.
+// It is an APPEND like everything else — a dismissal that deleted the line would be
+// indistinguishable from a question nobody ever raised, and the whole value of `--open`
+// is that it counts what this project chose not to chase.
+//
 // TWO FIELDS DO THE WORK, and both are what a gate-shaped design drops:
 //   `over`   — what was REJECTED. This is what stops re-litigation. In the session
 //              that motivated this file, roughly half the cost was reconsidering
@@ -66,7 +77,7 @@ import { createHash, randomBytes } from "node:crypto";
 import { join } from "node:path";
 import type { Config } from "./types.ts";
 
-export type DecisionKind = "session" | "decision" | "blocked" | "retraction" | "conjecture" | "resolution";
+export type DecisionKind = "session" | "decision" | "blocked" | "retraction" | "conjecture" | "resolution" | "dismissal";
 
 export interface DecisionRecord {
   id: string;              // "d-" + 8 hex of the CONTENT hash — a re-log dedupes
@@ -82,7 +93,9 @@ export interface DecisionRecord {
                            // conjecture: THE SURPRISING OBSERVATION · resolution: which candidate won
   over: string[];          // alternatives REJECTED
   because: string;         // criterion + evidence · resolution: what the discriminating test SHOWED
-  supersedes?: string;     // retraction -> the id it withdraws · resolution -> the conjecture it answers
+                           // dismissal: why this is not worth chasing
+  supersedes?: string;     // retraction -> the id it withdraws · resolution -> the conjecture it
+                           // answers · dismissal -> the conjecture it retires unanswered
   files?: string[];
   // ── conjecture only ────────────────────────────────────────────────────────────
   // `couldBe` is deliberately NOT `over`. `over` means REJECTED, and a candidate
@@ -105,6 +118,14 @@ export interface DecisionRecord {
   baseline?: number;
   threshold?: number;      // the caller's word — planetizer's `Claim.threshold`, kept
   unit?: string;
+  // ── `raise` only: the ADVISORY-DERIVED dedupe key ──────────────────────────────
+  // The same job `metric` does for `observed`, for a caller that has no label to give.
+  // `observed` gets its key from the project, which spells the metric's name the same way
+  // twice; an advisory has nobody to ask, so it must derive identity FROM THE FINDING —
+  // and the derivation is the entire difficulty (see raise.ts). Stored as readable text
+  // (`<advisory>:<subject>`) rather than a digest so a person debugging a duplicate can
+  // grep the journal and SEE which half of the key moved.
+  finding?: string;
 }
 
 // LABELS ARE CAPPED; EVIDENCE IS NOT. Measured on this repo's own journal at 53
@@ -209,13 +230,23 @@ const ID_SEP = "\u0000";
  *  renders label, value, baseline, threshold and unit into `chose` at the same moment it
  *  files them, so every one of them is already inside the hash by way of the sentence
  *  that quotes it. Widening the digest for a second copy would buy nothing and would put
- *  one more thing between the frozen id format and the next person who edits this file. */
+ *  one more thing between the frozen id format and the next person who edits this file.
+ *
+ *  `finding` IS IN THE DIGEST, and it is the one exception — for the opposite reason. It
+ *  is NOT a projection of the text: an advisory's key is derived to hold STILL while the
+ *  wording moves (a redundancy pair's `chose` carries line numbers and a score; its key
+ *  carries neither), so two genuinely different findings could in principle render the
+ *  same sentence. Hashing the key makes that collision impossible by construction rather
+ *  than by inspection. It appends LAST and only when set, so a record without one — which
+ *  is every record ever written to disk before this field existed — hashes byte-for-byte
+ *  what it always did. A content hash may only widen for content that did not exist. */
 function decisionId(
   kind: DecisionKind, agent: string, chose: string, over: string[], because: string,
-  couldBe: string[] = [], discriminatedBy = "",
+  couldBe: string[] = [], discriminatedBy = "", finding = "",
 ): string {
   const parts = [kind, agent, chose, over.join(" "), because];
   if (couldBe.length || discriminatedBy) parts.push(couldBe.join(" "), discriminatedBy);
+  if (finding) parts.push(finding);
   return "d-" + createHash("sha256").update(parts.join(ID_SEP)).digest("hex").slice(0, 8);
 }
 
@@ -236,6 +267,7 @@ export interface DecideInput {
   baseline?: number;
   threshold?: number;
   unit?: string;
+  finding?: string;          // `raise` only — the advisory-DERIVED dedupe key
   now?: string; // injectable for tests
 }
 
@@ -269,7 +301,7 @@ function write(cfg: Config, session: string, input: DecideInput): DecisionRecord
   const couldBe = conjecture ? withInstrumentCandidate(input.couldBe ?? []) : (input.couldBe ?? []);
   const discriminatedBy = input.discriminatedBy ?? "";
   const rec: DecisionRecord = {
-    id: decisionId(input.kind, agent, input.chose, over, input.because, couldBe, discriminatedBy),
+    id: decisionId(input.kind, agent, input.chose, over, input.because, couldBe, discriminatedBy, input.finding),
     session,
     at: input.now ?? new Date().toISOString(),
     kind: input.kind,
@@ -287,6 +319,7 @@ function write(cfg: Config, session: string, input: DecideInput): DecisionRecord
         threshold: input.threshold, ...(input.unit ? { unit: input.unit } : {}),
       }
       : {}),
+    ...(input.finding ? { finding: input.finding } : {}),
   };
   mkdirSync(decisionsDir(cfg), { recursive: true });
   appendFileSync(sessionPath(cfg, session), JSON.stringify(rec) + "\n");
@@ -353,27 +386,39 @@ export function readJournal(cfg: Config): { records: DecisionRecord[]; sessions:
  *  decision, which in a fan-out is the single most valuable thing that can happen.
  *  Resolutions cross files the same way, and for the same reason: the agent that
  *  notices the surprising number is very often not the one with the instrument to
- *  settle it.
+ *  settle it. Dismissals too — and a dismissal by a SECOND agent is the ordinary case,
+ *  because the advisory that raised the question is not a person at all.
  *
  *  OPEN AND RESOLVED ARE SEPARATE BUCKETS, not a flag on one list, because the render
  *  has to be able to lead with the open ones. A conjecture never lands in `standing`:
  *  it is not a choice, and counting it as one would report an unanswered question as a
- *  settled position — the precise confusion this record exists to end. */
+ *  settled position — the precise confusion this record exists to end.
+ *
+ *  THE PRECEDENCE IS retraction > resolution > dismissal, and each step is a claim about
+ *  how much a reader learns:
+ *    · a RETRACTION says the observation was never real — there is nothing to answer, so
+ *      it outranks an answer.
+ *    · a RESOLUTION beats a DISMISSAL because an answer is strictly more informative than
+ *      a decision not to ask. Filing an answered question under "we chose not to chase
+ *      this" would HIDE the answer, which is the more expensive of the two mistakes. */
 export function resolve(records: DecisionRecord[]): {
   standing: DecisionRecord[];
   retracted: { rec: DecisionRecord; by: DecisionRecord }[];
   blocked: DecisionRecord[];
   open: DecisionRecord[];
   resolved: { rec: DecisionRecord; by: DecisionRecord }[];
+  dismissed: { rec: DecisionRecord; by: DecisionRecord }[];
 } {
   const byId = new Map<string, DecisionRecord>();
   for (const r of records) if (r.kind !== "session") byId.set(r.id, r); // dedupe: identity is content
   const all = [...byId.values()];
   const withdrawn = new Map<string, DecisionRecord>();
   const answered = new Map<string, DecisionRecord>();
+  const retired = new Map<string, DecisionRecord>();
   for (const r of all) {
     if (r.kind === "retraction" && r.supersedes) withdrawn.set(r.supersedes, r);
     if (r.kind === "resolution" && r.supersedes) answered.set(r.supersedes, r);
+    if (r.kind === "dismissal" && r.supersedes) retired.set(r.supersedes, r);
   }
 
   const standing: DecisionRecord[] = [];
@@ -381,16 +426,16 @@ export function resolve(records: DecisionRecord[]): {
   const blocked: DecisionRecord[] = [];
   const open: DecisionRecord[] = [];
   const resolved: { rec: DecisionRecord; by: DecisionRecord }[] = [];
+  const dismissed: { rec: DecisionRecord; by: DecisionRecord }[] = [];
   for (const r of all) {
-    if (r.kind === "retraction" || r.kind === "resolution") continue;
-    // RETRACTION OUTRANKS RESOLUTION. A withdrawn conjecture is withdrawn — the
-    // observation itself turned out not to hold — and showing it as answered would
-    // report an answer to a question that was never real.
+    if (r.kind === "retraction" || r.kind === "resolution" || r.kind === "dismissal") continue;
     const by = withdrawn.get(r.id);
     if (by) { retracted.push({ rec: r, by }); continue; }
     if (r.kind === "conjecture") {
       const ans = answered.get(r.id);
-      if (ans) resolved.push({ rec: r, by: ans }); else open.push(r);
+      if (ans) { resolved.push({ rec: r, by: ans }); continue; }
+      const no = retired.get(r.id);
+      if (no) dismissed.push({ rec: r, by: no }); else open.push(r);
       continue;
     }
     if (r.kind === "blocked") blocked.push(r);
@@ -399,10 +444,11 @@ export function resolve(records: DecisionRecord[]): {
   const t = (a: DecisionRecord, b: DecisionRecord) => a.at.localeCompare(b.at);
   standing.sort(t); blocked.sort(t); open.sort(t);
   retracted.sort((a, b) => t(a.rec, b.rec)); resolved.sort((a, b) => t(a.rec, b.rec));
-  return { standing, retracted, blocked, open, resolved };
+  dismissed.sort((a, b) => t(a.rec, b.rec));
+  return { standing, retracted, blocked, open, resolved, dismissed };
 }
 
-/** WHAT MAY BE RESOLVED, and the exact refusal when it may not.
+/** WHAT MAY BE RESOLVED OR DISMISSED, and the exact refusal when it may not.
  *
  *  Two DIFFERENT failures live here and they need different messages: an id nobody ever
  *  wrote, versus an id that names the wrong KIND of thing. Accepting the second would
@@ -410,9 +456,15 @@ export function resolve(records: DecisionRecord[]): {
  *  that exits 0 and does nothing, which is the defect this harness exists to hunt.
  *
  *  It sits in the journal rather than in the CLI so the rule is testable without
- *  spawning a process, and so a second caller cannot reimplement it differently. */
+ *  spawning a process, and so a second caller cannot reimplement it differently.
+ *
+ *  DISMISSAL SHARES THE RULE RATHER THAN COPYING IT, and that is the point of the `verb`
+ *  parameter. `dismiss` has to be as cheap to reach for as `resolved` — if it is even
+ *  slightly harder, a noisy question stays open and the whole `--open` list gets skipped
+ *  — and "as cheap" includes failing the same way, with the same words, on the same
+ *  mistakes. Two hand-written copies of this rule would have drifted by the second edit. */
 export function resolvableConjecture(
-  records: DecisionRecord[], id: string,
+  records: DecisionRecord[], id: string, verb: "resolve" | "dismiss" = "resolve",
 ): { rec: DecisionRecord } | { error: string[] } {
   const rec = records.find((r) => r.id === id);
   if (!rec) {
@@ -420,7 +472,7 @@ export function resolvableConjecture(
   }
   if (rec.kind !== "conjecture") {
     return { error: [
-      `${id} is a ${rec.kind}, not a conjecture — only a conjecture resolves.`,
+      `${id} is a ${rec.kind}, not a conjecture — only a conjecture ${verb === "dismiss" ? "is dismissed" : "resolves"}.`,
       rec.kind === "decision"
         ? `To withdraw a decision, append a retraction: coherence retract ${id} --because "..."`
         : "Run `coherence decisions --open` to see what is actually open.",
@@ -457,7 +509,7 @@ export function renderJournal(cfg: Config, opts: RenderOpts = {}): { text: strin
     (!opts.agent || r.agent === opts.agent) &&
     (!opts.session || r.session === opts.session) &&
     (!opts.branch || r.branch === opts.branch));
-  const { standing, retracted, blocked, open, resolved } = resolve(scoped);
+  const { standing, retracted, blocked, open, resolved, dismissed } = resolve(scoped);
   const md = !!opts.markdown;
   const L: string[] = [];
   const bullet = md ? "- " : "  · ";
@@ -472,7 +524,12 @@ export function renderJournal(cfg: Config, opts: RenderOpts = {}): { text: strin
   // Shouted only when nonzero. A permanent all-caps field is furniture, and furniture is
   // what the eye learns to skip — which would cost exactly the entries that matter.
   const openCount = open.length ? `${open.length} OPEN CONJECTURE(S)` : "0 open conjectures";
-  L.push(`${standing.length} standing · ${openCount} · ${resolved.length} resolved`
+  // Dismissals appear in the summary ONLY when there are some. Unlike `resolved` and
+  // `retracted` — which every project accumulates — a permanent `0 dismissed` on a repo
+  // that has never dismissed anything is a field advertising a verb the reader does not
+  // need yet, and one more column for the eye to learn to skip.
+  const dismissedCount = dismissed.length ? ` · ${dismissed.length} dismissed` : "";
+  L.push(`${standing.length} standing · ${openCount} · ${resolved.length} resolved${dismissedCount}`
     + ` · ${retracted.length} retracted · ${blocked.length} blocked`
     + ` · ${rejected} alternative(s) rejected · ${seen.size} session(s)`
     + ` · ${new Set(scoped.map((r) => r.branch).filter(Boolean)).size} branch(es)`);
@@ -508,6 +565,17 @@ export function renderJournal(cfg: Config, opts: RenderOpts = {}): { text: strin
         L.push("");
       }
     }
+    // NOT ANSWERED — RETIRED. The heading has to carry that on its own, because a reader
+    // scanning section titles never reaches the body, and "Dismissed" sitting under
+    // "Resolved" reads as a second flavour of settled. It is the opposite: every entry
+    // here is a question whose answer nobody knows and nobody intends to find out.
+    if (dismissed.length) {
+      L.push(`${md ? "## " : ""}Dismissed — NOT WORTH CHASING (no answer was found; none was sought)`, "");
+      for (const { rec, by } of dismissed) {
+        L.push(...entry(rec, bullet, md, opts.brief));
+        L.push(`${md ? "  - " : `${bullet}  `}DISMISSED by ${by.agent} (${by.session}): ${opts.brief ? clip(by.because, BRIEF_BECAUSE) : by.because}`, "");
+      }
+    }
     if (retracted.length) {
       L.push(`${md ? "## " : ""}Retracted`, "");
       for (const { rec, by } of retracted) {
@@ -520,7 +588,7 @@ export function renderJournal(cfg: Config, opts: RenderOpts = {}): { text: strin
   if (!scoped.length) L.push("(nothing logged)");
   return {
     text: L.join("\n"),
-    count: standing.length + retracted.length + blocked.length + open.length + resolved.length,
+    count: standing.length + retracted.length + blocked.length + open.length + resolved.length + dismissed.length,
   };
 }
 

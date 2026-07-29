@@ -49,10 +49,18 @@ const diffRef = diffIdx >= 0 ? argv[diffIdx + 1] : null;
 // count of candidates IS the signal. One candidate is a hunch dressed as an inquiry.
 const VALUED = new Set(["--since", "--apply", "--diff", "--over", "--because", "--agent", "--job", "--file", "--for", "--session", "--branch",
   "--could-be", "--discriminated-by", "--as",
-  "--value", "--baseline", "--threshold", "--unit", "--why"]);
+  "--value", "--baseline", "--threshold", "--unit", "--why", "--raise-cap"]);
 const many = (flag: string): string[] => argv.reduce<string[]>((acc, a, i) => (a === flag && argv[i + 1] !== undefined ? [...acc, argv[i + 1]] : acc), []);
 const one = (flag: string): string | null => { const v = many(flag); return v.length ? v[v.length - 1] : null; };
 const positional = argv.filter((a, i) => !a.startsWith("--") && !VALUED.has(argv[i - 1] ?? ""));
+// `--raise` lets an ADVISORY open a conjecture instead of printing one. Opt-in, never a
+// default: raising WRITES to the journal, and an advisory that mutates the record as a
+// side effect of a read-only report is a surprise — and a surprising write is how a
+// mechanism gets switched off wholesale instead of tuned. It also keeps the pre-commit
+// path, which runs `verify` for its printed output, from raising anything.
+const raise = argv.includes("--raise");
+const raiseCapArg = one("--raise-cap");
+const raiseCap = raiseCapArg !== null && Number.isFinite(Number(raiseCapArg)) ? Number(raiseCapArg) : undefined;
 
 // Exit AFTER stdout has drained. `process.exit()` terminates the process before
 // asynchronously-buffered writes flush when stdout is a pipe or file (it only
@@ -182,7 +190,9 @@ if (cmd === "graph") {
     if (!only.size) { console.log(`verify (scoped): no changed files map to a component — nothing to check.`); await exit(0); }
     console.log(`verify (scoped to ${only.size} changed component(s)): ${[...only].join(", ")}`);
   }
-  await exit(await runVerify(cfg, graph, { fast, only }));
+  await exit(await runVerify(cfg, graph, {
+    fast, only, raise, raiseCap, session: one("--session") ?? undefined, agent: one("--agent") ?? undefined,
+  }));
 } else if (cmd === "log") {
   // The temporal ledger: what did refA → refB do to the invariant/boundary set.
   await exit(await structuralLog(cfg, positional[0] ?? "HEAD", positional[1] ?? null, strict));
@@ -302,6 +312,35 @@ if (cmd === "graph") {
     session: one("--session") ?? undefined,
   });
   console.log(`${rec.id}  resolves ${id}`);
+  await exit(0);
+} else if (cmd === "dismiss") {
+  // THE ESCAPE VALVE, and it has to be exactly as cheap as `resolved` or it does not work.
+  // Once an advisory can raise, questions arrive faster than anyone answers them; the only
+  // defence against a noisy one is a one-line way to make it go away PERMANENTLY. If that
+  // line is even slightly harder to reach for than the one that answers a question, the
+  // noise stays and the whole `--open` list gets skipped instead.
+  //
+  // IT IS NOT A RESOLUTION. `--because` here carries why this is not worth chasing, which
+  // is a different fact from what a discriminating test showed — and the render keeps them
+  // in different sections so a reader is never told an unanswered question has an answer.
+  const id = positional[0];
+  const because = one("--because");
+  if (!id || !because) {
+    console.error('usage: coherence dismiss <id> --because "<why this is not worth chasing>"');
+    console.error("");
+    console.error("  Not a resolution: it records that nobody intends to find the answer, and it renders");
+    console.error("  in its own section saying so. A dismissed question never raises again — which is the");
+    console.error("  point, and the reason `--because` is required rather than optional.");
+    await exit(2);
+  }
+  const target = resolvableConjecture(readJournal(cfg).records, id!, "dismiss");
+  if ("error" in target) { for (const line of target.error) console.error(line); await exit(2); }
+  const rec = appendDecision(cfg, {
+    kind: "dismissal", chose: `(dismissed: ${id})`, because: because!,
+    supersedes: id!, agent: one("--agent") ?? undefined, job: one("--job") ?? undefined,
+    session: one("--session") ?? undefined,
+  });
+  console.log(`${rec.id}  dismisses ${id} — it will not be raised again`);
   await exit(0);
 } else if (cmd === "retract") {
   // A retraction is an APPEND, never an edit. History is refuted here, not rewritten —
@@ -442,7 +481,12 @@ if (cmd === "graph") {
 } else if (cmd === "redundancy") {
   // Advisory: the UNDECLARED half of parity — one enumerated domain spelled in two places
   // with nothing keeping the spellings equal. Ranked, capped, gates nothing (--all uncaps).
-  await exit(await redundancy(cfg, await buildGraph(cfg), { all: argv.includes("--all") }));
+  // `--raise` turns the ranked pairs above the DEFAULT floor into open conjectures — never
+  // the tail `--all` exposes, which is there to be judged, not recorded.
+  await exit(await redundancy(cfg, await buildGraph(cfg), {
+    all: argv.includes("--all"), raise, raiseCap,
+    session: one("--session") ?? undefined, agent: one("--agent") ?? undefined,
+  }));
 } else if (cmd === "why-lint") {
   // Advisory: ## why prose restating a mechanism a boundary claim already anchors.
   await exit(whyLint(await buildGraph(cfg), check ? "check" : "report"));
@@ -459,7 +503,7 @@ if (cmd === "graph") {
   }
   await exit(0);
 } else {
-  console.error("usage: coherence <graph|overview|docs|claude|verify|panel|scene|contract|review|log|decide|blocked|conjecture|observed|resolved|retract|decisions|hooks|hook|decompose|drift|scaffold|onboard|lint-sinks|conventions|atlas|contracts|redundancy|why-lint|phrasebook> [options]");
+  console.error("usage: coherence <graph|overview|docs|claude|verify|panel|scene|contract|review|log|decide|blocked|conjecture|observed|resolved|dismiss|retract|decisions|hooks|hook|decompose|drift|scaffold|onboard|lint-sinks|conventions|atlas|contracts|redundancy|why-lint|phrasebook> [options]");
   console.error("  decide \"<chose>\" --over \"<alt>\" --because \"<why>\"   log one decision (append-only; gates nothing)");
   console.error("  blocked \"<what>\" --because \"<why>\"                 log what you could NOT do — first-class, not a footnote");
   console.error("  conjecture \"<surprising observation>\" --could-be \"<explanation>\" --discriminated-by \"<the test>\"");
@@ -468,6 +512,8 @@ if (cmd === "graph") {
   console.error("                                                      a tracked metric, from the harness that measured it:");
   console.error("                                                      outside its band with no --why opens ONE conjecture per label");
   console.error("  resolved <id> --because \"<what the test showed>\" [--as \"<which candidate won>\"]   close a conjecture");
+  console.error("  dismiss <id> --because \"<why this is not worth chasing>\"   retire a question UNANSWERED — not a resolution,");
+  console.error("                                                      renders in its own section, and never raises again");
   console.error("  retract <id> --because \"<what refuted it>\"          withdraw a decision by appending, never by editing");
   console.error("  decisions [--job|--agent|--session|--branch|--sessions|--md|--brief|--open]  the MERGED timeline; --open = noticed and not yet chased");
   console.error("  hooks [--check]                                     print the hooks block; --check asks whether it has ever FIRED");
@@ -475,12 +521,13 @@ if (cmd === "graph") {
   console.error("  scene [--diff <ref>]                         persistent isometric worksite (_scene.html); --diff renders a review vs <ref>");
   console.error("  contract                                     the promise graph — graded gates + reliance ledger (_contract.html)");
   console.error("  review <ref>                                 diff the contract vs <ref>; print the event ledger");
-  console.error("  verify [--fast] [--staged | --since <ref>]   scope to changed components");
+  console.error("  verify [--fast] [--staged | --since <ref>] [--raise]   scope to changed components; --raise opens the advisories' suspicions as questions");
   console.error("  log [<refA> [<refB>]] [--strict]             structural diff of the invariant/boundary set");
   console.error("  scaffold <boundary|component|invariant|parity> <name>");
   console.error("  lint-sinks | conventions [--check | --update-baseline]   ratchets (baseline in <outputDir>)");
   console.error("  atlas [--check]   trust-manifold render + drift gate     why-lint [--check]   ## why prose lint");
   console.error("  contracts [--check]   producer/consumer contracts across deploy artifacts + uncovered-surface detector");
-  console.error("  redundancy [--all]    ADVISORY: one enumerated domain spelled twice with no parity claim tying the spellings together");
+  console.error("  redundancy [--all] [--raise]    ADVISORY: one enumerated domain spelled twice with no parity claim tying the spellings together");
+  console.error("  --raise [--raise-cap N]   let an advisory OPEN a conjecture instead of printing one (default cap 3/run, opt-in, gates nothing)");
   await exit(2);
 }

@@ -1,7 +1,7 @@
 # Release notes
 
 Newest first. v0.10.1 through v0.12.0 shipped on 2026-07-28 in one burst, on top of
-v0.9.0 (2026-07-11); v0.13.0 followed on 2026-07-29.
+v0.9.0 (2026-07-11); v0.13.0 and v0.14.0 followed on 2026-07-29.
 
 The whole run has a single theme. Coherence gates a build on claims a project
 writes about itself, and every release here is a consequence of one uncomfortable
@@ -10,6 +10,59 @@ prevents drift and a harness that cements a bug are the same machine viewed from
 two sides. 0.10.x gives a project the vocabulary to say which one it is looking
 at; 0.11.x builds the record of what agents decided and why; 0.12.0 protects the
 evidence inside that record.
+
+---
+
+## v0.14.0 — the advisories get to ask
+
+0.13.0 gave the journal a record for a suspicion. It then wired exactly one
+generator. `coherence observed` wrote conjectures; `verify`, `redundancy`,
+`novelty`, `drift`, `why-lint`, `conventions`, `atlas` and `contracts` wrote
+zero — while every one of them already *forms* a suspicion and throws it away by
+printing it. Redundancy's own words: *"the two spellings ALREADY disagree —
+either the difference is intended (say so), or one side drifted."* That is a
+conjecture with two candidates, scrolled past once per run forever.
+
+### `--raise` — an advisory opens a question instead of printing one
+
+    coherence redundancy --raise
+    coherence verify --raise [--raise-cap N]
+
+**The identity problem is the whole feature.** `observed` dedupes on a label the
+caller supplies; an advisory has nobody to ask and must derive identity *from the
+finding*. Too volatile and every run mints a new question; too coarse and two real
+findings collapse, the second one silently. The rule: **the key is the finding's
+SUBJECT** — for a redundancy pair, the pair of sites; for a never-red claim, the
+node and the claim text. Excluded, deliberately: the score (redundancy's `df` is
+global, so an unrelated file re-ranks every pair in the repo), the run count
+(changes every run by construction, and it is the field that makes a finding feel
+urgent), and the line number (navigation, never structure).
+
+**Three volume layers, because a first run that opens two hundred questions kills
+the mechanism on contact.** Opt-in — raising *writes*, and a surprising write gets
+a feature switched off rather than tuned. The advisory's own reporting floor —
+`redundancy --all` drops the score floor to expose the tail, and raising ignores
+that (42 pairs shown on this repo, 7 eligible). And a per-run cap of 3 that names
+what it withheld, per advisory.
+
+Dogfooding refuted the first cap design immediately: strict priority order left
+every warned-kind question queued behind twelve never-red ones, on the one project
+whose config declares that kind the suspect one. The cap is now spent round-robin.
+
+### `dismiss` — we decided not to ask
+
+    coherence dismiss <id> --because "<why this is not worth chasing>"
+
+The escape valve, and it has to be as cheap as `resolved` or the noisy question
+stays and the whole `--open` list gets skipped. It is **not** a resolution: "we
+answered this" and "we decided not to ask" are different facts, so a dismissal is
+its own record kind, its own bucket, and its own section — *"Dismissed — NOT WORTH
+CHASING (no answer was found; none was sought)"*. An append like everything else.
+A dismissed finding is never raised again; a **retracted** one may be, because a
+retraction claims the observation was never real and a detector that keeps
+producing it is evidence against the retraction.
+
+Precedence: retraction > resolution > dismissal.
 
 ---
 

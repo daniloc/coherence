@@ -296,6 +296,10 @@ because a green claim and an unfalsifiable claim are indistinguishable from the
 outside, and only one of them is evidence. Free-form after the `invariant: ` prefix;
 record what you broke and what the run said.
 
+The gap list appears only once a project has declared its **first** refutation — a line
+per invariant on a project that has never used the feature is a nag. `verify --raise`
+honours the same floor exactly, so a project with no refutations raises no questions here.
+
 ### Claim kinds — what a claim is ALLOWED to assert
 
 Coherence exists to prevent behavioural drift. On a **simulation** — or anything whose
@@ -354,6 +358,11 @@ Backed by sticky history in the status record: `everFailed` is set on the first 
 and is **never** cleared, along with `lastFailAt` / `lastFailCommit`. A claim that has
 ever been red has been shown to be capable of going red — that fact is worth more than
 its current colour.
+
+`verify --raise` turns each of these into an open conjecture in the decision journal
+instead of a line on a terminal — `[instrument]` ("the oracle is vacuous") is exactly the
+right first hypothesis, and the discriminating test is the refutation you owe anyway. See
+"`--raise`".
 
 ## The meta-oracle: what it proves — and what it does NOT
 
@@ -584,6 +593,12 @@ coherence conjecture "139,460 habitat violations across 84 cells" \
   --discriminated-by "decode one known cell by hand and compare against the reported column" --session s-abc
 coherence resolved d-0336314f --because "hand-decode says 158 — floor(v/16) where the encoding is 1-based" \
   --as "the decoder had an off-by-one" --session s-abc
+coherence dismiss d-c70e1abb --because "three keys and a doc table; a parity claim costs more than the drift"
+
+# ...and the same question, raised by an ADVISORY rather than by a person. Opt-in, capped
+# per run, deduped on a key derived from the finding's SUBJECT rather than its score.
+coherence redundancy --raise
+coherence verify --raise [--raise-cap N]
 
 # ...and the same question, raised by the harness that measured it rather than by an agent.
 # Outside its band with no --why opens ONE conjecture per label, however many runs report it.
@@ -765,6 +780,135 @@ before) >= threshold`, byte-for-byte the consuming table's own. `0.15 - 0.14` is
 being right alone — a disagreement at the boundary is the one place a disagreement is
 invisible.
 
+### `--raise` — an advisory OPENS a question instead of printing one
+
+Suspicions were **stored** in the journal but **generated** by the advisory layer, and
+only one generator was ever wired. `coherence observed` wrote to the journal; `verify`,
+`redundancy`, `novelty`, `drift`, `why-lint`, `conventions`, `atlas` and `contracts`
+wrote zero — while every one of them already *forms* a suspicion and then throws it away
+by printing it. Verbatim, from the code that shipped:
+
+| advisory | what it already says | what that is |
+| --- | --- | --- |
+| `redundancy` | "the two spellings ALREADY disagree — either the difference is intended (say so), or one side drifted" | a conjecture with two candidates |
+| `verify` never-red | "green every run, never once red, no recorded refutation" | a finding whose first hypothesis is `[instrument]` |
+| `verify` refutations | "never observed failing" | an invariant nobody has tried to break |
+| `verify` kinds | "this claim could convict us for improving" | the project's own standing suspicion |
+
+```sh
+coherence redundancy --raise          # the ranked pairs above the DEFAULT floor
+coherence verify --raise              # never-red · warned kinds · unrefuted invariants
+coherence verify --raise --raise-cap 8
+```
+
+**Identity is DERIVED, and that is the whole feature.** `observed` dedupes on a label the
+caller supplies — the project spells "CO2 range, low" the same way twice. An advisory has
+nobody to ask, so it must take identity from the finding itself, and there are two ways to
+get that wrong, both fatal and in opposite directions:
+
+- **too volatile** → every run opens a new question and `--open` is noise within a week;
+- **too coarse** → two different findings collapse and the second is *silently swallowed*,
+  which is worse, because nothing anywhere says so.
+
+The rule that resolves it: **the key is the finding's SUBJECT — the addressable thing a
+reader would go and look at — and nothing else.** For a redundancy pair that is the pair
+of sites (`src/oracle-domain.ts#list:NOISE_DIRS|src/sidecar.ts#list:ALWAYS_IGNORE`); for a
+never-red claim it is the node and the claim text. What is *excluded* is the point:
+
+- **the score.** Redundancy's `df` is computed over the whole tree, so adding one
+  unrelated file re-ranks every pair in the repo. A key holding the score opens a fresh
+  question on an edit that touched neither site.
+- **the run count.** "green for 14 runs" changes every run by construction — and it is the
+  most tempting field to include, because it is what makes the finding feel urgent. It goes
+  in the *sentence*, where volatility is free.
+- **the line number.** A navigation aid, never structure. (The same call `coherence graph
+  --check` already makes when it strips `data-line` before comparing `graph.json`.)
+
+One trap, which the first draft walked into: an alternation site is named
+`alternation@<line>`, so the line is *inside* the name. Stripping the suffix fuses every
+alternation in a file into one key — the coarse failure — so a positional name is re-keyed
+on a digest of its own tokens instead.
+
+**Volume is the most likely way this dies**, so there are three layers and each catches a
+case the others do not:
+
+1. **Opt-in.** Raising *writes*. An advisory that mutates the journal as a side effect of a
+   read-only report is a surprise, and a surprising write is how a mechanism gets switched
+   off wholesale instead of tuned. It also keeps a pre-commit `verify` from raising.
+2. **The advisory's own floor.** Only findings it already *shows* may raise. This does the
+   most work: `redundancy --all` drops the score floor to zero to expose the tail, and
+   raising ignores that and uses the default floor — 42 pairs shown, 7 eligible on this
+   repo. The refutation advisory prints its per-invariant list only once a project has
+   declared its first refutation, so on a project with none it raises nothing at all.
+3. **A per-run cap (default 3) that says what it withheld.** The floor is a precision knob
+   and a repo can sit above it three hundred times; the cap is the bound that does not
+   depend on tuning. The remainder is never silent — a truncated list that looks complete
+   is the defect this harness exists to hunt.
+
+The cap is spent **round-robin across advisories**, which dogfooding forced. Strict
+priority was the obvious design and it was wrong: on a real repo `verify` offered 14
+never-red findings and 3 warned-kind ones, and every warned-kind question queued behind
+twelve others — on the one project whose config explicitly declares that kind the suspect
+one. A detector that never speaks is a detector nobody wired.
+
+```
+  RAISE — 3 question(s) opened in the decision journal (17 finding(s) considered)
+    d-53f3f490  never-red:game::typechecks
+    d-a31cde59  warned-kind:sim::boundary "removing a source moves the channel back…"
+    d-43cba53d  never-red:sim::typechecks
+    WITHHELD 14 more — the cap is 3 per run (warned-kind 2 · never-red 12).
+    They are not lost and they are not recorded: settle the ones above and re-run.
+```
+
+**A finding that disappears does not close its question.** Derive one spelling from the
+other and the redundancy pair stops being reported — its question stays open until somebody
+says what happened. Same rule `observed` follows when a metric wanders back inside its
+band, same reason: the absence of a symptom is not an explanation, and auto-closing would
+delete the entry from `--open` in precisely the case where nobody was looking.
+
+### `coherence dismiss` — we decided not to ask
+
+```sh
+coherence dismiss <id> --because "<why this is not worth chasing>"
+```
+
+Once an advisory can raise, questions arrive faster than anyone answers them, and the only
+defence against a noisy one is a one-line way to make it go away **permanently**. If that
+line is even slightly harder to reach for than the one that answers a question, the noise
+stays and the whole `--open` list gets skipped instead — so `dismiss` shares `resolved`'s
+refusal rules verbatim (an unknown id and a wrong-kind id get different messages), and every
+raised question prints both commands underneath it.
+
+**A dismissal is NOT a resolution.** "We answered this" and "we decided not to ask" are
+different facts, and a render that files them together tells a reader an unanswered question
+has an answer — the one lie this journal cannot afford. So it is its own record kind, its
+own bucket, and its own section, whose heading carries the distinction on its own because a
+reader scanning section titles never reaches the body:
+
+```
+0 standing · 0 open conjectures · 0 resolved · 1 dismissed · 0 retracted · …
+
+Dismissed — NOT WORTH CHASING (no answer was found; none was sought)
+  · the two spellings ALREADY disagree   [d-c70e1abb · advisory · main · f78eb54]
+  ·   DISMISSED by danilo (s-67cc0159dfce): three keys and a doc table; a parity claim
+      would cost more than the drift
+```
+
+Like everything else it is an **append**, never an edit — a dismissal that deleted the line
+would be indistinguishable from a question nobody ever raised, and the value of `--open` is
+that it counts what a project chose not to chase. It is counted in the summary only when
+nonzero: one more permanent column is one more thing for the eye to learn to skip.
+
+Precedence, when more than one thing points at a conjecture, is **retraction > resolution >
+dismissal**. A retraction says the observation was never real, so there is nothing to
+answer. A resolution beats a dismissal because an answer is strictly more informative than a
+decision not to ask, and filing an answered question under "not worth chasing" would hide
+the answer.
+
+`retract` and `dismiss` make opposite claims and behave accordingly: a **retracted**
+question may be raised again (if the detector keeps producing it, the retraction is what
+deserves re-examination), a **dismissed** one never is.
+
 ### Length: cap the labels, never the evidence
 
 `chose` and `over` are labels. Over 200 chars, `decide` prints a note on **stderr** —
@@ -857,6 +1001,9 @@ self-defeating.
   `--staged` (working changes vs HEAD + untracked) or `--since <ref>` **scopes** the
   run to the components whose dirs changed — fast edit-loop reconciliation of just what
   you touched (claims + boundary anchoring + coverage), instead of the whole tree.
+  `--raise [--raise-cap N]` turns its three advisories — never-red, warned claim kinds,
+  unrefuted invariants — into open conjectures in the decision journal instead of lines
+  on a terminal (see "`--raise`" above). Opt-in, capped per run, deduped on the claim.
 - `coherence panel [--no-watch | --once]` — the **operator's instrument panel**: a
   zero-dependency TUI over the graph + the status record (see "The status record and
   the panel" below). Masthead (identity, enforcement-ladder tier bar, claim lights,
@@ -968,7 +1115,7 @@ self-defeating.
   contract or anchored claim covers — shared vocabulary two deploy units must agree on
   that nothing yet declares. (Import edges come from the graph, so today they cover the
   language adapter's extensions — `.ts`; a `.tsx`-only importer is not seen.)
-- `coherence redundancy [--all]` — the **undeclared half of parity**. A `parity` claim is
+- `coherence redundancy [--all] [--raise]` — the **undeclared half of parity**. A `parity` claim is
   *declared*: somebody already suspected two projections should agree and wrote it down.
   The defect class that actually costs time is the complement — nobody declared anything,
   and two things that should have agreed quietly didn't (two decoders of one byte encoding
@@ -998,7 +1145,11 @@ self-defeating.
   silent than ship candidates. `--all` drops the floor so the tail can be judged rather than
   trusted; thresholds live in `config.redundancy`. Findings are candidates, not defects:
   the fix is to derive one spelling from the other (best), or to declare the `parity` claim
-  that was missing.
+  that was missing. `--raise` opens the pairs above the **default** floor as conjectures —
+  never the tail `--all` exposes, which is there to be judged, not recorded.
+- `coherence dismiss <id> --because "<why>"` — retire an open conjecture **unanswered**.
+  Not a resolution: it renders in its own section saying so, and a dismissed finding is
+  never raised again (see "`coherence dismiss`" above).
 - `coherence why-lint` — the **`## why` discipline**, two advisory checks against the
   graph the harness already holds:
   1. **mechanism-restatement** — a sentence that names an anchored chokepoint/oracle

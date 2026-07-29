@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "verify": {
+    "at": "2026-07-29T19:37:03.071Z",
+    "commit": "f78eb54",
+    "dirty": true,
+    "tier": "fast",
+    "scope": null,
+    "lastFastAt": "2026-07-29T19:37:03.071Z",
+    "claims": [],
+    "coverage": {
+      "components": 0,
+      "claimed": 0,
+      "withWhy": 0,
+      "symbols": 261,
+      "documented": 148
+    },
+    "invariants": {
+      "total": 0,
+      "anchored": 0,
+      "gaps": []
+    },
+    "narrative": null,
+    "jobs": 113,
+    "failures": 0
+  }
+}
