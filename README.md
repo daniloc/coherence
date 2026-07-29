@@ -1150,6 +1150,39 @@ self-defeating.
 - `coherence dismiss <id> --because "<why>"` — retire an open conjecture **unanswered**.
   Not a resolution: it renders in its own section saying so, and a dismissed finding is
   never raised again (see "`coherence dismiss`" above).
+- **The decision journal**, in full — `dismiss` above is one verb of eight, and the
+  section "The decision journal" has the reasoning behind each. Every one of these
+  appends to `.coherence/decisions/<session>.jsonl`, and **none of them gates
+  anything**:
+  - `coherence decide "<chose>" --over "<rejected>" --because "<why>"` — a choice made.
+    `--over` is repeatable and is the field that matters: what was REJECTED is what
+    stops the next agent re-opening a settled question.
+  - `coherence blocked "<what>" --because "<why>"` — what could NOT be determined.
+    First-class, not a footnote; it is the section that gets dropped under length pressure.
+  - `coherence conjecture "<observation>" --could-be "<explanation>" --discriminated-by "<test>"`
+    — a suspicion. `[instrument] the instrument is wrong` is injected as a candidate
+    whether or not you supply it.
+  - `coherence resolved <id> --because "<what the test showed>" [--as "<which won>"]` —
+    close a conjecture. `resolve` is accepted as an alias.
+  - `coherence retract <id> --because "<what refuted it>" [--for "<replacement>"]` —
+    withdraw a decision. An append, never an edit: a journal that quietly changed its
+    mind is indistinguishable from one that was always right.
+  - `coherence observed "<label>" --value <n> --baseline <n> --threshold <n> [--why "…"]`
+    — a project's own harness reporting a measurement. Inside the band, silence; outside
+    it and unexplained, one conjecture per label.
+  - `coherence decisions [--job|--agent|--session|--branch|--open|--sessions|--md|--brief]`
+    — the MERGED timeline across every session file, ordered by time.
+- `coherence contract` — the **promise graph**: derive declared zones, graded gates and the
+  reliance double-entry into a self-contained `_contract.html`, plus `promise.json` for
+  agents and tools. It embeds live grades, so it is always regenerated — there is no
+  `--check` for it.
+- `coherence review <ref>` — the contract **diffed against a base ref**. Builds the base
+  tree's promise model in a throwaway worktree, diffs it against HEAD, and prints the event
+  ledger to stdout; the render carries the same ledger.
+- `coherence hooks [--check]` — print the `.claude/settings.json` block that injects the
+  journal instructions into every agent at startup; `--check` answers whether it has ever
+  actually FIRED, because a dead hook is silent. `coherence hook <event>` is the hook body
+  itself, invoked by the harness rather than by you.
 - `coherence why-lint` — the **`## why` discipline**, two advisory checks against the
   graph the harness already holds:
   1. **mechanism-restatement** — a sentence that names an anchored chokepoint/oracle
