@@ -28,6 +28,7 @@ import { renderContract } from "./render-contract.ts";
 import { readStatus } from "./status.ts";
 import { CLAIM_FORMS, loadDictionary } from "./phrasebook.ts";
 import { appendDecision, renderJournal, readJournal, resolvableConjecture } from "./decisions.ts";
+import { recordObservation, formatObserved } from "./observed.ts";
 import { printHooks, checkHooks, runHook } from "./hooks.ts";
 import { redundancy } from "./redundancy.ts";
 
@@ -47,7 +48,8 @@ const diffRef = diffIdx >= 0 ? argv[diffIdx + 1] : null;
 // `--could-be` is repeatable for the same reason as `--over`, and for one more: the
 // count of candidates IS the signal. One candidate is a hunch dressed as an inquiry.
 const VALUED = new Set(["--since", "--apply", "--diff", "--over", "--because", "--agent", "--job", "--file", "--for", "--session", "--branch",
-  "--could-be", "--discriminated-by", "--as"]);
+  "--could-be", "--discriminated-by", "--as",
+  "--value", "--baseline", "--threshold", "--unit", "--why"]);
 const many = (flag: string): string[] => argv.reduce<string[]>((acc, a, i) => (a === flag && argv[i + 1] !== undefined ? [...acc, argv[i + 1]] : acc), []);
 const one = (flag: string): string | null => { const v = many(flag); return v.length ? v[v.length - 1] : null; };
 const positional = argv.filter((a, i) => !a.startsWith("--") && !VALUED.has(argv[i - 1] ?? ""));
@@ -241,6 +243,45 @@ if (cmd === "graph") {
   // command removes the excuse for leaving the question open.
   console.log(`  settle it with:  coherence resolved ${rec.id} --because "<what the test showed>" --as "<which candidate won>"`);
   await exit(0);
+} else if (cmd === "observed") {
+  // THE TRIGGER. The band lives in the PROJECT — a tracked-metric table that knows what
+  // a notable move is, because that is domain knowledge this harness does not have. What
+  // was missing was what happens NEXT: a crossed threshold printed to a terminal and was
+  // gone, and there was no state at all for "moved, unexplained, not yet chased". One
+  // call per row per run turns that state into an open conjecture that outlives the
+  // session. Mechanism, dedupe and the case analysis are in observed.ts.
+  //
+  // THE EXIT CODE IS 0 FOR EVERY OBSERVATION — outside band, inside band, opened,
+  // deduped, all of it. This gates nothing, exactly like the rest of the journal.
+  // A MALFORMED INVOCATION IS NOT AN OBSERVATION, and it exits 2 with the other usage
+  // errors: `--value banana` is not a metric within its band, and reporting it as one
+  // would be a command that exits 0 and does nothing — the defect this harness hunts.
+  const metric = positional[0];
+  const nums = (["--value", "--baseline", "--threshold"] as const).map((f) => {
+    const raw = one(f);
+    return raw === null ? null : Number(raw);
+  });
+  if (!metric || nums.some((n) => n === null || !Number.isFinite(n))) {
+    console.error('usage: coherence observed "<label>" --value <n> --baseline <n> --threshold <n> \\');
+    console.error('         [--unit "<s>"] [--why "<explanation>"] [--agent A] [--job J] [--session S] [--file p]');
+    console.error("");
+    console.error("  --threshold is the project's own bar: the smallest move in this metric worth saying");
+    console.error("  out loud. It is domain knowledge and it stays on your side of the seam.");
+    console.error("  Outside the band with no --why opens a conjecture. WITH --why, the explanation is");
+    console.error("  recorded instead — and if a question was already open for this label, it closes it.");
+    console.error("  At most ONE open conjecture per label, however many runs report the same excursion.");
+    await exit(2);
+  }
+  const [value, baseline, threshold] = nums as [number, number, number];
+  const v = recordObservation(cfg, {
+    metric: metric!, value, baseline, threshold,
+    unit: one("--unit") ?? undefined, why: one("--why") ?? undefined,
+  }, {
+    agent: one("--agent") ?? undefined, job: one("--job") ?? undefined,
+    session: one("--session") ?? undefined, files: many("--file"),
+  });
+  for (const line of formatObserved(v)) console.log(line);
+  await exit(0);
 } else if (cmd === "resolved" || cmd === "resolve") {
   // A resolution is an APPEND that points at the conjecture, exactly as a retraction
   // points at a decision — same mechanism, same cross-file reach, so the agent that
@@ -418,11 +459,14 @@ if (cmd === "graph") {
   }
   await exit(0);
 } else {
-  console.error("usage: coherence <graph|overview|docs|claude|verify|panel|scene|contract|review|log|decide|blocked|conjecture|resolved|retract|decisions|hooks|hook|decompose|drift|scaffold|onboard|lint-sinks|conventions|atlas|contracts|redundancy|why-lint|phrasebook> [options]");
+  console.error("usage: coherence <graph|overview|docs|claude|verify|panel|scene|contract|review|log|decide|blocked|conjecture|observed|resolved|retract|decisions|hooks|hook|decompose|drift|scaffold|onboard|lint-sinks|conventions|atlas|contracts|redundancy|why-lint|phrasebook> [options]");
   console.error("  decide \"<chose>\" --over \"<alt>\" --because \"<why>\"   log one decision (append-only; gates nothing)");
   console.error("  blocked \"<what>\" --because \"<why>\"                 log what you could NOT do — first-class, not a footnote");
   console.error("  conjecture \"<surprising observation>\" --could-be \"<explanation>\" --discriminated-by \"<the test>\"");
   console.error("                                                      log what you WONDERED; \"the instrument is wrong\" is added if you omit it");
+  console.error("  observed \"<label>\" --value <n> --baseline <n> --threshold <n> [--unit U] [--why \"<explanation>\"]");
+  console.error("                                                      a tracked metric, from the harness that measured it:");
+  console.error("                                                      outside its band with no --why opens ONE conjecture per label");
   console.error("  resolved <id> --because \"<what the test showed>\" [--as \"<which candidate won>\"]   close a conjecture");
   console.error("  retract <id> --because \"<what refuted it>\"          withdraw a decision by appending, never by editing");
   console.error("  decisions [--job|--agent|--session|--branch|--sessions|--md|--brief|--open]  the MERGED timeline; --open = noticed and not yet chased");

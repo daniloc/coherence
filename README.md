@@ -585,6 +585,10 @@ coherence conjecture "139,460 habitat violations across 84 cells" \
 coherence resolved d-0336314f --because "hand-decode says 158 — floor(v/16) where the encoding is 1-based" \
   --as "the decoder had an off-by-one" --session s-abc
 
+# ...and the same question, raised by the harness that measured it rather than by an agent.
+# Outside its band with no --why opens ONE conjecture per label, however many runs report it.
+coherence observed "CO2 range, low" --value 0.180 --baseline 0.140 --threshold 0.010 --unit "%"
+
 coherence decisions [--job X] [--agent Y] [--session S] [--branch B] [--sessions] [--md] [--brief] [--open]
 ```
 
@@ -659,6 +663,107 @@ incentive-to-be-complete this journal exists to refuse.
 A conjecture is never a `standing` decision. It has rejected nothing, so it renders no
 `over:` line, and counting it as a settled position is the exact confusion the record
 exists to end.
+
+### `coherence observed` — the division of labour
+
+A conjecture written by hand is written by an agent that *noticed*. Most surprising
+numbers are noticed by a harness, in a table, at 3am, and then forgotten by morning.
+
+```sh
+coherence observed "<label>" --value <n> --baseline <n> --threshold <n> \
+  [--unit "<s>"] [--why "<explanation>"] [--agent A] [--job J] [--session S]
+```
+
+**The band belongs to the project, and coherence must not have an opinion about it.**
+The consuming project already carries a tracked-metric table — planetizer's
+`tools/headless.ts` holds `{ label, now, before, prev, threshold, unit, why }` and
+prints, every run, the rows whose move exceeds their own threshold, each with the
+reason it moved. Those thresholds are *physics*: a gas row's bar is a tenth of that
+channel's declared `notableDelta`, which is in turn a tenth of the manual's own
+band. Nothing in a spec harness knows that, and a harness that guessed at it would be
+inventing a bar and then holding the project to it.
+
+That table is also, deliberately, **a report that demands an EXPLANATION rather than a
+gate that demands IDENTITY**. It prints and it does not fail. `coherence observed` does
+not change that and does not rebuild it.
+
+|  | owns |
+| --- | --- |
+| **the project** | what counts as notable — the label, the number, the bar, and the explanation once it has one |
+| **coherence** | what happens when something notable goes **unexplained** |
+
+What was missing was never the band. It was the **trigger**: a crossed threshold printed
+to a terminal and was gone. The `why` column gets filled in *after* a human has worked
+the move out, so there was no state at all for the interval where the finding actually
+lives — *moved, unexplained, not yet chased*. One call per row per run turns that
+interval into an open conjecture that outlives the session that measured it:
+
+```
+outside band: CO2 range, low  0.14 → 0.18  (+0.04%, band 0.01%) — UNEXPLAINED
+d-fe07c630  conjecture opened
+  could be: the instrument is wrong — the thing that PRODUCED this number, not the thing it describes
+  could be: the model really moved — a change nobody wrote down, and this row is its shadow
+  could be: the baseline is stale — 0.14 describes a tree this no longer is, and the move landed commits ago
+  settle it with:  coherence resolved d-fe07c630 --because "<what the test showed>" --as "<which candidate won>"
+```
+
+Inside the band, **nothing is written at all**. Thirty rows run every pass and most of
+them are still; a record each would turn the journal into a metrics store, and a metrics
+store is a transcript again. `--why` is what closes a question — and when a question was
+already open for that label, the `--why` **resolves it**, which is the loop completing
+itself: coherence asked, the project filled in the column its own table already has, and
+the next harness run carried the answer back without anybody copying an id.
+
+#### Dedupe is on the LABEL, and it has to be
+
+The existing content-hash id cannot do this job. An id hashes the record's content and
+the content of an observation *contains the number*, so a metric that sits outside its
+band for ten runs mints ten ids and files ten open questions about one question. **The
+identity of a question is not the identity of a measurement.** The label is the thing
+that stays still while the number moves, so the label is the key: at most **one open
+conjecture per metric**, across every session, agent and branch.
+
+After an answer, the label stays quiet **until the value moves again** — specifically,
+until it has travelled a further threshold-width past the reading the answer was written
+against. A resolution answers the excursion it was written for; a bigger one later is a
+different question and gets asked. (This is why `value` is stored on the record: it is
+the only thing that can tell *still the thing we explained* from *it moved again*.)
+
+A **retracted** conjecture is allowed to be asked again. A retraction claims the
+observation was never real — if the instrument keeps producing it, that claim is what
+deserves re-examination.
+
+#### Coming back inside the band resolves nothing
+
+It is reported, loudly, and it is never closed:
+
+```
+within band: CO2 range, low  0.14 → 0.142  (+0.002%, band 0.01%)
+  STILL OPEN: d-fe07c630 asked why this metric moved, and nothing has answered it.
+  Coming back inside the band is not an answer — it is one more thing to explain.
+```
+
+Three reasons, in order. A resolution's `because` is **what the discriminating test
+showed**; a number wandering back shows nothing about the cause, so auto-resolving would
+have to write a false claim into the one field that carries evidence. The failure would
+be silent and asymmetric — it deletes an entry from `decisions --open`, the single list
+this feature exists to populate, and deletes it precisely in the case where nobody
+looked. And it would close the *most interesting* questions preferentially: a metric that
+left its band and came back has usually done something stranger than one that stayed out.
+The resolution comes from the explanation, never from the number — which is also why
+`--why` closes a question whichever side of the band the metric is now on.
+
+**It gates nothing.** Every observation exits 0 — outside the band, inside it, opened,
+deduped, all of it. A *malformed invocation* exits 2 with the other usage errors, because
+`--value banana` is not a metric within its band, and reporting it as one would be a
+command that exits 0 and does nothing.
+
+One last thing that is a fact rather than a bug: the comparison is `Math.abs(now −
+before) >= threshold`, byte-for-byte the consuming table's own. `0.15 - 0.14` is
+`0.00999999999999998`, so a decimal move that *looks* like exactly one band is under a
+`0.010` bar and both halves call it quiet. Being wrong the same way is worth more than
+being right alone — a disagreement at the boundary is the one place a disagreement is
+invisible.
 
 ### Length: cap the labels, never the evidence
 

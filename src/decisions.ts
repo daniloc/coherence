@@ -91,6 +91,20 @@ export interface DecisionRecord {
   // tally, which inverts the one distinction this record exists to make.
   couldBe?: string[];      // candidate explanations; one of them always doubts the instrument
   discriminatedBy?: string; // the test that would separate the candidates — the actionable field
+  // ── `observed` only: the tracked metric that raised this ───────────────────────
+  // `metric` IS THE DEDUPE KEY, and it is the reason these fields exist as fields
+  // rather than as prose inside `chose`. The id is a hash of the content and the
+  // content includes the NUMBER, so a metric that sits outside its band for ten runs
+  // mints ten different ids — ten open questions for one question. The label is what
+  // stays still while the measurement moves, so the label is what identity must be
+  // taken from. `value` is stored for the same reason: after a resolution it is the
+  // only thing that can say whether a later reading is the SAME excursion (quiet) or
+  // a further one (a new question). See `observed.ts`.
+  metric?: string;
+  value?: number;
+  baseline?: number;
+  threshold?: number;      // the caller's word — planetizer's `Claim.threshold`, kept
+  unit?: string;
 }
 
 // LABELS ARE CAPPED; EVIDENCE IS NOT. Measured on this repo's own journal at 53
@@ -188,7 +202,14 @@ const ID_SEP = "\u0000";
  *  already on disk names one. Feeding two more (empty) fields into the digest for a
  *  plain decision would append two separators and move every id ever minted, silently
  *  orphaning every retraction in every committed `.coherence/decisions/`. A content
- *  hash may only widen for content that did not exist before. */
+ *  hash may only widen for content that did not exist before.
+ *
+ *  THE `observed` METRIC FIELDS ARE NOT IN THE DIGEST AT ALL, and that is deliberate
+ *  rather than an omission. They are a PROJECTION of the observation text: `observed.ts`
+ *  renders label, value, baseline, threshold and unit into `chose` at the same moment it
+ *  files them, so every one of them is already inside the hash by way of the sentence
+ *  that quotes it. Widening the digest for a second copy would buy nothing and would put
+ *  one more thing between the frozen id format and the next person who edits this file. */
 function decisionId(
   kind: DecisionKind, agent: string, chose: string, over: string[], because: string,
   couldBe: string[] = [], discriminatedBy = "",
@@ -210,6 +231,11 @@ export interface DecideInput {
   supersedes?: string;
   couldBe?: string[];        // conjecture only — instrument-doubt is added if absent
   discriminatedBy?: string;  // conjecture only
+  metric?: string;           // `observed` only — the dedupe key
+  value?: number;
+  baseline?: number;
+  threshold?: number;
+  unit?: string;
   now?: string; // injectable for tests
 }
 
@@ -253,6 +279,14 @@ function write(cfg: Config, session: string, input: DecideInput): DecisionRecord
     ...(input.files && input.files.length ? { files: input.files } : {}),
     ...(couldBe.length ? { couldBe } : {}),
     ...(discriminatedBy ? { discriminatedBy } : {}),
+    // Written only when a metric raised this record, so a hand-typed conjecture is
+    // byte-identical to what it has always been on disk.
+    ...(input.metric
+      ? {
+        metric: input.metric, value: input.value, baseline: input.baseline,
+        threshold: input.threshold, ...(input.unit ? { unit: input.unit } : {}),
+      }
+      : {}),
   };
   mkdirSync(decisionsDir(cfg), { recursive: true });
   appendFileSync(sessionPath(cfg, session), JSON.stringify(rec) + "\n");
