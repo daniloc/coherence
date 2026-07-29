@@ -1,7 +1,13 @@
 #!/usr/bin/env node
 // cli.ts — the coherence harness entrypoint. Run from a project root:
-//   node <coherence>/cli.ts graph|overview|docs|verify [--check|--fast|--apply <file>]
+//   node <coherence>/cli.ts <command> [options]     # no args prints every command
 // It loads coherence.config.json from the cwd and operates on that project.
+//
+// THE COMMAND LIST IS NOT SPELLED HERE. Which verbs exist, what each takes and what each
+// is for live in src/commands.ts; the usage banner and README.md's command index are both
+// derived from it, and test/commands.test.ts reads the `cmd === "…"` chain below out of
+// this file's AST and asserts it matches the registry exactly. Adding a branch here without
+// a registry entry (or the reverse) fails the suite.
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { join } from "node:path";
 import { loadConfig } from "./config.ts";
@@ -9,6 +15,7 @@ import { buildGraph } from "./derive.ts";
 import { renderOutline } from "./render-outline.ts";
 import { renderOverview } from "./render-overview.ts";
 import { renderClaude, spliceBlock, extractBlock, resolveClaudeMdPath, CLAUDE_BEGIN, CLAUDE_END } from "./render-claude.ts";
+import { renderCommandsBlock, usageBanner, COMMANDS_BEGIN, COMMANDS_END } from "./commands.ts";
 import { runVerify, applyVerdicts } from "./verify.ts";
 import { onboard } from "./onboard.ts";
 import { decompose } from "./decompose.ts";
@@ -166,6 +173,41 @@ async function doClaude(): Promise<string[]> {
   return [];
 }
 
+// The THIRD owned block: README.md's command index, spliced from the COMMAND registry with
+// the same machinery CLAUDE.md's block uses (one splicer, two marker pairs). Part of `docs`
+// and therefore of `docs --check`, which is the whole point — a generated block nothing
+// verifies is WORSE than a hand-kept one, because it reads as authoritative while being one
+// forgotten regeneration behind. That is the silent-no-op defect this harness hunts, and
+// shipping a fresh instance of it inside the harness would be embarrassing.
+//
+// OPT-IN BY MARKERS, exactly like CLAUDE.md: no README, or a README without the fence pair,
+// means the file is not owned — NOT that it is stale. The difference matters because `docs
+// --check` runs in every consuming project, and a gate that fails on a file the project
+// never opted into is a gate that gets switched off. It is not SILENT about the skip
+// though: the write path says which case it took, so a missing marker pair looks like a
+// missing marker pair rather than like success.
+async function doCommands(): Promise<string[]> {
+  const path = join(cfg.root, "README.md");
+  const existing = await read(path);
+  const block = renderCommandsBlock();
+  const current = extractBlock(existing, { begin: COMMANDS_BEGIN, end: COMMANDS_END });
+  if (check) {
+    // No normalization, and none is needed: the block is a pure function of the registry —
+    // no clock, no absolute path. An exact compare is a gate with no holes in it.
+    if (!existing || current === null) return [];
+    return current !== block ? ["README.md"] : [];
+  }
+  if (!existing) { console.log("commands: no README.md at the project root — nothing to own."); return []; }
+  const spliced = current === null ? null : spliceBlock(existing, block, { begin: COMMANDS_BEGIN, end: COMMANDS_END });
+  if (spliced === null) {
+    console.log(`commands: README.md has no command-index markers. Add this pair where the derived index should live:\n\n${COMMANDS_BEGIN}\n${COMMANDS_END}\n\nEverything between them is owned by \`coherence docs\`; the authored per-command prose stays outside. File left untouched.`);
+    return [];
+  }
+  await writeFile(path, spliced);
+  console.log("commands: wrote the derived command index into README.md");
+  return [];
+}
+
 if (cmd === "graph") {
   const stale = await doGraph();
   if (check) { console.log(stale.length ? `stale: ${stale.join(", ")}` : "graph current"); await exit(stale.length ? 1 : 0); }
@@ -173,7 +215,7 @@ if (cmd === "graph") {
   const stale = await doOverview();
   if (check) { console.log(stale.length ? `stale: ${stale.join(", ")}` : "overview current"); await exit(stale.length ? 1 : 0); }
 } else if (cmd === "docs") {
-  const stale = [...(await doOverview()), ...(await doGraph())];
+  const stale = [...(await doOverview()), ...(await doGraph()), ...(await doCommands())];
   if (check) { console.log(stale.length ? `stale: ${stale.join(", ")}` : "docs current"); await exit(stale.length ? 1 : 0); }
 } else if (cmd === "claude") {
   const stale = await doClaude();
@@ -503,31 +545,10 @@ if (cmd === "graph") {
   }
   await exit(0);
 } else {
-  console.error("usage: coherence <graph|overview|docs|claude|verify|panel|scene|contract|review|log|decide|blocked|conjecture|observed|resolved|dismiss|retract|decisions|hooks|hook|decompose|drift|scaffold|onboard|lint-sinks|conventions|atlas|contracts|redundancy|why-lint|phrasebook> [options]");
-  console.error("  decide \"<chose>\" --over \"<alt>\" --because \"<why>\"   log one decision (append-only; gates nothing)");
-  console.error("  blocked \"<what>\" --because \"<why>\"                 log what you could NOT do — first-class, not a footnote");
-  console.error("  conjecture \"<surprising observation>\" --could-be \"<explanation>\" --discriminated-by \"<the test>\"");
-  console.error("                                                      log what you WONDERED; \"the instrument is wrong\" is added if you omit it");
-  console.error("  observed \"<label>\" --value <n> --baseline <n> --threshold <n> [--unit U] [--why \"<explanation>\"]");
-  console.error("                                                      a tracked metric, from the harness that measured it:");
-  console.error("                                                      outside its band with no --why opens ONE conjecture per label");
-  console.error("  resolved <id> --because \"<what the test showed>\" [--as \"<which candidate won>\"]   close a conjecture");
-  console.error("  dismiss <id> --because \"<why this is not worth chasing>\"   retire a question UNANSWERED — not a resolution,");
-  console.error("                                                      renders in its own section, and never raises again");
-  console.error("  retract <id> --because \"<what refuted it>\"          withdraw a decision by appending, never by editing");
-  console.error("  decisions [--job|--agent|--session|--branch|--sessions|--md|--brief|--open]  the MERGED timeline; --open = noticed and not yet chased");
-  console.error("  hooks [--check]                                     print the hooks block; --check asks whether it has ever FIRED");
-  console.error("  panel [--no-watch | --once]                  live TUI over the graph + status record");
-  console.error("  scene [--diff <ref>]                         persistent isometric worksite (_scene.html); --diff renders a review vs <ref>");
-  console.error("  contract                                     the promise graph — graded gates + reliance ledger (_contract.html)");
-  console.error("  review <ref>                                 diff the contract vs <ref>; print the event ledger");
-  console.error("  verify [--fast] [--staged | --since <ref>] [--raise]   scope to changed components; --raise opens the advisories' suspicions as questions");
-  console.error("  log [<refA> [<refB>]] [--strict]             structural diff of the invariant/boundary set");
-  console.error("  scaffold <boundary|component|invariant|parity> <name>");
-  console.error("  lint-sinks | conventions [--check | --update-baseline]   ratchets (baseline in <outputDir>)");
-  console.error("  atlas [--check]   trust-manifold render + drift gate     why-lint [--check]   ## why prose lint");
-  console.error("  contracts [--check]   producer/consumer contracts across deploy artifacts + uncovered-surface detector");
-  console.error("  redundancy [--all] [--raise]    ADVISORY: one enumerated domain spelled twice with no parity claim tying the spellings together");
-  console.error("  --raise [--raise-cap N]   let an advisory OPEN a conjecture instead of printing one (default cap 3/run, opt-in, gates nothing)");
+  // DERIVED, not spelled. This banner was the list's third home and the source of
+  // v0.14.0's only merge conflict — two branches hand-editing one `<a|b|c>` literal. There
+  // is no command-name string literal left in it: every line comes from the COMMAND
+  // registry (src/commands.ts), which the totality oracle holds equal to the dispatch above.
+  for (const line of usageBanner()) console.error(line);
   await exit(2);
 }

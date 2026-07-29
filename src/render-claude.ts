@@ -122,24 +122,30 @@ export function renderClaude(graph: Graph, stamp: string): string {
 
 const esc = (s: unknown) => String(s).replace(/\|/g, "\\|").replace(/\n+/g, " ");
 
+/** The fence pair an owned block is delimited by. Defaulted to CLAUDE.md's, so every
+ *  existing call site keeps its meaning; README.md's command index passes its own
+ *  (src/commands.ts) rather than growing a second copy of the splice. */
+export interface Fence { begin: string; end: string }
+const CLAUDE_FENCE: Fence = { begin: CLAUDE_BEGIN, end: CLAUDE_END };
+
 /**
- * Splice a freshly-generated block into existing CLAUDE.md content between the
- * fence markers, preserving everything outside them. Returns null if the markers
- * are absent (the caller must NOT clobber a file that hasn't opted in).
+ * Splice a freshly-generated block into existing markdown between the fence markers,
+ * preserving everything outside them. Returns null if the markers are absent (the caller
+ * must NOT clobber a file that hasn't opted in).
  */
-export function spliceBlock(existing: string, block: string): string | null {
-  const i = existing.indexOf(CLAUDE_BEGIN);
-  const j = existing.indexOf(CLAUDE_END);
+export function spliceBlock(existing: string, block: string, fence: Fence = CLAUDE_FENCE): string | null {
+  const i = existing.indexOf(fence.begin);
+  const j = existing.indexOf(fence.end);
   if (i < 0 || j < 0 || j < i) return null;
-  return existing.slice(0, i) + block + existing.slice(j + CLAUDE_END.length);
+  return existing.slice(0, i) + block + existing.slice(j + fence.end.length);
 }
 
-/** Extract the current fenced block (markers inclusive) from CLAUDE.md, or null. */
-export function extractBlock(existing: string): string | null {
-  const i = existing.indexOf(CLAUDE_BEGIN);
-  const j = existing.indexOf(CLAUDE_END);
+/** Extract the current fenced block (markers inclusive) from an owned file, or null. */
+export function extractBlock(existing: string, fence: Fence = CLAUDE_FENCE): string | null {
+  const i = existing.indexOf(fence.begin);
+  const j = existing.indexOf(fence.end);
   if (i < 0 || j < 0 || j < i) return null;
-  return existing.slice(i, j + CLAUDE_END.length);
+  return existing.slice(i, j + fence.end.length);
 }
 
 /** Resolve the CLAUDE.md path the splicer writes to. `cfg.claudeMdPath` defaults

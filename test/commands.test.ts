@@ -1,0 +1,233 @@
+// commands.test.ts — THE TOTALITY ORACLE for the command registry.
+//
+// The command list used to be spelled in three places and enforced in none: the usage
+// banner, the `cmd === "…"` dispatch chain, and README.md's `## Commands`. In two days it
+// drifted three times (a merge conflict on the banner literal, banner 29 vs dispatch 30,
+// README 20 vs dispatch 32). `coherence redundancy` reported the banner/dispatch pair every
+// single run — "identical today, tied together by nothing" — and was right every time.
+//
+// Two of the three spellings are now DERIVED from src/commands.ts, so they cannot drift.
+// The dispatch is still hand-written, which is what this file is for. It ENUMERATES THE
+// LIVE DISPATCH — every `cmd === "<literal>"` in src/cli.ts, read out of the TypeScript
+// AST, not out of a list maintained here — and asserts set equality with the registry. A
+// hand-written expected list would be a FOURTH spelling of the domain and would drift like
+// the other three; the point of a totality oracle is that it reads the world.
+//
+// The AST is used rather than a regex on purpose: a regex would also match `cmd === "x"`
+// inside a comment or a string, and an oracle that can be fooled by a code comment is not
+// one. Comments are not in the AST at all.
+import test from "node:test";
+import assert from "node:assert/strict";
+import ts from "typescript";
+import { readFile, writeFile } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
+import {
+  COMMANDS, commandNames, dispatchTokens, usageBanner, renderCommandsBlock,
+  COMMANDS_BEGIN, COMMANDS_END,
+} from "../src/commands.ts";
+import { spliceBlock, extractBlock } from "../src/render-claude.ts";
+import { tmpProject, cleanup } from "./_helpers.ts";
+
+const CLI_PATH = fileURLToPath(new URL("../src/cli.ts", import.meta.url));
+const README_PATH = fileURLToPath(new URL("../README.md", import.meta.url));
+const FENCE = { begin: COMMANDS_BEGIN, end: COMMANDS_END };
+const run = promisify(execFile);
+
+/**
+ * Read the LIVE dispatch out of src/cli.ts: every string literal compared against the
+ * `cmd` identifier with `===`/`!==`/`==`. This is the enumeration the oracle compares
+ * against — the branch set as it actually exists, whatever anyone remembered to write down.
+ */
+async function liveDispatch(): Promise<string[]> {
+  const src = await readFile(CLI_PATH, "utf8");
+  const sf = ts.createSourceFile(CLI_PATH, src, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
+  const found = new Set<string>();
+  const isCmd = (n: ts.Node) => ts.isIdentifier(n) && n.text === "cmd";
+  const walk = (n: ts.Node): void => {
+    if (ts.isBinaryExpression(n)) {
+      const op = n.operatorToken.kind;
+      const eq = op === ts.SyntaxKind.EqualsEqualsEqualsToken || op === ts.SyntaxKind.EqualsEqualsToken
+        || op === ts.SyntaxKind.ExclamationEqualsEqualsToken || op === ts.SyntaxKind.ExclamationEqualsToken;
+      if (eq) {
+        if (isCmd(n.left) && ts.isStringLiteral(n.right)) found.add(n.right.text);
+        if (isCmd(n.right) && ts.isStringLiteral(n.left)) found.add(n.left.text);
+      }
+    }
+    ts.forEachChild(n, walk);
+  };
+  walk(sf);
+  return [...found];
+}
+
+test("the AST scanner actually reads the dispatch (an oracle that scans nothing passes vacuously)", async () => {
+  // THE INSTRUMENT CHECK, and it comes first deliberately. Every assertion below is a set
+  // comparison against this scanner's output; if the scan silently returned [] — a renamed
+  // local, a restructured dispatch, a ts API change — the equality tests would go GREEN on
+  // two empty sets and report that the registry is perfectly in sync with nothing. That is
+  // the exact silent-no-op defect this harness exists to catch, so the scanner is checked
+  // before it is trusted: it must find a dispatch of plausible size, and it must find the
+  // handful of branches nobody is likely to delete.
+  const live = await liveDispatch();
+  assert.ok(live.length >= 20, `the dispatch scan found only ${live.length} branches — the scanner is broken, not the CLI`);
+  for (const anchor of ["graph", "verify", "docs", "decide"]) {
+    assert.ok(live.includes(anchor), `dispatch scan missed \`${anchor}\` — the scanner is broken`);
+  }
+});
+
+test("TOTALITY: the registry covers every dispatched command, and every registry entry is dispatched", async () => {
+  const live = new Set(await liveDispatch());
+  const declared = new Set(dispatchTokens());
+
+  const undeclared = [...live].filter((c) => !declared.has(c)).sort();
+  const undispatched = [...declared].filter((c) => !live.has(c)).sort();
+
+  assert.deepEqual(undeclared, [], `cli.ts dispatches ${undeclared.length} command(s) the registry does not declare: ${undeclared.join(", ")}\n  → add them to COMMANDS in src/commands.ts (they are invisible in the banner and the README index)`);
+  assert.deepEqual(undispatched, [], `the registry declares ${undispatched.length} command(s) cli.ts does not dispatch: ${undispatched.join(", ")}\n  → either add the branch to cli.ts or drop the entry; as it stands the banner and README advertise a verb that prints usage and exits 2`);
+  assert.equal(live.size, declared.size);
+});
+
+test("aliases are representable: an alias is dispatched, but is never a command of its own", async () => {
+  const live = new Set(await liveDispatch());
+  const names = new Set(commandNames());
+  const aliases = COMMANDS.flatMap((c) => (c.aliases ?? []).map((a) => ({ alias: a, of: c.name })));
+
+  // The case that motivated the field: `resolve` is an alias of `resolved`.
+  assert.ok(aliases.some((a) => a.alias === "resolve" && a.of === "resolved"), "resolve should be declared as an alias of resolved");
+
+  for (const { alias, of } of aliases) {
+    assert.ok(live.has(alias), `alias \`${alias}\` is declared but the dispatch does not accept it`);
+    assert.ok(!names.has(alias), `\`${alias}\` is an alias of \`${of}\` and must not also be a command name`);
+    // Neither derived spelling may present it as a command in its own right.
+    assert.ok(!usageBanner()[0].includes(`|${alias}|`), `alias \`${alias}\` leaked into the banner's <a|b|c> list`);
+    assert.ok(!renderCommandsBlock().includes(`\`coherence ${alias} `), `alias \`${alias}\` leaked into the README index as its own entry`);
+    assert.ok(!renderCommandsBlock().includes(`\`coherence ${alias}\``), `alias \`${alias}\` leaked into the README index as its own entry`);
+  }
+});
+
+test("the banner is DERIVED — no command-name alternation literal survives in cli.ts", async () => {
+  // The pin on "the string literal goes away entirely". `redundancy` scored the old banner
+  // literal against the dispatch chain at 31.30 with 31 shared tokens; if anyone reinstates
+  // a hand-written `a|b|c` help line, this catches it before the advisory has to.
+  const src = await readFile(CLI_PATH, "utf8");
+  const names = new Set(commandNames());
+  for (const m of src.matchAll(/"([^"\\\n]*\|[^"\\\n]*)"/g)) {
+    const tokens = m[1].split("|").map((t) => t.trim().replace(/^[<[(]+|[>\])]+$/g, ""));
+    const hits = tokens.filter((t) => names.has(t));
+    assert.ok(hits.length < 3, `cli.ts still spells the command list by hand: "${m[1]}" — derive it from COMMANDS instead`);
+  }
+  // And the derived banner really does list all of them.
+  assert.equal(usageBanner()[0], `usage: coherence <${commandNames().join("|")}> [options]`);
+  for (const c of COMMANDS) assert.ok(usageBanner().some((l) => l.includes(c.name)), `banner omits ${c.name}`);
+});
+
+test("the README block is an INDEX of every command, and carries each one's summary", () => {
+  const block = renderCommandsBlock();
+  assert.ok(block.startsWith(COMMANDS_BEGIN));
+  assert.ok(block.trimEnd().endsWith(COMMANDS_END));
+  for (const c of COMMANDS) {
+    assert.ok(block.includes(`\`coherence ${c.name}`), `README index omits ${c.name}`);
+    assert.ok(block.includes(c.summary), `README index omits ${c.name}'s summary`);
+  }
+  assert.ok(block.includes(`_${COMMANDS.length} commands.`), "the derived count should be in the block");
+  // NOT a markdown table, and that is load-bearing: `redundancy` reads a table's first
+  // column as an enumerated domain, so a generated table would hand it a fresh
+  // README↔dispatch pair — the very finding this change removes.
+  assert.ok(!/^\|/m.test(block), "the index must be a bullet list, not a markdown table");
+});
+
+test("the block round-trips through spliceBlock, preserving authored prose on both sides", () => {
+  const host = `## Commands\n\nauthored intro\n\n${COMMANDS_BEGIN}\nstale\n${COMMANDS_END}\n\n### In detail\n\nauthored reasoning\n`;
+  const spliced = spliceBlock(host, renderCommandsBlock(), FENCE);
+  assert.ok(spliced !== null);
+  assert.match(spliced!, /authored intro/);
+  assert.match(spliced!, /authored reasoning/);
+  assert.doesNotMatch(spliced!, /^stale$/m);
+  // The CLAUDE.md fence must not be able to reach this block, nor vice versa.
+  assert.equal(extractBlock(spliced!), null, "the command index must not be visible through CLAUDE.md's fence");
+});
+
+test("this repo's own committed README block is CURRENT (the gate that protects the harness)", async () => {
+  // `docs --check` is the mechanism, but this repo declares no components, so `coherence
+  // docs` is not meaningful here and nothing in CI runs it. `npm test` IS the harness's own
+  // gate, so the freshness of its own generated block belongs in the suite: if the registry
+  // changes and nobody re-runs `coherence docs`, this goes red.
+  const readme = await readFile(README_PATH, "utf8");
+  const current = extractBlock(readme, FENCE);
+  assert.ok(current !== null, `README.md is missing the command-index markers ${COMMANDS_BEGIN} / ${COMMANDS_END}`);
+  assert.equal(current, renderCommandsBlock(), "README.md's command index is stale — run `node src/cli.ts docs`");
+});
+
+test("`docs --check` FAILS on a stale command block, and names README.md", async () => {
+  // End-to-end through the real CLI, in a throwaway project that has opted in by carrying
+  // the markers. The other two artifacts are generated first and left alone, so README.md
+  // enters the stale list because of the BLOCK and nothing else — the coverage claim is
+  // that `docs --check` sees this block, not merely that some artifact was stale.
+  const dir = await tmpProject({
+    "README.md": `# fixture\n\nauthored above.\n\n${COMMANDS_BEGIN}\nstale — nothing like the real block\n${COMMANDS_END}\n\nauthored below.\n`,
+    "app/app.spec.md": "# app\n\nThe fixture component.\n\n## works when\n\n- app.ts exists at this node\n",
+    "app/app.ts": "export const x = 1;\n",
+  });
+  try {
+    // 1. regenerate everything, so graph/overview/README are all current
+    await run(process.execPath, [CLI_PATH, "docs"], { cwd: dir });
+    const fresh = await run(process.execPath, [CLI_PATH, "docs", "--check"], { cwd: dir });
+    assert.match(fresh.stdout, /docs current/);
+
+    // 2. corrupt ONLY the owned block
+    const readme = await readFile(`${dir}/README.md`, "utf8");
+    await writeFile(`${dir}/README.md`, spliceBlock(readme, `${COMMANDS_BEGIN}\nhand-edited, one release behind\n${COMMANDS_END}`, FENCE)!);
+
+    const stale = await run(process.execPath, [CLI_PATH, "docs", "--check"], { cwd: dir })
+      .then(() => ({ code: 0, stdout: "" }), (e: { code: number; stdout: string }) => e);
+    assert.equal(stale.code, 1, "a stale command block must fail `docs --check`");
+    assert.match(stale.stdout, /stale: README\.md/);
+
+    // 3. `docs` puts it back, and the authored prose outside the fence survives
+    await run(process.execPath, [CLI_PATH, "docs"], { cwd: dir });
+    const rewritten = await readFile(`${dir}/README.md`, "utf8");
+    assert.match(rewritten, /authored above\./);
+    assert.match(rewritten, /authored below\./);
+    assert.equal(extractBlock(rewritten, FENCE), renderCommandsBlock());
+    const after = await run(process.execPath, [CLI_PATH, "docs", "--check"], { cwd: dir });
+    assert.match(after.stdout, /docs current/);
+  } finally {
+    await cleanup(dir);
+  }
+});
+
+test("`docs --check` does NOT fail a project that never opted in (absent markers ≠ stale)", async () => {
+  // Every consuming project runs `docs --check`. A gate that reds on a README the project
+  // never fenced is a gate that gets switched off wholesale.
+  const dir = await tmpProject({
+    "README.md": "# fixture\n\nNo coherence markers anywhere in this file.\n",
+    "app/app.spec.md": "# app\n\nThe fixture component.\n\n## works when\n\n- app.ts exists at this node\n",
+    "app/app.ts": "export const x = 1;\n",
+  });
+  try {
+    const w = await run(process.execPath, [CLI_PATH, "docs"], { cwd: dir });
+    // Silent skips are the defect this harness hunts: say which case it took.
+    assert.match(w.stdout, /no command-index markers/);
+    const before = await readFile(`${dir}/README.md`, "utf8");
+    const c = await run(process.execPath, [CLI_PATH, "docs", "--check"], { cwd: dir });
+    assert.match(c.stdout, /docs current/);
+    assert.equal(await readFile(`${dir}/README.md`, "utf8"), before, "an un-fenced README must never be touched");
+  } finally {
+    await cleanup(dir);
+  }
+});
+
+test("every registry entry is well-formed (a blank summary would render an empty index row)", () => {
+  const seen = new Set<string>();
+  for (const c of COMMANDS) {
+    assert.ok(/^[a-z][a-z-]*$/.test(c.name), `command name \`${c.name}\` is not a plain lowercase verb`);
+    assert.ok(c.summary.trim().length > 10, `\`${c.name}\` has no usable summary`);
+    assert.ok(!c.summary.includes("\n"), `\`${c.name}\`'s summary must be ONE line — both spellings render it inline`);
+    assert.ok(!seen.has(c.name), `\`${c.name}\` is declared twice`);
+    seen.add(c.name);
+  }
+  for (const a of COMMANDS.flatMap((c) => c.aliases ?? [])) {
+    assert.ok(!seen.has(a), `alias \`${a}\` collides with a command name`);
+  }
+});

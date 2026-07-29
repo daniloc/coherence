@@ -1,7 +1,7 @@
 # Release notes
 
 Newest first. v0.10.1 through v0.12.0 shipped on 2026-07-28 in one burst, on top of
-v0.9.0 (2026-07-11); v0.13.0 and v0.14.0 followed on 2026-07-29.
+v0.9.0 (2026-07-11); v0.13.0 through v0.15.0 followed on 2026-07-29.
 
 The whole run has a single theme. Coherence gates a build on claims a project
 writes about itself, and every release here is a consequence of one uncomfortable
@@ -10,6 +10,85 @@ prevents drift and a harness that cements a bug are the same machine viewed from
 two sides. 0.10.x gives a project the vocabulary to say which one it is looking
 at; 0.11.x builds the record of what agents decided and why; 0.12.0 protects the
 evidence inside that record.
+
+---
+
+## v0.15.0 — the harness takes its own advice
+
+`coherence redundancy` had been printing the same finding on every run since it
+shipped: `src/cli.ts` spelled the command list twice — once as the usage banner's
+`<a|b|c>` literal, once as the `cmd === "…"` dispatch chain — with *nothing keeping
+the spellings equal*. 31 shared tokens, score 31.30, and the verdict "the two
+spellings ALREADY disagree", because the dispatch accepted `resolve` and the banner
+had never heard of it.
+
+It was right, and the cost was measurable. The banner produced v0.14.0's **only
+merge conflict** — two branches hand-editing the same line. Banner vs dispatch
+measured 29 vs 30. And README's `## Commands` reference, a *third* spelling nobody
+had counted, measured **20 vs 32**: twelve commands undocumented, including
+`dismiss` listed while its six sibling journal verbs were not, so a reader found a
+verb for retiring conjectures with nothing on the page explaining what a conjecture
+is. A convention-tier rule the tool itself kept flagging.
+
+### One declarative home, two derived spellings
+
+`src/commands.ts` holds `COMMANDS` — an ordered `{ name, summary, usage?, group,
+aliases? }` registry in the shape `CLAIM_FORMS` already established for the claim
+grammar. From it:
+
+- **the usage banner** is `.map`ped and joined. No command-name string literal
+  survives in `cli.ts`'s help text, so there is no line left for two branches to
+  conflict on, and the banner is now *complete* — it used to omit the details of
+  eight commands it listed.
+- **a third owned block in README.md**, fenced like CLAUDE.md's and spliced by the
+  same `spliceBlock` (which now takes the fence as an argument — one splice
+  implementation, two marker pairs, not two copies). `coherence docs` writes it;
+  `coherence docs --check` fails on it when stale.
+
+The registry lives in its own file rather than beside the dispatch for a blunt
+reason: `cli.ts` **executes at import**, so a test cannot read it. A source of
+truth its own oracle cannot import is not one.
+
+### The totality oracle is the point
+
+`test/commands.test.ts` parses `src/cli.ts` and pulls every `cmd === "<literal>"`
+out of the **TypeScript AST**, then asserts set equality with the registry —
+aliases counted on the dispatch side, so `resolve` is dispatched without being
+advertised as a command of its own. A hand-written expected list was rejected: it
+would be a fourth spelling of the same domain, drifting like the other three.
+
+The AST rather than a regex, because a regex also matches `cmd === "x"` inside a
+comment, and an oracle a code comment can fool is not one. And the scanner is
+**checked before it is trusted** — the first test asserts it found a dispatch of
+plausible size, because a scan that silently returned `[]` would compare two empty
+sets, pass, and report perfect agreement with nothing. That is this harness's
+signature defect and it does not get a free pass for living inside the harness.
+
+### Index vs detail: completeness and depth are different debts
+
+The generated block is an **index** — name, argument shape, one line, all 31 of
+them. The reasoning stays authored below it under **In detail**, and is *not*
+expected to cover every command. Completeness is what a derivation owes; depth is
+what prose owes; the section that drifted three times was trying to be both.
+
+Two smaller consequences of taking the advice seriously:
+
+- the block is a **bullet list, not a table** — `redundancy` reads a markdown
+  table's first column as an enumerated domain, so a generated table would have
+  handed it a fresh README↔dispatch pair. A generated block the project's own
+  detector still flags has fixed nothing.
+- the block carries **no timestamp**, so its freshness gate is a byte-for-byte
+  compare with *nothing* normalized away. Every normalization a gate needs is a
+  hole in it.
+
+**Measured, after:** `coherence redundancy` goes from 42 candidate pairs to 37 —
+five removed, **zero added**. The banner/dispatch pair is gone from the pair set
+entirely, not demoted below the reporting floor.
+
+`docs --check` treats an absent README fence pair as *not owned*, not as stale:
+`docs` runs in every consuming project, and a gate that fails on a file the project
+never opted into is a gate that gets switched off wholesale. It is not silent about
+it — `coherence docs` prints the marker pair to paste.
 
 ---
 
