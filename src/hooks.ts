@@ -18,7 +18,7 @@
 // compress.
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { readJournal, openSession } from "./decisions.ts";
+import { readJournal, openSession, resolve } from "./decisions.ts";
 import type { Config } from "./types.ts";
 
 /** The text every agent is handed at startup. Short on purpose: it is paid for by
@@ -38,6 +38,16 @@ export function agentInstructions(session: string): string {
     "`--over` is repeatable and it is the field that matters most: what you REJECTED is",
     "what stops the next agent re-litigating a settled question. If you rejected nothing,",
     "omit it — an unexamined choice and a forced one should not look alike.",
+    "",
+    "WHEN A NUMBER SURPRISES YOU, DOUBT THE INSTRUMENT BEFORE THE SUBJECT — and record",
+    "the question even if you cannot chase it. An unresolved conjecture is a real entry:",
+    "",
+    `  npx coherence conjecture "<the surprising observation>" --could-be "<explanation>" \\`,
+    `    --discriminated-by "<the test that would separate them>" --session ${session}`,
+    `  npx coherence resolved <id> --because "<what that test showed>" --as "<which candidate won>"`,
+    "",
+    'You need not supply "the instrument is wrong" — it is added for you. It is the',
+    "highest-prior explanation for a surprising measurement and the one everyone skips.",
     "",
     "Two more verbs:",
     `  npx coherence blocked "<what you could not do>" --because "<why>" --session ${session}`,
@@ -65,25 +75,41 @@ export async function runHook(cfg: Config, event: string): Promise<number> {
   }
 
   if (event === "SubagentStop" || event === "Stop") {
-    const { records, unreadable } = readJournal(cfg);
-    const n = records.filter((r) => r.kind !== "session").length;
-    // Deliberately a report, not a demand. The agent is finishing; if it logged
-    // nothing that is worth SAYING, because a silent zero is indistinguishable from a
-    // job in which nothing was decided — and those are very different jobs.
-    const msg = n === 0
-      ? "DECISION JOURNAL: you logged nothing. If you made no real choices, that is a fine\n"
-        + "answer. If you did, name them now with `npx coherence decide` — they are about to\n"
-        + "leave with your context."
-      : `DECISION JOURNAL: ${n} entr${n === 1 ? "y" : "ies"} recorded`
-        + (unreadable ? ` (${unreadable} unreadable line(s), skipped)` : "")
-        + ". Anything you decided and did not log is about to leave with your context.";
-    emit(event, msg);
+    emit(event, stopReport(cfg));
     return 0;
   }
 
   // An unknown event is not an error: hook sets grow, and a harness that crashes on a
   // new event name breaks every session that added one.
   return 0;
+}
+
+/** What an agent is told as it finishes. Split out of `runHook` so it is reachable
+ *  without a stdin pipe — the hook body drains stdin, and a report you can only observe
+ *  by feeding a process is a report nobody tests. */
+export function stopReport(cfg: Config): string {
+  const { records, unreadable } = readJournal(cfg);
+  const n = records.filter((r) => r.kind !== "session").length;
+  // Deliberately a report, not a demand. The agent is finishing; if it logged
+  // nothing that is worth SAYING, because a silent zero is indistinguishable from a
+  // job in which nothing was decided — and those are very different jobs.
+  const msg = n === 0
+    ? "DECISION JOURNAL: you logged nothing. If you made no real choices, that is a fine\n"
+      + "answer. If you did, name them now with `npx coherence decide` — they are about to\n"
+      + "leave with your context."
+    : `DECISION JOURNAL: ${n} entr${n === 1 ? "y" : "ies"} recorded`
+      + (unreadable ? ` (${unreadable} unreadable line(s), skipped)` : "")
+      + ". Anything you decided and did not log is about to leave with your context.";
+  // STOP IS WHERE AN OPEN QUESTION IS CHEAPEST TO ANSWER AND ABOUT TO BECOME MOST
+  // EXPENSIVE — the agent still holds the context that noticed it, and is one turn from
+  // losing it. Repo-wide, and phrased as such: attributing another session's open
+  // conjecture to this agent would be a lie the journal cannot afford.
+  const { open } = resolve(records);
+  return msg + (open.length
+    ? `\n\n${open.length} OPEN CONJECTURE(S) in this repo — noticed, not yet chased.`
+      + " If your work settled one, close it with `npx coherence resolved <id> --because ...`;"
+      + " `npx coherence decisions --open` lists them."
+    : "");
 }
 
 function emit(event: string, additionalContext: string): void {
@@ -179,6 +205,9 @@ The journal lives in .coherence/decisions/ — ONE APPEND-ONLY FILE PER AGENT SE
 so two branches merge without a conflict and writers can never interleave. Commit the
 folder; it is the record, not a cache. Read the merged timeline across every session,
 job and branch with \`coherence decisions [--job X] [--agent Y] [--branch B] [--sessions] [--md]\`.
+\`coherence decisions --open\` narrows it to the OPEN CONJECTURES — the standing list of
+things this project noticed and did not chase, which is the entry most likely to decay
+because the agent that saw it is gone.
 
 --- what each agent is told (with a fresh session id per agent) ----------------
 ${agentInstructions("s-<minted per agent>")}

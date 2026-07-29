@@ -578,8 +578,86 @@ coherence decide "species gas physics as its own commit" \
 coherence blocked "measure the converged CO2" --because "sub-cycling is unbuilt" --session s-abc
 coherence retract d-dfa936a6 --because "the sweep RAN: 5/8 on a re-roll" --session s-abc
 
-coherence decisions [--job X] [--agent Y] [--session S] [--branch B] [--sessions] [--md]
+coherence conjecture "139,460 habitat violations across 84 cells" \
+  --could-be "the sim really is that broken" \
+  --discriminated-by "decode one known cell by hand and compare against the reported column" --session s-abc
+coherence resolved d-0336314f --because "hand-decode says 158 — floor(v/16) where the encoding is 1-based" \
+  --as "the decoder had an off-by-one" --session s-abc
+
+coherence decisions [--job X] [--agent Y] [--session S] [--branch B] [--sessions] [--md] [--brief] [--open]
 ```
+
+### The conjecture — abduction as a first-class entry
+
+`decide` records a choice and `blocked` records an impasse. Neither records what was
+**wondered**, and that was the gap: every expensive finding in one recent session came
+from the same move — *a number was surprising, so the instrument was doubted before the
+subject* — and none of it was representable.
+
+| what was surprising | what it actually was |
+| --- | --- |
+| 139,460 habitat violations | a decoder off-by-one (`floor(v/16)` vs `floor((v-1)/16)`). True answer: **158** |
+| 4,237 removed lines charged to an 1,139-line file | deleted files emit `+++ /dev/null`; their removals landed on the previous file |
+| "arm A wrote 3x the code" | it measured *patch-file* lines, not *added* lines. The arms were within **1.6%** |
+| a mutation harness caught every fault | the repo ships a declared expected-failure ledger and is already red at rest |
+| a negative control passed | its regex never matched, so it tested nothing |
+
+Six for six, the instrument. So **"the instrument is wrong" is always a candidate** —
+if you do not supply it, it is added, and the render tags it `[instrument]`:
+
+```
+  · 139,460 habitat violations across 84 cells   [d-0336314f · finder-1 · main · 20cc889]
+  ·   could be: [instrument] the instrument is wrong — the thing that PRODUCED this
+      number, not the thing it describes · the sim really is that broken
+  ·   discriminated by: decode one known cell by hand and compare against the reported column
+```
+
+The detector that decides whether you already doubted your apparatus is deliberately
+narrow, and its failure mode is asymmetric on purpose: a miss adds one redundant
+canonical candidate — recoverable noise — while a false positive would ship a conjecture
+with no instrument doubt at all, silently, which is the whole failure being prevented.
+
+**`--could-be` is optional; `--discriminated-by` is not.** That looks backwards and is
+not. Candidates are optional because the one that matters most is supplied for you. The
+discriminating test is required because without it the entry is a complaint: a surprising
+number with no way to settle it sits in the journal forever being re-noticed. `"unknown —
+no test comes to mind"` is a legal and honest value; omitting the flag is not.
+
+**An UNRESOLVED conjecture is the valuable state, so it is loud.** Open questions render
+**above** `Standing`, not below it — a settled decision will still be there tomorrow, but
+an open conjecture decays, because the agent that saw the surprising number is gone and
+nobody else knows to look. Filed under the settled work it reads as an appendix, which is
+indistinguishable from never having recorded it. The count is shouted in the summary line
+when it is nonzero (and stated plainly when it is zero — permanent all-caps is furniture,
+and furniture is what the eye learns to skip):
+
+```
+3 standing · 2 OPEN CONJECTURE(S) · 1 resolved · 0 retracted · 1 blocked · …
+```
+
+`coherence decisions --open` is the lens: the standing list of what this project noticed
+and did not chase, and nothing else. With nothing open it *says so* — silence there is
+ambiguous between "all chased" and "the filter is broken". `SubagentStop` names the count
+too, because that is the moment an open question is cheapest to answer and one turn from
+becoming most expensive.
+
+**A resolution is an append that points at the conjecture**, exactly as a retraction
+points at a decision — so the agent that settles a question need not be the one that
+raised it. `--as` names which candidate won; `--because` carries what the discriminating
+test showed. Resolving an id that is not a conjecture is **refused**, with a different
+message from an id that does not exist: accepting it would append a record no render ever
+reads, which is a command that exits 0 and does nothing.
+
+**It does not point at a `decide` entry, deliberately.** The arc *noticed → tested →
+chose* is already content in `--as` and `--because`; a pointer would add referential
+integrity to keep in sync and a choreography cost (log the decision, copy its id, then
+resolve) to a journal whose design constraint is that the write must be the cheapest thing
+in the CLI. It would also create an expectation that the arc *should* be recorded — the
+incentive-to-be-complete this journal exists to refuse.
+
+A conjecture is never a `standing` decision. It has rejected nothing, so it renders no
+`over:` line, and counting it as a settled position is the exact confusion the record
+exists to end.
 
 ### Length: cap the labels, never the evidence
 
@@ -599,6 +677,11 @@ exists to prevent.
 Readability is a RENDER problem, so it is solved at the render: `coherence decisions
 --brief` clips each rationale for scanning and **announces what it withheld**
 (`… (+412 chars — drop --brief for the evidence)`). Nothing on disk is ever shortened.
+
+One rule, applied everywhere: **under `--brief`, prose clips and labels never do.** So
+`because` and `discriminated by` clip; `over` and `could be` do not. Clipping a candidate
+would hide which explanations were even considered, which is the one thing a conjecture
+is for.
 
 **`--over` is the field that matters.** What was REJECTED is what stops the next agent
 re-litigating a settled question. It is also the field every gate-shaped design drops.
@@ -623,6 +706,15 @@ cache. Three reasons for the split:
    is 2400/2400 intact, 0 torn, 0 missing. The same probe with a
    read-then-write-at-offset writer loses 1242 of 2400, so it can see loss when loss
    exists. No lock — and a lock is a thing five agents can deadlock on.)
+
+**Ids are pointers, so the id format is frozen.** `d-` + 8 hex of a SHA-256 over the
+record's fields joined on a **NUL** — the one byte a field cannot contain, so no `chose`
+can forge a field boundary. Every `supersedes` in every committed journal names one of
+these, which is why the conjecture fields were added to the digest *only when present*:
+feeding two empty fields into a plain decision's hash would have re-minted every id ever
+written and silently orphaned every retraction on disk. Measured before touching it — all
+20 entries in this repo's own journal reproduce under NUL, 0 of 20 under a space — and
+pinned by a test against a literal id minted before conjectures existed.
 
 `coherence decisions` is the cohering read: every session file merged into ONE timeline
 ordered by time, across agents, jobs and branches.

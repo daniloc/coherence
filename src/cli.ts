@@ -27,7 +27,7 @@ import { buildPromiseModel, derivePromiseBase, buildReview, formatLedger, graphF
 import { renderContract } from "./render-contract.ts";
 import { readStatus } from "./status.ts";
 import { CLAIM_FORMS, loadDictionary } from "./phrasebook.ts";
-import { appendDecision, renderJournal, readJournal } from "./decisions.ts";
+import { appendDecision, renderJournal, readJournal, resolvableConjecture } from "./decisions.ts";
 import { printHooks, checkHooks, runHook } from "./hooks.ts";
 
 const cmd = process.argv[2];
@@ -43,7 +43,10 @@ const diffIdx = argv.indexOf("--diff");
 const diffRef = diffIdx >= 0 ? argv[diffIdx + 1] : null;
 // `--over` is REPEATABLE on purpose: a decision with three rejected alternatives is
 // a better record than one with a comma-joined string nobody can split reliably.
-const VALUED = new Set(["--since", "--apply", "--diff", "--over", "--because", "--agent", "--job", "--file", "--for", "--session", "--branch"]);
+// `--could-be` is repeatable for the same reason as `--over`, and for one more: the
+// count of candidates IS the signal. One candidate is a hunch dressed as an inquiry.
+const VALUED = new Set(["--since", "--apply", "--diff", "--over", "--because", "--agent", "--job", "--file", "--for", "--session", "--branch",
+  "--could-be", "--discriminated-by", "--as"]);
 const many = (flag: string): string[] => argv.reduce<string[]>((acc, a, i) => (a === flag && argv[i + 1] !== undefined ? [...acc, argv[i + 1]] : acc), []);
 const one = (flag: string): string | null => { const v = many(flag); return v.length ? v[v.length - 1] : null; };
 const positional = argv.filter((a, i) => !a.startsWith("--") && !VALUED.has(argv[i - 1] ?? ""));
@@ -200,6 +203,64 @@ if (cmd === "graph") {
   });
   console.log(`${rec.id}  ${rec.kind}  [${rec.agent} · ${rec.commit ?? "no-commit"}${rec.dirty ? "+dirty" : ""}]`);
   await exit(0);
+} else if (cmd === "conjecture") {
+  // ABDUCTION AS A FIRST-CLASS ENTRY. `decide` records a choice and `blocked` records an
+  // impasse; this records a QUESTION — a number that surprised someone, the explanations
+  // that could account for it, and the test that would tell them apart.
+  //
+  // `--could-be` is OPTIONAL and `--discriminated-by` is NOT, which is the opposite of
+  // what it looks like it should be. Candidates are optional because the one that matters
+  // most gets added for you (see `withInstrumentCandidate`). The discriminating test is
+  // required because without it this is a complaint: a surprising number with no way to
+  // settle it is exactly the entry that sits in a journal forever being re-noticed.
+  // "unknown — no test comes to mind" is a legal and honest value; a missing flag is not.
+  const observation = positional[0];
+  const discriminatedBy = one("--discriminated-by");
+  if (!observation || !discriminatedBy) {
+    console.error('usage: coherence conjecture "<the surprising observation>" \\');
+    console.error('         --could-be "<candidate explanation>" [--could-be ...] \\');
+    console.error('         --discriminated-by "<the test that would separate them>" \\');
+    console.error('         [--because "<why it is surprising>"] [--agent X] [--job Y] [--session S] [--file p]');
+    console.error("");
+    console.error('  --could-be is optional: "the instrument is wrong" is added for you when you do not');
+    console.error("  name it. It is the highest-prior explanation for a surprising measurement and the");
+    console.error("  one people skip — doubt the thing that produced the number before the thing it describes.");
+    console.error('  --discriminated-by is required. "unknown" is a legal answer; leaving it out is not.');
+    await exit(2);
+  }
+  const rec = appendDecision(cfg, {
+    kind: "conjecture", chose: observation!, because: one("--because") ?? "",
+    couldBe: many("--could-be"), discriminatedBy: discriminatedBy!,
+    agent: one("--agent") ?? undefined, job: one("--job") ?? undefined,
+    session: one("--session") ?? undefined, files: many("--file"),
+  });
+  console.log(`${rec.id}  conjecture  [${rec.agent} · ${rec.commit ?? "no-commit"}${rec.dirty ? "+dirty" : ""}]`);
+  for (const c of rec.couldBe ?? []) console.log(`  could be: ${c}`);
+  // Hand back the exact line that closes it. The id is the friction; printing the whole
+  // command removes the excuse for leaving the question open.
+  console.log(`  settle it with:  coherence resolved ${rec.id} --because "<what the test showed>" --as "<which candidate won>"`);
+  await exit(0);
+} else if (cmd === "resolved" || cmd === "resolve") {
+  // A resolution is an APPEND that points at the conjecture, exactly as a retraction
+  // points at a decision — same mechanism, same cross-file reach, so the agent that
+  // settles a question need not be the one that raised it.
+  const id = positional[0];
+  const because = one("--because");
+  if (!id || !because) {
+    console.error('usage: coherence resolved <id> --because "<what the discriminating test showed>" [--as "<which candidate won>"]');
+    await exit(2);
+  }
+  // The rule (and its two distinct refusals) lives in decisions.ts, not here — see
+  // `resolvableConjecture`. The CLI only prints what it is handed.
+  const target = resolvableConjecture(readJournal(cfg).records, id!);
+  if ("error" in target) { for (const line of target.error) console.error(line); await exit(2); }
+  const rec = appendDecision(cfg, {
+    kind: "resolution", chose: one("--as") ?? `(resolved: ${id})`, because: because!,
+    supersedes: id!, agent: one("--agent") ?? undefined, job: one("--job") ?? undefined,
+    session: one("--session") ?? undefined,
+  });
+  console.log(`${rec.id}  resolves ${id}`);
+  await exit(0);
 } else if (cmd === "retract") {
   // A retraction is an APPEND, never an edit. History is refuted here, not rewritten —
   // an entry that quietly changed its mind is indistinguishable from one that was
@@ -222,6 +283,8 @@ if (cmd === "graph") {
   const { text } = renderJournal(cfg, {
     job: one("--job"), agent: one("--agent"), session: one("--session"), branch: one("--branch"),
     sessions: argv.includes("--sessions"), markdown: argv.includes("--md"), brief: argv.includes("--brief"),
+    // `--open` is the standing list of what this project noticed and did not chase.
+    open: argv.includes("--open"),
   });
   console.log(text);
   await exit(0);
@@ -350,11 +413,14 @@ if (cmd === "graph") {
   }
   await exit(0);
 } else {
-  console.error("usage: coherence <graph|overview|docs|claude|verify|panel|scene|contract|review|log|decide|blocked|retract|decisions|hooks|hook|decompose|drift|scaffold|onboard|lint-sinks|conventions|atlas|contracts|why-lint|phrasebook> [options]");
+  console.error("usage: coherence <graph|overview|docs|claude|verify|panel|scene|contract|review|log|decide|blocked|conjecture|resolved|retract|decisions|hooks|hook|decompose|drift|scaffold|onboard|lint-sinks|conventions|atlas|contracts|why-lint|phrasebook> [options]");
   console.error("  decide \"<chose>\" --over \"<alt>\" --because \"<why>\"   log one decision (append-only; gates nothing)");
   console.error("  blocked \"<what>\" --because \"<why>\"                 log what you could NOT do — first-class, not a footnote");
+  console.error("  conjecture \"<surprising observation>\" --could-be \"<explanation>\" --discriminated-by \"<the test>\"");
+  console.error("                                                      log what you WONDERED; \"the instrument is wrong\" is added if you omit it");
+  console.error("  resolved <id> --because \"<what the test showed>\" [--as \"<which candidate won>\"]   close a conjecture");
   console.error("  retract <id> --because \"<what refuted it>\"          withdraw a decision by appending, never by editing");
-  console.error("  decisions [--job|--agent|--session|--branch|--sessions|--md|--brief]  the MERGED timeline; --brief clips rationales for scanning");
+  console.error("  decisions [--job|--agent|--session|--branch|--sessions|--md|--brief|--open]  the MERGED timeline; --open = noticed and not yet chased");
   console.error("  hooks [--check]                                     print the hooks block; --check asks whether it has ever FIRED");
   console.error("  panel [--no-watch | --once]                  live TUI over the graph + status record");
   console.error("  scene [--diff <ref>]                         persistent isometric worksite (_scene.html); --diff renders a review vs <ref>");
