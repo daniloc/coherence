@@ -3,12 +3,14 @@
 // single report instead of booting the runner per claim.
 //
 // WHY THIS EXISTS. The per-claim arm (`execNamedTest` in phrasebook.ts) shells
-// `config.test` + the claim name once per executable claim. That is the right default:
-// it needs no reporter, no schema, and no trust in a report file. But the cost is a
-// whole runner boot per claim, and on a project whose pool is expensive to start (a
-// workerd/vitest pool: 15-30s) it is pure redundancy — measured at 20-35 minutes for
-// ~70 executable claims in a suite that runs end-to-end in under two. One boot, then
-// N lookups, is the same evidence for one two-hundredth of the wall clock.
+// `config.test` + the claim name once per executable claim. It needs no reporter, no
+// schema, and no trust in a report file — which is why it survives as the explicit
+// escape hatch — but the cost is a whole runner boot per claim, and on a project whose
+// pool is expensive to start (a workerd/vitest pool: 15-30s) it is pure redundancy —
+// measured at 20-35 minutes for ~70 executable claims in a suite that runs end-to-end
+// in under two. One boot, then N lookups, is the same evidence for one two-hundredth
+// of the wall clock; as of v0.17.0 the serial profile runs only when NAMED
+// (--serial-oracles), never as a default.
 //
 // THE GUARANTEE IS THE POINT, NOT THE SPEED. This module is only allowed to exist
 // because it can reproduce the per-claim path's verdicts exactly, including the one
