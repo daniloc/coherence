@@ -69,9 +69,24 @@
 //      read-then-write-at-offset writer loses 1242 of 2400, so it can see loss when
 //      loss exists. No lock — and a lock is a thing five agents can deadlock on.)
 //
+// ...AND WHY THAT NEARLY DROWNED A PULL REQUEST. One consuming project accumulated ~20
+// new `.jsonl` files in a single day, and twenty new files is not a diff anybody reads —
+// which converts the record into noise at exactly the moment it is supposed to be read.
+// The cause was ONE LINE: the fallback when no `--session` and no hook supplied an id was
+// `newSessionId()`, a RANDOM id, so every hookless `coherence decide` minted a fresh file.
+// Randomness is right for a HOOK-minted session — those genuinely are concurrent — and
+// wrong as a fallback, where the caller is a human or a lone agent typing the command.
+// So the fallback is DERIVED (`derivedSessionId`): same branch, same agent, same UTC day
+// appends to one file. The BRANCH STAYS IN THE FILENAME, because reason 1 above is the
+// whole reason this layout exists and a tidier PR is not worth trading a merge conflict
+// for. What is left after that is `compactJournal` — folding files that git already holds,
+// which is tidying the working tree rather than editing the record.
+//
 // IT GATES NOTHING, DELIBERATELY. The moment this can fail a build it acquires an
 // incentive to be complete, and a complete journal is a transcript again.
-import { appendFileSync, existsSync, readFileSync, readdirSync, mkdirSync } from "node:fs";
+import {
+  appendFileSync, existsSync, readFileSync, readdirSync, mkdirSync, statSync, writeFileSync, unlinkSync,
+} from "node:fs";
 import { spawnSync } from "node:child_process";
 import { createHash, randomBytes } from "node:crypto";
 import { join } from "node:path";
@@ -181,19 +196,79 @@ export function withInstrumentCandidate(couldBe: string[]): string[] {
 export function decisionsDir(cfg: Config): string {
   return join(cfg.root, ".coherence", "decisions");
 }
+
+/** ONE FILENAME COMPONENT, filesystem-safe, AND STILL INJECTIVE — that last part is the
+ *  requirement that rules out a plain `replace`. A branch may contain `/`, and if
+ *  `feat/x` and `feat-x` both flatten to `feat-x` they share a journal file, which is
+ *  exactly the two-branches-conflict failure the split layout exists to prevent. So
+ *  whenever sanitising CHANGED anything — a substitution, a trim, the length cap — a
+ *  digest of the RAW string is appended, and two distinct inputs can no longer land on
+ *  one name. A string that was already safe is passed through untouched, so every session
+ *  id ever written (`s-` + 12 hex) still maps to the file it has always mapped to.
+ *
+ *  It is applied at `sessionPath`, which also closes a hole that predates it: `--session`
+ *  is caller-supplied and went straight into a path, so `--session ../../etc/x` wrote
+ *  outside the journal. */
+export function slug(raw: string): string {
+  const clean = raw.replace(/[^A-Za-z0-9._-]+/g, "-").replace(/^[-.]+/, "").replace(/[-.]+$/, "").replace(/-{2,}/g, "-");
+  const safe = (clean || "x").slice(0, 48);
+  return safe === raw ? safe : `${safe}-${createHash("sha256").update(raw).digest("hex").slice(0, 6)}`;
+}
+
 export function sessionPath(cfg: Config, session: string): string {
-  return join(decisionsDir(cfg), `${session}.jsonl`);
+  return join(decisionsDir(cfg), `${slug(session)}.jsonl`);
 }
 
 /** A fresh session id. Random rather than derived: two agents started in the same
- *  second on the same branch with the same name must not collide, and they can. */
+ *  second on the same branch with the same name must not collide, and they can.
+ *
+ *  THIS IS FOR THE HOOK, and only for it. `SubagentStart` mints one id per agent start,
+ *  where the concurrency is real and randomness is the only thing that separates them.
+ *  It is NOT the fallback for a hookless `coherence decide` — see `derivedSessionId`. */
 export function newSessionId(): string {
   return "s-" + randomBytes(6).toString("hex");
+}
+
+/** THE HOOKLESS FALLBACK: `<branch>-<agent>-<YYYY-MM-DD>`, derived rather than random, so
+ *  a human typing `decide` five times gets ONE file instead of five.
+ *
+ *  THE BRANCH IS IN THE NAME AND MUST STAY THERE. Distinct filenames are the entire reason
+ *  two parallel branches never conflict on the journal; an id that dropped the branch would
+ *  buy a tidier PR by reintroducing the conflict this layout was built to avoid.
+ *
+ *  THE DATE COMES FROM THE RECORD'S OWN `at`, so the filename and the timestamps inside it
+ *  are on ONE clock (UTC). The cost is that an evening's work can straddle UTC midnight
+ *  into two files; month-grouped compaction absorbs that completely, and a local-clock
+ *  filename would put two timezones in one layout for the same money.
+ *
+ *  THE RESIDUAL COLLISION IS TWO AGENTS THAT BOTH DEFAULTED TO agent "main" ON ONE BRANCH,
+ *  and it is safe on four independent grounds:
+ *    1. Same branch means same checkout. Git refuses to check one branch out in two
+ *       worktrees, so genuinely concurrent agents have DIFFERENT branches by construction —
+ *       and therefore different files.
+ *    2. Even interleaved, the write survives: `appendFileSync` is measured here at 8
+ *       concurrent writers x 300 lines, 2400/2400 intact, 0 torn, 0 missing (and the same
+ *       probe loses 1242 of 2400 with a seek-then-write writer, so it can see loss).
+ *    3. What is actually lost is attribution BETWEEN two agents that already declined to
+ *       pass `--agent` — they were indistinguishable before the filename was.
+ *    4. The supported concurrency path is the hook, and the hook still mints random ids. */
+export function derivedSessionId(branch: string | null, agent: string, at: string): string {
+  return `${slug(branch ?? "nobranch")}-${slug(agent)}-${at.slice(0, 10)}`;
 }
 
 function git(root: string, args: string[]): string | null {
   const r = spawnSync("git", args, { cwd: root, encoding: "utf8" });
   return r.status === 0 && r.stdout.trim() ? r.stdout.trim() : null;
+}
+
+/** Like `git` but it DISTINGUISHES "said nothing" from "failed" — `null` is a failure,
+ *  `[]` is a clean answer. `git` above collapses the two, which is harmless for reading a
+ *  branch name and fatal for `git diff --name-only`, where empty output is the whole
+ *  point: treating a failed diff as "clean" would fold a file nothing had verified. */
+function gitLines(root: string, args: string[]): string[] | null {
+  const r = spawnSync("git", args, { cwd: root, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 });
+  if (r.status !== 0) return null;
+  return r.stdout.split("\n").map((l) => l.trim()).filter(Boolean);
 }
 
 function context(root: string): { branch: string | null; commit: string | null; dirty: boolean } {
@@ -282,15 +357,21 @@ export function openSession(cfg: Config, o: { agent?: string; job?: string; now?
 }
 
 /** Append one record to a session's file, creating the session on first write so an
- *  agent that never saw the hook still produces an attributable file. */
+ *  agent that never saw the hook still produces an attributable file.
+ *
+ *  WITH NO ID FROM ANYWHERE THE ID IS DERIVED, NOT RANDOMISED — the one-line cause of
+ *  twenty unreviewable files in a day. `null` is passed down rather than resolved here
+ *  because the derivation needs the branch and the agent, and `write` is where those are
+ *  worked out; computing them twice is how the two spellings drift. */
 export function appendDecision(cfg: Config, input: DecideInput): DecisionRecord {
-  const session = input.session || process.env.COHERENCE_SESSION || newSessionId();
-  return write(cfg, session, input);
+  return write(cfg, input.session || process.env.COHERENCE_SESSION || null, input);
 }
 
-function write(cfg: Config, session: string, input: DecideInput): DecisionRecord {
+function write(cfg: Config, given: string | null, input: DecideInput): DecisionRecord {
   const agent = input.agent || process.env.COHERENCE_AGENT || "main";
   const ctx = context(cfg.root);
+  const at = input.now ?? new Date().toISOString();
+  const session = given ?? derivedSessionId(ctx.branch, agent, at);
   const job = input.job || process.env.COHERENCE_JOB || ctx.branch || "-";
   const over = input.over ?? [];
   // THE GUARANTEE IS APPLIED AT THE WRITE, not at the CLI and not at the render. Every
@@ -303,7 +384,7 @@ function write(cfg: Config, session: string, input: DecideInput): DecisionRecord
   const rec: DecisionRecord = {
     id: decisionId(input.kind, agent, input.chose, over, input.because, couldBe, discriminatedBy, input.finding),
     session,
-    at: input.now ?? new Date().toISOString(),
+    at,
     kind: input.kind,
     agent, job, branch: ctx.branch, commit: ctx.commit, dirty: ctx.dirty,
     chose: input.chose, over, because: input.because,
@@ -361,7 +442,18 @@ export function readJournal(cfg: Config): { records: DecisionRecord[]; sessions:
       } catch { unreadable++; }
     }
   }
-  records.sort((a, b) => a.at.localeCompare(b.at) || a.id.localeCompare(b.id));
+  // THE SORT IS TOTAL, AND THE THIRD KEY IS WHAT MAKES COMPACTION A NO-OP. Two keys left
+  // ties to be settled by the order the records happened to be READ in — directory listing,
+  // then line number — so the render was a function of the FILE LAYOUT, not of the content.
+  // Which is fine until `compactJournal` changes the layout: an (at, id) tie split across
+  // two files could then flip, and `resolve`'s last-write-wins dedupe would render the
+  // other copy's agent/branch/commit. `session` closes it: (at, id, session) can only tie
+  // for records that are byte-identical duplicates, which dedupe to one entry anyway. The
+  // render is now a function of the SET of records — which is what "compaction changes
+  // nothing" has to mean to be checkable. (Measured before adding it: 0 (at, id) ties and
+  // 0 duplicate ids across this repo's own 72 records, so it moved nothing on disk today.)
+  records.sort((a, b) => a.at.localeCompare(b.at) || a.id.localeCompare(b.id)
+    || (a.session ?? "").localeCompare(b.session ?? ""));
 
   // A SESSION IS NAMED BY ITS WORK, NOT BY ITS HEADER. The header is written by the
   // hook at agent start, BEFORE the agent knows what it is called — so it defaults to
@@ -380,6 +472,208 @@ export function readJournal(cfg: Config): { records: DecisionRecord[]; sessions:
     if (r.at < s.started) s.started = r.at;
   }
   return { records, sessions: [...byS.values()].sort((a, b) => a.started.localeCompare(b.started)), unreadable };
+}
+
+// ── COMPACTION — tidying the working tree, never editing the record ──────────────────
+//
+// THE PAIN IS A PULL REQUEST. One consuming project produced ~20 journal files in a day;
+// twenty new files is not a diff anybody reads, and one or two is. `derivedSessionId` stops
+// the multiplication going forward, and this folds what already multiplied.
+//
+// HOW IT COEXISTS WITH APPEND-ONLY, which is the only interesting question here: it only
+// folds files whose blobs are ALREADY IN GIT HISTORY. The originals therefore live in the
+// history forever and `git log -- <path>` plus `git show <commit>:<path>` recovers any individual
+// session, so nothing is
+// erased — the working tree is tidied, and the record is exactly as complete afterwards as
+// it was before. A file git has never seen is skipped, always, because for that file this
+// operation WOULD be a deletion.
+//
+// THE ACCEPTANCE TEST IS THAT IT CHANGES NOTHING. `coherence decisions` before and after
+// must be character-for-character identical; if the render moves, the compaction is wrong.
+// That is testable rather than aspirational because of two properties: every LINE is copied
+// BYTE-FOR-BYTE (never re-serialised through JSON.parse/stringify, which would reorder keys
+// and re-escape unicode), and `readJournal`'s sort is TOTAL, so the render is a function of
+// the set of records rather than of which file each one sits in.
+//
+// GROUPING IS (BRANCH, MONTH), and both halves are load-bearing:
+//   · branch alone would fold all of main's history into one ever-growing file, and would
+//     put two branches in one file — reintroducing the merge conflict the split exists for.
+//   · month alone would mix branches, same problem.
+//   A PR branch lives days to weeks, so it lands as one or two files. That is the point.
+//
+// THE GROUP KEY COMES FROM THE RECORDS, NEVER FROM THE FILENAME. Filenames are not parsed
+// anywhere in this module — a name is only ever compared against one computed from content —
+// so a hand-named file, a hook-minted random id and a previously-compacted file all sort
+// themselves out by what they contain. (This is the same correction `readJournal`'s
+// session-naming already had to make: the file is not the authority on what is inside it.)
+
+/** THE QUIET WINDOW: a file written more recently than this is never folded.
+ *
+ *  TWO HOURS, and both bounds are argued rather than picked. It has to be LONGER than the
+ *  gap between one agent's successive appends, or compaction lands mid-session — measured
+ *  on this repo's own journal, the largest gap between consecutive entries in a single
+ *  session is 14.1 min and the longest session spans 22.5 min, so two hours is ~8x the
+ *  observed worst case. And it has to be SHORTER than a day, because the motivating case is
+ *  twenty files accumulated in ONE day and compacted before the PR goes up; a 24-hour
+ *  window would refuse exactly the work it was asked to tidy.
+ *
+ *  It is a heuristic, so it is not the only guard: every source is re-stat'ed immediately
+ *  before its group is written and the group is abandoned if anything moved, and a fold
+ *  that raced an append anyway would duplicate lines rather than lose them — which
+ *  `resolve`'s content-hash dedupe renders identically. */
+export const COMPACT_QUIET_MS = 2 * 60 * 60 * 1000;
+
+interface Foldable { file: string; target: string; lines: string[]; recs: DecisionRecord[]; size: number; mtimeMs: number }
+
+export interface CompactPlan {
+  /** target filename -> the files folded into it (may include the target itself). */
+  groups: { target: string; sources: Foldable[] }[];
+  /** left alone, with the reason — a skip is normal operation, not a failure. */
+  skipped: { file: string; why: string }[];
+  /** non-empty means DO NOTHING AT ALL. Not "skip these files" — abort. */
+  refusals: string[];
+  before: number;
+}
+
+/** What compaction WOULD do. Separated from doing it so the refusals can be tested without
+ *  a filesystem mutation, and so the executor has no policy left in it. */
+export function planCompaction(cfg: Config, nowMs: number = Date.now()): CompactPlan {
+  const dir = decisionsDir(cfg);
+  const files = existsSync(dir) ? readdirSync(dir).filter((f) => f.endsWith(".jsonl")).sort() : [];
+  const plan: CompactPlan = { groups: [], skipped: [], refusals: [], before: files.length };
+  if (!files.length) return plan;
+
+  // `ls-tree HEAD` is the question that actually matters — IS THIS BLOB IN THE HISTORY —
+  // and it is not the same question as `git status`, which says nothing about ignored
+  // files. A project that gitignored `.coherence/decisions/` would look perfectly clean
+  // while holding no committed copy of anything, and this is the check that catches it.
+  // A RELATIVE pathspec, resolved against `cwd: cfg.root`. An absolute one breaks on macOS,
+  // where a temp root is `/var/folders/…` and git resolves the worktree to
+  // `/private/var/folders/…` and then calls the pathspec outside its own repository.
+  const spec = join(".coherence", "decisions");
+  const inHead = gitLines(cfg.root, ["ls-tree", "-r", "--name-only", "HEAD", "--", spec]);
+  const changed = gitLines(cfg.root, ["diff", "HEAD", "--name-only", "--", spec]);
+  if (inHead === null || changed === null) {
+    plan.refusals.push("no git HEAD to fall back on — compaction is only non-destructive because"
+      + " git history holds the originals, so outside a repo with at least one commit it is just deletion.");
+    return plan;
+  }
+  const base = (p: string) => p.slice(p.lastIndexOf("/") + 1);
+  const committed = new Set(inHead.map(base));
+  const dirty = new Set(changed.map(base));
+
+  const foldable: Foldable[] = [];
+  for (const f of files) {
+    const st = statSync(join(dir, f));
+    // THE REFUSAL, and it is deliberately the only one about file state. A TRACKED journal
+    // file whose content differs from HEAD means the record was edited in place — the one
+    // thing this journal forbids — and compaction must not paper over it by folding the
+    // difference into a bigger file where nobody will find it.
+    if (dirty.has(f)) { plan.refusals.push(`${f} differs from HEAD — uncommitted journal content`); continue; }
+    // UNCOMMITTED IS A SKIP, NOT A REFUSAL, and that asymmetry is the live-session case: an
+    // untracked `.jsonl` is a session opened minutes ago. Refusing there would make the
+    // command unusable in any repo where an agent is running, which is every repo needing it.
+    if (!committed.has(f)) { plan.skipped.push({ file: f, why: "never committed — git history has no copy to recover it from" }); continue; }
+    const age = nowMs - st.mtimeMs;
+    if (age < COMPACT_QUIET_MS) {
+      plan.skipped.push({ file: f, why: `written ${Math.round(age / 60000)} min ago — inside the ${COMPACT_QUIET_MS / 3600000}h quiet window` });
+      continue;
+    }
+    const lines = readFileSync(join(dir, f), "utf8").split("\n").filter((l) => l.trim());
+    const recs: DecisionRecord[] = [];
+    for (const line of lines) {
+      try {
+        const o = JSON.parse(line) as DecisionRecord;
+        if (typeof o.id === "string" && typeof o.chose === "string" && typeof o.at === "string") recs.push(o);
+      } catch { /* counted by the length compare below */ }
+    }
+    // A FILE WITH AN UNREADABLE LINE IS LEFT ALONE. A line the reader cannot parse has no
+    // timestamp, so there is no honest place for it in a timestamp-ordered concatenation —
+    // and dropping it would lower the render's `N unreadable line(s)` warning from N to
+    // N-1, which is the silent repair this journal exists to refuse.
+    if (recs.length !== lines.length) {
+      plan.skipped.push({ file: f, why: `${lines.length - recs.length} unreadable line(s) — a line with no timestamp cannot be ordered, and dropping it would quietly lower the damage count` });
+      continue;
+    }
+    if (!recs.length) { plan.skipped.push({ file: f, why: "empty" }); continue; }
+    const branch = recs.find((r) => r.branch)?.branch ?? null;
+    const month = recs.reduce((m, r) => (r.at < m ? r.at : m), recs[0].at).slice(0, 7);
+    foldable.push({ file: f, target: `${slug(branch ?? "nobranch")}-${month}.jsonl`, lines, recs, size: st.size, mtimeMs: st.mtimeMs });
+  }
+  // A refusal aborts EVERYTHING. Compaction rewrites a directory; a directory in a state
+  // nobody has explained is not one to rewrite, and half a compaction is worse than none.
+  if (plan.refusals.length) return { ...plan, groups: [], skipped: [] };
+
+  const byTarget = new Map<string, Foldable[]>();
+  for (const c of foldable) byTarget.set(c.target, [...(byTarget.get(c.target) ?? []), c]);
+  for (const [target, sources] of [...byTarget].sort((a, b) => a[0].localeCompare(b[0]))) {
+    // Already exactly where it belongs, under the name it belongs under: nothing to do.
+    // Without this, a second `--compact` rewrites every file it wrote the first time.
+    if (sources.length === 1 && sources[0].file === target) continue;
+    plan.groups.push({ target, sources });
+  }
+  return plan;
+}
+
+/** Execute the plan. Report lines out, exit code out; the CLI only prints. */
+export function compactJournal(cfg: Config, o: { nowMs?: number } = {}): { code: number; lines: string[] } {
+  const dir = decisionsDir(cfg);
+  const plan = planCompaction(cfg, o.nowMs);
+  const L: string[] = [];
+  if (plan.refusals.length) {
+    L.push(`REFUSED — nothing was compacted. ${plan.refusals.length} problem(s):`);
+    for (const r of plan.refusals) L.push(`  · ${r}`);
+    L.push("", "Compaction only folds files git ALREADY HOLDS, so the originals stay recoverable with");
+    L.push("`git log`. Commit the journal first, then compact.");
+    return { code: 1, lines: L };
+  }
+
+  let folded = 0, written = 0;
+  for (const { target, sources } of plan.groups) {
+    // RE-STAT IMMEDIATELY BEFORE WRITING. The mtime window is a heuristic about agents;
+    // this is the actual guard against racing one. If anything moved between the plan and
+    // now, the group is abandoned whole — a partially folded group is the one outcome with
+    // no clean recovery story.
+    const moved = sources.filter((s) => {
+      const st = statSync(join(dir, s.file));
+      return st.size !== s.size || st.mtimeMs !== s.mtimeMs;
+    });
+    if (moved.length) {
+      for (const m of moved) plan.skipped.push({ file: m.file, why: "changed while compacting — left alone" });
+      continue;
+    }
+    // Sorted on the READER's key, so the reader's own stable sort has nothing left to do
+    // inside a compacted file. The line text is the ORIGINAL bytes — re-serialising the
+    // parsed record would reorder keys and re-escape unicode, and "content byte-identical"
+    // is the property the whole operation is judged on.
+    const rows = sources.flatMap((s) => s.lines.map((line, i) => ({ line, r: s.recs[i] })));
+    rows.sort((a, b) => a.r.at.localeCompare(b.r.at) || a.r.id.localeCompare(b.r.id)
+      || (a.r.session ?? "").localeCompare(b.r.session ?? ""));
+    writeFileSync(join(dir, target), rows.map((x) => x.line).join("\n") + "\n");
+    written++;
+    // AFTER the target exists, never before: a crash here leaves duplicate lines, which
+    // `resolve`'s content-hash dedupe renders identically. A crash the other way round
+    // loses the lines outright.
+    for (const s of sources) if (s.file !== target) { unlinkSync(join(dir, s.file)); folded++; }
+    L.push(`${target}  ← ${sources.length} file(s), ${rows.length} entr${rows.length === 1 ? "y" : "ies"}`);
+  }
+
+  // COUNTED FROM THE DIRECTORY, NOT DERIVED FROM THE TALLIES. The first version computed
+  // `before - folded`, and the dogfood run on this repo's own journal reported "15 file(s)
+  // → 1" when the answer was 5: it subtracted the 14 files unlinked and forgot the 4
+  // written. Doubt the instrument before the subject — and where the subject is a
+  // directory, ask the directory.
+  const after = readdirSync(dir).filter((f) => f.endsWith(".jsonl")).length;
+  if (!plan.groups.length) L.push("nothing to compact — every foldable file is already grouped by (branch, month).");
+  L.push("");
+  L.push(`${plan.before} file(s) → ${after}${written ? `  (${written} written, ${folded} folded away)` : ""}`);
+  for (const s of plan.skipped) L.push(`  skipped ${s.file}: ${s.why}`);
+  if (folded) {
+    L.push("", "The originals are in git history: `git log --oneline -- .coherence/decisions/<file>` names the");
+    L.push("commits that held it and `git show <commit>:<path>` prints it back, byte for byte. `coherence decisions`");
+    L.push("renders exactly what it rendered before; stage the result with `git add -A .coherence/decisions/`.");
+  }
+  return { code: 0, lines: L };
 }
 
 /** Retractions resolve ACROSS session files — one agent may withdraw another's

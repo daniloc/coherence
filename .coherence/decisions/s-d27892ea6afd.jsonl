@@ -1,1 +1,0 @@
-{"id":"d-774ad32a","session":"s-d27892ea6afd","at":"2026-07-29T20:51:05.154Z","kind":"dismissal","agent":"main","job":"main","branch":"main","commit":"f78eb54","dirty":true,"chose":"(dismissed: d-83c8020f)","over":[],"because":"CHAIN_METHODS and ITER_METHODS are deliberately different sets that overlap on the array methods; the difference is the point","supersedes":"d-83c8020f"}

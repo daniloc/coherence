@@ -605,6 +605,10 @@ coherence verify --raise [--raise-cap N]
 coherence observed "CO2 range, low" --value 0.180 --baseline 0.140 --threshold 0.010 --unit "%"
 
 coherence decisions [--job X] [--agent Y] [--session S] [--branch B] [--sessions] [--md] [--brief] [--open]
+
+# ...and the one write that lives under the read command, because its whole contract is that
+# it changes nothing the read prints: fold COMMITTED session files into one per (branch, month).
+coherence decisions --compact
 ```
 
 ### The conjecture — abduction as a first-class entry
@@ -969,6 +973,86 @@ pinned by a test against a literal id minted before conjectures existed.
 `coherence decisions` is the cohering read: every session file merged into ONE timeline
 ordered by time, across agents, jobs and branches.
 
+### The session id: random for a hook, DERIVED for anything else
+
+One file per session is right when the sessions are real. It was expensive when they were
+not: a consuming project accumulated **~20 new `.jsonl` files in a single day**, and twenty
+new files is not a diff anybody reads — which turns the record into noise at exactly the
+moment it is supposed to be read.
+
+The cause was one line. With no `--session` and no `COHERENCE_SESSION`, `appendDecision`
+fell back to a *random* id, so every hookless `coherence decide` minted a fresh file. So:
+
+- **`SubagentStart` mints a random `s-<12 hex>`.** Those sessions genuinely are concurrent
+  and randomness is the only thing that separates them. Unchanged.
+- **Everything else derives `<branch>-<agent>-<YYYY-MM-DD>`.** Same branch, same agent,
+  same UTC day appends to *one* file. A human typing `decide` five times gets one file.
+
+**The branch stays in the filename** — reason 1 above is the entire reason this layout
+exists, and a tidier PR is not worth trading a merge conflict for. The date comes from the
+record's own `at`, so the filename and the timestamps inside it are on one clock; an
+evening's work can straddle UTC midnight into two files, which month-grouped compaction
+absorbs completely. Sanitising is **injective**: a branch may contain `/`, and if `feat/x`
+and `feat-x` both flattened to `feat-x` they would share a file, so whenever sanitising
+changes anything a digest of the raw string is appended. A name that was already safe passes
+through untouched, which is why every id ever written still maps to the file it always did
+— and why `--session ../../etc/x` no longer escapes the journal directory.
+
+The residual collision is two agents that both defaulted to agent `main` on one branch, and
+it is safe on four independent grounds: same branch means same checkout, and git refuses to
+check one branch out in two worktrees, so genuinely concurrent agents have different
+branches *by construction*; even interleaved, the measured append does not tear; what is
+lost is attribution between two agents that already declined to pass `--agent`; and the
+supported concurrency path is the hook, which still randomises.
+
+### `coherence decisions --compact` — fewer files, byte-identical record
+
+What the derived id prevents going forward, this folds after the fact: one file per
+**(branch, month)** — `main-2026-07.jsonl`, `feature-x-2026-07.jsonl`.
+
+```sh
+coherence decisions --compact
+```
+
+**It tidies the working tree; it does not edit the record**, and three constraints are what
+make that true rather than aspirational:
+
+1. **Only files whose blobs are COMMITTED are folded.** The originals then live in git
+   history forever: `git log --oneline -- .coherence/decisions/<file>` names the commits that
+   held it and `git show <commit>:<path>` prints it back, byte for byte. A file git has never seen is skipped, always — for that file this
+   would be a deletion. The check is `git ls-tree HEAD`, not `git status`, because status
+   says nothing about *ignored* files: a project that gitignored the journal would look
+   perfectly clean while holding no committed copy of anything.
+2. **A tracked journal file that differs from HEAD is a REFUSAL**, and nothing at all is
+   folded. That means the record was edited in place, which is the one thing this journal
+   forbids, and compaction must not bury the difference in a bigger file. A file written in
+   the last **two hours** is skipped instead — the window has to exceed the gap between one
+   agent's successive appends (measured on this repo: worst intra-session gap 14.1 min,
+   longest session 22.5 min) and stay well under a day, or it would refuse the very case it
+   exists for: twenty files accumulated today, compacted before the PR goes up. Every source
+   is also re-`stat`ed immediately before its group is written, and a fold that raced an
+   append anyway duplicates lines rather than losing them — which the content-hash dedupe
+   renders identically.
+3. **Grouping is (branch, month), and both halves are load-bearing.** Branch alone folds all
+   of main's history into one ever-growing file *and* puts two branches in one file,
+   reintroducing the conflict the split exists for; month alone mixes branches, same problem.
+   A PR branch lives days to weeks, so it lands as one or two files. The key is read from the
+   RECORDS, never from the filename — nothing in the journal parses a filename.
+
+**The acceptance test is that it changes nothing.** `coherence decisions` before and after
+must be *character-for-character* identical; if the render moves, the compaction is wrong.
+Two properties make that checkable rather than hopeful: every line is copied **byte for
+byte** (never re-serialised through `JSON.parse`/`stringify`, which reorders keys and
+re-escapes unicode), and `readJournal`'s sort is **total** over `(at, id, session)`, so the
+render is a function of the *set* of records rather than of which file each one sits in. A
+file containing an unreadable line is left alone: that line has no timestamp to order it by,
+and dropping it would quietly lower the render's `N unreadable line(s)` warning — the silent
+repair this journal refuses.
+
+Run on this repo's own journal: **15 files → 5**, all nine render shapes byte-identical, 78
+records and 15 sessions preserved. And watched to fail — disabling the unreadable-line guard
+turns the identity test red on exactly the missing `WARNING:` line.
+
 ### It gates nothing, deliberately
 
 The moment this can fail a build it acquires an incentive to be complete, and **a
@@ -1037,7 +1121,7 @@ any is in **In detail** below — that half is authored, and does not cover all 
 - `coherence resolved <id> --because "<what the test showed>" [--as "<which candidate won>"]` (alias: `resolve`) — close a conjecture with what the discriminating test showed
 - `coherence dismiss <id> --because "<why this is not worth chasing>"` — retire a conjecture UNANSWERED — not a resolution, and never raised again
 - `coherence retract <id> --because "<what refuted it>" [--for "<replacement>"]` — withdraw a decision by appending, never by editing
-- `coherence decisions [--job|--agent|--session|--branch|--sessions|--md|--brief|--open]` — the MERGED timeline across every session file; `--open` is what was noticed and not yet chased
+- `coherence decisions [--job|--agent|--session|--branch|--sessions|--md|--brief|--open|--compact]` — the MERGED timeline across every session file; `--open` is what was noticed and not yet chased, `--compact` folds committed session files into one per (branch, month) without changing what this prints
 
 **Perceive the project**
 
@@ -1251,7 +1335,9 @@ any is in **In detail** below — that half is authored, and does not cover all 
     — a project's own harness reporting a measurement. Inside the band, silence; outside
     it and unexplained, one conjecture per label.
   - `coherence decisions [--job|--agent|--session|--branch|--open|--sessions|--md|--brief]`
-    — the MERGED timeline across every session file, ordered by time.
+    — the MERGED timeline across every session file, ordered by time. `--compact` is the
+    one exception to "appends only": it folds **committed** session files into one per
+    (branch, month) and is judged by leaving this render character-for-character identical.
 - `coherence contract` — the **promise graph**: derive declared zones, graded gates and the
   reliance double-entry into a self-contained `_contract.html`, plus `promise.json` for
   agents and tools. It embeds live grades, so it is always regenerated — there is no

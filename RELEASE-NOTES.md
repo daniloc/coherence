@@ -1,7 +1,7 @@
 # Release notes
 
 Newest first. v0.10.1 through v0.12.0 shipped on 2026-07-28 in one burst, on top of
-v0.9.0 (2026-07-11); v0.13.0 through v0.15.0 followed on 2026-07-29.
+v0.9.0 (2026-07-11); v0.13.0 through v0.16.0 followed on 2026-07-29.
 
 The whole run has a single theme. Coherence gates a build on claims a project
 writes about itself, and every release here is a consequence of one uncomfortable
@@ -10,6 +10,65 @@ prevents drift and a harness that cements a bug are the same machine viewed from
 two sides. 0.10.x gives a project the vocabulary to say which one it is looking
 at; 0.11.x builds the record of what agents decided and why; 0.12.0 protects the
 evidence inside that record.
+
+---
+
+## v0.16.0 — the journal stops drowning its own pull request
+
+One file per session is right when the sessions are real. A consuming project produced
+**~20 new `.jsonl` files in one day**, and twenty new files is not a diff anybody reads —
+so the record became noise at exactly the moment it was supposed to be read.
+
+The cause was **one line**: with no `--session` and no `COHERENCE_SESSION`,
+`appendDecision` fell back to `newSessionId()`, a *random* id, so every hookless
+`coherence decide` minted a fresh file. Randomness is correct for a hook-minted session,
+where five agents genuinely are concurrent. It was never correct as a fallback, where the
+caller is a person or a lone agent typing a shell line.
+
+### A derived fallback: `<branch>-<agent>-<YYYY-MM-DD>`
+
+Same branch, same agent, same UTC day now **appends to one file**. Hook-minted sessions
+keep their random `s-<12 hex>`.
+
+**The branch stays in the filename.** Distinct filenames are the whole reason two parallel
+branches never conflict on the journal, and a tidier PR is not worth trading a merge
+conflict for. Sanitising is injective — a digest of the raw name is appended whenever
+flattening changes anything, so `feat/x` and `feat-x` cannot land on one file — and a name
+that was already safe passes through untouched, so every id ever written still maps where
+it did. It also closes a hole that predated it: `--session` went straight into a path.
+
+The residual collision — two agents both defaulting to agent `main` on one branch — is safe
+four ways over, the strongest being structural: same branch means same checkout, and git
+refuses to check one branch out in two worktrees, so genuinely concurrent agents have
+different branches *by construction*.
+
+### `coherence decisions --compact` — and the test that it changes nothing
+
+What the derived id prevents going forward, this folds after the fact: one file per
+**(branch, month)**. It coexists with append-only because **it only folds files whose blobs
+are already committed** — the originals stay in git history, where `git log -- <path>` and
+`git show <commit>:<path>` recover any individual session, so the working tree is tidied and
+the record is untouched.
+
+- A tracked journal file that differs from HEAD is a **refusal**; nothing is folded.
+- A file git has never seen is **skipped** — that would be a deletion. Checked with
+  `git ls-tree HEAD` rather than `git status`, which says nothing about *ignored* files.
+- A file written in the last **two hours** is skipped: the window must exceed one agent's
+  worst intra-session append gap (14.1 min measured here) and stay well under a day, or it
+  would refuse the very case it exists for.
+
+**The acceptance test is that the render does not move** — `coherence decisions` before and
+after, character for character. Two properties make that checkable: lines are copied byte
+for byte, never re-serialised; and `readJournal`'s sort became **total** over
+`(at, id, session)`, so the render is a function of the *set* of records rather than of the
+file layout. A file with an unreadable line is left alone, because dropping that line would
+quietly lower the render's `N unreadable line(s)` warning.
+
+Dogfooded on this repo's own journal: **15 files → 5**, nine render shapes byte-identical,
+78 records and 15 sessions preserved. Watched to fail, too: disabling the unreadable-line
+guard turns the identity test red on exactly the missing `WARNING:` line — and the first
+negative control (reversing the concatenation order) leaves it *green*, which is correct and
+is why the ordering property carries its own assertion against file content.
 
 ---
 

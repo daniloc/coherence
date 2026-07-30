@@ -118,8 +118,9 @@ export const COMMANDS: Command[] = [
   },
   {
     name: "decisions", group: "journal",
-    usage: "[--job|--agent|--session|--branch|--sessions|--md|--brief|--open]",
-    summary: "the MERGED timeline across every session file; `--open` is what was noticed and not yet chased",
+    usage: "[--job|--agent|--session|--branch|--sessions|--md|--brief|--open|--compact]",
+    summary: "the MERGED timeline across every session file; `--open` is what was noticed and not yet chased,"
+      + " `--compact` folds committed session files into one per (branch, month) without changing what this prints",
   },
 
   // ── perceive ─────────────────────────────────────────────────────────────────────────

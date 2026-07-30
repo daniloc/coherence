@@ -34,7 +34,7 @@ import { buildPromiseModel, derivePromiseBase, buildReview, formatLedger, graphF
 import { renderContract } from "./render-contract.ts";
 import { readStatus } from "./status.ts";
 import { CLAIM_FORMS, loadDictionary } from "./phrasebook.ts";
-import { appendDecision, renderJournal, readJournal, resolvableConjecture } from "./decisions.ts";
+import { appendDecision, renderJournal, readJournal, resolvableConjecture, compactJournal } from "./decisions.ts";
 import { recordObservation, formatObserved } from "./observed.ts";
 import { printHooks, checkHooks, runHook } from "./hooks.ts";
 import { redundancy } from "./redundancy.ts";
@@ -401,6 +401,16 @@ if (cmd === "graph") {
   console.log(`${rec.id}  retracts ${id}`);
   await exit(0);
 } else if (cmd === "decisions") {
+  // ONE WRITE LIVES UNDER THE READ COMMAND, and it is the write whose entire contract is
+  // that it changes nothing this command prints. `--compact` folds session files git ALREADY
+  // HOLDS into one per (branch, month) — the motivating failure was ~20 new `.jsonl` files in
+  // a single day, which is not a diff anybody reads. It tidies the working tree; it does not
+  // edit the record, because the originals stay in history for `git log --follow`.
+  if (argv.includes("--compact")) {
+    const { code, lines } = compactJournal(cfg);
+    for (const line of lines) (code === 0 ? console.log : console.error)(line);
+    await exit(code);
+  }
   // The read half — the artifact. Scope it to one job or one agent when five of them
   // ran; unscoped it is every decision the repo has ever recorded.
   const { text } = renderJournal(cfg, {
