@@ -1,7 +1,8 @@
 # Release notes
 
 Newest first. v0.10.1 through v0.12.0 shipped on 2026-07-28 in one burst, on top of
-v0.9.0 (2026-07-11); v0.13.0 through v0.16.0 followed on 2026-07-29.
+v0.9.0 (2026-07-11); v0.13.0 through v0.16.0 followed on 2026-07-29, and v0.17.0 on
+2026-07-30.
 
 The whole run has a single theme. Coherence gates a build on claims a project
 writes about itself, and every release here is a consequence of one uncomfortable
@@ -10,6 +11,151 @@ prevents drift and a harness that cements a bug are the same machine viewed from
 two sides. 0.10.x gives a project the vocabulary to say which one it is looking
 at; 0.11.x builds the record of what agents decided and why; 0.12.0 protects the
 evidence inside that record.
+
+---
+
+## v0.17.0 — the twenty-minute full tier is retired, not made optional
+
+This release **removes a default**. Until now `verify`'s executable tier shelled
+`config.test` once per claim — `vitest run -t "<name>"` — and every one of those invocations
+booted the consuming project's entire test pool to execute milliseconds of assertions. Two
+repos, measured:
+
+- a workerd/vitest pool at 15–30s per boot × ~70 executable claims = **20–35 minutes**, for a
+  suite that runs end-to-end in **under two**;
+- a second project: one targeted oracle run took **4.51s** and reported
+  `7 passed | 291 skipped` — it paid the import and transform cost of **298 tests in order to
+  run 7**. × 17 claims ≈ 77s, ~60s of it fixed overhead, **on top of** an outer `check.mjs`
+  that had already run the whole suite for its own reasons. Their full tier: **8 minutes**.
+
+Nothing in those numbers is about test count. The full tier paid one suite's import cost
+**eighteen times**, and that project paid it a nineteenth time before coherence even started.
+
+The first cut of this shipped as an opt-in `testBatch` key, faithful to the harness's own
+"no behaviour change unless configured" discipline. That was wrong, and the second
+measurement is why: **the projects that most need the fast path are the least likely to have
+found the knob.** That repo was re-deriving evidence it already had, eighteen times, and
+nobody noticed because the slow profile never announces itself. An additive fix is right for
+a feature and wrong for a defect.
+
+So batching is now **the default**, and it needs no configuration at all: if `config.test`
+names vitest, coherence **derives** the whole-suite command itself.
+
+### The four modes, and a refusal
+
+| Mode | How you get it | What happens |
+| --- | --- | --- |
+| `--from-report <file>` | the flag | resolves from a report you already have — runs **no tests** |
+| serial | `--serial-oracles` / `"oracleExecution": "serial"` | one full pool boot **per claim** |
+| batch (configured) | `config.testBatch` | your command, once |
+| batch (derived) | **nothing — the default** | synthesized from `config.test` |
+
+Unrecognized runner, no `testBatch`, no report, no explicit serial → the full tier **fails
+loud**, listing all three ways out. It will not quietly buy you N pool boots. A consumer has
+to **type the name of the expensive profile** to get it, and when serial does run — by request
+or as the batch-crash fallback — it states its cost every single time and names the config
+that retires it.
+
+### The third state is the other half of the point
+
+Speed is what you notice. What matters as much is that a report distinguishes something an
+exit code cannot. `vitest -t` exits **0** when its filter matched nothing — so under the old
+path a renamed or deleted oracle read as a **pass**, and the only thing between that and a
+laundered green was `config.testMatch`, a regex the project had to know to hand-configure over
+the runner's *output*.
+
+| | serial | batch |
+| --- | --- | --- |
+| test ran, passed | green | green |
+| test ran, failed | red | red, naming the failing test |
+| **test does not exist** | *green* unless `testMatch` is set | **red — `VANISHED ORACLE`** |
+
+Under batch mode absence is directly observable, and zero matching tests is its own verdict
+that says so in those words. **`testMatch` has nothing left to do for a batched claim** — the
+same move as an unknown claim kind or a typo'd verb, where the failure mode is *eliminated*
+rather than covered by a knob whose absence is silent.
+
+Chasing that turned up something worse, on Node 25.2.1: for `node --test`, `testMatch` does
+not work **at all**. A `--test-name-pattern` matching nothing still reports the *file* as one
+passing test and exits 0, satisfying any "N passed" regex — and because node stops parsing its
+own options at the first positional, a `config.test` of
+`["node","--test","<glob>","--test-name-pattern"]` hands the filter to the *script*, where it
+is silently ignored and the whole suite runs and passes. Every claim in such a project has
+been green for free. That is now written down in the README, and it is the strongest argument
+for the batch path there is.
+
+### Mirroring `-t`, verified rather than assumed
+
+Batching is only allowed to exist because it reproduces the per-claim verdicts exactly, so the
+semantics were checked against the real binary before any of it was written. `-t` is an
+**unanchored regex** over the report's `fullName` — the reporter's own
+`ancestorTitles.join(" ")` plus the title — and the serial path always regex-**escapes** the
+name first. An escaped pattern matched unanchored *is* a literal substring test, so that is
+what batch matching is. `-t "totality covers"` really does run
+`write policy totality covers every op`, and a claim anchored to a `describe` title matches
+every test beneath it; equality would have red-lined that entire common case. The same run
+confirmed why escaping is load-bearing: unescaped, `-t "rejects unknown (a+b)"` matched
+**zero** tests and still exited 0.
+
+Green requires ≥1 matching test that **passed** and none that **failed**. Skipped tests are
+neither evidence nor failure — deliberately, because that is what the runner concludes too,
+and a batch stricter than the path it replaces would invent reds in repos that were honestly
+green.
+
+### Four things it refuses to do quietly
+
+- **Attribution stays per claim.** The batch is shared *evidence*, never a shared verdict.
+  Each claim fails alone, naming its own oracle and the test that failed. "The suite is red"
+  would have been simpler and would have been a regression.
+- **A crash falls back, out loud** — with the serial cost framing, because that is the one
+  remaining route into the expensive profile that nobody typed. A **nonzero exit is not a
+  crash**: a suite with a red test exits nonzero, and that is exactly the run whose report is
+  worth reading. (Relatedly, `spawnSync`'s default 1 MiB `maxBuffer` is now 64 MiB — a vitest
+  report embeds a stack trace per failure, so the *failing* run was the one whose report would
+  have arrived truncated.)
+- **A stale report is refused.** The report file must postdate the run that was meant to write
+  it. Found while chasing a suspiciously fast smoke run: a runner that exits without writing,
+  over a leftover report, resolves every claim from evidence about code that no longer exists
+  — and looks perfectly healthy. Strictly worse than a crash, which at least falls back.
+- **A typo'd `testBatchFormat` fails the run.** Falling back would produce a correct-looking
+  green that took thirty minutes.
+
+`--fast` never boots any of it: resolution is a lazy memoized thunk, like `typecheck`, so the
+executable tier skips before asking and a `--fast` run cannot be refused either. Scoped runs
+(`--staged`/`--since`) *do* batch the whole suite once and resolve only in-scope claims from it
+— one boot is already cheaper than three scoped per-claim boots.
+
+### What it does not fix
+
+Batching stops you **repaying import overhead**. It does nothing for an oracle that is
+genuinely slow: a convergence ensemble doing ~140s of real work costs ~140s whether it is
+reached through one boot or seventeen. If the full tier is slow because the *tests* are slow,
+this is not the lever.
+
+**`node --test` cannot be batched yet** — it ships no JSON reporter (only `default`, `dot`,
+`junit`, `lcov`, `spec`, `tap`), and its `--test-name-pattern` matches each individual test
+name rather than a concatenated one, so a batch would need a second, unverified matching rule.
+node:test projects are recognized and told so rather than guessed at.
+
+### Upgrading
+
+**A vitest project needs to do nothing** and gets batching automatically — but do one thing
+deliberately the first time: run a full `verify` **before and after** upgrading. Identical
+verdicts are the acceptance test. If the batch surfaces new reds, read them: a
+`VANISHED ORACLE` is a claim that was green because nothing was checking it.
+
+Keep `config.test` configured — it is what a failed batch falls back to. `testMatch` can stay
+(it still guards the serial arm) but no longer carries the renamed-oracle guarantee on its own.
+
+**Two cases must act:**
+
+- **Any runner that is not vitest** (jest, node:test, a custom script) now **fails the full
+  tier** until you choose a mode: set `config.testBatch`, pass `--from-report <file>`, or
+  accept the old profile with `--serial-oracles` / `"oracleExecution": "serial"`. This is
+  deliberate — it is the one change here that can break a green build, and it breaks it with
+  instructions rather than with a twenty-minute wait.
+- **CI that wants the old behaviour** should add `"oracleExecution": "serial"` explicitly.
+  Nothing infers it any more.
 
 ---
 
