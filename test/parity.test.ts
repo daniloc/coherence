@@ -143,7 +143,7 @@ test("parity claim — the oracle actually RUNS (a failing runner fails the clai
   await withProject({ "x.test.ts": GOOD_ORACLE, "runner.js": "process.exit(1);" }, async (root) => {
     const g = graph([comp(".", { claims: [CLAIM], invariants: ["disclosure faithfulness"], why: "r" }), ...SYMS]);
     const r = await runCaptured(() =>
-      runVerify(cfg(root, { test: ["node", join(root, "runner.js")] }), g, { fast: false }));
+      runVerify(cfg(root, { test: ["node", join(root, "runner.js")] }), g, { fast: false, serial: true }));
     assert.equal(r.code, 1);
   });
 
@@ -151,7 +151,7 @@ test("parity claim — the oracle actually RUNS (a failing runner fails the clai
   await withProject({ "x.test.ts": GOOD_ORACLE, "runner.js": "process.exit(0);" }, async (root) => {
     const g = graph([comp(".", { claims: [CLAIM], invariants: ["disclosure faithfulness"], why: "r" }), ...SYMS]);
     const r = await runCaptured(() =>
-      runVerify(cfg(root, { test: ["node", join(root, "runner.js")] }), g, { fast: false }));
+      runVerify(cfg(root, { test: ["node", join(root, "runner.js")] }), g, { fast: false, serial: true }));
     assert.equal(r.code, 0, r.out);
     assert.match(r.out, /1 green/); // pass details are not printed — green count is the evidence
   });

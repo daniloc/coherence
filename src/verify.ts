@@ -11,6 +11,10 @@ import { ownerOf } from "./walk.ts";
 import { recordVerify, readStatus } from "./status.ts";
 import { readJournal } from "./decisions.ts";
 import { raiseFindings, formatRaise, type Finding } from "./raise.ts";
+import {
+  resolveBatchFormat, runTestBatch, readReportFile, selectOracleMode, serialCostLines,
+  type BatchOutcome, type OracleAccess,
+} from "./test-batch.ts";
 
 const hashOf = (s: string) => createHash("sha256").update(s).digest("hex").slice(0, 16);
 const jobsPath = (cfg: Config) => join(cfg.root, ".coherence", "verify-jobs.json");
@@ -152,10 +156,28 @@ export function warnedKindFinding(node: string, claim: string, kind: string, why
 export interface VerifyOpts {
   fast?: boolean; only?: Set<string>;
   raise?: boolean; raiseCap?: number; session?: string; agent?: string;
+  /** `--from-report <file>`: resolve the executable tier from a report the project ALREADY
+   *  produced, instead of running the suite. Implies batch mode even with no `testBatch`
+   *  configured — the flag IS the opt-in, and the caller is asserting the file is current. */
+  fromReport?: string;
+  /** `--serial-oracles`: demand the per-claim profile — one full test-pool boot PER CLAIM.
+   *  Never implicit; this flag (or `config.oracleExecution: "serial"`) is the only way in. */
+  serial?: boolean;
 }
 
 export async function runVerify(cfg: Config, graph: Graph, opts: VerifyOpts): Promise<number> {
   const root = cfg.root;
+  // A MISCONFIGURED BATCH FORMAT FAILS THE RUN — it does not fall back. Reverting to the
+  // per-claim path here would produce a correct-looking green that took thirty minutes,
+  // and nobody diagnoses a typo they were never told about. Checked before any work so the
+  // failure costs one line instead of a whole verify.
+  const fmt = resolveBatchFormat(cfg);
+  if ("error" in fmt) {
+    console.log(`✗ ${fmt.error}`);
+    console.log(`  fix config.testBatchFormat (or remove it — "vitest-json" is the default).`);
+    return 1;
+  }
+  const batchFormat = fmt.format;
   // Collected per advisory rather than in one list, so the concat below can state the
   // PRIORITY explicitly. The cap is per run, so under it the order is the whole policy.
   const neverRed: Finding[] = [], warnedKind: Finding[] = [], refutation: Finding[] = [];
@@ -172,6 +194,65 @@ export async function runVerify(cfg: Config, graph: Graph, opts: VerifyOpts): Pr
     const tail = ((r.stderr || "") + (r.stdout || "")).split("\n").filter(Boolean).slice(-3).join(" | ");
     tc = r.status === 0 ? { pass: true, detail: "" } : { pass: false, detail: tail.slice(0, 200) };
     return tc;
+  };
+
+  // ── BATCHED ORACLE EXECUTION (config.testBatch). Memoized and LAZY, exactly like
+  // `typecheck` above: the suite runs at most once per verify, and only if some executable
+  // claim actually asks. So `--fast` (whole executable tier skipped) and a project with no
+  // test-backed claims never pay for it, and configuring the feature cannot slow anything
+  // down. A SCOPED run (--staged/--since) still runs the batch WHOLE and resolves only the
+  // in-scope claims from it — one boot is already cheaper than three scoped per-claim boots.
+  //
+  // The mode is decided ONCE, up front (selectOracleMode), and the serial per-claim profile
+  // is not reachable without naming it. Resolution itself stays LAZY and memoized, exactly
+  // like `typecheck`: a `--fast` run or a project with no executable claims never triggers
+  // any of this, which is also why a REFUSAL cannot fire on a project the feature does not
+  // concern.
+  const mode = selectOracleMode(cfg, { fromReport: opts.fromReport, serial: opts.serial });
+  // How many claims the serial path would charge for — approximate on purpose (a `conforms
+  // to` word expands to an unknown number), and used only in the cost framing. Lazy because
+  // the in-scope component list is built further down, and this is only ever needed from
+  // inside the thunk (i.e. after it exists).
+  const executableish = () => comps.reduce((n, c) => n + (c.claims ?? []).filter((cl) =>
+    /^passes test\s+"/.test(cl) || /\svia\s+(test|guard)\s+"/.test(cl) || /^conforms to\s+/.test(cl)).length, 0);
+  let access: OracleAccess | null = null;
+  let batchEngaged = false;
+  let refused = false;
+  const oracles = (): OracleAccess => {
+    if (access) return access;
+    const engage = (out: BatchOutcome, what: string): OracleAccess => {
+      if (out.report) {
+        batchEngaged = true;
+        console.log(`oracles: ${what} — report parsed (${batchFormat}), ${out.note}; resolving every executable claim from it`);
+        return { report: out.report, serialAllowed: false };
+      }
+      // NEVER A SILENT DEGRADE. Falling back is legitimate; falling back invisibly is not.
+      // The fallback is also the one remaining route to the serial profile that nobody typed,
+      // so it states the cost in full rather than just the reason.
+      console.log(`  ! oracles: ${what} FAILED — ${out.note}`);
+      console.log(`  ! FALLING BACK to the serial per-claim runner (config.test).`);
+      for (const l of serialCostLines(executableish(), "batch fallback")) console.log(l);
+      return { report: null, serialAllowed: true };
+    };
+    if (mode.kind === "from-report") {
+      console.log(`oracles: reading an existing report — ${mode.file} (running no tests)`);
+      access = engage(readReportFile(root, mode.file, batchFormat), `--from-report ${mode.file}`);
+    } else if (mode.kind === "batch") {
+      console.log(`oracles: batched — running the whole suite ONCE${mode.derived ? " (command derived from config.test)" : ""}: ${mode.cmd.join(" ")}`);
+      access = engage(runTestBatch(mode.cmd, root, batchFormat), "the batch run");
+    } else if (mode.kind === "serial") {
+      for (const l of serialCostLines(executableish(), mode.why)) console.log(l);
+      access = { report: null, serialAllowed: true };
+    } else {
+      // REFUSE. Fail closed and loud: no batch available, no report handed over, and nobody
+      // asked for the slow profile. Silently running it would be the one outcome this
+      // release exists to make unreachable.
+      refused = true;
+      console.log(`✗ [oracles] cannot run the executable tier, and will not silently run it the slow way.`);
+      for (const l of mode.lines) console.log(l ? `  ${l}` : "");
+      access = { report: null, serialAllowed: false };
+    }
+    return access;
   };
   type Sig = { kind: "pass" | "fail" | "skip"; claim: string; node: string; detail?: string; declaredKind?: string };
   // Undeclared (the default) leaves the whole mechanism off: kinds are neither required
@@ -193,7 +274,7 @@ export async function runVerify(cfg: Config, graph: Graph, opts: VerifyOpts): Pr
       return { kind: "fail", claim, node, declaredKind,
         detail: `unknown claim kind "${declaredKind}" — config.claimKinds declares: ${Object.keys(kindPolicy).join(", ")}` };
     const ctx: ClaimCtx = {
-      cfg, graph, root, nodeDir, node, fast: !!opts.fast, typecheck, wordStack: [],
+      cfg, graph, root, nodeDir, node, fast: !!opts.fast, typecheck, wordStack: [], oracles,
       anchor: (inv) => { let set = anchored.get(node); if (!set) { set = new Set(); anchored.set(node, set); } set.add(inv); },
     };
     for (const form of CLAIM_FORMS) {
@@ -380,8 +461,11 @@ export async function runVerify(cfg: Config, graph: Graph, opts: VerifyOpts): Pr
     if (authorJobs.length) { console.log(`\n AUTHOR — the WHY (NOT derivable — do not fabricate; needs a human/attested author):`); for (const j of authorJobs) console.log(`   [why] component "${j.name}" — states no rationale`); }
   }
 
-  const failures = red + broken + covGaps;
-  console.log(failures === 0 ? (verifyJobs.length ? `\n• ${verifyJobs.length} verification job(s) pending` : "\n✓ coherent") : `\n✗ ${failures} coherence failure(s) — ${red} claim · ${broken} broken · ${covGaps} coverage`);
+  // A REFUSED executable tier is a run failure in its own right. The claims it could not
+  // run merely SKIPPED, so without this the run would exit 0 having verified nothing
+  // executable — a silent pass, which is the exact shape of failure this release removes.
+  const failures = red + broken + covGaps + (refused ? 1 : 0);
+  console.log(failures === 0 ? (verifyJobs.length ? `\n• ${verifyJobs.length} verification job(s) pending` : "\n✓ coherent") : `\n✗ ${failures} coherence failure(s) — ${red} claim · ${broken} broken · ${covGaps} coverage${refused ? " · 1 executable tier refused (see [oracles] above)" : ""}`);
 
   // File the report (`.coherence/status.json`) — the run record the panel (and any
   // other consumer) reads. Coverage + invariant TOTALS are static full-tree graph
@@ -394,6 +478,7 @@ export async function runVerify(cfg: Config, graph: Graph, opts: VerifyOpts): Pr
     await recordVerify(cfg, {
       tier: opts.fast ? "fast" : "full",
       scope: opts.only ? comps.map((c) => c.label) : null,
+      batched: batchEngaged,
       sigs,
       coverage: {
         components: allComps.length,

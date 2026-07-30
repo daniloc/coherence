@@ -234,6 +234,11 @@ if (cmd === "graph") {
   }
   await exit(await runVerify(cfg, graph, {
     fast, only, raise, raiseCap, session: one("--session") ?? undefined, agent: one("--agent") ?? undefined,
+    // `--from-report <file>`: the executable tier resolves from a report the project already
+    // produced (an outer gate's suite run) instead of coherence running the suite again.
+    fromReport: one("--from-report") ?? undefined,
+    // `--serial-oracles`: demand one full test-pool boot PER CLAIM. Never implicit.
+    serial: argv.includes("--serial-oracles"),
   }));
 } else if (cmd === "log") {
   // The temporal ledger: what did refA → refB do to the invariant/boundary set.

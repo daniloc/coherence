@@ -52,7 +52,7 @@ test("passes test — a claim name with regex metacharacters (+ and parens) is e
   await withProject({ "runner.js": runner }, async (root) => {
     const g = graph([comp(".", { claims: [`passes test "${HAYSTACK}"`], why: "r" })]);
     const r = await runCaptured(() =>
-      runVerify(cfg(root, { typecheck: ["true"], test: ["node", join(root, "runner.js")] }), g, { fast: false }));
+      runVerify(cfg(root, { typecheck: ["true"], test: ["node", join(root, "runner.js")] }), g, { fast: false, serial: true }));
     assert.equal(r.code, 0, r.out);
     assert.match(r.out, /1 green/);
   });
@@ -124,7 +124,9 @@ test("testMatch — a runner exiting 0 with no matching output FAILS (the rename
   await withProject({}, async (root) => {
     const c = cfg(root, { test: ["node", "-e", "process.exit(0)"], testMatch: "RAN" });
     const g = graph([comp(".", { claims: ['passes test "ghost"'], why: "r" })]);
-    const r = await runCaptured(() => runVerify(c, g, {}));
+    // `serial: true` because testMatch is a property of the SERIAL arm — the batch path
+    // gets this guarantee structurally instead (see test/test-batch.test.ts).
+    const r = await runCaptured(() => runVerify(c, g, { serial: true }));
     assert.equal(r.code, 1);
     assert.match(r.out, /matched no run/);
   });
@@ -134,7 +136,7 @@ test("testMatch — a runner that emits the expected token passes", async () => 
   await withProject({}, async (root) => {
     const c = cfg(root, { test: ["node", "-e", "console.log('RAN ok')"], testMatch: "RAN" });
     const g = graph([comp(".", { claims: ['passes test "real"'], why: "r" })]);
-    const r = await runCaptured(() => runVerify(c, g, {}));
+    const r = await runCaptured(() => runVerify(c, g, { serial: true }));
     assert.equal(r.code, 0);
   });
 });

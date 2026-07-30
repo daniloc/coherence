@@ -18,6 +18,7 @@ import { BOUNDARY_RE } from "./boundary.ts";
 import { PARITY_RE } from "./parity.ts";
 import { analyzeOracle, analyzeParityOracle } from "./oracle-domain.ts";
 import { unescapeMd } from "./walk.ts";
+import { resolveFromBatch, type OracleAccess } from "./test-batch.ts";
 
 const fileExists = async (p: string) => { try { await stat(p); return true; } catch { return false; } };
 
@@ -30,6 +31,13 @@ export interface ClaimResult { kind: "pass" | "fail" | "skip"; detail?: string }
  * invariant for that component (so the coverage gate sees it — even when the boundary is
  * reached through a `conforms to` word). `typecheck` is memoized upstream (one run/verify).
  * `wordStack` is the `conforms to` expansion stack for cycle/depth safety.
+ *
+ * `oracles` is the EXECUTABLE-TIER seam, memoized upstream exactly like `typecheck`: at
+ * most one whole-suite resolution per verify, LAZILY — a `--fast` run or a project with no
+ * executable claims never calls it. It answers with a batch report when one is available,
+ * and otherwise says whether the SERIAL per-claim path is permitted at all. A null report
+ * with `serialAllowed: false` is a refusal (no batch, no report, nobody asked for serial),
+ * and the claim skips rather than quietly costing a full pool boot.
  */
 export interface ClaimCtx {
   cfg: Config;
@@ -41,6 +49,7 @@ export interface ClaimCtx {
   typecheck: () => { pass: boolean; detail: string };
   anchor: (inv: string) => void;
   wordStack: string[];
+  oracles?: () => OracleAccess;
 }
 
 export interface ClaimForm {
@@ -100,18 +109,42 @@ export const CONFORMS_RE = /^conforms to\s+([A-Za-z][A-Za-z0-9_-]*)$/;
  *  to a test runner whose `-t <name>` treats the arg as a regex (vitest, jest). */
 export const reEscape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-/** Run the configured test runner scoped to ONE named test — the shared executable arm
- *  of `passes test`, `boundary … via test`, and `parity … via test`. The name is
- *  regex-escaped for the runner's `-t`; exit 0 alone is not trusted (`testMatch`
- *  requires positive evidence the named test actually ran — an exit-0 runner that
- *  matched zero tests would otherwise pass a renamed/deleted oracle). Returns
- *  `{ ok: true }` on a real pass, else the failure detail. */
-function execNamedTest(cfg: Config, root: string, name: string): { ok: boolean; detail: string } {
-  const r = spawnSync(cfg.test[0], [...cfg.test.slice(1), reEscape(name)], { cwd: root, encoding: "utf8", timeout: 120000 });
+/**
+ * Resolve ONE named test — the shared executable arm of `passes test`,
+ * `boundary … via test`, and `parity … via test`. THE SINGLE FRONT DOOR: every runner
+ * invocation coherence makes on a project's behalf goes through here, which is why
+ * batching is a change to this one function rather than to three claim forms.
+ *
+ * Two arms, one contract:
+ *   BATCH — a whole-suite report is available, so the answer is a lookup (`resolveFromBatch`).
+ *   PER-CLAIM — shell `config.test` with the name appended, regex-escaped for the runner's
+ *     `-t`; exit 0 alone is not trusted (`testMatch` requires positive evidence the named
+ *     test actually ran — an exit-0 runner that matched zero tests would otherwise pass a
+ *     renamed/deleted oracle).
+ *
+ * Both arms require positive evidence and both go red on zero matches, so which one
+ * answered is an operational detail, never a difference in what green means.
+ */
+function execNamedTest(ctx: ClaimCtx, name: string): { ok: boolean; detail: string } {
+  const o = ctx.oracles?.();
+  if (o?.report) return resolveFromBatch(o.report, name);
+  const cfg = ctx.cfg;
+  const r = spawnSync(cfg.test[0], [...cfg.test.slice(1), reEscape(name)], { cwd: ctx.root, encoding: "utf8", timeout: 120000 });
   const out = (r.stderr || "") + (r.stdout || "");
   if (r.status !== 0) return { ok: false, detail: out.split("\n").filter(Boolean).slice(-3).join(" | ").slice(0, 200) };
   if (cfg.testMatch && !new RegExp(cfg.testMatch).test(out)) return { ok: false, detail: `test "${name}" matched no run (testMatch)` };
   return { ok: true, detail: "" };
+}
+
+/** Whether SOME runner is allowed to answer an executable claim: a batch report, or — only
+ *  when the run permits it — a configured per-claim command. A REFUSAL (`serialAllowed:
+ *  false` with no report) reports false, so the claim skips instead of silently buying one
+ *  full test-pool boot; verify fails the run separately, with instructions. */
+function hasRunner(ctx: ClaimCtx): boolean {
+  const o = ctx.oracles?.();
+  if (o?.report) return true;
+  if (o && !o.serialAllowed) return false;
+  return !!(ctx.cfg.test && ctx.cfg.test.length);
 }
 
 /** Scan the dictionary dir + cross-reference the graph's `conforms to` claims. Empty when
@@ -192,8 +225,8 @@ export const CLAIM_FORMS: ClaimForm[] = [
     match: (l) => l.match(/^passes test\s+"(.+)"$/),
     evaluate: (ctx, m) => {
       if (ctx.fast) return { kind: "skip", detail: "executable tier (--fast)" };
-      if (!ctx.cfg.test || !ctx.cfg.test.length) return { kind: "skip", detail: "no test runner configured (config.test)" };
-      const r = execNamedTest(ctx.cfg, ctx.root, m[1]);
+      if (!hasRunner(ctx)) return { kind: "skip", detail: "no test runner configured (config.test)" };
+      const r = execNamedTest(ctx, m[1]);
       return r.ok ? { kind: "pass" } : { kind: "fail", detail: r.detail };
     },
   },
@@ -224,8 +257,8 @@ export const CLAIM_FORMS: ClaimForm[] = [
           return { kind: "fail", detail: `[oracle] "${test}" — no describe() with this EXACT title found, so the meta-oracle cannot analyze its domain (the runner alone would still pass on an it()-name match, silently skipping analysis). Anchor the claim to the oracle's exact describe title, or declare it \`passes test\`/\`via guard\` if it is not a domain totality.` };
       }
       if (ctx.fast) return { kind: "skip", detail: "boundary oracle (--fast)" };
-      if (!ctx.cfg.test || !ctx.cfg.test.length) return { kind: "skip", detail: "no test runner configured (config.test)" };
-      const r = execNamedTest(ctx.cfg, ctx.root, test);
+      if (!hasRunner(ctx)) return { kind: "skip", detail: "no test runner configured (config.test)" };
+      const r = execNamedTest(ctx, test);
       if (!r.ok) return { kind: "fail", detail: r.detail };
       return { kind: "pass", detail: `${inv} @ ${sym}${verb === "guard" ? " (source-property guard)" : ""}` };
     },
@@ -274,8 +307,8 @@ export const CLAIM_FORMS: ClaimForm[] = [
           return { kind: "fail", detail: `[parity] "${oracle}" ${a.detail} (${a.file}). Loop the declared domain and assert \`${f}\` ≡ \`${g}\` per member.` };
       }
       if (ctx.fast) return { kind: "skip", detail: "parity oracle (--fast)" };
-      if (!ctx.cfg.test || !ctx.cfg.test.length) return { kind: "skip", detail: "no test runner configured (config.test)" };
-      const r = execNamedTest(ctx.cfg, ctx.root, oracle);
+      if (!hasRunner(ctx)) return { kind: "skip", detail: "no test runner configured (config.test)" };
+      const r = execNamedTest(ctx, oracle);
       if (!r.ok) return { kind: "fail", detail: r.detail };
       return { kind: "pass", detail: `${inv}: ${f} ≡ ${g} over ${domain}` };
     },
