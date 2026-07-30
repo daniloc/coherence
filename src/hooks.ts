@@ -96,22 +96,39 @@ export async function runHook(cfg: Config, event: string): Promise<number> {
 export function stopReport(cfg: Config): string {
   const { records, unreadable } = readJournal(cfg);
   const n = records.filter((r) => r.kind !== "session").length;
-  // Deliberately a report, not a demand. The agent is finishing; if it logged
-  // nothing that is worth SAYING, because a silent zero is indistinguishable from a
-  // job in which nothing was decided — and those are very different jobs.
+  // A REPORT, NOT A QUESTION — and that distinction is load-bearing, because the first
+  // version got it wrong in a way that was invisible until agents started answering it.
+  // It ended "anything you decided and did not log is about to leave with your context",
+  // which is a yes/no question, and a Stop hook that asks "did you do X?" gets "yes, X is
+  // done" in the reply. Agents began padding their final messages with compliance
+  // liturgy — "nothing unlogged remains" — which is worse than silence: it spends the
+  // caller's attention asserting a process was followed instead of saying what was found.
+  //
+  // So this states the count and stops. An agent that wants to log something can; the
+  // reminder does not need to be a prompt, because `decide` was already in the startup
+  // instruction and the agent has it. The only DIRECTIVE here is the restatement below,
+  // and it asks for substance rather than for a status report on compliance.
   const msg = n === 0
-    ? "DECISION JOURNAL: you logged nothing. If you made no real choices, that is a fine\n"
-      + "answer. If you did, name them now with `npx coherence decide` — they are about to\n"
-      + "leave with your context."
+    ? "DECISION JOURNAL: nothing logged this session."
     : `DECISION JOURNAL: ${n} entr${n === 1 ? "y" : "ies"} recorded`
       + (unreadable ? ` (${unreadable} unreadable line(s), skipped)` : "")
-      + ". Anything you decided and did not log is about to leave with your context.";
+      + ".";
   // STOP IS WHERE AN OPEN QUESTION IS CHEAPEST TO ANSWER AND ABOUT TO BECOME MOST
   // EXPENSIVE — the agent still holds the context that noticed it, and is one turn from
   // losing it. Repo-wide, and phrased as such: attributing another session's open
   // conjecture to this agent would be a lie the journal cannot afford.
   const { open } = resolve(records);
-  return msg + (open.length
+  // AND THE LAST LINE, WHICH IS NOT ABOUT THE JOURNAL AT ALL. A subagent's caller sees
+  // ONE message: the final reply. Everything else — the reasoning, the measurements, the
+  // thing it found that contradicted its own brief — is in a transcript the caller is
+  // told not to read. Agents reliably end with "Complete." or "Nothing further to log",
+  // and a real finding dies there: one run tagged six releases, discovered en route that
+  // a version in its own brief had never existed, recorded that correctly in the artifact,
+  // and reported none of it. Stop is the last moment the context still exists to say so.
+  const restate = "\n\nYOUR REPLY MUST RESTATE YOUR FINAL REPORT — IT IS THE ONLY THING"
+    + " YOUR CALLER SEES. A terse sign-off discards everything you learned that is not"
+    + " already in the code.";
+  return msg + restate + (open.length
     ? `\n\n${open.length} OPEN CONJECTURE(S) in this repo — noticed, not yet chased.`
       + " If your work settled one, close it with `npx coherence resolved <id> --because ...`;"
       + " if one is not worth chasing, `npx coherence dismiss <id> --because ...` retires it."
