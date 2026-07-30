@@ -91,6 +91,8 @@ Full (every field the `Config` interface in `src/types.ts` accepts; defaults fro
   "typecheck": ["npm", "run", "typecheck"],
   "test": ["npx", "vitest", "run", "-t"],
   "testMatch": "[1-9][0-9]* passed",
+  "testBatch": ["npx", "vitest", "run", "--reporter=json", "--outputFile=.coherence/test-report.json"],
+  "testBatchFormat": "vitest-json",
   "oracleDomain": true,
   "language": "typescript",
   "platform": "cloudflare",
@@ -119,7 +121,10 @@ Full (every field the `Config` interface in `src/types.ts` accepts; defaults fro
 | `codeExt` | `["ts"]` | File extensions treated as code for the tree. |
 | `typecheck` | `["npm","run","typecheck"]` | Command the `typechecks` claim shells. |
 | `test` | `[]` | Base command for `passes test "<name>"` / boundary-oracle claims; `<name>` is appended as the final arg. Empty = those claims skip. |
-| `testMatch` | unset | Optional regex the test output MUST contain to count as a pass. **Set it** for runners like `vitest -t` that exit 0 when the name matched nothing — without it a deleted/renamed test silently stays green. |
+| `testMatch` | unset | Optional regex the test output MUST contain to count as a pass. Guards the **serial** arm against runners like `vitest -t` that exit 0 when the name matched nothing. **Not needed for batched claims** — a batch report observes a missing test directly (see "Batched oracle execution"). It does **not** protect a `node --test` project at all (measured: a pattern matching nothing still reports the file as one passing test). |
+| `testBatch` | **derived** from `test` | Command that runs the **whole suite** once and emits a machine-readable report. Left unset, coherence **derives** it when the runner is recognizable (vitest today), so batching needs no configuration. Set it explicitly for any other runner: `["npx","vitest","run","--reporter=json","--outputFile=.coherence/test-report.json"]`. |
+| `testBatchFormat` | `"vitest-json"` | The report format. `vitest-json` is the only one v1 knows. An **unknown** value fails the run immediately — it is never a silent fallback to the slow path. |
+| `oracleExecution` | unset (= batched) | Set to `"serial"` to demand the pre-0.17 profile: one **full test-pool boot per claim**. Supported, never implicit — see "Batched oracle execution". Same as the `--serial-oracles` flag, which wins if both are present. |
 | `oracleDomain` | `true` (anything but `false`) | The META-ORACLE gate: assert a `via test` oracle iterates a LIVE domain. Set `false` to disable the gate. |
 | `language` | `"typescript"` | Language adapter key. |
 | `platform` | `null` | Platform adapter key, or null. |
@@ -184,7 +189,10 @@ Notes, from the implementing code:
   `config.testMatch` as positive evidence the named test actually ran (exit 0 alone
   is not trusted). This is the **single front door**: an invariant enforced by a
   test is named in the spec, so `coherence verify` transitively runs it, and a claim
-  pointing at a renamed or deleted test goes **red** — that's the rot detection.
+  pointing at a renamed or deleted test goes **red** — that's the rot detection. With
+  `config.testBatch` set, the same claim resolves from one whole-suite report instead of
+  its own runner boot, and the rot detection stops depending on `testMatch` at all — see
+  "Batched oracle execution".
 - **boundary** asserts a self-enforcing boundary's anatomy *as a unit*: the named
   invariant, the chokepoint SYMBOL exists in the code graph, and (if given) the
   oracle passes — `via test` additionally passes the meta-oracle (next section);
@@ -1109,7 +1117,7 @@ any is in **In detail** below — that half is authored, and does not cover all 
 
 **Verify, and diff what is enforced**
 
-- `coherence verify [--fast] [--staged | --since <ref>] [--raise [--raise-cap N]] [--apply <verdicts>]` — run the claims, the evidence chain and coverage — the gate
+- `coherence verify [--fast] [--staged | --since <ref>] [--raise [--raise-cap N]] [--apply <verdicts>] [--from-report <file>] [--serial-oracles]` — run the claims, the evidence chain and coverage — the gate
 - `coherence log [<refA> [<refB>]] [--strict]` — structural diff of the invariant/boundary set between two refs, then the novelty advisory
 
 **The decision journal — appends only, gates nothing**
@@ -1377,7 +1385,133 @@ any is in **In detail** below — that half is authored, and does not cover all 
   pre-commit tier.
 - **the full run (the live tier)** — everything above **plus** `responds` probes
   (needs the server up; unreachable = skip), `passes test` runs, and boundary-oracle
-  test runs. This is the outer-loop / CI tier.
+  test runs. This is the outer-loop / CI tier. Since v0.17.0 the executable tier runs
+  the suite **once** and resolves every claim from that one report — see below.
+
+### Batched oracle execution — the default since v0.17.0
+
+**The deployment tiers, honestly.** `--fast` is the inner loop — seconds, no runner, run it
+on every save. A **scoped** full run (`--staged` / `--since`) is what you run when a feature
+is finished. A **whole-tree** full run is the pre-deploy gate. That last tier used to be
+unaffordable, and the reason was arithmetic, not test count.
+
+Before v0.17.0 the executable tier shelled `config.test` **once per claim**
+(`vitest run -t "<name>"`), booting the project's entire test pool to execute milliseconds
+of assertions. Measured in two consuming repos:
+
+- a workerd/vitest pool at 15–30s per boot × ~70 executable claims = **20–35 minutes**, for
+  a suite that runs end-to-end in under two;
+- a second repo: one targeted oracle run took **4.51s** and reported `7 passed | 291
+  skipped` — it paid the import and transform cost of 298 tests to run 7. × 17 claims ≈ 77s,
+  ~60s of it fixed overhead, **on top of** an outer `check.mjs` that had already run the
+  whole suite. Their full tier: 8 minutes.
+
+That is not a conservative default; it is a bad one nobody chose. So **batching is now the
+default**, and the per-claim profile is opt-in.
+
+#### The four modes, in precedence order
+
+| Mode | How you get it | What happens |
+| --- | --- | --- |
+| **`--from-report <file>`** | the flag | Resolves from a report you already have. Runs **no tests at all**. |
+| **serial** | `--serial-oracles`, or `"oracleExecution": "serial"` | One full pool boot **per claim**. Prints its cost every run. |
+| **batch (configured)** | `config.testBatch` | Runs your command once, resolves every claim from the report. |
+| **batch (derived)** | *nothing — this is the default* | `config.test` names vitest → coherence synthesizes the JSON-reporter command itself. |
+
+If none of those apply — an unrecognized runner, no `testBatch`, no report, no explicit
+serial — the full tier **fails loud** with all three ways out. It will not quietly buy you
+N pool boots:
+
+```
+✗ [oracles] cannot run the executable tier, and will not silently run it the slow way.
+  config.test (pnpm jest -t) is not a runner coherence knows how to batch.
+  The executable tier needs ONE of these — pick deliberately:
+    · config.testBatch: ["npx","vitest","run","--reporter=json","--outputFile=.coherence/test-report.json"]
+    · coherence verify --from-report <file>
+    · coherence verify --serial-oracles   (or config.oracleExecution: "serial")
+```
+
+A consumer has to **type the name of the expensive profile** to get it. When serial does run
+— explicitly, or as the batch-crash fallback — it states the cost every time and names the
+config that retires it.
+
+`--outputFile` is preferred over bare `--reporter=json`, and the derived command uses it: a
+test that writes straight to `process.stdout` puts its bytes in the same stream as the
+report, ahead of it. Coherence scans for the report object rather than trusting the whole
+stream, so the bare form works too — but a file cannot be interleaved with at all.
+
+**`coherence verify --from-report <file>`** is the cheapest tier of all. If an outer gate (a
+CI step, a `check.mjs`) has just run the suite, hand coherence its report and the full
+executable tier costs a file read. The flag is its own opt-in; passing a path asserts the
+file is current, which is a claim only the caller can make.
+
+#### Three states, and the third one is the actual point
+
+Speed is the visible win. The one that matters is that a report distinguishes what an exit
+code cannot:
+
+| | serial (per claim) | batch report |
+| --- | --- | --- |
+| named test ran and **passed** | green | green |
+| named test ran and **failed** | red | red, naming the failing test |
+| named test **does not exist** | *green* unless you set `testMatch` | **red — `VANISHED ORACLE`** |
+
+`vitest -t` exits **0** when its filter matched nothing, so a renamed or deleted oracle reads
+as a pass — the hole `config.testMatch` exists to plug, by having the project hand-configure
+a regex over the runner's *output*. Under batch mode absence is directly observable: zero
+matching tests is its own distinct verdict saying the claim names an oracle that does not
+exist, so nothing is enforcing it. **`testMatch` has nothing left to do for a batched
+claim.** Same move as an unknown claim kind or a typo'd verb — eliminate the failure mode
+structurally instead of papering over it with a knob a reader has to know to set.
+
+This matters most where it is least visible. On `node --test`, `testMatch` does **not** work
+at all: a `--test-name-pattern` matching nothing still reports the *file* as one passing test
+and exits 0, satisfying any "N passed" regex. (Worse, node stops parsing its own options at
+the first positional, so a `config.test` of `["node","--test","<glob>","--test-name-pattern"]`
+passes the filter to the *script*, where it is silently ignored and the whole suite runs and
+passes.) Both were measured on Node 25.2.1.
+
+#### What it guarantees
+
+- **Matching mirrors the runner's `-t`.** Verified against vitest 4.1.10: `-t` is an
+  *unanchored regex* over the report's `fullName` (`ancestorTitles.join(" ")` + the title),
+  and the serial path always regex-**escapes** the claim name first — so an escaped pattern
+  matched unanchored is exactly a **literal substring** test. `-t "totality covers"` really
+  does run `write policy totality covers every op`, and a claim anchored to a `describe`
+  title matches every test beneath it. Green requires ≥1 matching test that **passed** and
+  **none** that failed; skipped tests are neither evidence nor failure, which is what the
+  runner itself concludes.
+- **Attribution stays per claim.** The batch is shared *evidence*, never a shared verdict.
+  Each claim fails alone, naming its own oracle and the specific test that failed. "The suite
+  is red" is not a verdict coherence will ever print.
+- **A crash falls back, loudly.** If the batch command cannot run, or its report will not
+  parse, verify says so, prints the serial cost, and reverts to the per-claim path. A nonzero
+  **exit code is not a crash**: a suite with a failing test exits nonzero, and that is
+  precisely the run whose report is most worth reading.
+- **A stale report is refused.** The report file must postdate the run that was supposed to
+  write it. A runner that exits without writing, over a leftover report, would otherwise
+  resolve every claim from evidence about code that no longer exists — and would look
+  healthy.
+- **A typo'd `testBatchFormat` fails the run** rather than falling back. A silent revert
+  would produce a correct-looking green that took thirty minutes.
+- **`--fast` is unaffected** — the executable tier skips, so nothing is booted and nothing is
+  refused. Resolution is lazy: a project with no test-backed claims never pays either.
+- **Scoped runs still batch the whole suite once** and resolve only the in-scope claims from
+  it. One boot is already cheaper than even three scoped per-claim boots.
+- The `responds` probes and the **meta-oracle** are untouched — neither is runner-based.
+
+#### What it does NOT do
+
+Batching stops you **repaying import overhead**. It does not make a genuinely long-running
+oracle cheaper: an ensemble that does ~140s of real convergence work costs ~140s whether it
+is reached through one boot or seventeen. If your full tier is slow because the *tests* are
+slow, this feature will not help and the honest fix is elsewhere.
+
+**`node --test` cannot be batched yet.** It ships no JSON reporter (only `default`, `dot`,
+`junit`, `lcov`, `spec`, `tap`) and its `--test-name-pattern` does not match the concatenated
+suite path the way vitest's `-t` does, so a batch would need a second, unverified matching
+rule. node:test projects are recognized and told so, rather than guessed at; use
+`--from-report` with a report you produce, or `--serial-oracles`.
 
 ### The narrative evidence chain
 

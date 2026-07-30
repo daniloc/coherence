@@ -78,7 +78,7 @@ test("full-then-fast — the fast tier's skip does not erase the full tier's ora
   try {
     const c = cfg(root, { test: ["node", join(root, "runner.js")] });
     const g = graph([comp(".", { label: "Root", claims: ['passes test "the oracle"'], why: "r" })]);
-    await runCaptured(() => runVerify(c, g, { fast: false }));
+    await runCaptured(() => runVerify(c, g, { fast: false, serial: true }));
     let s = await readStatus(c);
     assert.equal(s.verify!.claims[0].kind, "pass");
     const fullAt = s.verify!.lastFullAt;

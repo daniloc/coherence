@@ -82,7 +82,7 @@ export const COMMANDS: Command[] = [
   // ── verify ───────────────────────────────────────────────────────────────────────────
   {
     name: "verify", group: "verify",
-    usage: "[--fast] [--staged | --since <ref>] [--raise [--raise-cap N]] [--apply <verdicts>]",
+    usage: "[--fast] [--staged | --since <ref>] [--raise [--raise-cap N]] [--apply <verdicts>] [--from-report <file>] [--serial-oracles]",
     summary: "run the claims, the evidence chain and coverage — the gate",
   },
   {

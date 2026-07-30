@@ -53,6 +53,21 @@ export interface Config {
   typecheck: string[];      // command for the `typechecks` claim
   test: string[];           // base command for `passes test "<name>"` claims (name appended as final arg). Empty = claim skips.
   testMatch?: string;       // optional regex the test output MUST contain to count as a pass. Guards runners (e.g. vitest -t) that exit 0 when the named test matched nothing — without it, a deleted/renamed test silently stays green.
+  // BATCHED ORACLE EXECUTION. `test` boots the runner once PER CLAIM, which is correct and
+  // — on a project whose test pool is expensive to start — almost all of the wall clock.
+  // Set `testBatch` to a command that runs the WHOLE suite and emits a machine-readable
+  // report, and the executable tier (`passes test`, `boundary … via test`, `parity … via
+  // test`) resolves every claim from that ONE run. Unset = the per-claim path, unchanged.
+  // The per-claim path also remains the FALLBACK: if the batch crashes or its report will
+  // not parse, verify says so loudly and reverts to it rather than degrading in silence.
+  testBatch?: string[];     // e.g. ["npx","vitest","run","--reporter=json","--outputFile=.coherence/test-report.json"]
+  testBatchFormat?: string; // report format; "vitest-json" is the only one v1 knows (and the default). An unknown value is a hard error, NOT a silent fallback.
+  // Batch is the DEFAULT full-tier path: unset `testBatch` is DERIVED from `test` when the
+  // runner is recognizable (vitest today). Set this to "serial" to demand the old per-claim
+  // profile — one full test-pool boot PER CLAIM. It is supported and it is never implicit,
+  // because a default nobody chose should not cost 20-35 minutes. Equivalent to the
+  // `--serial-oracles` flag; the flag wins when both are present.
+  oracleExecution?: "serial";
   // CLAIM KINDS — what a claim is ALLOWED to assert, declared BY THE PROJECT.
   // Coherence prevents behavioural drift, which is right for most projects and
   // dangerous for some: in a simulation a claim that pins a MEASURED VALUE does not
