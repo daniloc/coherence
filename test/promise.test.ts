@@ -20,7 +20,7 @@ import { deriveBaseModel, deriveGates as deriveSceneGates } from "../src/scene.t
 import { buildGraph } from "../src/derive.ts";
 import type { PromiseModel, PromiseComponent, PromiseGate, Reliance, Zone } from "../src/promise-model.ts";
 import type { ClaimRecord, StatusRecord } from "../src/status.ts";
-import type { FileStat } from "../src/scene.ts";
+import type { FileStat } from "../src/tree.ts";
 import { comp, fileNode, imp, graph, cfg, tmpProject, cleanup } from "./_helpers.ts";
 
 const EMPTY: StatusRecord = { version: 1 };

@@ -51,7 +51,7 @@ import { join } from "node:path";
 import { spawnSync } from "node:child_process";
 import type { Config, Graph, GraphNode } from "./types.ts";
 import { readBaseline, writeBaseline } from "./sidecar.ts";
-import { fileStats } from "./scene.ts";
+import { fileStats } from "./tree.ts";
 import { isDocumented } from "./derive.ts";
 import { spark } from "./drift.ts";
 import { commitDeltas, locDeltaSeries, readCommitLog } from "./evolution.ts";
@@ -80,7 +80,7 @@ export interface Unmeasurable { key: string; cmd: string[]; why: string }
 // ── the dimensions ────────────────────────────────────────────────────────────────────
 
 /** lines (total + per component), files, symbols — read from the graph the CLI already
- *  built plus one disk pass through `fileStats` (scene.ts's, the same one the towers use,
+ *  built plus one disk pass through `fileStats` (tree.ts's, the shared measurement,
  *  so a file's height in the scene and its contribution here can never disagree). */
 export async function structuralDims(cfg: Config, graph: Graph): Promise<MassDim[]> {
   const files = graph.nodes.filter((n) => n.kind === "file");

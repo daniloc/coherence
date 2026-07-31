@@ -37,7 +37,7 @@ import type {
 import { parseBoundary, claimKey, type ClaimKey } from "./boundary.ts";
 import { parseZones, findSpec } from "./walk.ts";
 import { gitStamp, indexClaimRecords, type StatusRecord, type ClaimRecord } from "./status.ts";
-import { fileStats, claimedFilePaths, withBaseWorktree, type FileStat } from "./scene.ts";
+import { fileStats, claimedFilePaths, withBaseWorktree, type FileStat } from "./tree.ts";
 
 // ── grammar readers (residence + zones) ──────────────────────────────────────────────
 

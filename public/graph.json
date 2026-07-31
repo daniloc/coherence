@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-31 19:42Z",
+  "generatedAt": "2026-07-31 23:40Z",
   "root": "coherence",
   "absRoot": "/Users/daniloc/Documents/Development/coherence",
   "nodes": [
@@ -1563,7 +1563,7 @@
       "sub": "function",
       "path": "src/mass.ts",
       "line": 85,
-      "prose": "lines (total + per component), files, symbols — read from the graph the CLI already\n built plus one disk pass through `fileStats` (scene.ts's, the same one the towers use,\n so a file's height in the scene and its contribution here can never disagree)."
+      "prose": "lines (total + per component), files, symbols — read from the graph the CLI already\n built plus one disk pass through `fileStats` (tree.ts's, the shared measurement,\n so a file's height in the scene and its contribution here can never disagree)."
     },
     {
       "id": "s:src/mass.ts#depDims",
@@ -3638,7 +3638,7 @@
       "kind": "file",
       "sub": "src/scene.ts",
       "path": "src/scene.ts",
-      "prose": "scene.ts — the DERIVATION half of `coherence scene`: graph + status record + git →\nSceneModel (src/scene-model.ts is THE contract; src/render-scene.ts is the other\nhalf). The scene gives the project a persistent spatial BODY so a human PERCEIVES\nit rather than reads it, and the whole illusion rides on one rule:\n\n  STABLE GEOGRAPHY. Lot positions live in an APPEND-ONLY layout file\n  (`<outputDir>/scene-layout.json`). A component, once placed, NEVER moves; a new\n  component takes the next VACANT lot on a fixed outward spiral from (0,0); a\n  removed component's lot stays RESERVED forever (a demolished lot, never reused).\n  Familiarity is the mechanism — change is perceived only against a place that\n  otherwise holds still — so the spiral order and the persisted lots are load-\n  bearing and must be deterministic. The renderer now reads each (x,y) as AXIAL HEX\n  (q=x, r=y) — a component is a hexagonal DISTRICT, each of its files one TRIANGULAR\n  piece — but that is pure reinterpretation: the spiral sequence and the persisted\n  coordinates here are UNCHANGED, so geography stays append-only and stable.\n\n  HONEST MASS. A tower's HEIGHT is its file's LINE count (read from disk), not its\n  symbol count — so 40+ near-symbol-less test files read as the real structures they\n  are instead of identical stubs; symbols stay a card datum. And a claim blesses at\n  MOST ONE file, matched by PATH (a bare basename that names several same-named files\n  in a district blesses NONE) — a district with four `hooks.ts` no longer reads 4/4\n  claimed off one same-named claim. deriveClaimed and derivePieces share that one\n  path-matching rule, so counts and per-tile flags stay exactly consistent.\n\n  THE DIFF IS SPATIAL. A code review renders as change against the SAME stable\n  geography, never as text: `coherence scene --diff <ref>` materializes the base tree\n  in a throwaway git worktree, derives ITS SceneModel (structure only — verification\n  state is meaningful live, so the base is built against an empty status), and merges\n  the two so head grows `change`/`prev*`/`diff`. New structures rise (added), base-only\n  structures stand as ghosts on their still-reserved lots (removed — the layout is\n  append-only, so the lot is present in the current tree too), and a file reads as\n  `changed` when its SYMBOL SET moved OR its CONTENT moved (BODY EDITS REGISTER — a\n  reviewer cannot accept blindness to a prose/logic-only change), with prevSymbols/\n  prevLines carrying the base measurement when the count/height moved. The map NEVER\n  SILENTLY TRUNCATES: changed files OUTSIDE the graph (scripts/CI/docs) are counted in\n  diff.outside. The merge is a PURE function over two models plus each end's per-file\n  symbol-label sets + content stats (lines+hash), so it is testable without git; only\n  base acquisition (deriveBaseModel) and the outside tally (deriveOutside) are IO. A\n  plain scene carries diff:null and no flags.\n\nThe pure core (assignLots, deriveClaimed/Gates/Light, mergeSceneDiff, outsideTally) is\nexported so the derivation is testable without a repo; buildSceneModel, deriveBaseModel,\nfileStats, and deriveOutside are the thin IO shells (layout read/write, git stamp, git\nchurn, base worktree, disk reads) around it."
+      "prose": "scene.ts — the DERIVATION half of `coherence scene`: graph + status record + git →\nSceneModel (src/scene-model.ts is THE contract; src/render-scene.ts is the other\nhalf). The scene gives the project a persistent spatial BODY so a human PERCEIVES\nit rather than reads it, and the whole illusion rides on one rule:\n\n  STABLE GEOGRAPHY. Lot positions live in an APPEND-ONLY layout file\n  (`<outputDir>/scene-layout.json`). A component, once placed, NEVER moves; a new\n  component takes the next VACANT lot on a fixed outward spiral from (0,0); a\n  removed component's lot stays RESERVED forever (a demolished lot, never reused).\n  Familiarity is the mechanism — change is perceived only against a place that\n  otherwise holds still — so the spiral order and the persisted lots are load-\n  bearing and must be deterministic. The renderer now reads each (x,y) as AXIAL HEX\n  (q=x, r=y) — a component is a hexagonal DISTRICT, each of its files one TRIANGULAR\n  piece — but that is pure reinterpretation: the spiral sequence and the persisted\n  coordinates here are UNCHANGED, so geography stays append-only and stable.\n\n  HONEST MASS. A tower's HEIGHT is its file's LINE count (read from disk), not its\n  symbol count — so 40+ near-symbol-less test files read as the real structures they\n  are instead of identical stubs; symbols stay a card datum. And a claim blesses at\n  MOST ONE file, matched by PATH (a bare basename that names several same-named files\n  in a district blesses NONE) — a district with four `hooks.ts` no longer reads 4/4\n  claimed off one same-named claim. deriveClaimed and derivePieces share that one\n  path-matching rule, so counts and per-tile flags stay exactly consistent.\n\n  THE DIFF IS SPATIAL. A code review renders as change against the SAME stable\n  geography, never as text: `coherence scene --diff <ref>` materializes the base tree\n  in a throwaway git worktree, derives ITS SceneModel (structure only — verification\n  state is meaningful live, so the base is built against an empty status), and merges\n  the two so head grows `change`/`prev*`/`diff`. New structures rise (added), base-only\n  structures stand as ghosts on their still-reserved lots (removed — the layout is\n  append-only, so the lot is present in the current tree too), and a file reads as\n  `changed` when its SYMBOL SET moved OR its CONTENT moved (BODY EDITS REGISTER — a\n  reviewer cannot accept blindness to a prose/logic-only change), with prevSymbols/\n  prevLines carrying the base measurement when the count/height moved. The map NEVER\n  SILENTLY TRUNCATES: changed files OUTSIDE the graph (scripts/CI/docs) are counted in\n  diff.outside. The merge is a PURE function over two models plus each end's per-file\n  symbol-label sets + content stats (lines+hash), so it is testable without git; only\n  base acquisition (deriveBaseModel) and the outside tally (deriveOutside) are IO. A\n  plain scene carries diff:null and no flags.\n\nThe pure core (assignLots, deriveClaimed/Gates/Light, mergeSceneDiff) is exported so the\nderivation is testable without a repo; buildSceneModel and deriveBaseModel are the thin\nIO shells (layout read/write, git stamp, git churn, base worktree, disk reads) around it.\nThe genuinely SHARED utilities (fileStats, claimedFilePaths, withBaseWorktree, the\noutside tally) live in src/tree.ts — mass/economy/promise read the same seams."
     },
     {
       "id": "s:src/scene.ts#Lot",
@@ -3647,7 +3647,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/scene.ts",
-      "line": 63
+      "line": 59
     },
     {
       "id": "s:src/scene.ts#Layout",
@@ -3656,7 +3656,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/scene.ts",
-      "line": 64
+      "line": 60
     },
     {
       "id": "s:src/scene.ts#layoutPath",
@@ -3665,7 +3665,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/scene.ts",
-      "line": 66
+      "line": 62
     },
     {
       "id": "s:src/scene.ts#readLayout",
@@ -3674,7 +3674,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/scene.ts",
-      "line": 68
+      "line": 64
     },
     {
       "id": "s:src/scene.ts#assignLots",
@@ -3683,18 +3683,8 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/scene.ts",
-      "line": 92,
+      "line": 88,
       "prose": "PURE core. Copy existing placements VERBATIM (append-only), never prune removed dirs\n(a reserved lot keeps its cell occupied so it is never reused), and hand each unplaced\ndir the next spiral cell not already taken. Entry \".\" is placed FIRST so it claims the\nplaza (0,0) on a fresh geography; the rest go in lexicographic order — a fixed order so\na given set of newcomers always lands on the same cells regardless of graph iteration."
-    },
-    {
-      "id": "s:src/scene.ts#claimedFilePaths",
-      "parent": "f:src/scene.ts",
-      "label": "claimedFilePaths",
-      "kind": "symbol",
-      "sub": "function",
-      "path": "src/scene.ts",
-      "line": 141,
-      "prose": "The ONE definition of which of a component's FILES a claim blesses — matched by PATH,\n blessing at MOST ONE file per claim token, NEVER over-reporting coverage. A file is\n named via `<file> exists at …` or `<file> imports …`; a boundary claim names a\n chokepoint SYMBOL (skipped here), and typechecks/passes test/responds/conforms name\n neither. The file token is resolved against the component's REAL paths:\n   · a token WITH a `/` → PATH-SUFFIX match (segments == the path's trailing segments);\n   · a BARE basename    → matches only if EXACTLY ONE file carries that basename.\n Either way, if a token has several candidates it blesses NONE — a district with four\n `hooks.ts` no longer reads 4/4 claimed off a single `manifest.ts` claim. deriveClaimed\n and derivePieces both read this ONE set, so a tile is claimed iff the file counts as\n claimed — pieces sum exactly to claimed.files."
     },
     {
       "id": "s:src/scene.ts#deriveClaimed",
@@ -3703,7 +3693,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/scene.ts",
-      "line": 162,
+      "line": 121,
       "prose": "The claimed WIREFRAME: which of a component's files/symbols any claim actually names.\n Files come from claimedFilePaths (the shared path rule); a boundary claim names its\n chokepoint SYMBOL. Surface claims name neither — so mass they don't cover renders\n outside the amber. claimed.files = the blessed set's size (files.length minus the\n uncovered), so it agrees tile-for-tile with derivePieces."
     },
     {
@@ -3713,27 +3703,8 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/scene.ts",
-      "line": 182,
+      "line": 141,
       "prose": "The district's triangular towers: ONE per file, sorted by label so within-district\n geography is stable. `claimed` reads claimedFilePaths — the SAME rule deriveClaimed\n counts by — so the towers sum exactly to claimed.files / mass.files. `path` is the\n file's repo-relative path (the diff key + full name); `lines` (from `stats`) is the\n file's own line count — the tower's HEIGHT (honest mass), so a 200-line test with no\n exports is a real structure, not a stub; `symbols` is THAT FILE's own declaration\n count (a card datum), counted per-file, NOT the component's total."
-    },
-    {
-      "id": "s:src/scene.ts#FileStat",
-      "parent": "f:src/scene.ts",
-      "label": "FileStat",
-      "kind": "symbol",
-      "sub": "interface",
-      "path": "src/scene.ts",
-      "line": 199,
-      "prose": "Per-file content STATS keyed by repo-relative path: the LINE count (tower height) and a\n content HASH (the body-edit signal for the diff). The tower-height driver and the review's\n \"body edits register\" rule both read from disk here — the only IO in the mass/diff path.\n Unreadable or binary (a NUL byte) → 0 lines; the hash is still taken from the raw bytes so\n a body edit to a binary would register. `lines` counts NEWLINES (join(cfg.root, path))."
-    },
-    {
-      "id": "s:src/scene.ts#fileStats",
-      "parent": "f:src/scene.ts",
-      "label": "fileStats",
-      "kind": "symbol",
-      "sub": "function",
-      "path": "src/scene.ts",
-      "line": 200
     },
     {
       "id": "s:src/scene.ts#symbolSetsByFile",
@@ -3742,7 +3713,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/scene.ts",
-      "line": 220,
+      "line": 157,
       "prose": "Per-file symbol-LABEL sets, keyed by the file's path (a symbol's `path` IS its file's\n path). The diff merge compares these SETS end-to-end: a file registers as `changed`\n only when its symbol set moved, so a body-only edit that renames/adds/removes no symbol\n does not — models carry only symbol COUNTS, so the sets are derived from the graph here."
     },
     {
@@ -3752,7 +3723,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/scene.ts",
-      "line": 235,
+      "line": 172,
       "prose": "One gate per boundary claim. verdict comes from the status record (node label +\n verbatim claim); MATERIAL encodes the enforcement ladder from claims + verdicts ALONE\n (no atlas): breached = the gate isn't holding (fail); steel = an oracle whose last\n verdict passed at HEAD; scaffold = everything else (no oracle, never verified, or an\n aging green at another commit — visibly temporary construction)."
     },
     {
@@ -3762,7 +3733,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/scene.ts",
-      "line": 260,
+      "line": 197,
       "prose": "Illumination = verification recency. lit = a pass at the current HEAD; dim = passes\n exist but all at older commits; dark = nothing ever verified. fails/stale flare\n independently, and freshest is the newest pass's stamp."
     },
     {
@@ -3772,7 +3743,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/scene.ts",
-      "line": 270
+      "line": 207
     },
     {
       "id": "s:src/scene.ts#deriveBaseModel",
@@ -3781,18 +3752,8 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/scene.ts",
-      "line": 363,
+      "line": 300,
       "prose": "Materialize the base tree in a THROWAWAY git worktree and derive its SceneModel, so a\n review renders against the same geography. Structure is what matters here, so the base\n is built against an EMPTY status ({version:1}) — verification light/heat is only\n meaningful for the LIVE tree. Layout note: scene-layout.json is committed + append-only,\n so the base tree's lots agree with the current tree's for shared dirs — no reconciliation.\n The base derivation's ONLY writes (a new lot in scene-layout.json) land in the discarded\n tmpdir (baseCfg.root = tmp), never the current tree. ALWAYS tears the worktree down."
-    },
-    {
-      "id": "s:src/scene.ts#withBaseWorktree",
-      "parent": "f:src/scene.ts",
-      "label": "withBaseWorktree",
-      "kind": "symbol",
-      "sub": "function",
-      "path": "src/scene.ts",
-      "line": 383,
-      "prose": "The SHARED base-tree acquisition both the scene and the promise graph ride on: resolve\n `ref`, materialize it in a THROWAWAY detached git worktree, load ITS config + build ITS\n graph, hand them to `fn`, and ALWAYS tear the worktree down. The ref is resolved FIRST —\n the clean gate for \"not a repo / unknown ref\" before any worktree machinery — and its\n short sha is passed to `fn` (the base ref a review records). Every write `fn` triggers\n (e.g. a new lot in scene-layout.json) lands in the discarded tmpdir, never the live tree.\n Extracting this keeps the two layers from re-deriving (and drifting on) worktree teardown."
     },
     {
       "id": "s:src/scene.ts#DiffEnd",
@@ -3801,7 +3762,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/scene.ts",
-      "line": 428,
+      "line": 324,
       "prose": "One END of a diff: the per-file symbol-LABEL sets (structure signal) and content STATS\n (lines + hash — the height and the body-edit signal), both keyed by repo-relative path.\n Bundled so the pure merge takes one object per side instead of four loose maps."
     },
     {
@@ -3811,7 +3772,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/scene.ts",
-      "line": 465,
+      "line": 361,
       "prose": "The PURE spatial diff: annotate the CURRENT model with change against the base, keyed\n by `dir` (components) and `path` (pieces). Head-only district → `added`; base-only\n district → the whole base component injected as a `removed` ghost on its still-reserved\n lot (append-only geography → the lot exists in the current layout too), carrying its\n BASE pieces/mass so the ghost has honest shape; a matched district gets its pieces\n diffed. `outside` (the out-of-graph change tally, from deriveOutside) is threaded into\n model.diff so the map never silently truncates. model.diff records the short base ref —\n the flag that makes this a REVIEW scene."
     },
     {
@@ -3821,28 +3782,8 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/scene.ts",
-      "line": 485,
+      "line": 381,
       "prose": "The set of repo-relative paths the GRAPH owns — every piece path at EITHER end. The\n outside tally subtracts these so it counts ONLY the files the scene doesn't model."
-    },
-    {
-      "id": "s:src/scene.ts#outsideTally",
-      "parent": "f:src/scene.ts",
-      "label": "outsideTally",
-      "kind": "symbol",
-      "sub": "function",
-      "path": "src/scene.ts",
-      "line": 496,
-      "prose": "PURE: tally the changed files OUTSIDE the graph from `git diff --name-status` output.\n A → added, D → removed, everything else (M, and R/C renames/copies) → changed. An entry\n whose path (either the old or the new for a rename) is graph-owned is DROPPED — those\n are the scene's own towers, already drawn. What's left is scripts/CI/docs the graph\n never modeled — counted so the renderer can badge \"N changes outside the map\"."
-    },
-    {
-      "id": "s:src/scene.ts#deriveOutside",
-      "parent": "f:src/scene.ts",
-      "label": "deriveOutside",
-      "kind": "symbol",
-      "sub": "function",
-      "path": "src/scene.ts",
-      "line": 512,
-      "prose": "IO shell over outsideTally: run `git diff --name-status <base> HEAD` and tally what the\n graph does NOT own. A non-repo / failed diff yields an all-zero tally (nothing to badge)."
     },
     {
       "id": "s:src/scene.ts#diffTally",
@@ -3851,14 +3792,8 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/scene.ts",
-      "line": 520,
+      "line": 389,
       "prose": "Roll up a diffed model's per-file change tallies for the CLI one-liner: added,\n removed, changed FILES. A wholly added/removed district contributes all its tiles."
-    },
-    {
-      "id": "x:node:os",
-      "label": "node:os",
-      "kind": "external",
-      "sub": "module"
     },
     {
       "id": "f:src/sidecar.ts",
@@ -4324,6 +4259,12 @@
       "line": 348
     },
     {
+      "id": "x:node:os",
+      "label": "node:os",
+      "kind": "external",
+      "sub": "module"
+    },
+    {
       "id": "f:src/test-batch.ts",
       "parent": "c:src",
       "label": "test-batch.ts",
@@ -4528,6 +4469,84 @@
       "path": "src/test-batch.ts",
       "line": 398,
       "prose": "Resolve ONE claim's named test against the batch report — the mirror of what\n`execNamedTest` learns from a scoped runner invocation.\n\nMATCHING MIRRORS `-t`. Verified against vitest 4.1.10: `-t` is an UNANCHORED REGEX\ntested against `fullName`, so `-t \"totality covers\"` matches\n\"write policy totality covers every op\" — a substring that spans the describe/test\nboundary. The per-claim path always `reEscape`s the name first, and an escaped pattern\nmatched unanchored is exactly a literal substring test. Hence `fullName.includes(name)`\n— not equality (which would red every claim anchored to a describe title, the common\ncase) and not a live regex (which would re-open the `(a+b)` hole that escaping closed:\nmeasured, the unescaped form matched ZERO tests and exited 0).\n\nTHREE STATES, AND THE THIRD IS THE POINT. A report distinguishes what an exit code\ncannot:\n  (a) the named test RAN and PASSED   → green\n  (b) the named test RAN and FAILED   → red, naming the failing test\n  (c) the named test DOES NOT EXIST   → red, and said so as its own distinct verdict\nState (c) is the defect the per-claim path collapses into (a): `vitest -t` exits 0 when\nthe filter matched nothing, so a renamed or deleted oracle reads as a pass unless the\nproject hand-configured `config.testMatch` to demand \"N passed\" in the output. That is a\nhole plugged by a config knob the project has to know to set. Here it is closed\nSTRUCTURALLY — there is no exit code to misread, absence is directly observable, and\n`testMatch` has nothing left to do for a batched claim. Same move as a typo'd claim verb\nor an unknown claim kind: eliminate the failure mode rather than paper over it.\n\nGREEN REQUIRES POSITIVE EVIDENCE: at least one matching test that actually PASSED, and\nnone that failed.\n\nATTRIBUTION IS PER CLAIM. This resolves ONE claim's oracle and returns ONE claim's\ndetail, naming that oracle and the specific test that failed. A batch verdict of \"the\nsuite is red\" would be a regression on the per-claim path, so no caller aggregates:\nthe batch is shared EVIDENCE, never a shared verdict.\n\n`ms` — THE HOLDING COST OF THIS CLAIM: the summed runner-reported duration of every test\nthe claim's name matched, because a claim that matches three tests is buying all three.\nIt is present ONLY when at least one match actually carried a duration; a report with no\ntimings answers \"unknown\", not \"free\". The sum spans matches whatever their status, since\na failing or skipped match still consumed (or deliberately did not consume) suite time,\nand the cost report is about the suite, not about the verdict."
+    },
+    {
+      "id": "f:src/tree.ts",
+      "parent": "c:src",
+      "label": "tree.ts",
+      "kind": "file",
+      "sub": "src/tree.ts",
+      "path": "src/tree.ts",
+      "prose": "tree.ts — the FILE TREE as evidence: the shared utilities every consumer of \"what is\nactually on disk, at HEAD or at a base ref\" reads from ONE home. Four seams live here\nbecause they answer the same question at different layers, and because their previous\nhome (scene.ts) was a command, not a library — a command's utilities must outlive the\ncommand, so they live where no verb owns them:\n\n  · fileStats — per-file content STATS read from disk (line count + content hash). The\n    line count is the honest-mass driver (mass, economy, the contract's per-component\n    lines); the hash is the body-edit signal a structural diff would otherwise miss.\n    ONE implementation, so a file's measured size can never disagree across commands.\n  · claimedFilePaths — the ONE definition of which of a component's FILES a claim\n    blesses, matched by PATH, blessing at MOST ONE file per claim token. Every counter\n    of \"claimed vs unclaimed\" reads this set, so coverage is never over-reported and\n    two commands can never disagree on what a claim names.\n  · withBaseWorktree — base-tree acquisition: materialize a ref in a THROWAWAY detached\n    git worktree, load ITS config + build ITS graph, and ALWAYS tear it down. Extracted\n    so the layers that diff against a base cannot re-derive (and drift on) worktree\n    teardown or the subdirectory-root alignment rule.\n  · outsideTally / deriveOutside — the changed files a graph does NOT own, tallied from\n    `git diff --name-status`. A diff surface must never silently truncate: scripts, CI\n    and docs the graph never modeled are counted so the consumer can say so."
+    },
+    {
+      "id": "s:src/tree.ts#FileStat",
+      "parent": "f:src/tree.ts",
+      "label": "FileStat",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/tree.ts",
+      "line": 37,
+      "prose": "Per-file content STATS keyed by repo-relative path: the LINE count (honest mass) and a\n content HASH (the body-edit signal for any diff). Unreadable or binary (a NUL byte) →\n 0 lines; the hash is still taken from the raw bytes so a body edit to a binary would\n register. `lines` counts NEWLINES (join(cfg.root, path))."
+    },
+    {
+      "id": "s:src/tree.ts#fileStats",
+      "parent": "f:src/tree.ts",
+      "label": "fileStats",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/tree.ts",
+      "line": 38
+    },
+    {
+      "id": "s:src/tree.ts#claimedFilePaths",
+      "parent": "f:src/tree.ts",
+      "label": "claimedFilePaths",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/tree.ts",
+      "line": 74,
+      "prose": "The ONE definition of which of a component's FILES a claim blesses — matched by PATH,\n blessing at MOST ONE file per claim token, NEVER over-reporting coverage. A file is\n named via `<file> exists at …` or `<file> imports …`; a boundary claim names a\n chokepoint SYMBOL (skipped here), and typechecks/passes test/responds/conforms name\n neither. The file token is resolved against the component's REAL paths:\n   · a token WITH a `/` → PATH-SUFFIX match (segments == the path's trailing segments);\n   · a BARE basename    → matches only if EXACTLY ONE file carries that basename.\n Either way, if a token has several candidates it blesses NONE — a component with four\n `hooks.ts` never reads 4/4 claimed off a single same-named claim. Every consumer reads\n this ONE set, so per-file flags and aggregate counts stay exactly consistent."
+    },
+    {
+      "id": "s:src/tree.ts#withBaseWorktree",
+      "parent": "f:src/tree.ts",
+      "label": "withBaseWorktree",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/tree.ts",
+      "line": 97,
+      "prose": "The SHARED base-tree acquisition every against-a-ref diff rides on: resolve `ref`,\n materialize it in a THROWAWAY detached git worktree, load ITS config + build ITS\n graph, hand them to `fn`, and ALWAYS tear the worktree down. The ref is resolved FIRST —\n the clean gate for \"not a repo / unknown ref\" before any worktree machinery — and its\n short sha is passed to `fn` (the base ref a diff records). Every write `fn` triggers\n lands in the discarded tmpdir, never the live tree. Extracting this keeps consumers\n from re-deriving (and drifting on) worktree teardown."
+    },
+    {
+      "id": "s:src/tree.ts#OutsideTally",
+      "parent": "f:src/tree.ts",
+      "label": "OutsideTally",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/tree.ts",
+      "line": 133,
+      "prose": "The changed-files tally OUTSIDE a graph: added / removed / changed counts of the files\n the graph does not model."
+    },
+    {
+      "id": "s:src/tree.ts#outsideTally",
+      "parent": "f:src/tree.ts",
+      "label": "outsideTally",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/tree.ts",
+      "line": 140,
+      "prose": "PURE: tally the changed files OUTSIDE the graph from `git diff --name-status` output.\n A → added, D → removed, everything else (M, and R/C renames/copies) → changed. An entry\n whose path (either the old or the new for a rename) is graph-owned is DROPPED — those\n are already modeled. What's left is scripts/CI/docs the graph never saw — counted so\n the consumer can badge \"N changes outside the map\" instead of silently truncating."
+    },
+    {
+      "id": "s:src/tree.ts#deriveOutside",
+      "parent": "f:src/tree.ts",
+      "label": "deriveOutside",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/tree.ts",
+      "line": 156,
+      "prose": "IO shell over outsideTally: run `git diff --name-status <base> HEAD` and tally what the\n graph does NOT own. A non-repo / failed diff yields an all-zero tally (nothing to badge)."
     },
     {
       "id": "f:src/types.ts",
@@ -5586,6 +5605,12 @@
       "kind": "imports"
     },
     {
+      "id": "f:src/cli.ts->f:src/tree.ts:imports",
+      "source": "f:src/cli.ts",
+      "target": "f:src/tree.ts",
+      "kind": "imports"
+    },
+    {
       "id": "f:src/cli.ts->f:src/render-scene.ts:imports",
       "source": "f:src/cli.ts",
       "target": "f:src/render-scene.ts",
@@ -5940,9 +5965,9 @@
       "kind": "imports"
     },
     {
-      "id": "f:src/economy.ts->f:src/scene.ts:imports",
+      "id": "f:src/economy.ts->f:src/tree.ts:imports",
       "source": "f:src/economy.ts",
-      "target": "f:src/scene.ts",
+      "target": "f:src/tree.ts",
       "kind": "imports"
     },
     {
@@ -6066,9 +6091,9 @@
       "kind": "imports"
     },
     {
-      "id": "f:src/mass.ts->f:src/scene.ts:imports",
+      "id": "f:src/mass.ts->f:src/tree.ts:imports",
       "source": "f:src/mass.ts",
-      "target": "f:src/scene.ts",
+      "target": "f:src/tree.ts",
       "kind": "imports"
     },
     {
@@ -6360,9 +6385,9 @@
       "kind": "imports"
     },
     {
-      "id": "f:src/promise.ts->f:src/scene.ts:imports",
+      "id": "f:src/promise.ts->f:src/tree.ts:imports",
       "source": "f:src/promise.ts",
-      "target": "f:src/scene.ts",
+      "target": "f:src/tree.ts",
       "kind": "imports"
     },
     {
@@ -6594,33 +6619,9 @@
       "kind": "imports"
     },
     {
-      "id": "f:src/scene.ts->x:node:fs:imports",
-      "source": "f:src/scene.ts",
-      "target": "x:node:fs",
-      "kind": "imports"
-    },
-    {
       "id": "f:src/scene.ts->x:node:path:imports",
       "source": "f:src/scene.ts",
       "target": "x:node:path",
-      "kind": "imports"
-    },
-    {
-      "id": "f:src/scene.ts->x:node:os:imports",
-      "source": "f:src/scene.ts",
-      "target": "x:node:os",
-      "kind": "imports"
-    },
-    {
-      "id": "f:src/scene.ts->x:node:child_process:imports",
-      "source": "f:src/scene.ts",
-      "target": "x:node:child_process",
-      "kind": "imports"
-    },
-    {
-      "id": "f:src/scene.ts->x:node:crypto:imports",
-      "source": "f:src/scene.ts",
-      "target": "x:node:crypto",
       "kind": "imports"
     },
     {
@@ -6666,15 +6667,9 @@
       "kind": "imports"
     },
     {
-      "id": "f:src/scene.ts->f:src/config.ts:imports",
+      "id": "f:src/scene.ts->f:src/tree.ts:imports",
       "source": "f:src/scene.ts",
-      "target": "f:src/config.ts",
-      "kind": "imports"
-    },
-    {
-      "id": "f:src/scene.ts->f:src/derive.ts:imports",
-      "source": "f:src/scene.ts",
-      "target": "f:src/derive.ts",
+      "target": "f:src/tree.ts",
       "kind": "imports"
     },
     {
@@ -6891,6 +6886,66 @@
       "id": "f:src/test-batch.ts->f:src/types.ts:imports",
       "source": "f:src/test-batch.ts",
       "target": "f:src/types.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/tree.ts->x:node:fs/promises:imports",
+      "source": "f:src/tree.ts",
+      "target": "x:node:fs/promises",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/tree.ts->x:node:fs:imports",
+      "source": "f:src/tree.ts",
+      "target": "x:node:fs",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/tree.ts->x:node:path:imports",
+      "source": "f:src/tree.ts",
+      "target": "x:node:path",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/tree.ts->x:node:os:imports",
+      "source": "f:src/tree.ts",
+      "target": "x:node:os",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/tree.ts->x:node:child_process:imports",
+      "source": "f:src/tree.ts",
+      "target": "x:node:child_process",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/tree.ts->x:node:crypto:imports",
+      "source": "f:src/tree.ts",
+      "target": "x:node:crypto",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/tree.ts->f:src/types.ts:imports",
+      "source": "f:src/tree.ts",
+      "target": "f:src/types.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/tree.ts->f:src/boundary.ts:imports",
+      "source": "f:src/tree.ts",
+      "target": "f:src/boundary.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/tree.ts->f:src/config.ts:imports",
+      "source": "f:src/tree.ts",
+      "target": "f:src/config.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/tree.ts->f:src/derive.ts:imports",
+      "source": "f:src/tree.ts",
+      "target": "f:src/derive.ts",
       "kind": "imports"
     },
     {
@@ -8064,6 +8119,12 @@
       "kind": "imports"
     },
     {
+      "id": "f:test/promise.test.ts->f:src/tree.ts:imports",
+      "source": "f:test/promise.test.ts",
+      "target": "f:src/tree.ts",
+      "kind": "imports"
+    },
+    {
       "id": "f:test/promise.test.ts->f:test/_helpers.ts:imports",
       "source": "f:test/promise.test.ts",
       "target": "f:test/_helpers.ts",
@@ -8367,6 +8428,12 @@
       "id": "f:test/scene.test.ts->f:src/scene.ts:imports",
       "source": "f:test/scene.test.ts",
       "target": "f:src/scene.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/scene.test.ts->f:src/tree.ts:imports",
+      "source": "f:test/scene.test.ts",
+      "target": "f:src/tree.ts",
       "kind": "imports"
     },
     {

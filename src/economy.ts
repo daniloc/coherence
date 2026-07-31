@@ -41,7 +41,7 @@ import { readFile } from "node:fs/promises";
 import type { Config, Graph } from "./types.ts";
 import { BULK, bucketize, gitPrefix, readCommitLog, rebaseCommits, type Commit } from "./evolution.ts";
 import { componentMap } from "./decompose.ts";
-import { fileStats } from "./scene.ts";
+import { fileStats } from "./tree.ts";
 import { findSpec } from "./walk.ts";
 import { recordEconomy } from "./status.ts";
 import { readJournal } from "./decisions.ts";
