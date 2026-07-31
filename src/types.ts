@@ -109,6 +109,17 @@ export interface Config {
     top?: number;         // how many ranked pairs the default report prints (default 10)
   };
 
+  prose?: {
+    // Thresholds for the `prose` advisory — duplicated prose across reading surfaces
+    // (README / RELEASE-NOTES / *.spec.md / module header essays) and whether the copies
+    // still agree. Precision-first for the same reason as `redundancy`: a summary that
+    // legitimately restates a fuller argument must never read as a defect. See src/prose.ts.
+    minWords?: number; // sentences shorter than this cannot pair — idiom, not an argument (default 12)
+    floor?: number;    // Jaccard floor over 6-word shingles (default 0.5; below it, rewrite and paraphrase are indistinguishable)
+    maxDf?: number;    // a shingle in more than this many sentences is idiom, not a copy signature (default 6)
+    top?: number;      // how many ranked pairs the default report prints (default 12; `--all` uncaps)
+  };
+
   // --- producer/consumer contracts across deploy artifacts (mechanisms 2a + 3) ---
   // An invariant that SPANS deploy artifacts (e.g. a browser bundle and a Worker) is
   // exactly what no single compiler run can see — only the whole-source graph can. The
