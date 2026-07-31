@@ -14,6 +14,60 @@ evidence inside that record.
 
 ---
 
+## v0.22.0 — a rename is not growth
+
+The `mass` ratchet said **"the movement gained parts nobody named"** about a
+component rename. Nothing was gained: renaming a component (its label comes from
+the spec's H1) moved 35 lines from one key to another while `lines|total` stayed
+identical — printed in the same report, two lines above the accusation. And in
+the FAILED path the vanished key printed nowhere at all, so half the exonerating
+evidence was off the page.
+
+`reconcileMass` now mirrors `lint-sinks.reconcile` (v0.20.1): a NEW dimension
+inherits a vanished pin only when one of the same **family, unit and exact
+value** disappeared, each absorbing exactly one. A rename reports as
+`~ lines|ids → lines|identifiers (35 lines conserved)`, in the ratchet's own
+words, and never as growth.
+
+### The design that lost
+
+This shipped against my own prior design, which is the point of building it. I
+had argued for a type-level obligation forcing every baseline to DECLARE a
+rename policy — `forgives-moves | immune-by-key | rename-is-signal` — on the
+theory that the families want different semantics: sink sites are DISCOVERED so
+a move should be forgiven, components are DECLARED so a rename should be signal.
+
+Measured, that asymmetry does not survive contact **at the gate**. Renaming a
+`measure|` key with its probe still printing the same number produced the
+identical lie. When the value is conserved nothing was gained in either family;
+when it is not, both must fail. `deps|*`, `files|total`, `symbols|total` and
+`undocumented|symbols` are closed key sets where a rename is inexpressible, so a
+policy declaration buys nothing but surface there. The asymmetry survives only
+in vocabulary — mass says RENAMED where sinks say MOVED.
+
+One reconciler, no policy enum. The obligation design was over-engineered and is
+recorded as rejected on evidence (d-6032bb85).
+
+### Value equality IS the conservation property
+
+The move-invariant address is family + unit + **exact value**, and the
+alternatives were rejected for what they give up. Value-blind or tolerance
+matching would let a genuinely new component pass whenever any same-family pin
+of matching size vanished — growth laundered through a rename, conservation
+inverted. Exact matching instead fails closed when a rename lands in the same
+commit as an edit, and the report names the candidate rather than hiding it:
+`lines|ids (3) vanished this run … its mass ALSO changed 3 → 5`. The documented
+loosening is the same one sinks accepts: a deleted 35-line component plus a
+coincidentally-35-line new one reads as a rename, printed by name so a reader
+can catch it.
+
+Proven by mutation in both directions — never-absorb, and value-dropped-from-the
+-address (the laundering direction) — each redding the claim by name.
+
+627 tests (was 620). 27 claims, 27 green, refutations 11/13.
+
+---
+
 ## v0.21.0 — the harness stops exempting itself
 
 Three audits pointed the doctrine at the tool. Each found the same sentence
