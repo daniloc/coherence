@@ -14,6 +14,75 @@ evidence inside that record.
 
 ---
 
+## v0.21.0 — the harness stops exempting itself
+
+Three audits pointed the doctrine at the tool. Each found the same sentence
+failing in a different place — *declared-but-wrong is strictly worse than
+undeclared* — and this release is the repair.
+
+### The instrument could lie, and now it cannot
+
+Deleting `verify`'s own `testMatch` evidence rule — the anti-vacuity mechanism,
+the single most important property the tool has — left the tree **23/23 green,
+"✓ coherent."** The verifier carried no claims about itself. It now carries six,
+and **every one was watched failing before it was allowed to exist**: positive
+evidence at `execNamedTest`, the vanished oracle at `resolveFromBatch`, the
+unanchored-invariant ratchet, the literal-domain meta-oracle, skip-never-clobbers
+at `recordVerify`, and no-test-runs at `runNamedTest`. Refutation coverage is
+10/12.
+
+Two structural repairs behind them. **Claim-record identity** was spelled three
+ways — `claimKey` promised to be "the ONE key (store AND read)" while the merge
+keyed on a raw NUL-separated string — so annotating a boundary with a purely
+declarative `crossing` clause silently reset `everFailed: true, runs: 50` to
+`false, 1`, and the never-red advisory then flagged the checker with the richest
+failure history as a suspect. `claimKey` now returns a branded `ClaimKey` that
+cannot be minted elsewhere, and `indexClaimRecords()` is the one map-mint every
+reader uses. And **CI never ran full verify**, so renaming a guard's test title
+orphaned its oracle with every automated gate still green. It runs now.
+
+### A checker that cannot fail is not a checker — including the runner
+
+`execNamedTest` trusted `config.test` on the serial path, on a runner class this
+repo had itself documented as un-guardable by `testMatch`. `proveSerialRunnerCanFail`
+now runs a nonce that exists nowhere through the exact claim path, once per serial
+verify: if it PASSES, the runner cannot filter, and the run refuses loudly instead
+of grading claims against a runner that says yes to everything. Ten existing tests
+used always-exit-0 fakes; the canary correctly refuses that shape, so they were
+rewritten name-sensitive. The per-claim shim also moved from `scripts/` into `src/`
+— inside the evidence perimeter, where it is claimed and tested rather than trusted.
+
+### It stopped exporting the anti-pattern it hunts
+
+`scaffold`'s `## why` template generated mechanism-restatement — *"enforced at ONE
+chokepoint … asserted by a totality oracle … that fails loud"* — the exact prose
+`why-lint` exists to kill, proven by pasting scaffold output into a fixture and
+watching the linter flag it verbatim. Since scaffold output is what adopters paste
+unmodified, the generator was propagating the smell into every consuming repo. It
+is now a rationale prompt; the mechanics moved to the `TODO(code)` comment.
+
+The claim-form table had drifted exactly as the README predicted it could — 8
+listed against 9 real forms, missing `lives in` and the boundary `crossing`
+clause. It is now **derived** from `CLAIM_FORMS` and byte-checked, the way the
+command index already was. Two README examples that showed real journal ids
+"dismissed" and "resolved" with fabricated rationales were corrected — a doc
+depicting a lie the journal says it cannot recover from. And the root spec's
+five `exists at root` trivialities were pruned to the two whose absence is
+*silent*: fewer honest claims, not invented ones.
+
+### `coherence prose` — duplicated prose that has already diverged
+
+The new advisory. Not "you repeated yourself" — a module header exists so a reader
+of the module need not find the README, and that duplication is correct. The signal
+is **the copies no longer agree**, which no reader can detect without diffing both.
+On this repo: 35 linked pairs, **24 diverged**. It prints its floor's cost and says
+plainly that it compares text, not meaning — it cannot tell a deliberate summary
+from a rotted copy.
+
+620 tests (was 589). 26 claims, 26 green.
+
+---
+
 ## v0.20.1 — a reviewed risk site keeps its identity when the file moves
 
 Found by a consuming project, not by this repo. Eight subsystems were extracted out

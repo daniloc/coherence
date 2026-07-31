@@ -1374,7 +1374,7 @@ both is exactly what drifted.
      edit by hand — add the command to the registry and re-run. Everything OUTSIDE these
      markers is authored prose. -->
 
-_37 commands. This index is derived from the registry the dispatch is checked
+_38 commands. This index is derived from the registry the dispatch is checked
 against (`test/commands.test.ts` enumerates the live `cmd === …` chain and asserts the two
 sets are equal), so it cannot fall behind the CLI. The reasoning for the commands that have
 any is in **In detail** below — that half is authored, and does not cover all of them._
@@ -1422,6 +1422,7 @@ any is in **In detail** below — that half is authored, and does not cover all 
 **Advisories — they surface, you judge**
 
 - `coherence redundancy [--all] [--raise]` — one enumerated domain spelled twice with nothing tying the spellings together
+- `coherence prose [--all] [--raise]` — duplicated prose across reading surfaces — and whether the copies have already diverged
 - `coherence why-lint [--check]` — `## why` prose restating a mechanism a boundary claim already anchors
 - `coherence decompose` — the wise-decomposition report — a LOCALITY score plus the smells that lower it
 - `coherence drift` — decompose's derivative — converging on one home, or decohering across boundaries

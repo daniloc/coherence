@@ -39,6 +39,7 @@ import { appendDecision, renderJournal, readJournal, resolvableConjecture, compa
 import { recordObservation, formatObserved } from "./observed.ts";
 import { printHooks, checkHooks, runHook } from "./hooks.ts";
 import { redundancy } from "./redundancy.ts";
+import { prose } from "./prose.ts";
 import { economy } from "./economy.ts";
 import { signal } from "./signal.ts";
 import { contextFromProject, renderContext } from "./context.ts";
@@ -606,6 +607,14 @@ if (cmd === "graph") {
   // `--raise` turns the ranked pairs above the DEFAULT floor into open conjectures — never
   // the tail `--all` exposes, which is there to be judged, not recorded.
   await exit(await redundancy(cfg, await buildGraph(cfg), {
+    all: argv.includes("--all"), raise, raiseCap,
+    session: one("--session") ?? undefined, agent: one("--agent") ?? undefined,
+  }));
+} else if (cmd === "prose") {
+  // Advisory: redundancy's argument applied to the surface redundancy does not scan —
+  // duplicated PROSE across reading surfaces, labeled IDENTICAL vs DIVERGED (the rot
+  // signal). Ranked, capped, gates nothing (--all uncaps; --raise uses the default floor).
+  await exit(await prose(cfg, {
     all: argv.includes("--all"), raise, raiseCap,
     session: one("--session") ?? undefined, agent: one("--agent") ?? undefined,
   }));

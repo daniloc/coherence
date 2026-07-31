@@ -156,6 +156,7 @@ export const COMMANDS: Command[] = [
 
   // ── advisory ─────────────────────────────────────────────────────────────────────────
   { name: "redundancy", group: "advisory", usage: "[--all] [--raise]", summary: "one enumerated domain spelled twice with nothing tying the spellings together" },
+  { name: "prose", group: "advisory", usage: "[--all] [--raise]", summary: "duplicated prose across reading surfaces — and whether the copies have already diverged" },
   { name: "why-lint", group: "advisory", usage: "[--check]", summary: "`## why` prose restating a mechanism a boundary claim already anchors" },
   { name: "decompose", group: "advisory", summary: "the wise-decomposition report — a LOCALITY score plus the smells that lower it" },
   { name: "drift", group: "advisory", summary: "decompose's derivative — converging on one home, or decohering across boundaries" },
