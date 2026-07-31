@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-31 23:40Z",
+  "generatedAt": "2026-07-31 23:44Z",
   "root": "coherence",
   "absRoot": "/Users/daniloc/Documents/Development/coherence",
   "nodes": [
@@ -281,7 +281,7 @@
       "sub": "const",
       "path": "src/boundary.ts",
       "line": 74,
-      "prose": "The ONE record-lookup key EVERY consumer of `status.verify.claims` uses (store AND read)\n — the scene, the promise graph, the panel, the merge, and verify's decoration filter —\n so a pre-crossing record matches a post-crossing claim and vice versa. Returns the\n branded `ClaimKey`: there is no other way to mint one."
+      "prose": "The ONE record-lookup key EVERY consumer of `status.verify.claims` uses (store AND read)\n — the promise graph, the panel, the merge, and verify's decoration filter —\n so a pre-crossing record matches a post-crossing claim and vice versa. Returns the\n branded `ClaimKey`: there is no other way to mint one."
     },
     {
       "id": "f:src/calibration.ts",
@@ -497,7 +497,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/commands.ts",
-      "line": 194,
+      "line": 193,
       "prose": "Every command name, in registry order. The `<a|b|c>` list — aliases excluded."
     },
     {
@@ -507,7 +507,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/commands.ts",
-      "line": 198,
+      "line": 197,
       "prose": "Every token the dispatch must accept: names AND aliases. The totality oracle compares\n THIS against the `cmd === \"…\"` literals it reads out of cli.ts."
     },
     {
@@ -517,7 +517,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/commands.ts",
-      "line": 225,
+      "line": 224,
       "prose": "SPELLING ONE — the usage banner, printed to stderr when the verb is unknown or absent.\nDerived in full: there is no command-name string literal left in cli.ts's help text, so\nthe banner cannot be 29 while the dispatch is 30, and two branches editing different\ncommands can no longer conflict on one line."
     },
     {
@@ -527,7 +527,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/commands.ts",
-      "line": 258,
+      "line": 257,
       "prose": "SPELLING TWO — the README's command index, markers inclusive, ready for `spliceBlock`.\n\nA BULLET LIST, not a markdown table, and that is a real constraint rather than taste:\n`redundancy` reads the first column of every markdown table as an enumerated domain, so\na generated table would hand it a fresh README↔dispatch pair to report — trading the\nfinding this change exists to remove for an identical one. A generated block that the\nproject's own detector still flags has not fixed anything.\n\nThe block is an INDEX and nothing more: name, arg shape, one line. The authored\nper-command reasoning lives OUTSIDE the markers, below the block, and is not expected to\ncover every command — completeness is what the derivation owes, depth is what the prose\nowes, and confusing the two is how the reference got twelve commands behind."
     },
     {
@@ -537,7 +537,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/commands.ts",
-      "line": 296,
+      "line": 295,
       "prose": "The README's claim-form index, markers inclusive, ready for `spliceBlock` — the same\ntreatment the command index got, for the same defect: the hand-kept table listed 8 forms\nwhile the registry carried 9 (`lives in` was missing entirely) and its boundary grammar\nhad lost the `[crossing <zone> -> <zone>]` clause. The README even predicted the drift\n(\"nothing compares it against the registry, so it *can* drift\"). Now something does.\n\nA BULLET LIST, not a markdown table, for the reason renderCommandsBlock records:\n`redundancy` reads the first column of every markdown table as an enumerated domain, so\na generated table would hand it a fresh README↔registry pair to report.\n\nThe block is the GRAMMAR and nothing more: name, tier, grammar, example — the fields the\nregistry actually carries. The authored per-form reasoning (tier behavior under `--fast`,\nthe meta-oracle, skip-vs-fail semantics) lives OUTSIDE the markers, below the block."
     },
     {
@@ -1312,7 +1312,7 @@
       "sub": "function",
       "path": "src/evolution.ts",
       "line": 60,
-      "prose": "EVOLUTION graph, raw: every non-merge commit newest→oldest with its touched files\n and subject. Shared by decompose (all-time coupling), drift (recent trajectory),\n scene (heat) and mass (net-LOC over time)."
+      "prose": "EVOLUTION graph, raw: every non-merge commit newest→oldest with its touched files\n and subject. Shared by decompose (all-time coupling), drift (recent trajectory),\n mass (net-LOC over time), economy, and atlas/verify (churn)."
     },
     {
       "id": "s:src/evolution.ts#commitDeltas",
@@ -3482,24 +3482,6 @@
       "line": 36
     },
     {
-      "id": "f:src/render-scene.ts",
-      "parent": "c:src",
-      "label": "render-scene.ts",
-      "kind": "file",
-      "sub": "src/render-scene.ts",
-      "path": "src/render-scene.ts",
-      "prose": "render-scene.ts — SceneModel → one self-contained `_scene.html`.\n\nThe scene gives a project a persistent spatial BODY. The design language is a CITY\nBUILDER'S MANAGEMENT SCREEN — the god-view calm of SimCity 2000 or Surviving Mars,\nwhere you read a place from above and PERCEIVE change against it rather than parse\ntext. Deliberately NOT a city diorama (no miniature buildings, no figurative\ndressing) and NOT an austere editorial data-graphic: the discipline of a management\nsim instead — one tidy token vocabulary, snapped isometric geometry, crisp cell\nborders, a quiet warm terrain the districts sit on as clean plates. Cities:Skylines\nwas rejected for lacking that discipline; the delight here is WHIMSY VIA CLARITY —\ntidiness, hover states, a satisfying selection ring, legible little status icons.\n\nThe drawing model, each mark with a perceptual reason, per scene-model.ts's contract:\n  · HEX DISTRICTS — each component is a thin extruded hexagonal PLINTH on a flat-top\n    hex board; `lot {x,y}` is axial (q=x, r=y). Plate size scales sublinearly with\n    mass (∝ mass^0.25, capped below the hex pitch so plates never collide) — a 10×\n    district reads clearly bigger without towering; the plinth depth is a uniform cue.\n  · TRIANGULAR TOWERS — DENSITY IS BREADTH, HEIGHT IS DEPTH. The plate top is a\n    triangular lattice (resolution k with 6k² ≥ files); one FILE fills one parcel,\n    center-out, deterministic — many files read as packed sprawl. Each parcel then\n    EXTRUDES into a triangular prism (a tower) whose height ∝ that file's own LINE\n    count, normalized SCENE-WIDE (h = H_MAX·√(lines/maxLines), a small stub for\n    genuinely tiny/empty files so a types-only file still reads as built). LINES, not\n    symbols: a 200-line file is a real structure a reviewer must read; symbols are the\n    declaration surface, a card/tooltip datum (\"N lines · M symbols\"), never the ruler.\n    A district becomes a SKYLINE: a monolith is a few tall towers, a sprawl a low dense\n    suburb. A CLAIMED tower lights in the district's lamp colour by verification (lit\n    warm · dim cold · dark near-silhouette — LIGHT IS VERIFICATION); an UNCLAIMED tower\n    is dark volume — an unpowered skyscraper, the honest scare (HONEST MASS). A claimed\n    tower ALWAYS keeps a faint amber top-edge keyline even when dark, so the blueprint\n    reads on the structure itself — claimed-but-unverified is honestly distinct from\n    unclaimed, never the same anonymous dark. Each tower draws its top face plus its two\n    viewer-facing side faces, distinctly shaded, so verticality is never ambiguous. The\n    dashed amber rim is the blueprint envelope (WIREFRAME IS SPEC).\n  · DISTRICT NAMEPLATES — UNDERSTANDABLE AT ANY ROTATION. Every district carries a\n    persistent screen-upright (billboarded) label seated just below its front rim — a\n    game-map nameplate (small-caps monospace, a subtle dark plate behind), so the city\n    has street names the human reads at every θ without a hover. Nameplates ride the\n    chrome layer (never occluded by towers), dim with a receded district, and when two\n    would collide at zoom-out a simple greedy cull keeps the BIGGER district's plate\n    (the culled one regains its name on hover, via the tooltip).\n  · STATUS TOKENS — tidy game icons: gates seated on the plate's front rim (steel =\n    solid sturdy · scaffold = hollow dashed · breached = red, pulsing), ⚑ for a human-\n    eye gate; unanchored invariants as red rim ticks; fails as small pulsing red dots.\n    CHROME BEATS GEOMETRY: all these markers (and the nameplates) paint in a dedicated\n    layer above every plinth and tower (SC2000's ⚡ never hides behind a building) —\n    anchored to their district's rim, dimming with a receded district. The blueprint\n    rim is WORLD, not chrome: it stays in the geometry pass and can be occluded. The\n    ambient heat underglow is GONE (decoration the audit cut) — heat is now a number in\n    the tooltip/card only, never a glow that competes with the signal.\n  · LINKS ON DEMAND + BLAST RADIUS — the always-on hairball was decoration. Adjacency\n    is drawn only for the HOVERED or PINNED district: its outgoing imports as SOLID\n    lines, who-imports-it (the reverse index of `links`) as DASHED lines, with the\n    linked districts' rims subtly emphasised. In a REVIEW scene the BLAST RADIUS is\n    shown without interaction: every district that imports a changed/added/removed\n    district wears a persistent thin accent ring in a soft SECONDARY tint (violet —\n    distinct from amber=spec, cyan=construction, red=alarm) so a reviewer sees \"what\n    could this change break\" at a glance. Rings, not floods: when the blast set exceeds\n    ~40% of the city (dense import graphs — everything touches the core) the rings\n    stand down and a masthead chip (\"blast: N districts\", title names them) carries the\n    count instead; hover/pin still wires any district's importers. Tidy at 8 and at 40.\n  · TURNTABLE — the map-rotate control of such a game, but CONTINUOUS: click-drag\n    rotates the whole field about the plaza (0,0) in real time; on release the view\n    EASES to the nearest of the six stable 60° facings. The ⟲/⟳ buttons and arrow keys\n    animate a 60° step (no snap-cuts). ROTATION IS A CAMERA MOVE AND NOTHING ELSE:\n    the world is RIGID — every world point (plate corner, tower vertex) rotates by θ\n    as one transform before the iso squash, and at θ = k·60° this agrees EXACTLY with\n    the axial hex rotation, so the six facings land on lattice. Slot assignments are\n    made ONCE in unrotated world space (a file keeps its triangle forever); the floor\n    is a STATIC hex-disc platter the city rotates above. The CAMERA is the full\n    management-sim kit: a full-viewport stage (the map gets every pixel), a CITY-TIGHT\n    fit (framing the occupied lots, not the platter), wheel zoom toward the cursor,\n    middle/shift-drag pan, double-click-ground reset — and θ NEVER alters the viewBox;\n    only zoom/pan/resize do, deliberately. Rotation never touches the persisted\n    geography, and exists precisely to let you see AROUND tall towers, so occlusion is\n    a strict painter's sort of EVERY drawable (plinths and towers, within and across\n    districts) by rotated depth.\n  · THE DIFF IS SPATIAL — when model.diff is non-null the scene is a REVIEW: change is\n    rendered against the SAME stable geography. Added towers rise SOLID in a distinct\n    construction accent (a hologram cyan — never confusable with amber=spec or red=\n    alarm); removed towers/districts stand as dashed GHOST wireframes of their former\n    structure on their reserved lots; a grown tower gets an accent cap above its former\n    height, a shrunk one a dashed ghost cap where it used to reach; and the UNCHANGED\n    city recedes to low opacity so the eye lands only on change. A district change chip\n    (\"+3 −1 ~2\") rides the same capsule vocabulary as the gate-overflow badge. COMPLETE-\n    NESS: the map NEVER SILENTLY TRUNCATES — changed files the graph does not own\n    (scripts, CI, docs) are counted in diff.outside and surfaced as a masthead chip\n    (\"N changes outside the map\", with a +A −R ~C tooltip) so absence reads as a state,\n    not a finished look. A plain scene (diff:null) renders with ZERO diff chrome.\n  · HONESTY CUES — a dark city is a STATE, not a finished look. When nothing was ever\n    verified (model.verify null) the masthead wears a quiet CTA chip (\"never verified —\n    run coherence verify\"); the claimed-tower amber keyline keeps the blueprint legible\n    on unlit structures; and the card reports \"N files · M lines · K symbols\" instead of\n    one meaningless summed mass.\n\nThe whole document is self-contained: inline CSS, inline JS, the model embedded as a\nJSON blob, ZERO external resources. The SVG is generated client-side from the JSON so\nit is crisp at any zoom and re-drawable on rotation; hover/click ride event delegation.\nDark-themed by design — light is the signal, so the artifact commits to one look."
-    },
-    {
-      "id": "s:src/render-scene.ts#renderScene",
-      "parent": "f:src/render-scene.ts",
-      "label": "renderScene",
-      "kind": "symbol",
-      "sub": "const",
-      "path": "src/render-scene.ts",
-      "line": 112
-    },
-    {
       "id": "f:src/run-named-test.ts",
       "parent": "c:src",
       "label": "run-named-test.ts",
@@ -3545,255 +3527,6 @@
       "sub": "function",
       "path": "src/scaffold.ts",
       "line": 129
-    },
-    {
-      "id": "f:src/scene-model.ts",
-      "parent": "c:src",
-      "label": "scene-model.ts",
-      "kind": "file",
-      "sub": "src/scene-model.ts",
-      "path": "src/scene-model.ts",
-      "prose": "scene-model.ts — the CONTRACT between the scene's two halves: derivation\n(src/scene.ts — graph + status record + git → SceneModel) and rendering\n(src/render-scene.ts — SceneModel → one self-contained _scene.html).\n\nThe scene is the perceptual layer: the project given a persistent spatial BODY a\nhuman can become acquainted with, so change is perceived against a familiar place\nrather than read as propositions. The design commitments this contract encodes:\n\n  1. STABLE GEOGRAPHY — `lot` positions come from a persisted layout file and are\n     append-only: a component, once placed, NEVER moves; new components take the\n     next vacant lot. Familiarity is the entire mechanism — the human perceives\n     change only against a scene that otherwise holds still. Lot coordinates are\n     AXIAL HEX coordinates (q=x, r=y): each component is a hexagonal DISTRICT on\n     a hex grid. The persisted spiral sequence is unchanged — reinterpreting the\n     same (x,y) pairs as axial coords keeps every placement distinct and stable.\n  2. HONEST MASS — visual size maps to code reality, not spec count, split into its\n     two physical dimensions: DENSITY IS BREADTH (each FILE is one triangular piece\n     in the district's top-face lattice — many files read as packed sprawl) and\n     HEIGHT IS DEPTH (each piece extrudes into a tower ∝ its own LINE count,\n     normalized scene-wide — a district is a skyline: monolith towers vs low\n     suburb at a glance; a 200-line test is a real structure, not a stub). Symbol\n     count is the declaration surface — a card/tooltip datum, NOT the height driver.\n     An unclaimed tall tower reads as exactly what it is: a dark unpowered skyscraper.\n     A claim blesses at most ONE file, matched by PATH — a bare basename that matches\n     several files in a component blesses NONE of them (never over-report coverage).\n  3. THE WIREFRAME IS THE SPEC — claimed surface sits inside the amber blueprint\n     envelope; mass NO claim covers renders outside/dark (conspicuous absence —\n     a scene that only draws what's known is the prettiest way to lie).\n  4. MATERIAL IS THE LADDER — a gate's construction encodes its enforcement tier,\n     derived from the boundary claims alone (NO atlas dependency).\n  5. LIGHT IS VERIFICATION — illumination comes from the status record's recency;\n     a neglected district goes dark. HEAT is recent churn from git.\n  6. THE DIFF IS SPATIAL — a code review renders as change against the SAME stable\n     geography instead of text: new structures rise (accented), removed structures\n     stand as ghost wireframes on their reserved lots, grown/shrunk towers show\n     their former height, and the unchanged city recedes. Diff entries (`change`,\n     `prevSymbols`/`prevLines`, model.diff) are present only when the scene was\n     derived against a base ref; a plain scene carries none of them. Two review\n     honesty rules: BODY EDITS REGISTER (a content change with an unchanged symbol\n     set is still `changed` — a reviewer cannot accept blindness to prose), and the\n     map NEVER SILENTLY TRUNCATES — changed files outside the graph (scripts, CI,\n     docs) are counted in diff.outside and surfaced, not dropped."
-    },
-    {
-      "id": "s:src/scene-model.ts#SceneModel",
-      "parent": "f:src/scene-model.ts",
-      "label": "SceneModel",
-      "kind": "symbol",
-      "sub": "interface",
-      "path": "src/scene-model.ts",
-      "line": 43,
-      "prose": "scene-model.ts — the CONTRACT between the scene's two halves: derivation\n(src/scene.ts — graph + status record + git → SceneModel) and rendering\n(src/render-scene.ts — SceneModel → one self-contained _scene.html).\n\nThe scene is the perceptual layer: the project given a persistent spatial BODY a\nhuman can become acquainted with, so change is perceived against a familiar place\nrather than read as propositions. The design commitments this contract encodes:\n\n  1. STABLE GEOGRAPHY — `lot` positions come from a persisted layout file and are\n     append-only: a component, once placed, NEVER moves; new components take the\n     next vacant lot. Familiarity is the entire mechanism — the human perceives\n     change only against a scene that otherwise holds still. Lot coordinates are\n     AXIAL HEX coordinates (q=x, r=y): each component is a hexagonal DISTRICT on\n     a hex grid. The persisted spiral sequence is unchanged — reinterpreting the\n     same (x,y) pairs as axial coords keeps every placement distinct and stable.\n  2. HONEST MASS — visual size maps to code reality, not spec count, split into its\n     two physical dimensions: DENSITY IS BREADTH (each FILE is one triangular piece\n     in the district's top-face lattice — many files read as packed sprawl) and\n     HEIGHT IS DEPTH (each piece extrudes into a tower ∝ its own LINE count,\n     normalized scene-wide — a district is a skyline: monolith towers vs low\n     suburb at a glance; a 200-line test is a real structure, not a stub). Symbol\n     count is the declaration surface — a card/tooltip datum, NOT the height driver.\n     An unclaimed tall tower reads as exactly what it is: a dark unpowered skyscraper.\n     A claim blesses at most ONE file, matched by PATH — a bare basename that matches\n     several files in a component blesses NONE of them (never over-report coverage).\n  3. THE WIREFRAME IS THE SPEC — claimed surface sits inside the amber blueprint\n     envelope; mass NO claim covers renders outside/dark (conspicuous absence —\n     a scene that only draws what's known is the prettiest way to lie).\n  4. MATERIAL IS THE LADDER — a gate's construction encodes its enforcement tier,\n     derived from the boundary claims alone (NO atlas dependency).\n  5. LIGHT IS VERIFICATION — illumination comes from the status record's recency;\n     a neglected district goes dark. HEAT is recent churn from git.\n  6. THE DIFF IS SPATIAL — a code review renders as change against the SAME stable\n     geography instead of text: new structures rise (accented), removed structures\n     stand as ghost wireframes on their reserved lots, grown/shrunk towers show\n     their former height, and the unchanged city recedes. Diff entries (`change`,\n     `prevSymbols`/`prevLines`, model.diff) are present only when the scene was\n     derived against a base ref; a plain scene carries none of them. Two review\n     honesty rules: BODY EDITS REGISTER (a content change with an unchanged symbol\n     set is still `changed` — a reviewer cannot accept blindness to prose), and the\n     map NEVER SILENTLY TRUNCATES — changed files outside the graph (scripts, CI,\n     docs) are counted in diff.outside and surfaced, not dropped."
-    },
-    {
-      "id": "s:src/scene-model.ts#SceneDiff",
-      "parent": "f:src/scene-model.ts",
-      "label": "SceneDiff",
-      "kind": "symbol",
-      "sub": "interface",
-      "path": "src/scene-model.ts",
-      "line": 55
-    },
-    {
-      "id": "s:src/scene-model.ts#SceneComponent",
-      "parent": "f:src/scene-model.ts",
-      "label": "SceneComponent",
-      "kind": "symbol",
-      "sub": "interface",
-      "path": "src/scene-model.ts",
-      "line": 62
-    },
-    {
-      "id": "s:src/scene-model.ts#SceneLight",
-      "parent": "f:src/scene-model.ts",
-      "label": "SceneLight",
-      "kind": "symbol",
-      "sub": "interface",
-      "path": "src/scene-model.ts",
-      "line": 85
-    },
-    {
-      "id": "s:src/scene-model.ts#ScenePiece",
-      "parent": "f:src/scene-model.ts",
-      "label": "ScenePiece",
-      "kind": "symbol",
-      "sub": "interface",
-      "path": "src/scene-model.ts",
-      "line": 97,
-      "prose": "One triangular tower: a FILE inside its district. `claimed` mirrors deriveClaimed's\n file logic — a claim names this file by PATH, blessing at most one file (an ambiguous\n bare basename blesses none) — so the tower-level view sums exactly to\n `claimed.files` / `mass.files`."
-    },
-    {
-      "id": "s:src/scene-model.ts#PieceChange",
-      "parent": "f:src/scene-model.ts",
-      "label": "PieceChange",
-      "kind": "symbol",
-      "sub": "type",
-      "path": "src/scene-model.ts",
-      "line": 112,
-      "prose": "added/removed = the file itself. \"changed\" = the file differs from base AT ALL —\n symbol set moved OR content moved (body edits register; a reviewer cannot accept\n blindness to prose). prevLines/prevSymbols carry the base measurements when they\n differ, so the renderer can mark former heights."
-    },
-    {
-      "id": "s:src/scene-model.ts#SceneGate",
-      "parent": "f:src/scene-model.ts",
-      "label": "SceneGate",
-      "kind": "symbol",
-      "sub": "interface",
-      "path": "src/scene-model.ts",
-      "line": 114
-    },
-    {
-      "id": "s:src/scene-model.ts#RenderScene",
-      "parent": "f:src/scene-model.ts",
-      "label": "RenderScene",
-      "kind": "symbol",
-      "sub": "type",
-      "path": "src/scene-model.ts",
-      "line": 134,
-      "prose": "The renderer's exact signature (src/render-scene.ts implements this). Returns a\n COMPLETE self-contained HTML document: inline CSS/JS, embedded model JSON, zero\n external resources (no CDN, no fonts, no fetches). The view is an isometric\n TURNTABLE: client-side controls rotate the whole field in 60° steps around the\n plaza (0,0) — rotation is view state only and never touches the geography."
-    },
-    {
-      "id": "f:src/scene.ts",
-      "parent": "c:src",
-      "label": "scene.ts",
-      "kind": "file",
-      "sub": "src/scene.ts",
-      "path": "src/scene.ts",
-      "prose": "scene.ts — the DERIVATION half of `coherence scene`: graph + status record + git →\nSceneModel (src/scene-model.ts is THE contract; src/render-scene.ts is the other\nhalf). The scene gives the project a persistent spatial BODY so a human PERCEIVES\nit rather than reads it, and the whole illusion rides on one rule:\n\n  STABLE GEOGRAPHY. Lot positions live in an APPEND-ONLY layout file\n  (`<outputDir>/scene-layout.json`). A component, once placed, NEVER moves; a new\n  component takes the next VACANT lot on a fixed outward spiral from (0,0); a\n  removed component's lot stays RESERVED forever (a demolished lot, never reused).\n  Familiarity is the mechanism — change is perceived only against a place that\n  otherwise holds still — so the spiral order and the persisted lots are load-\n  bearing and must be deterministic. The renderer now reads each (x,y) as AXIAL HEX\n  (q=x, r=y) — a component is a hexagonal DISTRICT, each of its files one TRIANGULAR\n  piece — but that is pure reinterpretation: the spiral sequence and the persisted\n  coordinates here are UNCHANGED, so geography stays append-only and stable.\n\n  HONEST MASS. A tower's HEIGHT is its file's LINE count (read from disk), not its\n  symbol count — so 40+ near-symbol-less test files read as the real structures they\n  are instead of identical stubs; symbols stay a card datum. And a claim blesses at\n  MOST ONE file, matched by PATH (a bare basename that names several same-named files\n  in a district blesses NONE) — a district with four `hooks.ts` no longer reads 4/4\n  claimed off one same-named claim. deriveClaimed and derivePieces share that one\n  path-matching rule, so counts and per-tile flags stay exactly consistent.\n\n  THE DIFF IS SPATIAL. A code review renders as change against the SAME stable\n  geography, never as text: `coherence scene --diff <ref>` materializes the base tree\n  in a throwaway git worktree, derives ITS SceneModel (structure only — verification\n  state is meaningful live, so the base is built against an empty status), and merges\n  the two so head grows `change`/`prev*`/`diff`. New structures rise (added), base-only\n  structures stand as ghosts on their still-reserved lots (removed — the layout is\n  append-only, so the lot is present in the current tree too), and a file reads as\n  `changed` when its SYMBOL SET moved OR its CONTENT moved (BODY EDITS REGISTER — a\n  reviewer cannot accept blindness to a prose/logic-only change), with prevSymbols/\n  prevLines carrying the base measurement when the count/height moved. The map NEVER\n  SILENTLY TRUNCATES: changed files OUTSIDE the graph (scripts/CI/docs) are counted in\n  diff.outside. The merge is a PURE function over two models plus each end's per-file\n  symbol-label sets + content stats (lines+hash), so it is testable without git; only\n  base acquisition (deriveBaseModel) and the outside tally (deriveOutside) are IO. A\n  plain scene carries diff:null and no flags.\n\nThe pure core (assignLots, deriveClaimed/Gates/Light, mergeSceneDiff) is exported so the\nderivation is testable without a repo; buildSceneModel and deriveBaseModel are the thin\nIO shells (layout read/write, git stamp, git churn, base worktree, disk reads) around it.\nThe genuinely SHARED utilities (fileStats, claimedFilePaths, withBaseWorktree, the\noutside tally) live in src/tree.ts — mass/economy/promise read the same seams."
-    },
-    {
-      "id": "s:src/scene.ts#Lot",
-      "parent": "f:src/scene.ts",
-      "label": "Lot",
-      "kind": "symbol",
-      "sub": "interface",
-      "path": "src/scene.ts",
-      "line": 59
-    },
-    {
-      "id": "s:src/scene.ts#Layout",
-      "parent": "f:src/scene.ts",
-      "label": "Layout",
-      "kind": "symbol",
-      "sub": "interface",
-      "path": "src/scene.ts",
-      "line": 60
-    },
-    {
-      "id": "s:src/scene.ts#layoutPath",
-      "parent": "f:src/scene.ts",
-      "label": "layoutPath",
-      "kind": "symbol",
-      "sub": "const",
-      "path": "src/scene.ts",
-      "line": 62
-    },
-    {
-      "id": "s:src/scene.ts#readLayout",
-      "parent": "f:src/scene.ts",
-      "label": "readLayout",
-      "kind": "symbol",
-      "sub": "function",
-      "path": "src/scene.ts",
-      "line": 64
-    },
-    {
-      "id": "s:src/scene.ts#assignLots",
-      "parent": "f:src/scene.ts",
-      "label": "assignLots",
-      "kind": "symbol",
-      "sub": "function",
-      "path": "src/scene.ts",
-      "line": 88,
-      "prose": "PURE core. Copy existing placements VERBATIM (append-only), never prune removed dirs\n(a reserved lot keeps its cell occupied so it is never reused), and hand each unplaced\ndir the next spiral cell not already taken. Entry \".\" is placed FIRST so it claims the\nplaza (0,0) on a fresh geography; the rest go in lexicographic order — a fixed order so\na given set of newcomers always lands on the same cells regardless of graph iteration."
-    },
-    {
-      "id": "s:src/scene.ts#deriveClaimed",
-      "parent": "f:src/scene.ts",
-      "label": "deriveClaimed",
-      "kind": "symbol",
-      "sub": "function",
-      "path": "src/scene.ts",
-      "line": 121,
-      "prose": "The claimed WIREFRAME: which of a component's files/symbols any claim actually names.\n Files come from claimedFilePaths (the shared path rule); a boundary claim names its\n chokepoint SYMBOL. Surface claims name neither — so mass they don't cover renders\n outside the amber. claimed.files = the blessed set's size (files.length minus the\n uncovered), so it agrees tile-for-tile with derivePieces."
-    },
-    {
-      "id": "s:src/scene.ts#derivePieces",
-      "parent": "f:src/scene.ts",
-      "label": "derivePieces",
-      "kind": "symbol",
-      "sub": "function",
-      "path": "src/scene.ts",
-      "line": 141,
-      "prose": "The district's triangular towers: ONE per file, sorted by label so within-district\n geography is stable. `claimed` reads claimedFilePaths — the SAME rule deriveClaimed\n counts by — so the towers sum exactly to claimed.files / mass.files. `path` is the\n file's repo-relative path (the diff key + full name); `lines` (from `stats`) is the\n file's own line count — the tower's HEIGHT (honest mass), so a 200-line test with no\n exports is a real structure, not a stub; `symbols` is THAT FILE's own declaration\n count (a card datum), counted per-file, NOT the component's total."
-    },
-    {
-      "id": "s:src/scene.ts#symbolSetsByFile",
-      "parent": "f:src/scene.ts",
-      "label": "symbolSetsByFile",
-      "kind": "symbol",
-      "sub": "function",
-      "path": "src/scene.ts",
-      "line": 157,
-      "prose": "Per-file symbol-LABEL sets, keyed by the file's path (a symbol's `path` IS its file's\n path). The diff merge compares these SETS end-to-end: a file registers as `changed`\n only when its symbol set moved, so a body-only edit that renames/adds/removes no symbol\n does not — models carry only symbol COUNTS, so the sets are derived from the graph here."
-    },
-    {
-      "id": "s:src/scene.ts#deriveGates",
-      "parent": "f:src/scene.ts",
-      "label": "deriveGates",
-      "kind": "symbol",
-      "sub": "function",
-      "path": "src/scene.ts",
-      "line": 172,
-      "prose": "One gate per boundary claim. verdict comes from the status record (node label +\n verbatim claim); MATERIAL encodes the enforcement ladder from claims + verdicts ALONE\n (no atlas): breached = the gate isn't holding (fail); steel = an oracle whose last\n verdict passed at HEAD; scaffold = everything else (no oracle, never verified, or an\n aging green at another commit — visibly temporary construction)."
-    },
-    {
-      "id": "s:src/scene.ts#deriveLight",
-      "parent": "f:src/scene.ts",
-      "label": "deriveLight",
-      "kind": "symbol",
-      "sub": "function",
-      "path": "src/scene.ts",
-      "line": 197,
-      "prose": "Illumination = verification recency. lit = a pass at the current HEAD; dim = passes\n exist but all at older commits; dark = nothing ever verified. fails/stale flare\n independently, and freshest is the newest pass's stamp."
-    },
-    {
-      "id": "s:src/scene.ts#buildSceneModel",
-      "parent": "f:src/scene.ts",
-      "label": "buildSceneModel",
-      "kind": "symbol",
-      "sub": "function",
-      "path": "src/scene.ts",
-      "line": 207
-    },
-    {
-      "id": "s:src/scene.ts#deriveBaseModel",
-      "parent": "f:src/scene.ts",
-      "label": "deriveBaseModel",
-      "kind": "symbol",
-      "sub": "function",
-      "path": "src/scene.ts",
-      "line": 300,
-      "prose": "Materialize the base tree in a THROWAWAY git worktree and derive its SceneModel, so a\n review renders against the same geography. Structure is what matters here, so the base\n is built against an EMPTY status ({version:1}) — verification light/heat is only\n meaningful for the LIVE tree. Layout note: scene-layout.json is committed + append-only,\n so the base tree's lots agree with the current tree's for shared dirs — no reconciliation.\n The base derivation's ONLY writes (a new lot in scene-layout.json) land in the discarded\n tmpdir (baseCfg.root = tmp), never the current tree. ALWAYS tears the worktree down."
-    },
-    {
-      "id": "s:src/scene.ts#DiffEnd",
-      "parent": "f:src/scene.ts",
-      "label": "DiffEnd",
-      "kind": "symbol",
-      "sub": "interface",
-      "path": "src/scene.ts",
-      "line": 324,
-      "prose": "One END of a diff: the per-file symbol-LABEL sets (structure signal) and content STATS\n (lines + hash — the height and the body-edit signal), both keyed by repo-relative path.\n Bundled so the pure merge takes one object per side instead of four loose maps."
-    },
-    {
-      "id": "s:src/scene.ts#mergeSceneDiff",
-      "parent": "f:src/scene.ts",
-      "label": "mergeSceneDiff",
-      "kind": "symbol",
-      "sub": "function",
-      "path": "src/scene.ts",
-      "line": 361,
-      "prose": "The PURE spatial diff: annotate the CURRENT model with change against the base, keyed\n by `dir` (components) and `path` (pieces). Head-only district → `added`; base-only\n district → the whole base component injected as a `removed` ghost on its still-reserved\n lot (append-only geography → the lot exists in the current layout too), carrying its\n BASE pieces/mass so the ghost has honest shape; a matched district gets its pieces\n diffed. `outside` (the out-of-graph change tally, from deriveOutside) is threaded into\n model.diff so the map never silently truncates. model.diff records the short base ref —\n the flag that makes this a REVIEW scene."
-    },
-    {
-      "id": "s:src/scene.ts#graphPaths",
-      "parent": "f:src/scene.ts",
-      "label": "graphPaths",
-      "kind": "symbol",
-      "sub": "function",
-      "path": "src/scene.ts",
-      "line": 381,
-      "prose": "The set of repo-relative paths the GRAPH owns — every piece path at EITHER end. The\n outside tally subtracts these so it counts ONLY the files the scene doesn't model."
-    },
-    {
-      "id": "s:src/scene.ts#diffTally",
-      "parent": "f:src/scene.ts",
-      "label": "diffTally",
-      "kind": "symbol",
-      "sub": "function",
-      "path": "src/scene.ts",
-      "line": 389,
-      "prose": "Roll up a diffed model's per-file change tallies for the CLI one-liner: added,\n removed, changed FILES. A wholly added/removed district contributes all its tiles."
     },
     {
       "id": "f:src/sidecar.ts",
@@ -5243,15 +4976,6 @@
       "sub": "module"
     },
     {
-      "id": "f:test/render-scene.test.ts",
-      "parent": "c:test",
-      "label": "render-scene.test.ts",
-      "kind": "file",
-      "sub": "test/render-scene.test.ts",
-      "path": "test/render-scene.test.ts",
-      "prose": "render-scene.test.ts — the scene renderer's load-bearing guarantees: it emits ONE\ncomplete, SELF-CONTAINED HTML document (no external resource can sneak in), the model\nsurvives the embed round-trip, model strings surface for the eye, and a hostile label\ncannot break out of the JSON blob. The pixels are judged by a human; these assertions\npin the properties a human can't eyeball on every run.\n\nThe renderer draws the SVG client-side, so the marks (towers, tokens, ghost wireframes,\nthe drag turntable) exist only after the inline script RUNS. A tiny DOM stub (below)\nexecutes that script against a fake document so we can assert on the produced tree:\ntower-per-file, capped gate tokens, drag-vs-click, the eased 60° snap, and — in a REVIEW\nscene — that ghost/accent marks materialize while the unchanged city recedes."
-    },
-    {
       "id": "f:test/run-named-test.test.ts",
       "parent": "c:test",
       "label": "run-named-test.test.ts",
@@ -5259,15 +4983,6 @@
       "sub": "test/run-named-test.test.ts",
       "path": "test/run-named-test.test.ts",
       "prose": "run-named-test.test.ts — the serial oracle runner's own contract, now INSIDE the\nevidence perimeter (src/run-named-test.ts; scripts/run-named-test.mjs is a thin entry).\nThe property that matters is the one the whole executable tier leans on: a name that\nexists NOWHERE exits nonzero — a claim citing a vanished oracle must fail, not pass\nquietly. This is the runner-side half of what the serial canary probes at verify time."
-    },
-    {
-      "id": "f:test/scene.test.ts",
-      "parent": "c:test",
-      "label": "scene.test.ts",
-      "kind": "file",
-      "sub": "test/scene.test.ts",
-      "path": "test/scene.test.ts",
-      "prose": "scene.test.ts — the DERIVATION half of `coherence scene`. The load-bearing, rot-prone\nlogic: the APPEND-ONLY geography (a placed lot never moves; a demolished lot's cell is\nnever reused), the claimed WIREFRAME (which files/symbols a claim actually names), the\nper-file triangular PIECES (one tile per file, claimed mirroring the wireframe so tiles\nsum to claimed.files/mass.files), the gate MATERIAL ladder (steel/scaffold/breached from\nverdicts alone), LIGHT levels\n(lit/dim/dark from verification recency), and cross-component adjacency. The IO shell\n(layout persistence) is exercised through buildSceneModel on a temp project; the pure\nderivations are unit-tested directly with an injected HEAD so staleness is controllable."
     },
     {
       "id": "f:test/signal.test.ts",
@@ -5599,21 +5314,9 @@
       "kind": "imports"
     },
     {
-      "id": "f:src/cli.ts->f:src/scene.ts:imports",
-      "source": "f:src/cli.ts",
-      "target": "f:src/scene.ts",
-      "kind": "imports"
-    },
-    {
       "id": "f:src/cli.ts->f:src/tree.ts:imports",
       "source": "f:src/cli.ts",
       "target": "f:src/tree.ts",
-      "kind": "imports"
-    },
-    {
-      "id": "f:src/cli.ts->f:src/render-scene.ts:imports",
-      "source": "f:src/cli.ts",
-      "target": "f:src/render-scene.ts",
       "kind": "imports"
     },
     {
@@ -6571,12 +6274,6 @@
       "kind": "imports"
     },
     {
-      "id": "f:src/render-scene.ts->f:src/scene-model.ts:imports",
-      "source": "f:src/render-scene.ts",
-      "target": "f:src/scene-model.ts",
-      "kind": "imports"
-    },
-    {
       "id": "f:src/run-named-test.ts->x:node:fs:imports",
       "source": "f:src/run-named-test.ts",
       "target": "x:node:fs",
@@ -6610,66 +6307,6 @@
       "id": "f:src/scaffold.ts->f:src/types.ts:imports",
       "source": "f:src/scaffold.ts",
       "target": "f:src/types.ts",
-      "kind": "imports"
-    },
-    {
-      "id": "f:src/scene.ts->x:node:fs/promises:imports",
-      "source": "f:src/scene.ts",
-      "target": "x:node:fs/promises",
-      "kind": "imports"
-    },
-    {
-      "id": "f:src/scene.ts->x:node:path:imports",
-      "source": "f:src/scene.ts",
-      "target": "x:node:path",
-      "kind": "imports"
-    },
-    {
-      "id": "f:src/scene.ts->f:src/types.ts:imports",
-      "source": "f:src/scene.ts",
-      "target": "f:src/types.ts",
-      "kind": "imports"
-    },
-    {
-      "id": "f:src/scene.ts->f:src/scene-model.ts:imports",
-      "source": "f:src/scene.ts",
-      "target": "f:src/scene-model.ts",
-      "kind": "imports"
-    },
-    {
-      "id": "f:src/scene.ts->f:src/boundary.ts:imports",
-      "source": "f:src/scene.ts",
-      "target": "f:src/boundary.ts",
-      "kind": "imports"
-    },
-    {
-      "id": "f:src/scene.ts->f:src/walk.ts:imports",
-      "source": "f:src/scene.ts",
-      "target": "f:src/walk.ts",
-      "kind": "imports"
-    },
-    {
-      "id": "f:src/scene.ts->f:src/status.ts:imports",
-      "source": "f:src/scene.ts",
-      "target": "f:src/status.ts",
-      "kind": "imports"
-    },
-    {
-      "id": "f:src/scene.ts->f:src/decompose.ts:imports",
-      "source": "f:src/scene.ts",
-      "target": "f:src/decompose.ts",
-      "kind": "imports"
-    },
-    {
-      "id": "f:src/scene.ts->f:src/evolution.ts:imports",
-      "source": "f:src/scene.ts",
-      "target": "f:src/evolution.ts",
-      "kind": "imports"
-    },
-    {
-      "id": "f:src/scene.ts->f:src/tree.ts:imports",
-      "source": "f:src/scene.ts",
-      "target": "f:src/tree.ts",
       "kind": "imports"
     },
     {
@@ -8095,12 +7732,6 @@
       "kind": "imports"
     },
     {
-      "id": "f:test/promise.test.ts->f:src/scene.ts:imports",
-      "source": "f:test/promise.test.ts",
-      "target": "f:src/scene.ts",
-      "kind": "imports"
-    },
-    {
       "id": "f:test/promise.test.ts->f:src/derive.ts:imports",
       "source": "f:test/promise.test.ts",
       "target": "f:src/derive.ts",
@@ -8317,36 +7948,6 @@
       "kind": "imports"
     },
     {
-      "id": "f:test/render-scene.test.ts->x:node:test:imports",
-      "source": "f:test/render-scene.test.ts",
-      "target": "x:node:test",
-      "kind": "imports"
-    },
-    {
-      "id": "f:test/render-scene.test.ts->x:node:assert/strict:imports",
-      "source": "f:test/render-scene.test.ts",
-      "target": "x:node:assert/strict",
-      "kind": "imports"
-    },
-    {
-      "id": "f:test/render-scene.test.ts->x:node:vm:imports",
-      "source": "f:test/render-scene.test.ts",
-      "target": "x:node:vm",
-      "kind": "imports"
-    },
-    {
-      "id": "f:test/render-scene.test.ts->f:src/render-scene.ts:imports",
-      "source": "f:test/render-scene.test.ts",
-      "target": "f:src/render-scene.ts",
-      "kind": "imports"
-    },
-    {
-      "id": "f:test/render-scene.test.ts->f:src/scene-model.ts:imports",
-      "source": "f:test/render-scene.test.ts",
-      "target": "f:src/scene-model.ts",
-      "kind": "imports"
-    },
-    {
       "id": "f:test/run-named-test.test.ts->x:node:test:imports",
       "source": "f:test/run-named-test.test.ts",
       "target": "x:node:test",
@@ -8392,72 +7993,6 @@
       "id": "f:test/run-named-test.test.ts->f:src/run-named-test.ts:imports",
       "source": "f:test/run-named-test.test.ts",
       "target": "f:src/run-named-test.ts",
-      "kind": "imports"
-    },
-    {
-      "id": "f:test/scene.test.ts->x:node:test:imports",
-      "source": "f:test/scene.test.ts",
-      "target": "x:node:test",
-      "kind": "imports"
-    },
-    {
-      "id": "f:test/scene.test.ts->x:node:assert/strict:imports",
-      "source": "f:test/scene.test.ts",
-      "target": "x:node:assert/strict",
-      "kind": "imports"
-    },
-    {
-      "id": "f:test/scene.test.ts->x:node:child_process:imports",
-      "source": "f:test/scene.test.ts",
-      "target": "x:node:child_process",
-      "kind": "imports"
-    },
-    {
-      "id": "f:test/scene.test.ts->x:node:fs/promises:imports",
-      "source": "f:test/scene.test.ts",
-      "target": "x:node:fs/promises",
-      "kind": "imports"
-    },
-    {
-      "id": "f:test/scene.test.ts->x:node:path:imports",
-      "source": "f:test/scene.test.ts",
-      "target": "x:node:path",
-      "kind": "imports"
-    },
-    {
-      "id": "f:test/scene.test.ts->f:src/scene.ts:imports",
-      "source": "f:test/scene.test.ts",
-      "target": "f:src/scene.ts",
-      "kind": "imports"
-    },
-    {
-      "id": "f:test/scene.test.ts->f:src/tree.ts:imports",
-      "source": "f:test/scene.test.ts",
-      "target": "f:src/tree.ts",
-      "kind": "imports"
-    },
-    {
-      "id": "f:test/scene.test.ts->f:src/derive.ts:imports",
-      "source": "f:test/scene.test.ts",
-      "target": "f:src/derive.ts",
-      "kind": "imports"
-    },
-    {
-      "id": "f:test/scene.test.ts->f:src/status.ts:imports",
-      "source": "f:test/scene.test.ts",
-      "target": "f:src/status.ts",
-      "kind": "imports"
-    },
-    {
-      "id": "f:test/scene.test.ts->f:src/scene-model.ts:imports",
-      "source": "f:test/scene.test.ts",
-      "target": "f:src/scene-model.ts",
-      "kind": "imports"
-    },
-    {
-      "id": "f:test/scene.test.ts->f:test/_helpers.ts:imports",
-      "source": "f:test/scene.test.ts",
-      "target": "f:test/_helpers.ts",
       "kind": "imports"
     },
     {

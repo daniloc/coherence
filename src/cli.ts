@@ -29,9 +29,7 @@ import { atlas } from "./atlas.ts";
 import { contracts } from "./contracts.ts";
 import { whyLint } from "./why-lint.ts";
 import { runPanel } from "./panel.ts";
-import { buildSceneModel, deriveBaseModel, mergeSceneDiff, symbolSetsByFile, diffTally, graphPaths } from "./scene.ts";
-import { fileStats, deriveOutside } from "./tree.ts";
-import { renderScene } from "./render-scene.ts";
+import { deriveOutside } from "./tree.ts";
 import { buildPromiseModel, derivePromiseBase, buildReview, formatLedger, graphFilePaths } from "./promise.ts";
 import { renderContract } from "./render-contract.ts";
 import { readStatus } from "./status.ts";
@@ -56,13 +54,11 @@ const applyIdx = argv.indexOf("--apply");
 const applyPath = applyIdx >= 0 ? argv[applyIdx + 1] : null;
 const sinceIdx = argv.indexOf("--since");
 const since = sinceIdx >= 0 ? argv[sinceIdx + 1] : null;
-const diffIdx = argv.indexOf("--diff");
-const diffRef = diffIdx >= 0 ? argv[diffIdx + 1] : null;
 // `--over` is REPEATABLE on purpose: a decision with three rejected alternatives is
 // a better record than one with a comma-joined string nobody can split reliably.
 // `--could-be` is repeatable for the same reason as `--over`, and for one more: the
 // count of candidates IS the signal. One candidate is a hunch dressed as an inquiry.
-const VALUED = new Set(["--since", "--apply", "--diff", "--over", "--because", "--agent", "--job", "--file", "--for", "--session", "--branch",
+const VALUED = new Set(["--since", "--apply", "--over", "--because", "--agent", "--job", "--file", "--for", "--session", "--branch",
   "--could-be", "--discriminated-by", "--as",
   "--value", "--baseline", "--threshold", "--unit", "--why", "--raise-cap", "--symbol", "--outcome"]);
 const many = (flag: string): string[] => argv.reduce<string[]>((acc, a, i) => (a === flag && argv[i + 1] !== undefined ? [...acc, argv[i + 1]] : acc), []);
@@ -514,47 +510,10 @@ if (cmd === "graph") {
   // (`.coherence/status.json`). Watch mode re-runs the fast tier on change; --once
   // prints a static snapshot (also what non-TTY stdout gets).
   await exit(await runPanel(cfg, { watch: !argv.includes("--no-watch"), once: argv.includes("--once") }));
-} else if (cmd === "scene") {
-  // The persistent spatial BODY: derive the SceneModel (append-only geography, honest
-  // mass, live light/heat) and render one self-contained _scene.html; also emit
-  // scene.json for agents/tools. No --check — the scene embeds live light/heat, so it
-  // is a dashboard, always regenerated (the STABLE part, the lots, persists in
-  // <outputDir>/scene-layout.json, which is meant to be committed).
-  //   --diff <ref>: a REVIEW scene — derive the base tree's model from a throwaway git
-  //   worktree and merge, so change renders against the SAME geography (added/removed/
-  //   changed against the base ref) instead of as text.
-  const graph = await buildGraph(cfg);
-  // Head content stats (tower heights) read ONCE and reused for both the model and the diff.
-  const headStats = await fileStats(cfg, graph.nodes.filter((n) => n.kind === "file"));
-  let model = await buildSceneModel(cfg, graph, await readStatus(cfg), headStats);
-  let tail = "";
-  if (diffRef) {
-    let base;
-    try {
-      base = await deriveBaseModel(cfg, diffRef);
-    } catch (e) {
-      console.error(`scene --diff: ${(e as Error).message}`);
-      await exit(1);
-    }
-    // Count the change OUTSIDE the graph (scripts/CI/docs) BEFORE the merge, then thread it
-    // in — the map never silently truncates.
-    const outside = deriveOutside(cfg, base!.ref, graphPaths(model, base!.model));
-    const headEnd = { syms: symbolSetsByFile(graph), stats: headStats };
-    model = mergeSceneDiff(model, base!.model, headEnd, base!.end, base!.ref, outside);
-    const t = diffTally(model);
-    const o = outside.added + outside.removed + outside.changed;
-    const outTail = o ? `, ${o} outside the map` : "";
-    tail = ` (diff vs ${base!.ref}: +${t.added} −${t.removed} ~${t.changed} files${outTail})`;
-  }
-  await writeOutputs();
-  await writeFile(out("scene.json"), JSON.stringify(model, null, 2));
-  await writeFile(out("_scene.html"), renderScene(model, stamp));
-  console.log(`scene: ${model.components.length} lot(s) on a ${model.grid.cols}×${model.grid.rows} grid → _scene.html${tail}`);
-  await exit(0);
 } else if (cmd === "contract") {
   // The PROMISE GRAPH: derive the PromiseModel (declared zones, graded gates, the reliance
   // double-entry) and render one self-contained _contract.html; also emit promise.json for
-  // agents/tools. Like the scene it embeds live grades, so it is always regenerated (no --check).
+  // agents/tools. It embeds live grades, so it is always regenerated (no --check).
   const graph = await buildGraph(cfg);
   const model = await buildPromiseModel(cfg, graph, await readStatus(cfg));
   await writeOutputs();

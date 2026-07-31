@@ -14,6 +14,44 @@ evidence inside that record.
 
 ---
 
+## Unreleased — the scene is evicted; its shared organs move to `src/tree.ts`
+
+`coherence scene` is gone: `src/scene.ts` (532 lines), `src/render-scene.ts`
+(1,241), `src/scene-model.ts` (134), their two suites (46 tests), the `scene`
+registry entry and dispatch branch, and `public/_scene.html` / `scene.json`.
+This is an eviction by **use-evidence, not judgement of the idea**: zero
+invocations in the only consuming project, zero journal citations in either
+repo — and the decisive fact that the design's own load-bearing mechanism,
+STABLE GEOGRAPHY ("familiarity is the mechanism — change is perceived only
+against a place that otherwise holds still"), rode on an append-only
+`scene-layout.json` that was "meant to be committed" and **never existed at any
+commit**. The mechanism the whole design rests on never once operated, and
+nobody noticed.
+
+Two things are worth resurrecting knowingly, so they are recorded here rather
+than lost with the files:
+
+- **The perceive-vs-read doctrine.** The scene's premise — a project should have
+  a persistent spatial BODY a human *perceives* rather than reads, with honest
+  mass (tower height = line count), an amber claimed wireframe, gate materials
+  for the enforcement ladder, and change rendered against stable geography — is
+  a coherent, real distinction. It failed on adoption, not on soundness.
+- **The no-heat-glow standing audit decision** (lived in
+  `render-scene.test.ts`): *"the ambient heat underglow is gone — heat is a
+  number, not a wash"* — asserting no element references `url(#heat)`, no
+  `radialGradient` def, no heat `ellipse` beneath any plate, while heat still
+  surfaces as a labelled datum on the card. The principle survives the test:
+  a temperature is a datum, never ambience.
+
+What the scene shared is now owned by **`src/tree.ts`**: `fileStats`/`FileStat`
+(the one on-disk measurement mass/economy/contract read), `claimedFilePaths`
+(the one claim→file blessing rule), `withBaseWorktree` (throwaway base-tree
+acquisition with the subdirectory-root alignment rule), and
+`outsideTally`/`deriveOutside` (the never-silently-truncate tally). A command's
+utilities must outlive the command.
+
+---
+
 ## v0.22.0 — a rename is not growth
 
 The `mass` ratchet said **"the movement gained parts nobody named"** about a

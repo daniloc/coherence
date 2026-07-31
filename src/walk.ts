@@ -25,7 +25,7 @@ export function parseSpec(text: string): ParsedSpec {
   for (; i < lines.length; i++) { const m = /^#\s+(.+?)\s*$/.exec(lines[i]); if (m) { name = m[1]; i++; break; } }
   // The intent is the first PARAGRAPH, not the first line. Specs are hard-wrapped at 80
   // columns, so reading one line chopped every intent mid-clause — and that text is what
-  // the generated CLAUDE.md, the outline, the panel and the scene all show. `intentLine`
+  // the generated CLAUDE.md, the outline and the panel all show. `intentLine`
   // is the LAST line consumed, because the prose scan below starts after it.
   for (; i < lines.length; i++) {
     const l = lines[i].trim();
@@ -43,7 +43,7 @@ export function parseSpec(text: string): ParsedSpec {
   const claims: string[] = [];
   // A claim may carry a trailing KIND — `... via test "t" [structural]`. It is stripped
   // HERE, at the single parse site, so every downstream consumer (parseBoundary, the
-  // coverage ratchet, panel/scene/structural/promise, the status record's identity)
+  // coverage ratchet, panel/structural/promise, the status record's identity)
   // sees the exact string it saw before kinds existed. The precedent is the `crossing`
   // clause in src/boundary.ts: a purely declarative annotation must not leak into claim
   // identity, or annotating an existing claim orphans its history. Stripping it inside

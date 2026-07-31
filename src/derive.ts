@@ -85,7 +85,7 @@ export async function buildGraph(cfg: Config): Promise<Graph> {
         // extension (`./data`, bundler-style), or name a directory (`./data` →
         // data/index.ts). Try all three shapes — extensionless projects otherwise
         // derive ZERO internal import edges, silently starving every consumer of
-        // the structure graph (decompose hubs, scene links).
+        // the structure graph (decompose hubs, the contract's reliances).
         const candidates = [target, ...lang.exts.map((e) => `${target}.${e}`), ...lang.exts.map((e) => join(target, `index.${e}`))];
         const hit = candidates.find((t) => fileIds.has(t));
         if (hit) link(fileIds.get(f)!, fileIds.get(hit)!, "imports");

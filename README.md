@@ -578,7 +578,7 @@ A claim carries its kind as a trailing `[bracket]`:
 The suffix is stripped by the **parser** (`src/walk.ts`), at the single site where a
 spec becomes claims — so `claims` holds the bare text and the kind rides alongside in
 `claimKinds`. Every consumer downstream (`parseBoundary`, the coverage ratchet, the
-panel, the scene, the promise graph, and the status record's identity) sees the string
+panel, the promise graph, and the status record's identity) sees the string
 it saw in 0.10.0. **Annotating an existing claim with a kind does not orphan its
 history**, exactly as the `crossing` clause does not.
 
@@ -1374,7 +1374,7 @@ both is exactly what drifted.
      edit by hand — add the command to the registry and re-run. Everything OUTSIDE these
      markers is authored prose. -->
 
-_38 commands. This index is derived from the registry the dispatch is checked
+_37 commands. This index is derived from the registry the dispatch is checked
 against (`test/commands.test.ts` enumerates the live `cmd === …` chain and asserts the two
 sets are equal), so it cannot fall behind the CLI. The reasoning for the commands that have
 any is in **In detail** below — that half is authored, and does not cover all of them._
@@ -1406,7 +1406,6 @@ any is in **In detail** below — that half is authored, and does not cover all 
 **Perceive the project**
 
 - `coherence panel [--no-watch | --once]` — live TUI over the graph + the status record
-- `coherence scene [--diff <ref>]` — the persistent isometric worksite (`_scene.html`); `--diff` renders a review against `<ref>`
 - `coherence contract` — the promise graph — graded gates + the reliance ledger (`_contract.html`)
 - `coherence review <ref>` — diff the contract against `<ref>` and print the event ledger
 - `coherence context [<file>...] [--symbol <name>] [--changed|--staged]` — emit the smallest graph-addressed context packet for a file, symbol, or current change
@@ -1481,17 +1480,6 @@ any is in **In detail** below — that half is authored, and does not cover all 
   the `## why` pager). Watch mode (default on a TTY) re-runs the scoped fast tier on
   file change and streams what flipped. `--once` prints a static snapshot (also what a
   non-TTY stdout gets).
-- `coherence scene` — the **perceptual layer**: render the project as a persistent
-  isometric worksite (`_scene.html` + a machine-readable `scene.json`) so a human
-  *perceives* the codebase as a familiar place rather than reading it as propositions.
-  Mass maps to code reality (files/symbols), the amber wireframe is the claimed surface,
-  a gate's material encodes its enforcement tier, and light/heat come live from the
-  status record + git churn. Its soul is **stable geography**: lot positions live in
-  `<outputDir>/scene-layout.json`, which is **append-only** — a component, once placed,
-  never moves; a new one takes the next vacant lot on a fixed outward spiral; a removed
-  one's lot stays reserved forever. **Commit `scene-layout.json`** — it is the shared
-  memory of the place, and the whole point is that change is perceived against a scene
-  that otherwise holds still. Always regenerates (no `--check`): the scene is a dashboard.
 - `coherence log [<refA> [<refB>]]` — the **temporal ledger**: the structural diff of
   the invariant/boundary set between two refs (default `HEAD` → working tree). The graph
   is a snapshot; this is the transaction view — which `## invariants` and `boundary`
@@ -1630,8 +1618,8 @@ any is in **In detail** below — that half is authored, and does not cover all 
   concerns across boundaries; it also decoheres by accumulating, one defensible edit at
   a time, which is exactly why the
   aggregate needs a pin rather than a review. Dimensions, each an addressable baseline key:
-  `lines|total` and `lines|<component>` (from the same on-disk read the scene's towers
-  use), `files|total`, `symbols|total`, `deps|direct` / `deps|dev` (package.json) and
+  `lines|total` and `lines|<component>` (from the shared on-disk read in `src/tree.ts`
+  every measurer uses), `files|total`, `symbols|total`, `deps|direct` / `deps|dev` (package.json) and
   `deps|transitive` (the npm lockfile's `packages` map minus its root entry), plus
   `measure|<key>` for each probe declared in `config.mass.measures` — the harness runs the
   command from the project root and reads the **last numeric token** of its stdout, so a

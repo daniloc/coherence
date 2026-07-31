@@ -40,7 +40,7 @@ _works when:_
 - boundary "a skipped run never clobbers an oracle's recorded verdict" at recordVerify via guard "merge — a skip never clobbers a real verdict; the old verdict rides through with its own stamp"
 - boundary "a named oracle that no test runs cannot pass" at runNamedTest via guard "runner contract — a name that exists nowhere exits nonzero (the vanished oracle cannot pass)"
 
-_files:_ `atlas.ts`, `boundary.ts`, `calibration.ts`, `cli.ts`, `commands.ts`, `config.ts`, `context.ts`, `contracts.ts`, `conventions.ts`, `decisions.ts`, `decompose.ts`, `derive.ts`, `drift.ts`, `economy.ts`, `evolution.ts`, `hook-cli.ts`, `hooks.ts`, `lint-sinks.ts`, `mass.ts`, `novelty.ts`, `observed.ts`, `onboard.ts`, `oracle-domain.ts`, `panel.ts`, `parity.ts`, `phrasebook.ts`, `premise.ts`, `promise-model.ts`, `promise.ts`, `prose.ts`, `raise.ts`, `read-trace.ts`, `redundancy.ts`, `render-claude.ts`, `render-contract.ts`, `render-outline.ts`, `render-overview.ts`, `render-scene.ts`, `run-named-test.ts`, `scaffold.ts`, `scene-model.ts`, `scene.ts`, `sidecar.ts`, `signal.ts`, `status.ts`, `structural.ts`, `test-batch.ts`, `tree.ts`, `types.ts`, `verify.ts`, `walk.ts`, `why-lint.ts`
+_files:_ `atlas.ts`, `boundary.ts`, `calibration.ts`, `cli.ts`, `commands.ts`, `config.ts`, `context.ts`, `contracts.ts`, `conventions.ts`, `decisions.ts`, `decompose.ts`, `derive.ts`, `drift.ts`, `economy.ts`, `evolution.ts`, `hook-cli.ts`, `hooks.ts`, `lint-sinks.ts`, `mass.ts`, `novelty.ts`, `observed.ts`, `onboard.ts`, `oracle-domain.ts`, `panel.ts`, `parity.ts`, `phrasebook.ts`, `premise.ts`, `promise-model.ts`, `promise.ts`, `prose.ts`, `raise.ts`, `read-trace.ts`, `redundancy.ts`, `render-claude.ts`, `render-contract.ts`, `render-outline.ts`, `render-overview.ts`, `run-named-test.ts`, `scaffold.ts`, `sidecar.ts`, `signal.ts`, `status.ts`, `structural.ts`, `test-batch.ts`, `tree.ts`, `types.ts`, `verify.ts`, `walk.ts`, `why-lint.ts`
 
 ### Source adapters  `src/adapters`
 Translate language syntax and platform configuration into the common graph vocabulary consumed by the harness core.
@@ -65,7 +65,7 @@ _works when:_
 - decisions.test.ts exists at this node
 - commands.test.ts exists at this node
 
-_files:_ `_helpers.ts`, `atlas.test.ts`, `calibration.test.ts`, `claude.test.ts`, `commands.test.ts`, `conjecture.test.ts`, `context.test.ts`, `contracts.test.ts`, `decisions.test.ts`, `decompose.test.ts`, `dictionary.test.ts`, `economy.test.ts`, `evolution.test.ts`, `kinds.test.ts`, `mass.test.ts`, `novelty.test.ts`, `observed.test.ts`, `oracle.test.ts`, `panel.test.ts`, `parity.test.ts`, `parse.test.ts`, `phrasebook.test.ts`, `premise.test.ts`, `promise.test.ts`, `prose.test.ts`, `python-oracle.test.ts`, `raise.test.ts`, `redundancy.test.ts`, `render-contract.test.ts`, `render-scene.test.ts`, `run-named-test.test.ts`, `scene.test.ts`, `signal.test.ts`, `sinks.test.ts`, `status.test.ts`, `structural.test.ts`, `test-batch.test.ts`, `verify.test.ts`, `why-lint.test.ts`
+_files:_ `_helpers.ts`, `atlas.test.ts`, `calibration.test.ts`, `claude.test.ts`, `commands.test.ts`, `conjecture.test.ts`, `context.test.ts`, `contracts.test.ts`, `decisions.test.ts`, `decompose.test.ts`, `dictionary.test.ts`, `economy.test.ts`, `evolution.test.ts`, `kinds.test.ts`, `mass.test.ts`, `novelty.test.ts`, `observed.test.ts`, `oracle.test.ts`, `panel.test.ts`, `parity.test.ts`, `parse.test.ts`, `phrasebook.test.ts`, `premise.test.ts`, `promise.test.ts`, `prose.test.ts`, `python-oracle.test.ts`, `raise.test.ts`, `redundancy.test.ts`, `render-contract.test.ts`, `run-named-test.test.ts`, `signal.test.ts`, `sinks.test.ts`, `status.test.ts`, `structural.test.ts`, `test-batch.test.ts`, `verify.test.ts`, `why-lint.test.ts`
 
 ## Structure
 
@@ -113,11 +113,8 @@ coherence/
 │  ├─ render-contract.ts
 │  ├─ render-outline.ts
 │  ├─ render-overview.ts
-│  ├─ render-scene.ts
 │  ├─ run-named-test.ts
 │  ├─ scaffold.ts
-│  ├─ scene-model.ts
-│  ├─ scene.ts
 │  ├─ sidecar.ts
 │  ├─ signal.ts
 │  ├─ status.ts
@@ -158,9 +155,7 @@ coherence/
    ├─ raise.test.ts
    ├─ redundancy.test.ts
    ├─ render-contract.test.ts
-   ├─ render-scene.test.ts
    ├─ run-named-test.test.ts
-   ├─ scene.test.ts
    ├─ signal.test.ts
    ├─ sinks.test.ts
    ├─ status.test.ts

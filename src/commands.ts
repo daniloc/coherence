@@ -139,7 +139,6 @@ export const COMMANDS: Command[] = [
 
   // ── perceive ─────────────────────────────────────────────────────────────────────────
   { name: "panel", group: "perceive", usage: "[--no-watch | --once]", summary: "live TUI over the graph + the status record" },
-  { name: "scene", group: "perceive", usage: "[--diff <ref>]", summary: "the persistent isometric worksite (`_scene.html`); `--diff` renders a review against `<ref>`" },
   { name: "contract", group: "perceive", summary: "the promise graph — graded gates + the reliance ledger (`_contract.html`)" },
   { name: "review", group: "perceive", usage: "<ref>", summary: "diff the contract against `<ref>` and print the event ledger" },
   {

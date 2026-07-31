@@ -56,7 +56,7 @@ export function _resetEvolutionMemo(): void { logMemo.clear(); deltaMemo.clear()
 
 /** EVOLUTION graph, raw: every non-merge commit newest→oldest with its touched files
  *  and subject. Shared by decompose (all-time coupling), drift (recent trajectory),
- *  scene (heat) and mass (net-LOC over time). */
+ *  mass (net-LOC over time), economy, and atlas/verify (churn). */
 export function readCommitLog(cfg: Config, limit: number): Commit[] {
   const key = memoKey(cfg, limit);
   const hit = logMemo.get(key);

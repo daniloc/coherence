@@ -68,7 +68,7 @@ declare const CLAIM_KEY_BRAND: unique symbol;
 export type ClaimKey = string & { readonly [CLAIM_KEY_BRAND]: true };
 
 /** The ONE record-lookup key EVERY consumer of `status.verify.claims` uses (store AND read)
- *  — the scene, the promise graph, the panel, the merge, and verify's decoration filter —
+ *  — the promise graph, the panel, the merge, and verify's decoration filter —
  *  so a pre-crossing record matches a post-crossing claim and vice versa. Returns the
  *  branded `ClaimKey`: there is no other way to mint one. */
 export const claimKey = (node: string, claim: string): ClaimKey =>

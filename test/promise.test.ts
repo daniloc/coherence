@@ -16,7 +16,6 @@ import {
   assemblePromiseModel, deriveGates, residenceOf, readZones, promiseDiff, buildReview, formatLedger,
   derivePromiseBase, buildPromiseModel,
 } from "../src/promise.ts";
-import { deriveBaseModel, deriveGates as deriveSceneGates } from "../src/scene.ts";
 import { buildGraph } from "../src/derive.ts";
 import type { PromiseModel, PromiseComponent, PromiseGate, Reliance, Zone } from "../src/promise-model.ts";
 import type { ClaimRecord, StatusRecord } from "../src/status.ts";
@@ -311,10 +310,6 @@ test("normalization — the crossing clause is stripped from record identity; an
   const recBy2 = new Map<string, ClaimRecord>([[claimKey("N", crossed), rec("N", crossed, "pass", { commit: "head111" })]]);
   const g2 = deriveGates([bare], "N", recBy2, "head111");
   assert.equal(g2[0].grade, "A", "post-crossing record matches the pre-crossing claim");
-  // The scene's gates read through the same key — no U/scaffold regression on annotation.
-  const sg = deriveSceneGates([crossed], "N", recBy, "head111");
-  assert.equal(sg[0].verdict, "pass", "the scene's deriveGates shares the normalized lookup");
-  assert.equal(sg[0].material, "steel");
 });
 
 test("diff — a pure crossing BACKFILL yields placed (and possibly sealed/rezoned), never promoted/demoted", () => {
@@ -347,7 +342,7 @@ test("promote reason — U→D is honest: the claim parses again, but carries no
 
 // ── the base worktree when the coherence root is a git SUBDIRECTORY ───────────────────
 
-test("worktree (IO) — a coherence root that is a SUBDIRECTORY of the git repo derives base dirs aligned with head (promise review AND scene diff)", async () => {
+test("worktree (IO) — a coherence root that is a SUBDIRECTORY of the git repo derives base dirs aligned with head", async () => {
   // The repo top-level holds no config; the coherence root is repo/app. The base worktree
   // materializes the WHOLE repo, so the base config must load from <worktree>/app — loading
   // from the top would prefix every base dir with "app/" and turn EVERY review into a total
@@ -373,10 +368,6 @@ test("worktree (IO) — a coherence root that is a SUBDIRECTORY of the git repo 
     const pbase = await derivePromiseBase(c, "HEAD", EMPTY);
     assert.deepEqual(pbase.model.components.map((x) => x.dir), [".", "sub"], "base dirs align with head");
     assert.deepEqual(promiseDiff(headModel, pbase.model), [], "a no-change review is steady state, not a razed/arrived storm");
-
-    // SCENE base: the same alignment through the same shared helper.
-    const sbase = await deriveBaseModel(c, "HEAD");
-    assert.deepEqual(sbase.model.components.map((x) => x.dir).sort(), [".", "sub"], "scene base dirs align too");
   } finally { await cleanup(root); }
 });
 

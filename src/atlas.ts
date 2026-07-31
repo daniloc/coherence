@@ -36,9 +36,9 @@ const pad = (s: unknown, n: number) => String(s).padEnd(n);
 // commits touch are the same grade and completely different risks.
 //
 // HEAT IS A TEMPERATURE, NOT A CORRECTNESS FACT, and it therefore grades NOTHING: it is
-// absent from `--check` entirely (drift/dangling/over-claim are the only verdicts), it is
-// absent from the scene's visuals, and a crossing whose heat cannot be measured renders
-// `—`. See the `--check` block at the bottom of this file.
+// absent from `--check` entirely (drift/dangling/over-claim are the only verdicts), and a
+// crossing whose heat cannot be measured renders `—`. See the `--check` block at the
+// bottom of this file.
 
 const BARS = "▁▂▃▄▅▆▇█";
 
