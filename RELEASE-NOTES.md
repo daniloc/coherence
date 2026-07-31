@@ -14,6 +14,71 @@ evidence inside that record.
 
 ---
 
+## v0.18.0 — the harness begins to account for work, not just trust
+
+Coherence has always been flux accounting for **trust**: where the untrusted
+becomes verified, and through which anchored chokepoint. This release starts the
+other ledger — **work**: what a project costs to keep, continuously. The framing
+is a mechanical watch. Every complication in a movement is paid for in torque,
+and the watchmaker feels the amplitude drop; software has the same physics and
+none of the perception, because the invoice arrives as velocity quietly decaying
+instead of a watch that stops. The instruments in this release exist to make the
+dissipation perceptible.
+
+### `src/evolution.ts` — the EVOLUTION graph, spelled once
+
+The same git-history derivation was spelled three times: `decompose`'s commit
+log, `drift`'s per-commit deltas, `scene`'s inline churn loop with its own bare
+`200`. That is verbatim the finding the `redundancy` advisory reports about
+other people's code, fixed the way the advisory prescribes: one home, one
+spelling of `BULK` and the churn window, all consumers derived. Deliberately a
+**memo, not a cache** — the duplication was a redundancy problem, not a latency
+one, and a persisted churn artifact keyed by HEAD is perpetual diff noise in
+exchange for a git call that costs milliseconds (d-9d5776a5). The new pure
+derivations (`fileChurn`, `componentChurn`, `locDeltaSeries`) take a commit
+array, so the math tests without git and the git plumbing tests against a real
+throwaway repo.
+
+### `coherence mass` — how much machine there is, pinned
+
+The fourth ratchet, and the first one that counts the thing a reader of an
+agent-built repo asks first: how much is there NOW, and did it grow? Dimensions:
+`lines|total` and `lines|<component>`, `files|total`, `symbols|total`,
+`deps|direct` / `deps|dev` / `deps|transitive`, and `measure|<key>` for whatever
+the project can measure about itself (bundle bytes, table counts) via
+config-declared probe commands. Baseline in `<outputDir>/mass-baseline.json`,
+per-key `tolerance`, the conventions mechanics exactly: 0 held · 1 grew · 2 no
+baseline.
+
+Three rules carry the design:
+
+- **Absence is not emptiness.** No manifest means the dimension is *omitted*,
+  never zero — "the lockfile disappeared" must not read as "zero transitive
+  deps".
+- **An unmeasurable measure fails closed.** A probe that exits nonzero or prints
+  no number fails `--check` loudly; treating it as 0 would make a broken bundle
+  probe read as a heroic size reduction.
+- **The growth failure prescribes `coherence decide`.** The ratchet cannot know
+  whether 460 new lines bought a feature or an accident; the only party who can
+  say is the one who wrote them, this run. The gate's message is not "justify
+  this to me" — it is "name what the new mass buys, then re-pin". No part enters
+  the movement without naming its complication (d-97f6f9ef).
+
+Excursions become journal questions only under `--raise`, through the standard
+finding machinery — mass has a pin, not a band, and an implicit write on a
+report run is the surprising-write failure `raise.ts` exists to prevent
+(d-9492b164). The report ends with an 8-bucket net-LOC spark whose caption names
+its universe — ALL tracked files, not just the graph's — because the first
+dogfood run of `mass` on this very repo surprised us by ~4k lines and the
+discriminating test showed the two instruments count different file sets
+(d-84e3e34f, opened and resolved in one session; the journal has the evidence).
+
+493 tests (was 454). decompose/drift/scene render output byte-identical across
+the refactor. Next: per-claim holding cost in `verify` and per-crossing heat on
+the atlas — the same ledger, pointed at the claims themselves.
+
+---
+
 ## v0.17.0 — the twenty-minute full tier is retired, not made optional
 
 This release **removes a default**. Until now `verify`'s executable tier shelled
