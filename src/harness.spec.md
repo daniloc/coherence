@@ -14,6 +14,7 @@ rendering, and journaling remain independently addressable modules beneath this 
 - cached decisions expose structurally expired premises
 - predicted context closure is calibrated against observed reads and outcomes
 - reviewed risk sites survive relocation but never duplication
+- pinned mass follows a value-conserving rename but never absorbs growth
 - a claim goes green only on positive evidence its oracle ran
 - a vanished oracle reds its claim, never green-by-absence
 - a declared invariant unanchored by any boundary fails coverage
@@ -23,6 +24,7 @@ rendering, and journaling remain independently addressable modules beneath this 
 
 ## refutations
 
+- pinned mass follows a value-conserving rename but never absorbs growth: mutated `reconcileMass` in BOTH directions (2026-07-31) and full verify reds the claim by name each time. (a) `const hit = undefined` — the pre-fix behaviour where a rename never absorbs: `claims: 27 · 26 green · 1 red`, the H1-rename phase failing on strictEqual (a one-line spec rename read as growth again). (b) dropped the VALUE from the move-invariant address so any same-family vanished pin absorbs any new name — the laundering direction: same `27 · 26 green · 1 red`, the renamed-AND-grown phase failing on match (the growth rode in under the rename and the guard caught the missing NEW-dimension report). Restored, back to 27/27. As with the sinks reconciler, (b) is the direction that matters: a rename-forgiver that cannot fail is a growth ratchet that deleted itself.
 - reviewed risk sites survive relocation but never duplication: mutated `reconcile` in BOTH directions and the guard reds each time. (a) `const from = undefined` — the pre-fix behaviour where the path is part of a site's identity: `claims: 23 · 22 green · 1 red`, the moved file reported as new risk. (b) absorb from every baselined address instead of only vanished ones, without consuming the pool — plain content-addressing: same `1 red`, the copied sink waved through. Restored, back to 23/23. The loosening direction is the one that matters: a fix for a false alarm that cannot fail (b) is a fix that deleted the ratchet.
 - cached decisions expose structurally expired premises: gutted `auditPremiseLeases` to return `{entries: [], expired: [], checked: 0}` unconditionally — the SAME mutation that left the tree "✓ coherent" while the claim carried no oracle. With the guard wired it reds by name: `claims: 22 · 21 green · 1 red`, `✗ 1 coherence failure(s)`. Restored, back to 22/22. The other four claims now execute (137ms, 135ms and siblings in the holding-cost block) but have not yet been individually mutated — that is the next increment, not a claim made here.
 - predicted context closure is calibrated against observed reads and outcomes: hardcoded `calibrationStats`' defect count to `defects: 0` (audit M1, re-run 2026-07-31) -> full verify RED by name, `claims: 23 · 22 green · 1 red`, the calibration guard failing on strictEqual. Restored, back to green.
@@ -47,6 +49,7 @@ rendering, and journaling remain independently addressable modules beneath this 
 - boundary "cached decisions expose structurally expired premises" at auditPremiseLeases via guard "audit — retracted decisions disappear and only broken strong leases fail a check"
 - boundary "predicted context closure is calibrated against observed reads and outcomes" at calibrate via guard "calibration reports coverage, outside reads, and defect rates by prediction misses"
 - boundary "reviewed risk sites survive relocation but never duplication" at reconcile via guard "sinks — a moved file keeps its baselined identity and a genuinely new site still fails"
+- boundary "pinned mass follows a value-conserving rename but never absorbs growth" at reconcileMass via guard "mass — a renamed component keeps its pin; growth and novelty are never absorbed"
 - boundary "a claim goes green only on positive evidence its oracle ran" at execNamedTest via guard "testMatch — a runner exiting 0 with no matching output FAILS (the renamed-test trap)"
 - boundary "a vanished oracle reds its claim, never green-by-absence" at resolveFromBatch via guard "match — ZERO matching tests is its OWN state: the vanished oracle, named as such"
 - boundary "a declared invariant unanchored by any boundary fails coverage" at runVerify via guard "RATCHET — a declared invariant with no anchoring boundary fails coverage"
@@ -82,6 +85,14 @@ premises do — a refactor then spends a reviewer's attention on sites nobody to
 attention spent on false alarms is how a real one gets waved through. Relocation changes
 where a reviewed site lives; duplication changes how much unreviewed surface exists, and
 only the second is news.
+
+**pinned mass follows a value-conserving rename but never absorbs growth.** A mass
+dimension's key embeds a name someone chose — a spec H1, a measure's config key — so a
+rename re-addresses the pin, and a ratchet that reads its own re-addressing as "gained
+parts nobody named" prints a lie beside the unchanged total that refutes it (measured:
+one H1 edit, 35 lines relabeled, zero gained, gate red). The repair must stay
+count-conserving: only a vanished pin with the same family, unit and exact value can
+absorb a new name, or growth and novelty would ride in under renames.
 
 **a claim goes green only on positive evidence its oracle ran.** The verifier's whole
 authority rests on this one property, and until now no claim cited it: an audit deleted

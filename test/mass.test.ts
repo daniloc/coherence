@@ -12,7 +12,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { join } from "node:path";
-import { mass, excursions, lastNumber, massFindings, structuralDims, type MassDim } from "../src/mass.ts";
+import { mass, excursions, lastNumber, massFindings, structuralDims, reconcileMass, type MassDim } from "../src/mass.ts";
+import { buildGraph } from "../src/derive.ts";
 import type { StatusRecord } from "../src/status.ts";
 import { tmpProject, cleanup, cfg, comp, fileNode, sym, graph, runCaptured } from "./_helpers.ts";
 import type { Config } from "../src/types.ts";
@@ -57,6 +58,51 @@ test("massFindings — the subject is the ADDRESSABLE KEY and carries no magnitu
   assert.doesNotMatch(f.subject, /\d/, "a number in the subject re-keys the question every run");
   assert.match(f.observation, /100 → 900/);
   assert.ok(f.discriminatedBy.includes("coherence decide"), "a finding must name the check that settles it");
+});
+
+// ── rename reconciliation (the pure layer) ───────────────────────────────────────────────
+//
+// A dimension key embeds a NAME someone chose (a spec H1, a measure's config key), so a
+// rename re-addresses the pin — and before reconcileMass, a one-line H1 edit failed the
+// ratchet with "gained parts nobody named" while the total sat unchanged two lines above.
+// The reconciler is lint-sinks's, translated: matched disappearance, count-conserving,
+// with the move-invariant address being family + unit + EXACT value.
+
+const dim = (key: string, value: number, unit = "lines"): MassDim => ({ key, value, unit });
+
+test("reconcileMass — a renamed dimension with conserved mass inherits its pin, and nothing fails", () => {
+  const base = [dim("lines|ids", 35), dim("lines|total", 100)];
+  const dims = [dim("lines|identifiers", 35), dim("lines|total", 100)];
+  const { renamed, base: eff } = reconcileMass(dims, base);
+  assert.deepEqual(renamed, [{ from: "lines|ids", to: "lines|identifiers", value: 35, unit: "lines" }]);
+  assert.deepEqual(excursions(dims, eff, {}), [], "nothing was gained, so nothing may fail");
+});
+
+test("reconcileMass — a rename that ALSO changed value absorbs nothing; the growth still fails", () => {
+  const { renamed, base: eff } = reconcileMass([dim("lines|identifiers", 40)], [dim("lines|ids", 35)]);
+  assert.deepEqual(renamed, [], "only a value-conserving rename inherits a pin");
+  const exc = excursions([dim("lines|identifiers", 40)], eff, {});
+  assert.equal(exc.length, 1);
+  assert.equal(exc[0].baseline, null, "renamed-and-grown is indistinguishable from new, and fails as such");
+});
+
+test("reconcileMass is count-conserving — two vanished pins absorb two renames, the third is new", () => {
+  const base = [dim("lines|a", 3), dim("lines|b", 3)];
+  const dims = [dim("lines|x", 3), dim("lines|y", 3), dim("lines|z", 3)];
+  const { renamed, base: eff } = reconcileMass(dims, base);
+  assert.equal(renamed.length, 2);
+  assert.deepEqual(excursions(dims, eff, {}).map((e) => e.key), ["lines|z"], "the surface gained one dimension and the ratchet must say so");
+});
+
+test("reconcileMass — family and unit are part of the address; a value coincidence across them never pairs", () => {
+  const base = [dim("lines|ids", 12, "lines"), dim("measure|bundle", 12, "kB")];
+  const dims = [dim("files|extra", 12, "files"), dim("measure|tables", 12, "tables")];
+  assert.deepEqual(reconcileMass(dims, base).renamed, [], "12 lines is not 12 files and kB are not tables");
+});
+
+test("reconcileMass — an unchanged, still-pinned dimension is untouched, and no baseline passes through as-is", () => {
+  const base = [dim("lines|a", 3)];
+  assert.deepEqual(reconcileMass([dim("lines|a", 3)], base), { renamed: [], base });
 });
 
 // ── report ───────────────────────────────────────────────────────────────────────────────
@@ -222,6 +268,75 @@ test("a baselined key that vanished prints as droppable and never fails (the con
   const { code, out } = await runCaptured(() => mass(c, shrunk, "check"));
   assert.equal(code, 0, "shrinking must never fail the ratchet");
   assert.match(out, /lines\|B \(1\) — gone from the project; drop from baseline/);
+});
+
+// ── rename reconciliation (the glue layer, over a real tree) ─────────────────────────────
+
+test("mass — a renamed component keeps its pin; growth and novelty are never absorbed", async (t) => {
+  // The measured scenario, end to end: component labels come from the spec's H1, so a
+  // one-line H1 edit re-addresses `lines|<component>` while not one line of code moves.
+  const root = await tmpProject({
+    "ids/ids.spec.md": "# ids\n\nIdentifier utilities.\n",
+    "ids/util.ts": "export const a = 1;\nconst b = 2;\nconst c = 3;\n",
+    "other/other.spec.md": "# other\n\nOther stuff.\n",
+    "other/o.ts": "export const d = 4;\n",
+  });
+  t.after(() => cleanup(root));
+  const c = cfg(root);
+  await runCaptured(async () => mass(c, await buildGraph(c), "update"));
+
+  // 1. THE RENAME. Same files, same 3 lines, new H1 — the ratchet must hold and say so.
+  await writeFile(join(root, "ids/ids.spec.md"), "# identifiers\n\nIdentifier utilities.\n");
+  const renamedRun = await runCaptured(async () => mass(c, await buildGraph(c), "check"));
+  assert.equal(renamedRun.code, 0, "a rename is not growth and must not fail a ratchet");
+  assert.match(renamedRun.out, /1 dimension\(s\) RENAMED — the same pinned mass under a new name, not growth/);
+  assert.match(renamedRun.out, /lines\|ids → lines\|identifiers\s+\(3 lines conserved\)/);
+  assert.doesNotMatch(renamedRun.err, /gained parts nobody named/, "the exact lie this reconciler exists to retire");
+
+  // 2. RENAMED AND GROWN. The vanished pin held 3; the new name holds 5. The rename must
+  //    not launder the growth — it fails, and the report names the vanished candidate.
+  await writeFile(join(root, "ids/util.ts"), "export const a = 1;\nconst b = 2;\nconst c = 3;\nconst d2 = 4;\nconst e = 5;\n");
+  const grownRun = await runCaptured(async () => mass(c, await buildGraph(c), "check"));
+  assert.equal(grownRun.code, 1, "a rename that also grew must fail on the growth");
+  assert.match(grownRun.err, /NEW dimension: lines\|identifiers = 5/);
+  assert.match(grownRun.err, /lines\|ids \(3\) vanished this run/);
+  assert.match(grownRun.err, /its mass ALSO changed 3 → 5/);
+
+  // 3. A GENUINELY NEW COMPONENT, beside the (restored, value-conserving) rename. The
+  //    rename reconciles; the new dimension has no vanished pin at its value and fails.
+  await writeFile(join(root, "ids/util.ts"), "export const a = 1;\nconst b = 2;\nconst c = 3;\n");
+  await mkdir(join(root, "fresh"), { recursive: true });
+  await writeFile(join(root, "fresh/fresh.spec.md"), "# fresh\n\nBrand new.\n");
+  await writeFile(join(root, "fresh/f.ts"), "const z1 = 1;\nconst z2 = 2;\nconst z3 = 3;\nconst z4 = 4;\nconst z5 = 5;\n");
+  const novelRun = await runCaptured(async () => mass(c, await buildGraph(c), "check"));
+  assert.equal(novelRun.code, 1, "the ratchet must still catch a new dimension");
+  assert.match(novelRun.err, /NEW dimension: lines\|fresh = 5/);
+  assert.match(novelRun.out, /lines\|ids → lines\|identifiers/, "the rename beside it still reconciles");
+  assert.doesNotMatch(novelRun.err, /NEW dimension: lines\|identifiers/, "the renamed component is not counted as new");
+});
+
+test("mass — two components renamed at once conserve (2 vanished absorb 2) and a third new one fails", async (t) => {
+  const root = await project(); // A: 3 lines, B: 1 line
+  t.after(() => cleanup(root));
+  const c = cfg(root);
+  await runCaptured(() => mass(c, G, "update"));
+
+  // Both labels change (spec H1 edits); the files and their masses stay put. C is new.
+  await mkdir(join(root, "C"), { recursive: true });
+  await writeFile(join(root, "C/c.ts"), "a\nb\nc\nd\ne\n");
+  const g2 = graph([
+    comp("A", { label: "alpha" }), comp("B", { label: "beta" }), comp("C"),
+    fileNode("A/a.ts", "A"), fileNode("B/b.ts", "B"), fileNode("C/c.ts", "C"),
+    sym("alpha", "A/a.ts"), sym("beta", "B/b.ts"),
+  ]);
+  const { code, out, err } = await runCaptured(() => mass(c, g2, "check"));
+  assert.equal(code, 1, "the genuinely new component must still fail");
+  assert.match(out, /2 dimension\(s\) RENAMED/);
+  assert.match(out, /lines\|A → lines\|alpha\s+\(3 lines conserved\)/);
+  assert.match(out, /lines\|B → lines\|beta\s+\(1 lines conserved\)/);
+  assert.match(err, /NEW dimension: lines\|C = 5/);
+  assert.doesNotMatch(err, /NEW dimension: lines\|alpha/);
+  assert.doesNotMatch(err, /NEW dimension: lines\|beta/);
 });
 
 // ── the record ───────────────────────────────────────────────────────────────────────────

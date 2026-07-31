@@ -1,370 +1,383 @@
 {
   "version": 1,
   "verify": {
-    "at": "2026-07-31T18:59:22.161Z",
-    "commit": "89159d1",
+    "at": "2026-07-31T19:43:48.174Z",
+    "commit": "3aa44ca",
     "dirty": true,
     "tier": "full",
     "scope": null,
     "cost": {
-      "totalMs": 3267.458622,
+      "totalMs": 3459.8943780000004,
       "claims": [
         {
           "node": "Harness core",
-          "claim": "boundary \"a via-test oracle that iterates no live domain fails its claim\" at analyzeOracle via guard \"META-ORACLE — a `via test` boundary whose oracle loops a LITERAL fails\"",
-          "ms": 361.24320799999987,
+          "claim": "boundary \"a claim goes green only on positive evidence its oracle ran\" at execNamedTest via guard \"testMatch — a runner exiting 0 with no matching output FAILS (the renamed-test trap)\"",
+          "ms": 361.48074999999994,
           "source": "wall"
         },
         {
           "node": "Harness core",
-          "claim": "boundary \"a claim goes green only on positive evidence its oracle ran\" at execNamedTest via guard \"testMatch — a runner exiting 0 with no matching output FAILS (the renamed-test trap)\"",
-          "ms": 360.1607080000001,
+          "claim": "boundary \"a via-test oracle that iterates no live domain fails its claim\" at analyzeOracle via guard \"META-ORACLE — a `via test` boundary whose oracle loops a LITERAL fails\"",
+          "ms": 350.68004199999996,
           "source": "wall"
         },
         {
           "node": "Harness core",
           "claim": "boundary \"a declared invariant unanchored by any boundary fails coverage\" at runVerify via guard \"RATCHET — a declared invariant with no anchoring boundary fails coverage\"",
-          "ms": 353.1668749999999,
+          "ms": 333.29562499999975,
+          "source": "wall"
+        },
+        {
+          "node": "Harness core",
+          "claim": "boundary \"predicted context closure is calibrated against observed reads and outcomes\" at calibrate via guard \"calibration reports coverage, outside reads, and defect rates by prediction misses\"",
+          "ms": 315.2421670000001,
           "source": "wall"
         },
         {
           "node": "Harness core",
           "claim": "boundary \"task context is bounded and names its approximations\" at contextFor via guard \"renderContext — byte-stable for the same inputs and names every approximation\"",
-          "ms": 315.79837499999996,
-          "source": "wall"
-        },
-        {
-          "node": "Harness core",
-          "claim": "boundary \"a vanished oracle reds its claim, never green-by-absence\" at resolveFromBatch via guard \"match — ZERO matching tests is its OWN state: the vanished oracle, named as such\"",
-          "ms": 304.36637500000006,
+          "ms": 298.63870899999995,
           "source": "wall"
         }
       ]
     },
     "lastFastAt": "2026-07-31T18:15:50.111Z",
-    "lastFullAt": "2026-07-31T18:59:22.161Z",
+    "lastFullAt": "2026-07-31T19:43:48.174Z",
     "claims": [
       {
         "node": "Coherence",
         "claim": "coherence.config.json exists at root",
         "kind": "pass",
         "detail": "coherence.config.json @ root",
-        "at": "2026-07-31T18:59:22.161Z",
-        "commit": "89159d1",
+        "at": "2026-07-31T19:43:48.174Z",
+        "commit": "3aa44ca",
         "tier": "full",
         "everFailed": false,
-        "runs": 53
+        "runs": 59
       },
       {
         "node": "Coherence",
         "claim": ".claude/settings.json exists at root",
         "kind": "pass",
         "detail": ".claude/settings.json @ root",
-        "at": "2026-07-31T18:59:22.161Z",
-        "commit": "89159d1",
+        "at": "2026-07-31T19:43:48.174Z",
+        "commit": "3aa44ca",
         "tier": "full",
         "everFailed": false,
-        "runs": 53
+        "runs": 59
       },
       {
         "node": "Harness core",
         "claim": "cli.ts imports ./config.ts",
         "kind": "pass",
         "detail": "",
-        "at": "2026-07-31T18:59:22.161Z",
-        "commit": "89159d1",
+        "at": "2026-07-31T19:43:48.174Z",
+        "commit": "3aa44ca",
         "tier": "full",
         "everFailed": false,
-        "runs": 53
+        "runs": 59
       },
       {
         "node": "Harness core",
         "claim": "cli.ts imports ./derive.ts",
         "kind": "pass",
         "detail": "",
-        "at": "2026-07-31T18:59:22.161Z",
-        "commit": "89159d1",
+        "at": "2026-07-31T19:43:48.174Z",
+        "commit": "3aa44ca",
         "tier": "full",
         "everFailed": false,
-        "runs": 53
+        "runs": 59
       },
       {
         "node": "Harness core",
         "claim": "cli.ts imports ./verify.ts",
         "kind": "pass",
         "detail": "",
-        "at": "2026-07-31T18:59:22.161Z",
-        "commit": "89159d1",
+        "at": "2026-07-31T19:43:48.174Z",
+        "commit": "3aa44ca",
         "tier": "full",
         "everFailed": false,
-        "runs": 53
+        "runs": 59
       },
       {
         "node": "Harness core",
         "claim": "hooks.ts imports ./decisions.ts",
         "kind": "pass",
         "detail": "",
-        "at": "2026-07-31T18:59:22.161Z",
-        "commit": "89159d1",
+        "at": "2026-07-31T19:43:48.174Z",
+        "commit": "3aa44ca",
         "tier": "full",
         "everFailed": false,
-        "runs": 53
+        "runs": 59
       },
       {
         "node": "Harness core",
         "claim": "derive.ts imports ./walk.ts",
         "kind": "pass",
         "detail": "",
-        "at": "2026-07-31T18:59:22.161Z",
-        "commit": "89159d1",
+        "at": "2026-07-31T19:43:48.174Z",
+        "commit": "3aa44ca",
         "tier": "full",
         "everFailed": false,
-        "runs": 53
+        "runs": 59
       },
       {
         "node": "Harness core",
         "claim": "boundary \"agent lifecycle preserves decisions and exposes the current change signal\" at runHook via guard \"hooks — generated wiring uses the low-cost entrypoint and observes writes\"",
         "kind": "pass",
         "detail": "agent lifecycle preserves decisions and exposes the current change signal @ runHook (source-property guard)",
-        "at": "2026-07-31T18:59:22.161Z",
-        "commit": "89159d1",
+        "at": "2026-07-31T19:43:48.174Z",
+        "commit": "3aa44ca",
         "tier": "full",
         "everFailed": false,
-        "runs": 40
+        "runs": 46
       },
       {
         "node": "Harness core",
         "claim": "boundary \"significant behavioral growth acquires an anchor or patch-specific decision\" at signal via guard \"only a zero-anchor alarm without attestation needs a decision\"",
         "kind": "pass",
         "detail": "significant behavioral growth acquires an anchor or patch-specific decision @ signal (source-property guard)",
-        "at": "2026-07-31T18:59:22.161Z",
-        "commit": "89159d1",
+        "at": "2026-07-31T19:43:48.174Z",
+        "commit": "3aa44ca",
         "tier": "full",
         "everFailed": true,
         "lastFailAt": "2026-07-31T18:17:16.908Z",
         "lastFailCommit": "a45918d",
-        "runs": 40
+        "runs": 46
       },
       {
         "node": "Harness core",
         "claim": "boundary \"task context is bounded and names its approximations\" at contextFor via guard \"renderContext — byte-stable for the same inputs and names every approximation\"",
         "kind": "pass",
         "detail": "task context is bounded and names its approximations @ contextFor (source-property guard)",
-        "at": "2026-07-31T18:59:22.161Z",
-        "commit": "89159d1",
+        "at": "2026-07-31T19:43:48.174Z",
+        "commit": "3aa44ca",
         "tier": "full",
         "everFailed": false,
-        "runs": 40
+        "runs": 46
       },
       {
         "node": "Harness core",
         "claim": "boundary \"cached decisions expose structurally expired premises\" at auditPremiseLeases via guard \"audit — retracted decisions disappear and only broken strong leases fail a check\"",
         "kind": "pass",
         "detail": "cached decisions expose structurally expired premises @ auditPremiseLeases (source-property guard)",
-        "at": "2026-07-31T18:59:22.161Z",
-        "commit": "89159d1",
+        "at": "2026-07-31T19:43:48.174Z",
+        "commit": "3aa44ca",
         "tier": "full",
         "everFailed": true,
         "lastFailAt": "2026-07-31T17:11:03.459Z",
         "lastFailCommit": "b8017f1",
-        "runs": 40
+        "runs": 46
       },
       {
         "node": "Harness core",
         "claim": "boundary \"predicted context closure is calibrated against observed reads and outcomes\" at calibrate via guard \"calibration reports coverage, outside reads, and defect rates by prediction misses\"",
         "kind": "pass",
         "detail": "predicted context closure is calibrated against observed reads and outcomes @ calibrate (source-property guard)",
-        "at": "2026-07-31T18:59:22.161Z",
-        "commit": "89159d1",
+        "at": "2026-07-31T19:43:48.174Z",
+        "commit": "3aa44ca",
         "tier": "full",
         "everFailed": true,
         "lastFailAt": "2026-07-31T18:16:45.795Z",
         "lastFailCommit": "a45918d",
-        "runs": 40
+        "runs": 46
       },
       {
         "node": "Harness core",
         "claim": "boundary \"reviewed risk sites survive relocation but never duplication\" at reconcile via guard \"sinks — a moved file keeps its baselined identity and a genuinely new site still fails\"",
         "kind": "pass",
         "detail": "reviewed risk sites survive relocation but never duplication @ reconcile (source-property guard)",
-        "at": "2026-07-31T18:59:22.161Z",
-        "commit": "89159d1",
+        "at": "2026-07-31T19:43:48.174Z",
+        "commit": "3aa44ca",
         "tier": "full",
         "everFailed": true,
         "lastFailAt": "2026-07-31T17:29:19.595Z",
         "lastFailCommit": "857fd52",
-        "runs": 37
+        "runs": 43
+      },
+      {
+        "node": "Harness core",
+        "claim": "boundary \"pinned mass follows a value-conserving rename but never absorbs growth\" at reconcileMass via guard \"mass — a renamed component keeps its pin; growth and novelty are never absorbed\"",
+        "kind": "pass",
+        "detail": "pinned mass follows a value-conserving rename but never absorbs growth @ reconcileMass (source-property guard)",
+        "at": "2026-07-31T19:43:48.174Z",
+        "commit": "3aa44ca",
+        "tier": "full",
+        "everFailed": true,
+        "lastFailAt": "2026-07-31T19:41:46.695Z",
+        "lastFailCommit": "3aa44ca",
+        "runs": 6
       },
       {
         "node": "Harness core",
         "claim": "boundary \"a claim goes green only on positive evidence its oracle ran\" at execNamedTest via guard \"testMatch — a runner exiting 0 with no matching output FAILS (the renamed-test trap)\"",
         "kind": "pass",
         "detail": "a claim goes green only on positive evidence its oracle ran @ execNamedTest (source-property guard)",
-        "at": "2026-07-31T18:59:22.161Z",
-        "commit": "89159d1",
+        "at": "2026-07-31T19:43:48.174Z",
+        "commit": "3aa44ca",
         "tier": "full",
         "everFailed": true,
         "lastFailAt": "2026-07-31T18:36:16.305Z",
         "lastFailCommit": "a4b7acb",
-        "runs": 12
+        "runs": 18
       },
       {
         "node": "Harness core",
         "claim": "boundary \"a vanished oracle reds its claim, never green-by-absence\" at resolveFromBatch via guard \"match — ZERO matching tests is its OWN state: the vanished oracle, named as such\"",
         "kind": "pass",
         "detail": "a vanished oracle reds its claim, never green-by-absence @ resolveFromBatch (source-property guard)",
-        "at": "2026-07-31T18:59:22.161Z",
-        "commit": "89159d1",
+        "at": "2026-07-31T19:43:48.174Z",
+        "commit": "3aa44ca",
         "tier": "full",
         "everFailed": true,
         "lastFailAt": "2026-07-31T18:36:57.171Z",
         "lastFailCommit": "a4b7acb",
-        "runs": 12
+        "runs": 18
       },
       {
         "node": "Harness core",
         "claim": "boundary \"a declared invariant unanchored by any boundary fails coverage\" at runVerify via guard \"RATCHET — a declared invariant with no anchoring boundary fails coverage\"",
         "kind": "pass",
         "detail": "a declared invariant unanchored by any boundary fails coverage @ runVerify (source-property guard)",
-        "at": "2026-07-31T18:59:22.161Z",
-        "commit": "89159d1",
+        "at": "2026-07-31T19:43:48.174Z",
+        "commit": "3aa44ca",
         "tier": "full",
         "everFailed": true,
         "lastFailAt": "2026-07-31T18:37:08.852Z",
         "lastFailCommit": "a4b7acb",
-        "runs": 12
+        "runs": 18
       },
       {
         "node": "Harness core",
         "claim": "boundary \"a via-test oracle that iterates no live domain fails its claim\" at analyzeOracle via guard \"META-ORACLE — a `via test` boundary whose oracle loops a LITERAL fails\"",
         "kind": "pass",
         "detail": "a via-test oracle that iterates no live domain fails its claim @ analyzeOracle (source-property guard)",
-        "at": "2026-07-31T18:59:22.161Z",
-        "commit": "89159d1",
+        "at": "2026-07-31T19:43:48.174Z",
+        "commit": "3aa44ca",
         "tier": "full",
         "everFailed": true,
         "lastFailAt": "2026-07-31T18:37:20.794Z",
         "lastFailCommit": "a4b7acb",
-        "runs": 12
+        "runs": 18
       },
       {
         "node": "Harness core",
         "claim": "boundary \"a skipped run never clobbers an oracle's recorded verdict\" at recordVerify via guard \"merge — a skip never clobbers a real verdict; the old verdict rides through with its own stamp\"",
         "kind": "pass",
         "detail": "a skipped run never clobbers an oracle's recorded verdict @ recordVerify (source-property guard)",
-        "at": "2026-07-31T18:59:22.161Z",
-        "commit": "89159d1",
+        "at": "2026-07-31T19:43:48.174Z",
+        "commit": "3aa44ca",
         "tier": "full",
         "everFailed": true,
         "lastFailAt": "2026-07-31T18:37:33.937Z",
         "lastFailCommit": "a4b7acb",
-        "runs": 12
+        "runs": 18
       },
       {
         "node": "Harness core",
         "claim": "boundary \"a named oracle that no test runs cannot pass\" at runNamedTest via guard \"runner contract — a name that exists nowhere exits nonzero (the vanished oracle cannot pass)\"",
         "kind": "pass",
         "detail": "a named oracle that no test runs cannot pass @ runNamedTest (source-property guard)",
-        "at": "2026-07-31T18:59:22.161Z",
-        "commit": "89159d1",
+        "at": "2026-07-31T19:43:48.174Z",
+        "commit": "3aa44ca",
         "tier": "full",
         "everFailed": true,
         "lastFailAt": "2026-07-31T18:37:51.944Z",
         "lastFailCommit": "a4b7acb",
-        "runs": 12
+        "runs": 18
       },
       {
         "node": "Source adapters",
         "claim": "typescript.ts exists at this node",
         "kind": "pass",
         "detail": "typescript.ts @ this node",
-        "at": "2026-07-31T18:59:22.161Z",
-        "commit": "89159d1",
+        "at": "2026-07-31T19:43:48.174Z",
+        "commit": "3aa44ca",
         "tier": "full",
         "everFailed": false,
-        "runs": 53
+        "runs": 59
       },
       {
         "node": "Source adapters",
         "claim": "python.ts exists at this node",
         "kind": "pass",
         "detail": "python.ts @ this node",
-        "at": "2026-07-31T18:59:22.161Z",
-        "commit": "89159d1",
+        "at": "2026-07-31T19:43:48.174Z",
+        "commit": "3aa44ca",
         "tier": "full",
         "everFailed": false,
-        "runs": 53
+        "runs": 59
       },
       {
         "node": "Source adapters",
         "claim": "cloudflare.ts exists at this node",
         "kind": "pass",
         "detail": "cloudflare.ts @ this node",
-        "at": "2026-07-31T18:59:22.161Z",
-        "commit": "89159d1",
+        "at": "2026-07-31T19:43:48.174Z",
+        "commit": "3aa44ca",
         "tier": "full",
         "everFailed": false,
-        "runs": 53
+        "runs": 59
       },
       {
         "node": "Executable contracts",
         "claim": "_helpers.ts exists at this node",
         "kind": "pass",
         "detail": "_helpers.ts @ this node",
-        "at": "2026-07-31T18:59:22.161Z",
-        "commit": "89159d1",
+        "at": "2026-07-31T19:43:48.174Z",
+        "commit": "3aa44ca",
         "tier": "full",
         "everFailed": false,
-        "runs": 53
+        "runs": 59
       },
       {
         "node": "Executable contracts",
         "claim": "verify.test.ts exists at this node",
         "kind": "pass",
         "detail": "verify.test.ts @ this node",
-        "at": "2026-07-31T18:59:22.161Z",
-        "commit": "89159d1",
+        "at": "2026-07-31T19:43:48.174Z",
+        "commit": "3aa44ca",
         "tier": "full",
         "everFailed": false,
-        "runs": 53
+        "runs": 59
       },
       {
         "node": "Executable contracts",
         "claim": "decisions.test.ts exists at this node",
         "kind": "pass",
         "detail": "decisions.test.ts @ this node",
-        "at": "2026-07-31T18:59:22.161Z",
-        "commit": "89159d1",
+        "at": "2026-07-31T19:43:48.174Z",
+        "commit": "3aa44ca",
         "tier": "full",
         "everFailed": false,
-        "runs": 53
+        "runs": 59
       },
       {
         "node": "Executable contracts",
         "claim": "commands.test.ts exists at this node",
         "kind": "pass",
         "detail": "commands.test.ts @ this node",
-        "at": "2026-07-31T18:59:22.161Z",
-        "commit": "89159d1",
+        "at": "2026-07-31T19:43:48.174Z",
+        "commit": "3aa44ca",
         "tier": "full",
         "everFailed": false,
-        "runs": 53
+        "runs": 59
       }
     ],
     "coverage": {
       "components": 4,
       "claimed": 4,
       "withWhy": 4,
-      "symbols": 439,
-      "documented": 259
+      "symbols": 443,
+      "documented": 261
     },
     "invariants": {
-      "total": 12,
-      "anchored": 12,
+      "total": 13,
+      "anchored": 13,
       "gaps": []
     },
     "narrative": null,
-    "jobs": 180,
+    "jobs": 182,
     "failures": 0
   },
   "mass": {

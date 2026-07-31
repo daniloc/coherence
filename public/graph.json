@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-31 18:42Z",
+  "generatedAt": "2026-07-31 19:42Z",
   "root": "coherence",
   "absRoot": "/Users/daniloc/Documents/Development/coherence",
   "nodes": [
@@ -34,6 +34,7 @@
         "boundary \"cached decisions expose structurally expired premises\" at auditPremiseLeases via guard \"audit — retracted decisions disappear and only broken strong leases fail a check\"",
         "boundary \"predicted context closure is calibrated against observed reads and outcomes\" at calibrate via guard \"calibration reports coverage, outside reads, and defect rates by prediction misses\"",
         "boundary \"reviewed risk sites survive relocation but never duplication\" at reconcile via guard \"sinks — a moved file keeps its baselined identity and a genuinely new site still fails\"",
+        "boundary \"pinned mass follows a value-conserving rename but never absorbs growth\" at reconcileMass via guard \"mass — a renamed component keeps its pin; growth and novelty are never absorbed\"",
         "boundary \"a claim goes green only on positive evidence its oracle ran\" at execNamedTest via guard \"testMatch — a runner exiting 0 with no matching output FAILS (the renamed-test trap)\"",
         "boundary \"a vanished oracle reds its claim, never green-by-absence\" at resolveFromBatch via guard \"match — ZERO matching tests is its OWN state: the vanished oracle, named as such\"",
         "boundary \"a declared invariant unanchored by any boundary fails coverage\" at runVerify via guard \"RATCHET — a declared invariant with no anchoring boundary fails coverage\"",
@@ -42,7 +43,7 @@
         "boundary \"a named oracle that no test runs cannot pass\" at runNamedTest via guard \"runner contract — a name that exists nowhere exits nonzero (the vanished oracle cannot pass)\""
       ],
       "prose": "The CLI is deliberately a thin composition root. Parsing, derivation, verification,\nrendering, and journaling remain independently addressable modules beneath this boundary.",
-      "why": "**agent lifecycle preserves decisions and exposes the current change signal.** Decisions\nand risk are cheapest to surface while the agent still holds the context that produced\nthem; waiting for a later reviewer externalizes both reconstruction costs.\n\n**significant behavioral growth acquires an anchor or patch-specific decision.** The cost\nof adding an invariant is immediate while the cost of omitting it appears later, so the\ncurrent patch must carry either enforcement or an addressable reason that it needs none.\n\n**task context is bounded and names its approximations.** A focused context packet is\nuseful only when its one-hop and heuristic limits stay visible; otherwise convenience is\nmisread as completeness and recreates the omission gradient this project exists to oppose.\n\n**cached decisions expose structurally expired premises.** A decision saves inference only\nwhile the repository addresses supporting it remain live. Broken explicit referents must\nbe louder than readable but stale rationale.\n\n**predicted context closure is calibrated against observed reads and outcomes.** Economy's\none-hop closure is a hypothesis about necessary reading, not cognition. Observed reads and\nlater defect labels give that model a path to correction instead of turning it into dogma.\n\n**reviewed risk sites survive relocation but never duplication.** A ratchet baseline is a\ncached review, and a cached fact that expires on a rename rots the same way a decision's\npremises do — a refactor then spends a reviewer's attention on sites nobody touched, and\nattention spent on false alarms is how a real one gets waved through. Relocation changes\nwhere a reviewed site lives; duplication changes how much unreviewed surface exists, and\nonly the second is news.\n\n**a claim goes green only on positive evidence its oracle ran.** The verifier's whole\nauthority rests on this one property, and until now no claim cited it: an audit deleted\nthe rule and the tree stayed \"✓ coherent\" while the unit test failed unseen. An exit\ncode is the runner's statement about itself, not about the named test — a filter that\nmatched nothing exits clean on every runner class this repo has measured — so green\nmust require output that names the run, the one reading absence cannot produce.\n\n**a vanished oracle reds its claim, never green-by-absence.** A renamed or deleted test\nleaves a claim citing a name nothing owns, and that claim then guards nothing while\nwearing green. Absence has to be its own observable verdict, distinct from ran-and-failed,\nbecause the two demand different repairs: a red test needs the code fixed, a vanished\noracle needs the contract re-tied to something that exists.\n\n**a declared invariant unanchored by any boundary fails coverage.** A spec may not\nassert a property that nothing enforces: that is the ratchet the whole harness turns on,\nand if it silently loosened, specs would drift back into aspiration prose. The gap has to\ncost a red at the run that opened it, while the person who opened it still holds the\ncontext to close it.\n\n**a via-test oracle that iterates no live domain fails its claim.** A totality label on a\nsampling test is worse than no label: it retires the reader's suspicion without retiring\nthe risk. Deriving the checked set from the live registry the chokepoint actually serves\nis what makes \"covers every case\" a fact about the system rather than about the fixture\nlist the author remembered.\n\n**a skipped run never clobbers an oracle's recorded verdict.** The record is the last\nknown truth, honestly dated. A fast tier that skips the executable claims every commit\nwould otherwise erase last week's real pass — or, worse, a real fail — with \"did not\nlook\", and history that can be overwritten by not looking is not history.\n\n**a named oracle that no test runs cannot pass.** The serial runner is the component the\nexecutable tier leans its trust on, and it was outside the evidence perimeter — unclaimed,\nuntested, and (measured) willing to exit clean when the cited title survived only as a\nstring in a file. The runner itself must refuse a name it cannot show ran, because every\ngreen above it inherits that refusal.\n\n(The import claims above separately prove that the composition root still reaches the\nconfiguration loader, graph derivation, verifier, spec walker, and journal.)",
+      "why": "**agent lifecycle preserves decisions and exposes the current change signal.** Decisions\nand risk are cheapest to surface while the agent still holds the context that produced\nthem; waiting for a later reviewer externalizes both reconstruction costs.\n\n**significant behavioral growth acquires an anchor or patch-specific decision.** The cost\nof adding an invariant is immediate while the cost of omitting it appears later, so the\ncurrent patch must carry either enforcement or an addressable reason that it needs none.\n\n**task context is bounded and names its approximations.** A focused context packet is\nuseful only when its one-hop and heuristic limits stay visible; otherwise convenience is\nmisread as completeness and recreates the omission gradient this project exists to oppose.\n\n**cached decisions expose structurally expired premises.** A decision saves inference only\nwhile the repository addresses supporting it remain live. Broken explicit referents must\nbe louder than readable but stale rationale.\n\n**predicted context closure is calibrated against observed reads and outcomes.** Economy's\none-hop closure is a hypothesis about necessary reading, not cognition. Observed reads and\nlater defect labels give that model a path to correction instead of turning it into dogma.\n\n**reviewed risk sites survive relocation but never duplication.** A ratchet baseline is a\ncached review, and a cached fact that expires on a rename rots the same way a decision's\npremises do — a refactor then spends a reviewer's attention on sites nobody touched, and\nattention spent on false alarms is how a real one gets waved through. Relocation changes\nwhere a reviewed site lives; duplication changes how much unreviewed surface exists, and\nonly the second is news.\n\n**pinned mass follows a value-conserving rename but never absorbs growth.** A mass\ndimension's key embeds a name someone chose — a spec H1, a measure's config key — so a\nrename re-addresses the pin, and a ratchet that reads its own re-addressing as \"gained\nparts nobody named\" prints a lie beside the unchanged total that refutes it (measured:\none H1 edit, 35 lines relabeled, zero gained, gate red). The repair must stay\ncount-conserving: only a vanished pin with the same family, unit and exact value can\nabsorb a new name, or growth and novelty would ride in under renames.\n\n**a claim goes green only on positive evidence its oracle ran.** The verifier's whole\nauthority rests on this one property, and until now no claim cited it: an audit deleted\nthe rule and the tree stayed \"✓ coherent\" while the unit test failed unseen. An exit\ncode is the runner's statement about itself, not about the named test — a filter that\nmatched nothing exits clean on every runner class this repo has measured — so green\nmust require output that names the run, the one reading absence cannot produce.\n\n**a vanished oracle reds its claim, never green-by-absence.** A renamed or deleted test\nleaves a claim citing a name nothing owns, and that claim then guards nothing while\nwearing green. Absence has to be its own observable verdict, distinct from ran-and-failed,\nbecause the two demand different repairs: a red test needs the code fixed, a vanished\noracle needs the contract re-tied to something that exists.\n\n**a declared invariant unanchored by any boundary fails coverage.** A spec may not\nassert a property that nothing enforces: that is the ratchet the whole harness turns on,\nand if it silently loosened, specs would drift back into aspiration prose. The gap has to\ncost a red at the run that opened it, while the person who opened it still holds the\ncontext to close it.\n\n**a via-test oracle that iterates no live domain fails its claim.** A totality label on a\nsampling test is worse than no label: it retires the reader's suspicion without retiring\nthe risk. Deriving the checked set from the live registry the chokepoint actually serves\nis what makes \"covers every case\" a fact about the system rather than about the fixture\nlist the author remembered.\n\n**a skipped run never clobbers an oracle's recorded verdict.** The record is the last\nknown truth, honestly dated. A fast tier that skips the executable claims every commit\nwould otherwise erase last week's real pass — or, worse, a real fail — with \"did not\nlook\", and history that can be overwritten by not looking is not history.\n\n**a named oracle that no test runs cannot pass.** The serial runner is the component the\nexecutable tier leans its trust on, and it was outside the evidence perimeter — unclaimed,\nuntested, and (measured) willing to exit clean when the cited title survived only as a\nstring in a file. The runner itself must refuse a name it cannot show ran, because every\ngreen above it inherits that refusal.\n\n(The import claims above separately prove that the composition root still reaches the\nconfiguration loader, graph derivation, verifier, spec walker, and journal.)",
       "invariants": [
         "agent lifecycle preserves decisions and exposes the current change signal",
         "significant behavioral growth acquires an anchor or patch-specific decision",
@@ -50,6 +51,7 @@
         "cached decisions expose structurally expired premises",
         "predicted context closure is calibrated against observed reads and outcomes",
         "reviewed risk sites survive relocation but never duplication",
+        "pinned mass follows a value-conserving rename but never absorbs growth",
         "a claim goes green only on positive evidence its oracle ran",
         "a vanished oracle reds its claim, never green-by-absence",
         "a declared invariant unanchored by any boundary fails coverage",
@@ -58,6 +60,7 @@
         "a named oracle that no test runs cannot pass"
       ],
       "refutations": [
+        "pinned mass follows a value-conserving rename but never absorbs growth: mutated `reconcileMass` in BOTH directions (2026-07-31) and full verify reds the claim by name each time. (a) `const hit = undefined` — the pre-fix behaviour where a rename never absorbs: `claims: 27 · 26 green · 1 red`, the H1-rename phase failing on strictEqual (a one-line spec rename read as growth again). (b) dropped the VALUE from the move-invariant address so any same-family vanished pin absorbs any new name — the laundering direction: same `27 · 26 green · 1 red`, the renamed-AND-grown phase failing on match (the growth rode in under the rename and the guard caught the missing NEW-dimension report). Restored, back to 27/27. As with the sinks reconciler, (b) is the direction that matters: a rename-forgiver that cannot fail is a growth ratchet that deleted itself.",
         "reviewed risk sites survive relocation but never duplication: mutated `reconcile` in BOTH directions and the guard reds each time. (a) `const from = undefined` — the pre-fix behaviour where the path is part of a site's identity: `claims: 23 · 22 green · 1 red`, the moved file reported as new risk. (b) absorb from every baselined address instead of only vanished ones, without consuming the pool — plain content-addressing: same `1 red`, the copied sink waved through. Restored, back to 23/23. The loosening direction is the one that matters: a fix for a false alarm that cannot fail (b) is a fix that deleted the ratchet.",
         "cached decisions expose structurally expired premises: gutted `auditPremiseLeases` to return `{entries: [], expired: [], checked: 0}` unconditionally — the SAME mutation that left the tree \"✓ coherent\" while the claim carried no oracle. With the guard wired it reds by name: `claims: 22 · 21 green · 1 red`, `✗ 1 coherence failure(s)`. Restored, back to 22/22. The other four claims now execute (137ms, 135ms and siblings in the holding-cost block) but have not yet been individually mutated — that is the next increment, not a claim made here.",
         "predicted context closure is calibrated against observed reads and outcomes: hardcoded `calibrationStats`' defect count to `defects: 0` (audit M1, re-run 2026-07-31) -> full verify RED by name, `claims: 23 · 22 green · 1 red`, the calibration guard failing on strictEqual. Restored, back to green.",
@@ -1521,7 +1524,7 @@
       "kind": "file",
       "sub": "src/mass.ts",
       "path": "src/mass.ts",
-      "prose": "mass.ts — THE MASS RATCHET: how much machine there is, pinned.\n\nEvery other ratchet in this harness counts a KIND OF DEBT — unguarded interpolation\nsinks, guards with no contract, over-claimed crossings. None of them counts the thing a\nreader of an agent-built repo actually asks first: how much is there NOW, and did it\ngrow? A codebase does not decohere only by smearing concerns across boundaries; it also\ndecoheres by quietly accumulating — a helper here, a dependency there, four hundred\nlines nobody chose. Each edit is defensible in isolation, which is exactly why the\naggregate needs a pin rather than a review.\n\nSO THIS IS A RATCHET AND NOT A REPORT. `mass` alone prints the dimensions; `--check`\ncompares them against `<outputDir>/mass-baseline.json` and FAILS on growth past the\nper-key tolerance; `--update-baseline` re-pins. The mechanics are conventions.ts's,\ndeliberately identical — a second ratchet that behaves differently from the first is a\nsecond thing to learn.\n\nTHE FAILURE MESSAGE PRESCRIBES `coherence decide`, and that is the whole design. A\nnumeric diff (\"lines|total 12,400 → 12,860\") tells a reader what a `git diff --stat`\nalready told them and settles nothing: the ratchet cannot know whether 460 lines bought\na feature or an accident, and the only party who can say is the one who wrote them. So\nthe gate's instruction is not \"justify this to me\", it is \"write down what the new mass\nbuys, then re-pin\" — the movement gained parts, and the record should say who fitted\nthem and why.\n\nTWO RULES THE DIMENSIONS THEMSELVES OBEY:\n\n  ABSENCE IS NOT EMPTINESS. No package.json means the `deps|direct`/`deps|dev`\n  dimensions are OMITTED, not reported as 0 — a project with no manifest and a project\n  with no dependencies are different facts, and a baseline that cannot tell them apart\n  turns \"the lockfile disappeared\" into \"nice, zero transitive deps\".\n\n  AN UNMEASURABLE MEASURE FAILS CLOSED. A project `measure` whose command exits\n  nonzero, or prints nothing a number can be read out of, is reported LOUDLY and fails\n  `--check` with exit 1. The tempting alternative — treat it as 0 and carry on — makes\n  a broken bundle probe read as a heroic size reduction, which is the single most\n  dangerous thing a growth ratchet can say."
+      "prose": "mass.ts — THE MASS RATCHET: how much machine there is, pinned.\n\nEvery other ratchet in this harness counts a KIND OF DEBT — unguarded interpolation\nsinks, guards with no contract, over-claimed crossings. None of them counts the thing a\nreader of an agent-built repo actually asks first: how much is there NOW, and did it\ngrow? A codebase does not decohere only by smearing concerns across boundaries; it also\ndecoheres by quietly accumulating — a helper here, a dependency there, four hundred\nlines nobody chose. Each edit is defensible in isolation, which is exactly why the\naggregate needs a pin rather than a review.\n\nSO THIS IS A RATCHET AND NOT A REPORT. `mass` alone prints the dimensions; `--check`\ncompares them against `<outputDir>/mass-baseline.json` and FAILS on growth past the\nper-key tolerance; `--update-baseline` re-pins. The mechanics are conventions.ts's,\ndeliberately identical — a second ratchet that behaves differently from the first is a\nsecond thing to learn.\n\nTHE FAILURE MESSAGE PRESCRIBES `coherence decide`, and that is the whole design. A\nnumeric diff (\"lines|total 12,400 → 12,860\") tells a reader what a `git diff --stat`\nalready told them and settles nothing: the ratchet cannot know whether 460 lines bought\na feature or an accident, and the only party who can say is the one who wrote them. So\nthe gate's instruction is not \"justify this to me\", it is \"write down what the new mass\nbuys, then re-pin\" — the movement gained parts, and the record should say who fitted\nthem and why.\n\nTWO RULES THE DIMENSIONS THEMSELVES OBEY:\n\n  ABSENCE IS NOT EMPTINESS. No package.json means the `deps|direct`/`deps|dev`\n  dimensions are OMITTED, not reported as 0 — a project with no manifest and a project\n  with no dependencies are different facts, and a baseline that cannot tell them apart\n  turns \"the lockfile disappeared\" into \"nice, zero transitive deps\".\n\n  AN UNMEASURABLE MEASURE FAILS CLOSED. A project `measure` whose command exits\n  nonzero, or prints nothing a number can be read out of, is reported LOUDLY and fails\n  `--check` with exit 1. The tempting alternative — treat it as 0 and carry on — makes\n  a broken bundle probe read as a heroic size reduction, which is the single most\n  dangerous thing a growth ratchet can say.\n\n  A RENAME IS NOT GROWTH. A dimension's key embeds a NAME someone chose (a component's\n  spec H1, a measure's config key), so renaming the thing re-addresses its pin — and\n  before `reconcileMass`, a one-line H1 edit printed \"the movement gained parts nobody\n  named\" two lines under an UNCHANGED total (measured on hoist, 2026-07-30: 35 lines\n  relabeled, zero gained, SECURITY-adjacent gate red). The fix is lint-sinks's\n  count-conserving reconciliation, translated: an unmatched new key inherits a vanished\n  pin ONLY IF family, unit and EXACT value all match, and each vanished pin absorbs\n  exactly one. What this deliberately does NOT do: fuzzy value matching. A rename that\n  also changed the value absorbs nothing and still fails — the ratchet cannot tell\n  \"renamed and grew\" from \"new component beside an unrelated deletion\", and guessing\n  in the permissive direction is how growth gets laundered through renames."
     },
     {
       "id": "s:src/mass.ts#MASS_DEFAULTS",
@@ -1530,7 +1533,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/mass.ts",
-      "line": 58,
+      "line": 70,
       "prose": "Defaults applied AT THE CONSUMER (the REDUNDANCY_DEFAULTS pattern), so config.ts stays\n a loader and a project that never mentions `mass` gets the same behaviour as one that\n spells the defaults out."
     },
     {
@@ -1540,7 +1543,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/mass.ts",
-      "line": 60
+      "line": 72
     },
     {
       "id": "s:src/mass.ts#Unmeasurable",
@@ -1549,7 +1552,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/mass.ts",
-      "line": 66,
+      "line": 78,
       "prose": "A `measure` whose command could not produce a number. Kept as its own type rather than\n a `value: null` dimension: an unmeasurable probe is not a measurement with a missing\n field, and nothing downstream (baseline, tolerance, raise) should be able to treat it\n as one by forgetting a null check."
     },
     {
@@ -1559,7 +1562,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/mass.ts",
-      "line": 73,
+      "line": 85,
       "prose": "lines (total + per component), files, symbols — read from the graph the CLI already\n built plus one disk pass through `fileStats` (scene.ts's, the same one the towers use,\n so a file's height in the scene and its contribution here can never disagree)."
     },
     {
@@ -1569,7 +1572,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/mass.ts",
-      "line": 113,
+      "line": 125,
       "prose": "DEPENDENCY mass — the part of a codebase nobody wrote and everybody ships. Direct and\n dev come from package.json; transitive is the npm lockfile's `packages` map minus its\n root entry (`\"\"`), which is v2/v3's own count of what actually installs.\n\n An ABSENT file omits its dimensions entirely (see the header). A PRESENT file that\n cannot be read as expected — malformed JSON, or a v1 lockfile with no `packages` —\n also omits, and says so in `notes`: silence about a file that IS there would be the\n same lie in the other direction."
     },
     {
@@ -1579,7 +1582,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/mass.ts",
-      "line": 137,
+      "line": 149,
       "prose": "The LAST numeric token of stdout, which is the shape a probe naturally prints\n (`bundle: 41.2 kB`, `1284`). Returns null when there is nothing to read — the caller\n turns that into an Unmeasurable rather than a zero."
     },
     {
@@ -1589,8 +1592,46 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/mass.ts",
-      "line": 145,
+      "line": 157,
       "prose": "PROJECT MEASURES — whatever this project can measure about itself and nobody else can\n guess: bundle bytes, table count, generated-code size. The harness owns the mechanism\n (spawn, parse, pin, ratchet); the project owns the probe."
+    },
+    {
+      "id": "s:src/mass.ts#MassRename",
+      "parent": "f:src/mass.ts",
+      "label": "MassRename",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/mass.ts",
+      "line": 173
+    },
+    {
+      "id": "s:src/mass.ts#MassReconciled",
+      "parent": "f:src/mass.ts",
+      "label": "MassReconciled",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/mass.ts",
+      "line": 174
+    },
+    {
+      "id": "s:src/mass.ts#familyOf",
+      "parent": "f:src/mass.ts",
+      "label": "familyOf",
+      "kind": "symbol",
+      "sub": "const",
+      "path": "src/mass.ts",
+      "line": 179,
+      "prose": "The family half of a key — `lines`, `deps`, `measure` — which is the part a rename can\n never change: relabeling a component moves `lines|ids` to `lines|identifiers`, it does\n not turn line count into a dependency count."
+    },
+    {
+      "id": "s:src/mass.ts#reconcileMass",
+      "parent": "f:src/mass.ts",
+      "label": "reconcileMass",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/mass.ts",
+      "line": 203,
+      "prose": "Split the current dimensions' unmatched keys against the baseline into RENAMES and\n keys that must still face the ratchet as new.\n\n Same shape as lint-sinks's `reconcile`, same honesty property: a rename is a **matched\n disappearance**. An unpinned live key inherits a pin only if some baselined key with\n the same family, unit and EXACT value has VANISHED from the live set, and each vanished\n pin absorbs exactly ONE key. Mass is therefore conserved per address — a genuinely new\n dimension finds nothing to absorb it (its value matches no vanished pin) and still\n fails, and a rename that also grew absorbs nothing either, so growth cannot ride in\n under a new name.\n\n What this deliberately does NOT promise: when two same-family dimensions carry the same\n value and both vanish while two new names appear, WHICH old name maps to which new one\n is arbitrary (keys are paired in sorted order for determinism, not meaning) — the\n guarantee is the count, exactly as in lint-sinks. And it is, honestly, a loosening: a\n deleted 35-line component plus a genuinely new 35-line one reads as a rename. The\n rename is printed by name, `old → new`, so a reader can catch the coincidence; the\n totals it would have to hide behind are pinned in the same table."
     },
     {
       "id": "s:src/mass.ts#MassExcursion",
@@ -1599,7 +1640,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/mass.ts",
-      "line": 161
+      "line": 239
     },
     {
       "id": "s:src/mass.ts#excursions",
@@ -1608,7 +1649,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/mass.ts",
-      "line": 166,
+      "line": 244,
       "prose": "NEW keys and keys grown past their tolerance — the ratchet's whole verdict, as data.\n Shrinkage NEVER fails: a ratchet that punishes deletion is a ratchet that teaches\n people to stop deleting."
     },
     {
@@ -1618,7 +1659,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/mass.ts",
-      "line": 181,
+      "line": 259,
       "prose": "An excursion as a QUESTION for the journal. The subject is the ADDRESSABLE KEY and\n nothing else — no value, no delta, no rank — so re-running after another 200 lines\n land does not mint a second question about the same dimension (see raise.ts's header:\n a key containing a magnitude is the volatile-identity failure, spelled out)."
     },
     {
@@ -1628,7 +1669,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/mass.ts",
-      "line": 209
+      "line": 287
     },
     {
       "id": "s:src/mass.ts#mass",
@@ -1637,7 +1678,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/mass.ts",
-      "line": 211
+      "line": 289
     },
     {
       "id": "f:src/novelty.ts",
@@ -7648,6 +7689,12 @@
       "id": "f:test/mass.test.ts->f:src/mass.ts:imports",
       "source": "f:test/mass.test.ts",
       "target": "f:src/mass.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/mass.test.ts->f:src/derive.ts:imports",
+      "source": "f:test/mass.test.ts",
+      "target": "f:src/derive.ts",
       "kind": "imports"
     },
     {

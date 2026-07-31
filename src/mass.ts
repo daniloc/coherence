@@ -34,6 +34,18 @@
 //   `--check` with exit 1. The tempting alternative — treat it as 0 and carry on — makes
 //   a broken bundle probe read as a heroic size reduction, which is the single most
 //   dangerous thing a growth ratchet can say.
+//
+//   A RENAME IS NOT GROWTH. A dimension's key embeds a NAME someone chose (a component's
+//   spec H1, a measure's config key), so renaming the thing re-addresses its pin — and
+//   before `reconcileMass`, a one-line H1 edit printed "the movement gained parts nobody
+//   named" two lines under an UNCHANGED total (measured on hoist, 2026-07-30: 35 lines
+//   relabeled, zero gained, SECURITY-adjacent gate red). The fix is lint-sinks's
+//   count-conserving reconciliation, translated: an unmatched new key inherits a vanished
+//   pin ONLY IF family, unit and EXACT value all match, and each vanished pin absorbs
+//   exactly one. What this deliberately does NOT do: fuzzy value matching. A rename that
+//   also changed the value absorbs nothing and still fails — the ratchet cannot tell
+//   "renamed and grew" from "new component beside an unrelated deletion", and guessing
+//   in the permissive direction is how growth gets laundered through renames.
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { spawnSync } from "node:child_process";
@@ -156,6 +168,72 @@ export function measureDims(cfg: Config): { dims: MassDim[]; unmeasurable: Unmea
   return { dims, unmeasurable };
 }
 
+// ── rename reconciliation ─────────────────────────────────────────────────────────────
+
+export interface MassRename { from: string; to: string; value: number; unit?: string }
+export interface MassReconciled { renamed: MassRename[]; base: MassDim[] }
+
+/** The family half of a key — `lines`, `deps`, `measure` — which is the part a rename can
+ *  never change: relabeling a component moves `lines|ids` to `lines|identifiers`, it does
+ *  not turn line count into a dependency count. */
+export const familyOf = (k: string) => { const i = k.indexOf("|"); return i < 0 ? k : k.slice(0, i); };
+
+/** The move-invariant address of a dimension: WHAT it measures (family + unit) and HOW
+ *  MUCH it measured (the exact value) — everything except what it is called. */
+const addrOf = (d: MassDim) => `${familyOf(d.key)}|${d.unit ?? ""}|${d.value}`;
+
+/** Split the current dimensions' unmatched keys against the baseline into RENAMES and
+ *  keys that must still face the ratchet as new.
+ *
+ *  Same shape as lint-sinks's `reconcile`, same honesty property: a rename is a **matched
+ *  disappearance**. An unpinned live key inherits a pin only if some baselined key with
+ *  the same family, unit and EXACT value has VANISHED from the live set, and each vanished
+ *  pin absorbs exactly ONE key. Mass is therefore conserved per address — a genuinely new
+ *  dimension finds nothing to absorb it (its value matches no vanished pin) and still
+ *  fails, and a rename that also grew absorbs nothing either, so growth cannot ride in
+ *  under a new name.
+ *
+ *  What this deliberately does NOT promise: when two same-family dimensions carry the same
+ *  value and both vanish while two new names appear, WHICH old name maps to which new one
+ *  is arbitrary (keys are paired in sorted order for determinism, not meaning) — the
+ *  guarantee is the count, exactly as in lint-sinks. And it is, honestly, a loosening: a
+ *  deleted 35-line component plus a genuinely new 35-line one reads as a rename. The
+ *  rename is printed by name, `old → new`, so a reader can catch the coincidence; the
+ *  totals it would have to hide behind are pinned in the same table. */
+export function reconcileMass(current: MassDim[], base: MassDim[]): MassReconciled {
+  const liveKeys = new Set(current.map((d) => d.key));
+  const baseKeys = new Set(base.map((b) => b.key));
+
+  // Baselined dimensions no longer live, bucketed by move-invariant address.
+  const vanished = new Map<string, MassDim[]>();
+  for (const b of base) {
+    if (liveKeys.has(b.key)) continue;
+    const bucket = vanished.get(addrOf(b));
+    if (bucket) bucket.push(b); else vanished.set(addrOf(b), [b]);
+  }
+  for (const bucket of vanished.values()) bucket.sort((x, y) => x.key.localeCompare(y.key));
+
+  const renamed: MassRename[] = [];
+  const consumed = new Set<string>();
+  for (const d of [...current].sort((x, y) => x.key.localeCompare(y.key))) {
+    if (baseKeys.has(d.key)) continue;
+    const hit = vanished.get(addrOf(d))?.shift();
+    if (!hit) continue;
+    consumed.add(hit.key);
+    renamed.push({ from: hit.key, to: d.key, value: d.value, ...(d.unit ? { unit: d.unit } : {}) });
+  }
+  if (!renamed.length) return { renamed, base };
+
+  // The effective baseline: consumed pins re-addressed to the names that inherited them,
+  // so everything downstream (the table, excursions, the gone-list) sees the rename as
+  // already reconciled. Values are the BASELINE's — equal to the live ones by construction.
+  const effective = [
+    ...base.filter((b) => !consumed.has(b.key)),
+    ...renamed.map((r) => ({ key: r.to, value: r.value, ...(r.unit ? { unit: r.unit } : {}) })),
+  ].sort((a, b) => a.key.localeCompare(b.key));
+  return { renamed, base: effective };
+}
+
 // ── the ratchet ───────────────────────────────────────────────────────────────────────
 
 export interface MassExcursion { key: string; value: number; baseline: number | null; tolerance: number }
@@ -193,7 +271,7 @@ export function massFindings(exc: MassExcursion[]): Finding[] {
       "the growth bought something named — a feature, a component, a dependency the project chose",
       "the growth is accretion — helpers, copies and transitive installs nobody decided on individually",
       e.baseline === null
-        ? "the dimension is new because the graph changed shape (a component renamed or split), not because anything grew"
+        ? "the graph changed shape — a component split, or renamed while it also changed size (an UNCHANGED rename is reconciled before it can raise this)"
         : "the dimension moved because the MEASURE moved (a probe, a lockfile format, a walk boundary), not because the codebase did",
     ],
     discriminatedBy:
@@ -230,7 +308,13 @@ export async function mass(cfg: Config, graph: Graph, mode: "report" | "check" |
     return 0;
   }
 
-  const base = await readBaseline<MassDim[]>(cfg, BASELINE);
+  const rawBase = await readBaseline<MassDim[]>(cfg, BASELINE);
+  // Reconcile renames BEFORE anything reads the baseline: the table, the excursions, the
+  // status record and the gone-list all see the effective (re-addressed) pins, so a
+  // renamed dimension shows its inherited baseline instead of a false `NEW`.
+  const rec = rawBase ? reconcileMass(dims, rawBase) : null;
+  const base = rec ? rec.base : rawBase;
+  const renamed = rec?.renamed ?? [];
   const baseBy = new Map((base ?? []).map((b) => [b.key, b.value]));
 
   // ── the report (printed in every non-update mode) ──
@@ -243,6 +327,11 @@ export async function mass(cfg: Config, graph: Graph, mode: "report" | "check" |
     const b = baseBy.get(d.key);
     const delta = b === undefined ? (base ? "  NEW" : "") : d.value > b ? `  +${d.value - b}` : d.value < b ? `  ${d.value - b}` : "";
     console.log(`  ${pad(d.key, width)} ${String(d.value).padStart(10)} ${String(b ?? "—").padStart(10)}  ${d.unit ?? ""}${delta}`);
+  }
+  if (renamed.length) {
+    console.log(`\n  ${renamed.length} dimension(s) RENAMED — the same pinned mass under a new name, not growth:`);
+    for (const r of renamed) console.log(`    ~ ${r.from} → ${r.to}  (${r.value}${r.unit ? ` ${r.unit}` : ""} conserved)`);
+    console.log("  A rename is not growth, but the baseline still pins the old name — re-pin with --update-baseline to follow it.");
   }
   for (const n of notes) console.log(`\n  note: ${n}`);
   for (const u of unmeasurable) console.error(`\n  ✗ UNMEASURABLE ${u.key} — ${u.why}  [${u.cmd.join(" ")}]`);
@@ -293,11 +382,19 @@ export async function mass(cfg: Config, graph: Graph, mode: "report" | "check" |
   }
 
   if (exc.length) {
+    // A NEW key beside a vanished same-family pin is PROBABLY a rename that also changed
+    // value. It still fails — only a value-conserving rename inherits a pin — but the
+    // report must say what it sees, not leave the vanished evidence off the page.
+    const stillVanished = (base ?? []).filter((b) => !dims.some((d) => d.key === b.key));
     console.error(`\n  ✗ mass ratchet FAILED — the movement gained parts nobody named:`);
     for (const e of exc) {
-      console.error(e.baseline === null
-        ? `    - NEW dimension: ${e.key} = ${e.value}`
-        : `    - ${e.key} grew ${e.baseline}→${e.value}${e.tolerance ? ` (tolerance ${e.tolerance})` : ""}`);
+      if (e.baseline === null) {
+        console.error(`    - NEW dimension: ${e.key} = ${e.value}`);
+        for (const v of stillVanished.filter((b) => familyOf(b.key) === familyOf(e.key)))
+          console.error(`      (${v.key} (${v.value}) vanished this run — if ${e.key} is that dimension renamed, its mass ALSO changed ${v.value} → ${e.value}, and only a value-conserving rename inherits a pin)`);
+      } else {
+        console.error(`    - ${e.key} grew ${e.baseline}→${e.value}${e.tolerance ? ` (tolerance ${e.tolerance})` : ""}`);
+      }
     }
     console.error("  Say what the new mass BUYS, then re-pin:");
     console.error('    coherence decide "<what the new mass buys>" --because "<why this project is now bigger>"');
