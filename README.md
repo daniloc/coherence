@@ -1374,7 +1374,7 @@ both is exactly what drifted.
      edit by hand — add the command to the registry and re-run. Everything OUTSIDE these
      markers is authored prose. -->
 
-_37 commands. This index is derived from the registry the dispatch is checked
+_36 commands. This index is derived from the registry the dispatch is checked
 against (`test/commands.test.ts` enumerates the live `cmd === …` chain and asserts the two
 sets are equal), so it cannot fall behind the CLI. The reasoning for the commands that have
 any is in **In detail** below — that half is authored, and does not cover all of them._
@@ -1407,7 +1407,6 @@ any is in **In detail** below — that half is authored, and does not cover all 
 
 - `coherence panel [--no-watch | --once]` — live TUI over the graph + the status record
 - `coherence contract` — the promise graph — graded gates + the reliance ledger (`_contract.html`)
-- `coherence review <ref>` — diff the contract against `<ref>` and print the event ledger
 - `coherence context [<file>...] [--symbol <name>] [--changed|--staged]` — emit the smallest graph-addressed context packet for a file, symbol, or current change
 
 **Ratchets and gates**
@@ -1754,9 +1753,6 @@ any is in **In detail** below — that half is authored, and does not cover all 
   relying party rather than the author, answering *what may be assumed here, and on whose
   evidence*, which is the trust-side reading of the ladder above. It embeds live grades, so it is always regenerated — there is no
   `--check` for it.
-- `coherence review <ref>` — the contract **diffed against a base ref**. Builds the base
-  tree's promise model in a throwaway worktree, diffs it against HEAD, and prints the event
-  ledger to stdout; the render carries the same ledger.
 - `coherence hooks [--check]` — print the `.claude/settings.json` block that injects the
   journal instructions into every agent at startup; `--check` answers whether it has ever
   actually FIRED, because a dead hook is silent. The block also traces explicit read/write

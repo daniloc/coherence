@@ -140,7 +140,6 @@ export const COMMANDS: Command[] = [
   // ── perceive ─────────────────────────────────────────────────────────────────────────
   { name: "panel", group: "perceive", usage: "[--no-watch | --once]", summary: "live TUI over the graph + the status record" },
   { name: "contract", group: "perceive", summary: "the promise graph — graded gates + the reliance ledger (`_contract.html`)" },
-  { name: "review", group: "perceive", usage: "<ref>", summary: "diff the contract against `<ref>` and print the event ledger" },
   {
     name: "context", group: "perceive", usage: "[<file>...] [--symbol <name>] [--changed|--staged]",
     summary: "emit the smallest graph-addressed context packet for a file, symbol, or current change",

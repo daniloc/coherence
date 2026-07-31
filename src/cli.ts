@@ -29,8 +29,7 @@ import { atlas } from "./atlas.ts";
 import { contracts } from "./contracts.ts";
 import { whyLint } from "./why-lint.ts";
 import { runPanel } from "./panel.ts";
-import { deriveOutside } from "./tree.ts";
-import { buildPromiseModel, derivePromiseBase, buildReview, formatLedger, graphFilePaths } from "./promise.ts";
+import { buildPromiseModel } from "./promise.ts";
 import { renderContract } from "./render-contract.ts";
 import { readStatus } from "./status.ts";
 import { CLAIM_FORMS, loadDictionary } from "./phrasebook.ts";
@@ -520,31 +519,6 @@ if (cmd === "graph") {
   await writeFile(out("promise.json"), JSON.stringify(model, null, 2));
   await writeFile(out("_contract.html"), renderContract(model, stamp));
   console.log(`contract: ${model.components.length} component(s), ${model.zones.length} zone(s) → _contract.html`);
-  await exit(0);
-} else if (cmd === "review") {
-  // The contract diffed against a base ref: derive the base tree's PromiseModel from a
-  // throwaway worktree, diff, and print the event LEDGER to stdout; also write promise.json/
-  // _contract.html with `review` populated so the render carries the same ledger.
-  const ref = positional[0];
-  if (!ref) { console.error("usage: coherence review <ref>"); await exit(2); }
-  const graph = await buildGraph(cfg);
-  const status = await readStatus(cfg);
-  const headModel = await buildPromiseModel(cfg, graph, status);
-  let base;
-  try {
-    base = await derivePromiseBase(cfg, ref!, status);
-  } catch (e) {
-    console.error(`review: ${(e as Error).message}`);
-    await exit(1);
-  }
-  // Count the change OUTSIDE the contract (files no component owns at either end).
-  const owned = new Set([...graphFilePaths(graph), ...base!.ownedPaths]);
-  const outside = deriveOutside(cfg, base!.ref, owned);
-  const model = buildReview(headModel, base!.model, base!.ref, outside);
-  console.log(formatLedger(model));
-  await writeOutputs();
-  await writeFile(out("promise.json"), JSON.stringify(model, null, 2));
-  await writeFile(out("_contract.html"), renderContract(model, stamp));
   await exit(0);
 } else if (cmd === "context") {
   // A task packet, not a repo dump. Explicit selectors compose with a Git-derived scope.

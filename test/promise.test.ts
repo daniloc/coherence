@@ -1,23 +1,16 @@
-// promise.test.ts — the DERIVATION half of the PROMISE GRAPH (`coherence contract`/`review`).
+// promise.test.ts — the DERIVATION half of the PROMISE GRAPH (`coherence contract`).
 // Locks the load-bearing, rot-prone logic: the GRAMMAR (the optional `crossing` clause, the
 // `## zones` section, `lives in` residence), the GRADE doctrine (A/B/C/D/U as a total function
-// of one record), the reliance DOUBLE-ENTRY (covered/naked/same-zone/undeclared + the reliants
-// posting), the review DIFF (one test per event kind, blast + severity), and the ledger TEXT.
-// The pure cores are exercised directly with hand-built graphs/models (no git, no status file);
-// the IO readers (zones off a spec) run against a temp project.
+// of one record), and the reliance DOUBLE-ENTRY (covered/naked/same-zone/undeclared + the
+// reliants posting). The pure cores are exercised directly with hand-built graphs (no git, no
+// status file); the IO readers (zones off a spec) run against a temp project.
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { execFileSync } from "node:child_process";
-import { join } from "node:path";
 import { parseBoundary, normalizeBoundaryClaim, claimKey } from "../src/boundary.ts";
 import { parseZones } from "../src/walk.ts";
 import { CLAIM_FORMS } from "../src/phrasebook.ts";
-import {
-  assemblePromiseModel, deriveGates, residenceOf, readZones, promiseDiff, buildReview, formatLedger,
-  derivePromiseBase, buildPromiseModel,
-} from "../src/promise.ts";
-import { buildGraph } from "../src/derive.ts";
-import type { PromiseModel, PromiseComponent, PromiseGate, Reliance, Zone } from "../src/promise-model.ts";
+import { assemblePromiseModel, deriveGates, residenceOf, readZones } from "../src/promise.ts";
+import type { Zone } from "../src/promise-model.ts";
 import type { ClaimRecord, StatusRecord } from "../src/status.ts";
 import type { FileStat } from "../src/tree.ts";
 import { comp, fileNode, imp, graph, cfg, tmpProject, cleanup } from "./_helpers.ts";
@@ -28,14 +21,6 @@ const rec = (node: string, claim: string, kind: ClaimRecord["kind"], o: Partial<
 const stats = (m: Record<string, number>): Map<string, FileStat> =>
   new Map(Object.entries(m).map(([k, lines]) => [k, { lines, hash: "" }]));
 
-// ── hand-built model factories for the PURE diff (no graph, no status) ────────────────
-const gate = (inv: string, o: Partial<PromiseGate> = {}): PromiseGate =>
-  ({ inv, chokepoint: `${inv}CP`, verb: "test", oracle: "o", crossing: null, grade: "A", verdict: "pass", reliants: [], ...o });
-const pcomp = (dir: string, o: Partial<PromiseComponent> = {}): PromiseComponent =>
-  ({ label: dir, dir, intent: "", zone: null, gates: [], relies: [], mass: { files: 0, lines: 0 }, accounted: { files: 0, lines: 0 }, ...o });
-const pmodel = (components: PromiseComponent[], o: Partial<PromiseModel> = {}): PromiseModel =>
-  ({ root: "test", intent: "", generatedAt: "", head: "head111", dirty: false, zones: [], components, review: null, ...o });
-const reliance = (to: string, o: Partial<Reliance> = {}): Reliance => ({ to, crossing: null, via: null, ...o });
 const ZONES: Zone[] = [{ name: "za", intent: "", inside: null }, { name: "zb", intent: "", inside: null }];
 
 // ── GRAMMAR: the crossing clause, zones, residence ────────────────────────────────────
@@ -183,112 +168,6 @@ test("reliance — NAKED (cross-zone, no gate), SAME-ZONE (never naked), UNDECLA
   assert.deepEqual(mk([], ["lives in zb"]).relies, [{ to: "b", crossing: null, via: null }]);
 });
 
-// ── REVIEW: one test per event kind, blast, severity ──────────────────────────────────
-
-test("diff — covered / withdrawn (blast = the gate's reliants at head / at base)", () => {
-  const base = pmodel([pcomp("core", { gates: [gate("gone", { reliants: ["api"] })] })]);
-  const head = pmodel([pcomp("core", { gates: [gate("fresh", { crossing: { from: "a", to: "b" }, reliants: ["ui"] })] })]);
-  const evs = promiseDiff(head, base);
-  const covered = evs.find((e) => e.kind === "covered")!;
-  assert.equal(covered.inv, "fresh");
-  assert.deepEqual(covered.blast, ["ui"], "covered blast = the new gate's head reliants");
-  const withdrawn = evs.find((e) => e.kind === "withdrawn")!;
-  assert.equal(withdrawn.inv, "gone");
-  assert.deepEqual(withdrawn.blast, ["api"], "withdrawn blast = the vanished gate's BASE reliants (who lost the promise)");
-});
-
-test("diff — promoted / demoted follow the ordinal (A>B>C>D>U); demoted carries the reason + the blast", () => {
-  const base = pmodel([pcomp("core", { gates: [gate("up", { grade: "D", verdict: "unknown" }), gate("down", { grade: "A", reliants: ["api", "ingress"] })] })]);
-  const head = pmodel([pcomp("core", { gates: [gate("up", { grade: "A" }), gate("down", { grade: "D", verdict: "fail", reliants: ["api", "ingress"] })] })]);
-  const evs = promiseDiff(head, base);
-  const up = evs.find((e) => e.kind === "promoted")!;
-  assert.deepEqual([up.from, up.to], ["D", "A"]);
-  const down = evs.find((e) => e.kind === "demoted")!;
-  assert.deepEqual([down.from, down.to], ["A", "D"]);
-  assert.match(down.detail, /oracle now fails/, "the demotion reason rides in the detail");
-  assert.deepEqual(down.blast, ["api", "ingress"], "demoted blast = the weakened gate's reliants");
-});
-
-test("diff — naked / sealed track a reliance crossing the uncovered↔covered boundary", () => {
-  const nakedR = reliance("b", { crossing: { from: "za", to: "zb" }, via: null });
-  const coveredR = reliance("b", { crossing: { from: "za", to: "zb" }, via: "wall" });
-  const unassessableR = reliance("b");   // crossing null — undeclared residence
-  // was covered, now naked → naked.
-  const nakedEvs = promiseDiff(pmodel([pcomp("a", { relies: [nakedR] })]), pmodel([pcomp("a", { relies: [coveredR] })]));
-  const naked = nakedEvs.find((e) => e.kind === "naked")!;
-  assert.match(naked.detail, /reliance on b crosses za→zb/);
-  assert.deepEqual([naked.from, naked.to], ["za", "zb"], "the wall rides in from/to");
-  // was naked, now covered → sealed, naming the prior state.
-  const fromNaked = promiseDiff(pmodel([pcomp("a", { relies: [coveredR] })]), pmodel([pcomp("a", { relies: [nakedR] })]));
-  const s1 = fromNaked.find((e) => e.kind === "sealed")!;
-  assert.match(s1.detail, /previously naked/, "the prior state is named");
-  assert.match(s1.detail, /covered by "wall"/);
-  // BROADENED: was UNASSESSABLE (undeclared residence, crossing null), now covered → sealed
-  // too. A topology-establishing diff must not read as silent on exactly its coverage gains.
-  const fromUnassessable = promiseDiff(pmodel([pcomp("a", { relies: [coveredR] })]), pmodel([pcomp("a", { relies: [unassessableR] })]));
-  const s2 = fromUnassessable.find((e) => e.kind === "sealed")!;
-  assert.match(s2.detail, /previously unassessable \(undeclared residence\)/);
-  assert.match(s2.detail, /covered by "wall"/);
-  // A reliance that ARRIVES covered (no base counterpart) stays quiet — nothing improved.
-  const arrivedCovered = promiseDiff(pmodel([pcomp("a", { relies: [coveredR] })]), pmodel([pcomp("a")]));
-  assert.equal(arrivedCovered.filter((e) => e.kind === "sealed").length, 0);
-});
-
-test("diff — placed: an existing gate's crossing goes null → declared; blast = the reliants the placement newly covers", () => {
-  const base = pmodel([pcomp("core", { gates: [gate("wall", { crossing: null })] })]);
-  const head = pmodel([pcomp("core", { gates: [gate("wall", { crossing: { from: "za", to: "zb" }, reliants: ["api"] })] })]);
-  const evs = promiseDiff(head, base);
-  const placed = evs.find((e) => e.kind === "placed")!;
-  assert.ok(placed, "unplaced → placed emits a `placed` event");
-  assert.equal(placed.inv, "wall");
-  assert.match(placed.detail, /guards the za→zb crossing/, "the detail names the declared wall");
-  assert.deepEqual(placed.blast, ["api"], "blast = reliants newly covered (the gate covered nothing while unplaced)");
-  assert.equal(evs.filter((e) => e.kind === "covered").length, 0, "placement is NOT a new gate — no covered event");
-  // Placement is independent of grade movement: same-grade gates emit placed alone.
-  assert.equal(evs.filter((e) => e.kind === "promoted" || e.kind === "demoted").length, 0);
-});
-
-test("diff — arrived / razed / rezoned; a razed component's gates each report withdrawn too", () => {
-  const base = pmodel([
-    pcomp("core", { zone: "za" }),
-    pcomp("legacy", { gates: [gate("g1", { reliants: ["core"] }), gate("g2")] }),   // vanishes
-  ]);
-  const head = pmodel([
-    pcomp("core", { zone: "zb" }),   // rezoned
-    pcomp("fresh"),                  // arrives
-  ]);
-  const evs = promiseDiff(head, base);
-  assert.equal(evs.find((e) => e.kind === "arrived")!.comp, "fresh");
-  const rezoned = evs.find((e) => e.kind === "rezoned")!;
-  assert.deepEqual([rezoned.from, rezoned.to], ["za", "zb"]);
-  assert.equal(evs.find((e) => e.kind === "razed")!.comp, "legacy");
-  const withdrawns = evs.filter((e) => e.kind === "withdrawn").map((e) => e.inv).sort();
-  assert.deepEqual(withdrawns, ["g1", "g2"], "each gate of the razed component reports withdrawn individually");
-});
-
-test("diff — severity puts the alarm cases first (demoted/naked/withdrawn/razed before promoted/…/arrived)", () => {
-  const base = pmodel([pcomp("core", { gates: [gate("d", { grade: "A", reliants: ["x"] })] })]);
-  const head = pmodel([
-    pcomp("core", { gates: [gate("d", { grade: "D", verdict: "fail", reliants: ["x"] })] }),
-    pcomp("new"),   // arrived — a mild, trailing event
-  ]);
-  const evs = promiseDiff(head, base);
-  assert.equal(evs[0].kind, "demoted", "the alarm leads");
-  assert.ok(evs.findIndex((e) => e.kind === "demoted") < evs.findIndex((e) => e.kind === "arrived"), "demoted sorts before arrived");
-
-  // placed/sealed sit with the good-news family: after the alarms, before covered/arrived.
-  const base2 = pmodel([pcomp("core", {
-    gates: [gate("g1", { grade: "A", reliants: ["x"] }), gate("g2", { crossing: null })],
-    relies: [reliance("lib", { crossing: { from: "za", to: "zb" }, via: null })],
-  }), pcomp("lib")]);
-  const head2 = pmodel([pcomp("core", {
-    gates: [gate("g1", { grade: "D", verdict: "fail", reliants: ["x"] }), gate("g2", { crossing: { from: "za", to: "zb" } })],
-    relies: [reliance("lib", { crossing: { from: "za", to: "zb" }, via: "g2" })],
-  }), pcomp("lib"), pcomp("new")]);
-  const evs2 = promiseDiff(head2, base2).map((e) => e.kind);
-  assert.deepEqual(evs2, ["demoted", "placed", "sealed", "arrived"], "demoted first; placed/sealed good-news; arrived trails");
-});
-
 // ── record identity: the crossing clause never orphans a verdict ──────────────────────
 
 test("normalization — the crossing clause is stripped from record identity; annotation never orphans a verdict (both directions, both layers)", () => {
@@ -310,99 +189,4 @@ test("normalization — the crossing clause is stripped from record identity; an
   const recBy2 = new Map<string, ClaimRecord>([[claimKey("N", crossed), rec("N", crossed, "pass", { commit: "head111" })]]);
   const g2 = deriveGates([bare], "N", recBy2, "head111");
   assert.equal(g2[0].grade, "A", "post-crossing record matches the pre-crossing claim");
-});
-
-test("diff — a pure crossing BACKFILL yields placed (and possibly sealed/rezoned), never promoted/demoted", () => {
-  // Same verify record at both ends; the only change is annotation. With normalized record
-  // identity the grade is identical at base and head → NO grade events, only topology ones.
-  const bare = 'boundary "w" at S via test "o"';
-  const crossed = 'boundary "w" at S crossing za -> zb via test "o"';
-  const status: StatusRecord = { version: 1, verify: {
-    at: "", commit: "head111", dirty: false, tier: "fast", scope: null,
-    claims: [rec("A", bare, "pass", { commit: "head111" })],
-    coverage: { components: 0, claimed: 0, withWhy: 0, symbols: 0, documented: 0 },
-    invariants: { total: 0, anchored: 0, gaps: [] }, narrative: null, jobs: 0, failures: 0,
-  } };
-  const mk = (claims: string[]) => assemblePromiseModel(
-    graph([comp(".", {}), comp("a", { label: "A", claims })]),
-    status, new Map(), ZONES, { commit: "head111", dirty: false });
-  const evs = promiseDiff(mk([crossed, "lives in za"]), mk([bare]));
-  assert.equal(evs.filter((e) => e.kind === "promoted" || e.kind === "demoted").length, 0,
-    "no spurious grade events from pure annotation");
-  assert.equal(evs.filter((e) => e.kind === "placed").length, 1, "the backfill reads as placement");
-  assert.equal(evs.filter((e) => e.kind === "rezoned").length, 1, "…and the new residence as rezoning");
-});
-
-test("promote reason — U→D is honest: the claim parses again, but carries no verdict yet", () => {
-  const base = pmodel([pcomp("core", { gates: [gate("g", { grade: "U", verdict: "unknown" })] })]);
-  const head = pmodel([pcomp("core", { gates: [gate("g", { grade: "D", verdict: "unknown" })] })]);
-  const up = promiseDiff(head, base).find((e) => e.kind === "promoted")!;
-  assert.match(up.detail, /parses again — no verdict yet/, "a floor-exit does not claim evidence it lacks");
-});
-
-// ── the base worktree when the coherence root is a git SUBDIRECTORY ───────────────────
-
-test("worktree (IO) — a coherence root that is a SUBDIRECTORY of the git repo derives base dirs aligned with head", async () => {
-  // The repo top-level holds no config; the coherence root is repo/app. The base worktree
-  // materializes the WHOLE repo, so the base config must load from <worktree>/app — loading
-  // from the top would prefix every base dir with "app/" and turn EVERY review into a total
-  // razed/arrived storm (the mnemion defect).
-  const root = await tmpProject({
-    "app/coherence.config.json": JSON.stringify({ outputDir: "public", codeExt: ["ts"] }),
-    "app/root.spec.md": "# Root\n\nthe entry\n\n## works when\n\n- a.ts exists at this node\n",
-    "app/a.ts": "export const A = 1;\n",
-    "app/sub/sub.spec.md": "# Sub\n\na sub\n\n## works when\n\n- s.ts exists at this node\n",
-    "app/sub/s.ts": "export const S = 1;\n",
-  });
-  try {
-    const git = (...a: string[]) => execFileSync("git", a, { cwd: root, stdio: "pipe" });
-    git("init", "-q"); git("config", "user.email", "t@t"); git("config", "user.name", "t");
-    git("add", "-A"); git("commit", "-qm", "base");
-
-    const c = cfg(join(root, "app"));
-    const headGraph = await buildGraph(c);
-    const headModel = await buildPromiseModel(c, headGraph, EMPTY);
-    assert.deepEqual(headModel.components.map((x) => x.dir), [".", "sub"], "head dirs are subdir-relative");
-
-    // PROMISE base: dirs must align with head (no "app/" prefix) → a same-ref diff is steady.
-    const pbase = await derivePromiseBase(c, "HEAD", EMPTY);
-    assert.deepEqual(pbase.model.components.map((x) => x.dir), [".", "sub"], "base dirs align with head");
-    assert.deepEqual(promiseDiff(headModel, pbase.model), [], "a no-change review is steady state, not a razed/arrived storm");
-  } finally { await cleanup(root); }
-});
-
-// ── buildReview + formatLedger ────────────────────────────────────────────────────────
-
-test("buildReview — head annotated with change (added/removed) and a populated review", () => {
-  const base = pmodel([pcomp("core"), pcomp("legacy")]);
-  const head = pmodel([pcomp("core"), pcomp("fresh")]);
-  const m = buildReview(head, base, "base123", { added: 0, removed: 0, changed: 0 });
-  assert.equal(m.review!.base, "base123");
-  assert.equal(m.components.find((c) => c.dir === "fresh")!.change, "added", "a head-only district is added");
-  const legacy = m.components.find((c) => c.dir === "legacy")!;
-  assert.equal(legacy.change, "removed", "a base-only district is injected as removed");
-  assert.equal(m.components.find((c) => c.dir === "core")!.change, undefined, "an unchanged district carries no flag");
-});
-
-test("formatLedger — deterministic masthead + one block per event, with the blast line when reliants are hit", () => {
-  const base = pmodel([pcomp("core", { gates: [gate("write policy", { grade: "A", reliants: ["api"] })] })]);
-  const head = pmodel([pcomp("core", { gates: [gate("write policy", { grade: "D", verdict: "fail", reliants: ["api"] })] })]);
-  const m = buildReview(head, base, "base123", { added: 0, removed: 1, changed: 2 });
-  const text = formatLedger(m);
-  assert.match(text, /^contract test — head head111 vs base base123 · 1 event · outside \+0 −1 ~2/m, "the masthead carries head/base/count/outside");
-  assert.match(text, /^DEMOTED   core: write policy/m, "KIND is padded; the comp: inv header");
-  assert.match(text, /weakened from A to D — its oracle now fails\./, "the detail sentence");
-  assert.match(text, /→ 1 reliant holds a degraded asset: api/, "the blast line when reliants hold a degraded asset");
-
-  // A good-news event's blast reads as a GAIN, not a degradation.
-  const placedBase = pmodel([pcomp("core", { gates: [gate("wall", { crossing: null })] })]);
-  const placedHead = pmodel([pcomp("core", { gates: [gate("wall", { crossing: { from: "za", to: "zb" }, reliants: ["api"] })] })]);
-  const placedText = formatLedger(buildReview(placedHead, placedBase, "b1", { added: 0, removed: 0, changed: 0 }));
-  assert.match(placedText, /^PLACED    core: wall  za→zb/m);
-  assert.match(placedText, /→ 1 reliant holds a strengthened asset: api/, "placed blast is a coverage gain");
-
-  // A steady-state review prints almost nothing.
-  const quiet = formatLedger(buildReview(pmodel([pcomp("core")]), pmodel([pcomp("core")]), "b0", { added: 0, removed: 0, changed: 0 }));
-  assert.match(quiet, /0 events/);
-  assert.match(quiet, /steady state/);
 });

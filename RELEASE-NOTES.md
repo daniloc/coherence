@@ -50,6 +50,23 @@ acquisition with the subdirectory-root alignment rule), and
 `outsideTally`/`deriveOutside` (the never-silently-truncate tally). A command's
 utilities must outlive the command.
 
+**`coherence review` is evicted by the same criteria** — zero invocations,
+zero journal citations. Gone: `promiseDiff` and the whole event-ledger half of
+`promise.ts` (`buildReview`, `formatLedger`, `derivePromiseBase`, the typed
+event constructors and their severity order), the `review` dispatch branch and
+registry entry, and its eleven tests. **The idea worth resurrecting knowingly:**
+a promise-graph diff against a base ref — a typed event ledger of what changed
+in the RELIANCE surface (covered / withdrawn / promoted / demoted / naked /
+sealed / placed / arrived / razed / rezoned, alarms first), each gate event
+carrying its blast radius (the reliants holding a degraded or strengthened
+asset), with an outside tally so the ledger never silently truncates.
+`coherence contract` survives intact, including the `review` field in the
+model contract and the review chrome in `render-contract.ts`, so a future
+against-a-ref surface has its seams waiting. Orphan honestly reported:
+`withBaseWorktree` and `outsideTally`/`deriveOutside` in `tree.ts` now have no
+product consumer (scene and review were their only readers) — kept, flagged in
+the journal, for the next sweep to judge.
+
 ---
 
 ## v0.22.0 — a rename is not growth

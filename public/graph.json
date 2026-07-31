@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-07-31 23:44Z",
-  "root": "coherence",
-  "absRoot": "/Users/daniloc/Documents/Development/coherence",
+  "generatedAt": "2026-07-31 23:51Z",
+  "root": "cohw",
+  "absRoot": "/private/tmp/claude-501/-Users-daniloc-Documents-Development-hoist/3e2c9d10-82b3-4627-a861-555b53d9777d/scratchpad/cohw",
   "nodes": [
     {
       "id": "c:.",
@@ -497,7 +497,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/commands.ts",
-      "line": 193,
+      "line": 192,
       "prose": "Every command name, in registry order. The `<a|b|c>` list — aliases excluded."
     },
     {
@@ -507,7 +507,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/commands.ts",
-      "line": 197,
+      "line": 196,
       "prose": "Every token the dispatch must accept: names AND aliases. The totality oracle compares\n THIS against the `cmd === \"…\"` literals it reads out of cli.ts."
     },
     {
@@ -517,7 +517,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/commands.ts",
-      "line": 224,
+      "line": 223,
       "prose": "SPELLING ONE — the usage banner, printed to stderr when the verb is unknown or absent.\nDerived in full: there is no command-name string literal left in cli.ts's help text, so\nthe banner cannot be 29 while the dispatch is 30, and two branches editing different\ncommands can no longer conflict on one line."
     },
     {
@@ -527,7 +527,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/commands.ts",
-      "line": 257,
+      "line": 256,
       "prose": "SPELLING TWO — the README's command index, markers inclusive, ready for `spliceBlock`.\n\nA BULLET LIST, not a markdown table, and that is a real constraint rather than taste:\n`redundancy` reads the first column of every markdown table as an enumerated domain, so\na generated table would hand it a fresh README↔dispatch pair to report — trading the\nfinding this change exists to remove for an identical one. A generated block that the\nproject's own detector still flags has not fixed anything.\n\nThe block is an INDEX and nothing more: name, arg shape, one line. The authored\nper-command reasoning lives OUTSIDE the markers, below the block, and is not expected to\ncover every command — completeness is what the derivation owes, depth is what the prose\nowes, and confusing the two is how the reference got twelve commands behind."
     },
     {
@@ -537,7 +537,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/commands.ts",
-      "line": 295,
+      "line": 294,
       "prose": "The README's claim-form index, markers inclusive, ready for `spliceBlock` — the same\ntreatment the command index got, for the same defect: the hand-kept table listed 8 forms\nwhile the registry carried 9 (`lives in` was missing entirely) and its boundary grammar\nhad lost the `[crossing <zone> -> <zone>]` clause. The README even predicted the drift\n(\"nothing compares it against the registry, so it *can* drift\"). Now something does.\n\nA BULLET LIST, not a markdown table, for the reason renderCommandsBlock records:\n`redundancy` reads the first column of every markdown table as an enumerated domain, so\na generated table would hand it a fresh README↔registry pair to report.\n\nThe block is the GRAMMAR and nothing more: name, tier, grammar, example — the fields the\nregistry actually carries. The authored per-form reasoning (tier behavior under `--fast`,\nthe meta-oracle, skip-vs-fail semantics) lives OUTSIDE the markers, below the block."
     },
     {
@@ -2655,7 +2655,7 @@
       "kind": "file",
       "sub": "src/promise.ts",
       "path": "src/promise.ts",
-      "prose": "promise.ts — the DERIVATION half of the PROMISE GRAPH (`coherence contract` / `review`):\nspec grammar + graph + status + git → PromiseModel (src/promise-model.ts is THE contract;\nsrc/render-contract.ts is the other half). Where the scene renders the project's BODY\n(what code exists, where), the contract renders its OBLIGATIONS — the guarantees each\ncomponent makes at its perimeter (gates) and the guarantees it consumes (reliances) —\ngraded, placed on declared trust walls, and diffed as a ledger of typed events.\n\nIt mirrors scene.ts's architecture EXACTLY: exported pure cores (deriveGates, the reliance\ndouble-entry inside assemblePromiseModel, promiseDiff, formatLedger) so the whole thing is\ntestable without a repo, wrapped by a thin IO shell (buildPromiseModel: read zones off the\nentry spec, stat files for mass, stamp git) and the base-worktree acquisition it SHARES\nwith the scene (withBaseWorktree). Three doctrines carry the design:\n\n  TOPOLOGY IS DECLARED. Zones come from the ENTRY spec's `## zones` (declared order = trust\n  order); a gate's `crossing <from> -> <to>` says which wall it sits on; a component's\n  `lives in <zone>` says where it lives. Nothing spatial is invented — an element with no\n  declared place is UNPLACED / UNDECLARED RESIDENCE (visible pressure, never a guess).\n\n  ONE ENFORCED GRADE. Every gate carries a single ordinal (A best … U floor), a TOTAL\n  function of the ONE recorded signal for its claim (see gradeOf). Freshness is judged\n  against the tree's own HEAD — so a base model built for a review grades each record\n  relative to the BASE commit, which is what makes \"the green went stale between base and\n  head\" surface as a real demotion instead of noise.\n\n  DOUBLE-ENTRY RELIANCE. Every cross-component import is one Reliance; a cross-ZONE reliance\n  is COVERED by a gate on that wall or NAKED; and the covering gate lists the reliant back\n  (one fact, two postings). The wall-level COVERING RULE (v1): a reliance crossing {za→zb},\n  za≠zb, is covered iff ANY gate in the model declares crossing {za→zb} exactly — its via is\n  that gate's inv (first by stable order); same-zone reliances need no gate (not naked);\n  undeclared residence at either end ⇒ no crossing ⇒ neither covered nor naked."
+      "prose": "promise.ts — the DERIVATION half of the PROMISE GRAPH (`coherence contract`):\nspec grammar + graph + status + git → PromiseModel (src/promise-model.ts is THE contract;\nsrc/render-contract.ts is the other half). The contract renders a project's OBLIGATIONS —\nthe guarantees each component makes at its perimeter (gates) and the guarantees it\nconsumes (reliances) — graded and placed on declared trust walls.\n\nExported pure cores (deriveGates, the reliance double-entry inside assemblePromiseModel)\nso the whole thing is testable without a repo, wrapped by a thin IO shell\n(buildPromiseModel: read zones off the entry spec, stat files for mass, stamp git).\nThree doctrines carry the design:\n\n  TOPOLOGY IS DECLARED. Zones come from the ENTRY spec's `## zones` (declared order = trust\n  order); a gate's `crossing <from> -> <to>` says which wall it sits on; a component's\n  `lives in <zone>` says where it lives. Nothing spatial is invented — an element with no\n  declared place is UNPLACED / UNDECLARED RESIDENCE (visible pressure, never a guess).\n\n  ONE ENFORCED GRADE. Every gate carries a single ordinal (A best … U floor), a TOTAL\n  function of the ONE recorded signal for its claim (see gradeOf). Freshness is judged\n  against the tree's own HEAD.\n\n  DOUBLE-ENTRY RELIANCE. Every cross-component import is one Reliance; a cross-ZONE reliance\n  is COVERED by a gate on that wall or NAKED; and the covering gate lists the reliant back\n  (one fact, two postings). The wall-level COVERING RULE (v1): a reliance crossing {za→zb},\n  za≠zb, is covered iff ANY gate in the model declares crossing {za→zb} exactly — its via is\n  that gate's inv (first by stable order); same-zone reliances need no gate (not naked);\n  undeclared residence at either end ⇒ no crossing ⇒ neither covered nor naked."
     },
     {
       "id": "s:src/promise.ts#residenceOf",
@@ -2664,7 +2664,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/promise.ts",
-      "line": 48
+      "line": 44
     },
     {
       "id": "s:src/promise.ts#readZones",
@@ -2673,7 +2673,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/promise.ts",
-      "line": 57,
+      "line": 53,
       "prose": "Read the ENTRY component's `## zones` — the SINGLE HOME of the trust-order declaration\n (declared order IS trust order). A `## zones` in any NON-entry spec is never read here, so\n it is silently ignored (not an error) — the doctrine kept deliberately simple by only ever\n consulting the entry spec. Empty when the entry spec has no zones section."
     },
     {
@@ -2683,7 +2683,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/promise.ts",
-      "line": 89,
+      "line": 85,
       "prose": "One gate per boundary claim. verdict is the RAW record (pass/fail/stale/unknown); grade is\n the DOCTRINE over it; crossing is the declared wall (null = UNPLACED); freshest is the\n newest pass stamp if any; reliants start empty and are POSTED by the reliance pass."
     },
     {
@@ -2693,8 +2693,8 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/promise.ts",
-      "line": 124,
-      "prose": "The pure core: fold the graph + status record + per-file stats + declared zones + the HEAD\n stamp into a PromiseModel. Components are emitted in spec-tree order (entry \".\" first, then\n dir sort); mass/accounted reuse the scene's file-stat + claimed-path machinery (a single\n source, no duplication); reliances + reliants are the DOUBLE-ENTRY posting. review is null\n (a plain contract is diffed against nothing; buildReview populates it)."
+      "line": 120,
+      "prose": "The pure core: fold the graph + status record + per-file stats + declared zones + the HEAD\n stamp into a PromiseModel. Components are emitted in spec-tree order (entry \".\" first, then\n dir sort); mass/accounted reuse tree.ts's file-stat + claimed-path machinery (a single\n source, no duplication); reliances + reliants are the DOUBLE-ENTRY posting. `review` is\n null — the field survives in the model contract for any future against-a-ref surface."
     },
     {
       "id": "s:src/promise.ts#buildPromiseModel",
@@ -2703,58 +2703,8 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/promise.ts",
-      "line": 220,
+      "line": 216,
       "prose": "IO shell: read the entry zones, stat the files (unless handed in), stamp git, assemble."
-    },
-    {
-      "id": "s:src/promise.ts#promiseDiff",
-      "parent": "f:src/promise.ts",
-      "label": "promiseDiff",
-      "kind": "symbol",
-      "sub": "function",
-      "path": "src/promise.ts",
-      "line": 322,
-      "prose": "PURE: the diff of two PromiseModels as typed events from the CLOSED vocabulary. Gates and\n reliances are compared only for components present at BOTH ends; a wholly new component is\n one `arrived` (its gates/reliances arrive folded in), a vanished one is one `razed` PLUS a\n `withdrawn` per gate (its promises are individually gone). Grade rank A>B>C>D>U decides\n promote vs demote; naked/sealed track a reliance crossing the naked↔covered boundary."
-    },
-    {
-      "id": "s:src/promise.ts#buildReview",
-      "parent": "f:src/promise.ts",
-      "label": "buildReview",
-      "kind": "symbol",
-      "sub": "function",
-      "path": "src/promise.ts",
-      "line": 378,
-      "prose": "PURE: assemble a REVIEW model — head annotated with `change` (added/removed districts) and\n a populated `review`. Mirrors mergeSceneDiff: arrived components flag `added`, razed ones\n are injected as `removed`, and the event ledger + outside tally ride in `review`."
-    },
-    {
-      "id": "s:src/promise.ts#graphFilePaths",
-      "parent": "f:src/promise.ts",
-      "label": "graphFilePaths",
-      "kind": "symbol",
-      "sub": "const",
-      "path": "src/promise.ts",
-      "line": 393,
-      "prose": "The repo-relative paths the graph OWNS (every file node's path) — the outside tally\n subtracts these so it counts only the change the contract doesn't model."
-    },
-    {
-      "id": "s:src/promise.ts#derivePromiseBase",
-      "parent": "f:src/promise.ts",
-      "label": "derivePromiseBase",
-      "kind": "symbol",
-      "sub": "function",
-      "path": "src/promise.ts",
-      "line": 401,
-      "prose": "IO shell over withBaseWorktree: materialize `ref` in a throwaway worktree and assemble ITS\n PromiseModel. The LIVE status rides through unchanged so each record's freshness is graded\n against the BASE commit (gitStamp of the base worktree) — a pass taken at base is fresh\n there and stale at head, which is exactly what surfaces \"went stale\" as a real demotion.\n Returns the base model, its owned paths (for the outside tally), and the short base ref."
-    },
-    {
-      "id": "s:src/promise.ts#formatLedger",
-      "parent": "f:src/promise.ts",
-      "label": "formatLedger",
-      "kind": "symbol",
-      "sub": "function",
-      "path": "src/promise.ts",
-      "line": 416,
-      "prose": "Deterministic, pipe-safe text of the ledger (`coherence review` prints this). A masthead\n line, then one block per event: KIND (padded) · comp: inv · from→to · the detail sentence ·\n and the blast line when reliants hold a degraded asset. A steady state prints almost nothing."
     },
     {
       "id": "f:src/prose.ts",
@@ -4916,7 +4866,7 @@
       "kind": "file",
       "sub": "test/promise.test.ts",
       "path": "test/promise.test.ts",
-      "prose": "promise.test.ts — the DERIVATION half of the PROMISE GRAPH (`coherence contract`/`review`).\nLocks the load-bearing, rot-prone logic: the GRAMMAR (the optional `crossing` clause, the\n`## zones` section, `lives in` residence), the GRADE doctrine (A/B/C/D/U as a total function\nof one record), the reliance DOUBLE-ENTRY (covered/naked/same-zone/undeclared + the reliants\nposting), the review DIFF (one test per event kind, blast + severity), and the ledger TEXT.\nThe pure cores are exercised directly with hand-built graphs/models (no git, no status file);\nthe IO readers (zones off a spec) run against a temp project."
+      "prose": "promise.test.ts — the DERIVATION half of the PROMISE GRAPH (`coherence contract`).\nLocks the load-bearing, rot-prone logic: the GRAMMAR (the optional `crossing` clause, the\n`## zones` section, `lives in` residence), the GRADE doctrine (A/B/C/D/U as a total function\nof one record), and the reliance DOUBLE-ENTRY (covered/naked/same-zone/undeclared + the\nreliants posting). The pure cores are exercised directly with hand-built graphs (no git, no\nstatus file); the IO readers (zones off a spec) run against a temp project."
     },
     {
       "id": "f:test/prose.test.ts",
@@ -5311,12 +5261,6 @@
       "id": "f:src/cli.ts->f:src/panel.ts:imports",
       "source": "f:src/cli.ts",
       "target": "f:src/panel.ts",
-      "kind": "imports"
-    },
-    {
-      "id": "f:src/cli.ts->f:src/tree.ts:imports",
-      "source": "f:src/cli.ts",
-      "target": "f:src/tree.ts",
       "kind": "imports"
     },
     {
@@ -7696,18 +7640,6 @@
       "kind": "imports"
     },
     {
-      "id": "f:test/promise.test.ts->x:node:child_process:imports",
-      "source": "f:test/promise.test.ts",
-      "target": "x:node:child_process",
-      "kind": "imports"
-    },
-    {
-      "id": "f:test/promise.test.ts->x:node:path:imports",
-      "source": "f:test/promise.test.ts",
-      "target": "x:node:path",
-      "kind": "imports"
-    },
-    {
       "id": "f:test/promise.test.ts->f:src/boundary.ts:imports",
       "source": "f:test/promise.test.ts",
       "target": "f:src/boundary.ts",
@@ -7729,12 +7661,6 @@
       "id": "f:test/promise.test.ts->f:src/promise.ts:imports",
       "source": "f:test/promise.test.ts",
       "target": "f:src/promise.ts",
-      "kind": "imports"
-    },
-    {
-      "id": "f:test/promise.test.ts->f:src/derive.ts:imports",
-      "source": "f:test/promise.test.ts",
-      "target": "f:src/derive.ts",
       "kind": "imports"
     },
     {

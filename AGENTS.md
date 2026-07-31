@@ -1,4 +1,4 @@
-# coherence — map for agents
+# cohw — map for agents
 
 > Generated from the spec tree by the coherence harness. Do not edit by hand.
 
@@ -70,7 +70,7 @@ _files:_ `_helpers.ts`, `atlas.test.ts`, `calibration.test.ts`, `claude.test.ts`
 ## Structure
 
 ```
-coherence/
+cohw/
 ├─ src/  ●
 │  ├─ adapters/  ●
 │  │  ├─ cloudflare.ts
