@@ -31,8 +31,13 @@ export type TestBatchFormat = (typeof TEST_BATCH_FORMATS)[number];
 
 /** One test as the report described it. `fullName` is the runner's OWN concatenation of
  *  the suite path and the test title — the exact string its `-t` filter matches against,
- *  which is what makes batch matching a mirror rather than a re-implementation. */
-export interface BatchTest { fullName: string; status: string; file?: string }
+ *  which is what makes batch matching a mirror rather than a re-implementation.
+ *
+ *  `duration` is the runner's own per-assertion timing in milliseconds, and it is OPTIONAL
+ *  ON PURPOSE: a report that omits it (an older reporter, a hand-written fixture) must not
+ *  be read as "this test took zero time". Absence is absence — every consumer below carries
+ *  that distinction rather than defaulting to 0. */
+export interface BatchTest { fullName: string; status: string; file?: string; duration?: number }
 export interface BatchReport { format: TestBatchFormat; tests: BatchTest[] }
 
 /** A batch attempt: the report, or null with the reason the run must fall back. */
@@ -217,7 +222,13 @@ function collectVitest(j: any): BatchTest[] {
         : [...(Array.isArray(a?.ancestorTitles) ? a.ancestorTitles : []), a?.title ?? ""]
             .filter((s) => typeof s === "string" && s.length).join(" ");
       if (!fullName) continue;
-      tests.push({ fullName, status: String(a?.status ?? "unknown"), file });
+      // The runner's own timing, taken ONLY when it is a real finite number. A missing,
+      // null or NaN `duration` leaves the field undefined rather than becoming 0 — the
+      // holding-cost report distinguishes "cost 0ms" from "cost unknown", and the second
+      // one must never be able to masquerade as the first.
+      const d = a?.duration;
+      const duration = typeof d === "number" && Number.isFinite(d) ? d : undefined;
+      tests.push({ fullName, status: String(a?.status ?? "unknown"), file, duration });
     }
   }
   return tests;
@@ -231,8 +242,14 @@ function collectVitest(j: any): BatchTest[] {
  * SCHEMA, verified against vitest 4.1.10 rather than assumed:
  *   { testResults: [ { name: <abs file>, status, assertionResults: [
  *       { ancestorTitles: string[], fullName: string, title: string,
- *         status: "passed" | "failed" | "skipped" | …, failureMessages: string[] } ] } ] }
+ *         status: "passed" | "failed" | "skipped" | …, failureMessages: string[],
+ *         duration?: number } ] } ] }
  * and `fullName === [...ancestorTitles, title].join(" ")`.
+ *
+ * `duration` is the per-assertion runtime in MILLISECONDS as the runner measured it, and
+ * it is what the holding-cost report prefers over coherence's own wall clock (which, on a
+ * batch-resolved claim, would be timing a map lookup). It is optional in the schema and
+ * optional here: a report without it yields tests with no `duration`, never zeroes.
  */
 export function parseVitestJson(text: string): BatchReport {
   const candidates = extractJsonObjects(text);
@@ -370,9 +387,18 @@ export function runTestBatch(cmd: string[], root: string, format: TestBatchForma
  * detail, naming that oracle and the specific test that failed. A batch verdict of "the
  * suite is red" would be a regression on the per-claim path, so no caller aggregates:
  * the batch is shared EVIDENCE, never a shared verdict.
+ *
+ * `ms` — THE HOLDING COST OF THIS CLAIM: the summed runner-reported duration of every test
+ * the claim's name matched, because a claim that matches three tests is buying all three.
+ * It is present ONLY when at least one match actually carried a duration; a report with no
+ * timings answers "unknown", not "free". The sum spans matches whatever their status, since
+ * a failing or skipped match still consumed (or deliberately did not consume) suite time,
+ * and the cost report is about the suite, not about the verdict.
  */
-export function resolveFromBatch(report: BatchReport, name: string): { ok: boolean; detail: string } {
+export function resolveFromBatch(report: BatchReport, name: string): { ok: boolean; detail: string; ms?: number } {
   const matches = report.tests.filter((t) => t.fullName.includes(name));
+  const timed = matches.filter((t) => typeof t.duration === "number");
+  const ms = timed.length ? timed.reduce((n, t) => n + (t.duration as number), 0) : undefined;
   if (!matches.length)
     return {
       ok: false,
@@ -383,7 +409,7 @@ export function resolveFromBatch(report: BatchReport, name: string): { ok: boole
   const failed = matches.filter((t) => t.status === "failed");
   if (failed.length)
     return {
-      ok: false,
+      ok: false, ms,
       detail: `test "${name}" — matching test FAILED in the batch report: "${failed[0].fullName}"`
         + (failed.length > 1 ? ` (+${failed.length - 1} more matching failure(s))` : ""),
     };
@@ -392,9 +418,9 @@ export function resolveFromBatch(report: BatchReport, name: string): { ok: boole
   // "N passed" then finds nothing to count.
   if (!matches.some((t) => t.status === "passed"))
     return {
-      ok: false,
+      ok: false, ms,
       detail: `test "${name}" — ${matches.length} matching test(s), none of which ran`
         + ` (${[...new Set(matches.map((m) => m.status))].sort().join(", ")}) — no positive evidence`,
     };
-  return { ok: true, detail: "" };
+  return { ok: true, detail: "", ms };
 }

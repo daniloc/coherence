@@ -55,8 +55,21 @@ export interface PanelModel {
   totals: Record<LightKind, number>;
   gaps: number;                // dialect-gap skips across the tree
   verify?: { at: string; tier: string; lastFastAt?: string; lastFullAt?: string; failures: number; jobs: number; commit: string | null; coverage: { components: number; claimed: number; withWhy: number }; invariants: { total: number; anchored: number } };
-  atlas?: { at: string; tiers: { enshrined: number; checked: number; convention: number }; tier3Security: string[]; flags: number };
+  /** `heat` is the atlas's per-crossing churn share, hottest first — the map's temperature.
+   *  Absent (not zero) for a record whose crossings carry no reading. */
+  atlas?: { at: string; tiers: { enshrined: number; checked: number; convention: number }; tier3Security: string[]; flags: number; heat?: Array<{ sym: string; heat: number }> };
   drift?: { at: string; locality: number[]; spread: number[]; verdict: string };
+  /** THE WORK LEDGER'S OTHER HALF: what the last verify paid to keep the claims true, and the
+   *  single most expensive claim. Straight from `status.verify.cost` — the panel re-runs
+   *  nothing and times nothing itself (see the module header's contract). */
+  cost?: { totalMs: number; top?: { node: string; claim: string; ms: number } };
+}
+
+/** How many rows the masthead occupies — 3, plus the ENERGY strip when the record carries
+ *  cost or heat. Shared by the renderer and the interactive scroll math, which must agree
+ *  about where the body starts or the cursor drifts out of the window by a row. */
+export function mastheadHeight(m: PanelModel): number {
+  return m.cost || (m.atlas?.heat && m.atlas.heat.length) ? 4 : 3;
 }
 
 export function humanAge(iso: string, now: Date): string {
@@ -68,6 +81,10 @@ export function humanAge(iso: string, now: Date): string {
 }
 
 const isGapSkip = (r: ClaimRecord) => r.kind === "skip" && !!r.detail?.includes("dialect gap");
+
+/** How many crossings the energy strip's heat spark covers — the hot head of the map, sized
+ *  to a glyph run that still reads as a shape at masthead density. */
+const PANEL_HEAT_N = 8;
 
 /** A claim's light from its record. A PASS taken at another commit is STALE — last
  *  known green, honestly aged — never re-badged as current. FAIL/SKIP keep their kind
@@ -141,8 +158,17 @@ export function buildModel(graph: Graph, status: StatusRecord, head: { commit: s
     atlas: a && {
       at: a.at, tiers: a.tiers, tier3Security: a.tier3Security,
       flags: a.drift.length + a.dangling.length + a.overclaimed.length,
+      // Hottest crossings first. Crossings with NO reading are dropped rather than sorted as
+      // zero — an unmeasurable crossing is not a cold one, and the strip must not imply it is.
+      heat: (() => {
+        const h = a.crossings.filter((c) => typeof c.heat === "number").map((c) => ({ sym: c.sym, heat: c.heat as number }));
+        return h.length ? h.sort((x, y) => y.heat - x.heat).slice(0, PANEL_HEAT_N) : undefined;
+      })(),
     },
     drift: d && d.locality.length ? { at: d.at, locality: d.locality, spread: d.spread, verdict: d.verdict } : undefined,
+    // The record's cost vector is already ranked (verify writes it most-expensive-first), so
+    // `top` is its head — no re-ranking, no re-timing.
+    cost: v?.cost && { totalMs: v.cost.totalMs, top: v.cost.claims[0] ? { node: v.cost.claims[0].node, claim: v.cost.claims[0].claim, ms: v.cost.claims[0].ms } : undefined },
   };
 }
 
@@ -242,8 +268,27 @@ function masthead(m: PanelModel, S: Sty, cols: number, now: Date): string[] {
     parts.push(`drift LOC ${spark(d.locality, 0, 1)}${la} SPR ${sa} ${S.dim(humanAge(d.at, now))}`);
   } else parts.push(S.dim("drift: not run (d)"));
   const l3 = ` ${parts.join(`  ${S.dim("|")}  `)}`;
-  return [l1, l2, l3];
+  // ── THE ENERGY STRIP — the work ledger at masthead altitude: what the claims cost to hold
+  // true, and where the map is hot. PRESENT ONLY WHEN THERE IS DATA. There is deliberately no
+  // "energy: not run" placeholder like atlas/drift carry: those name a command the operator
+  // can press (a/d); cost and heat are BYPRODUCTS of runs they already have keys for, so a nag
+  // row would advertise a button that does not exist.
+  const energy: string[] = [];
+  if (m.cost) {
+    const top = m.cost.top;
+    energy.push(`cost ${fmtMs(m.cost.totalMs)}${top ? ` ${S.dim("·")} top ${S.yel(fmtMs(top.ms))} ${clip(top.node, 18)}` : ""}`);
+  }
+  const heat = m.atlas?.heat;
+  if (heat && heat.length) {
+    const max = Math.max(...heat.map((h) => h.heat));
+    energy.push(`heat ${S.mag(spark(heat.map((h) => h.heat), 0, max))} ${clip(heat[0].sym, 22)} ${S.dim(`${Math.round(heat[0].heat * 100)}%`)}`);
+  }
+  const l4 = ` ${S.dim("energy")}  ${energy.join(`  ${S.dim("|")}  `)}`;
+  return energy.length ? [l1, l2, l3, l4] : [l1, l2, l3];
 }
+
+/** Milliseconds at a glance: seconds once it is worth a second, otherwise raw ms. */
+const fmtMs = (ms: number) => ms >= 1000 ? `${(ms / 1000).toFixed(1)}s` : `${Math.round(ms)}ms`;
 
 function listBody(m: PanelModel, ui: UIState, S: Sty, cols: number): string[] {
   const nameW = Math.min(22, Math.max(8, ...m.comps.map((c) => c.label.length)));
@@ -487,7 +532,10 @@ export async function runPanel(cfg: Config, opts: PanelOpts): Promise<number> {
         else if (k === "a") runChild(["atlas"], "atlas");
         else if (k === "d") runChild(["drift"], "drift");
         // keep the cursor visible in the window
-        const bodyH = Math.max(1, (size().rows) - 3 - 2 - 3 - 1);
+        // masthead (3, or 4 with the energy strip) + 2 separators + 3 stream rows + keybar —
+        // derived rather than hard-coded so the strip's appearance cannot shift the window
+        // out from under the cursor.
+        const bodyH = Math.max(1, (size().rows) - mastheadHeight(model) - 2 - 3 - 1);
         if (ui.cursor < ui.scroll) ui.scroll = ui.cursor;
         if (ui.cursor >= ui.scroll + bodyH) ui.scroll = ui.cursor - bodyH + 1;
       } else if (ui.view === "comp") {

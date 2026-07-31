@@ -48,6 +48,11 @@ export async function applyVerdicts(cfg: Config, verdictsPath: string): Promise<
 // are capped — but the overflow is always ANNOUNCED, never silently dropped: a truncated
 // list that looks complete is worse than no list.
 const ADVISORY_LIST_CAP = 8;
+/** How many claims of the holding-cost vector reach `.coherence/status.json`. The record
+ *  exists to be READ (the panel's energy strip, a `jq` one-liner), and the readable part of
+ *  a cost ranking is its head — the tail is a per-claim timing dump that would grow the
+ *  record by a row per claim to show nothing. */
+const COST_RECORD_CAP = 5;
 function listCapped<T>(items: T[], line: (t: T) => string): void {
   for (const t of items.slice(0, ADVISORY_LIST_CAP)) console.log(line(t));
   const rest = items.length - ADVISORY_LIST_CAP;
@@ -97,6 +102,43 @@ export function neverRedFinding(node: string, claim: string, runs: number): Find
       + " had tried — write the observed negative control into `## refutations` and this question is"
       + " answered. If it stays GREEN, the oracle is not testing the claim, and what needs fixing is"
       + " the oracle.",
+  };
+}
+
+/** A claim that is expensive to KEEP TRUE. Every claim is a standing bill: the oracle behind
+ *  it runs on every verify, forever, and one claim taking a quarter of the whole tier is a
+ *  fact about the design of that oracle, not about the code it guards. This is the WEAKEST
+ *  finding the harness raises — an expensive claim can be entirely correct, and often the
+ *  honest answer is "the domain really is that big" — so it never displaces a correctness
+ *  question (see the raise order below).
+ *
+ *  IDENTITY IS THE CLAIM AND ITS NODE, WITH NO NUMBER IN IT. The millisecond reading is the
+ *  most volatile thing here — it moves with machine load, cache state and the pool's mood —
+ *  so it lives in the sentence, exactly like never-red's run count. */
+export function costFinding(node: string, claim: string, ms: number, totalMs: number): Finding {
+  const share = totalMs > 0 ? Math.round((ms / totalMs) * 100) : 0;
+  return {
+    advisory: "holding-cost",
+    subject: `${node}::${claim}`,
+    observation: `[${node}] ${claim} — ${(ms / 1000).toFixed(2)}s to verify, ${share}% of the whole claim tier`,
+    because:
+      "this claim is not verified once; it is verified on every run, forever. What it costs to"
+      + " hold true is paid by every commit, every pre-commit hook and every CI job for as long"
+      + " as the claim stands — and a tier that gets slow enough stops being run at all, which"
+      + " is how a green harness quietly becomes an unrun one.",
+    couldBe: [
+      "the domain genuinely is that large — the oracle enumerates a real live domain and the"
+      + " cost is the honest price of totality over it",
+      "the oracle re-does shared setup per case (a pool boot, a fixture build, a network or"
+      + " filesystem round trip inside the loop) that could be hoisted out of it",
+      "the reading is an artifact of HOW it was timed — a pooled runner reports in-worker time,"
+      + " which is not this claim's share of the suite's wall clock",
+    ],
+    discriminatedBy:
+      "time the oracle alone, twice: once as it stands and once with its per-case setup hoisted"
+      + " out of the loop. If the cost tracks the domain's size, it is the honest price of totality"
+      + " and the finding closes as such. If it collapses when the setup moves, the cost was"
+      + " apparatus, not evidence, and the oracle is what needs fixing — the claim is fine.",
   };
 }
 
@@ -180,7 +222,7 @@ export async function runVerify(cfg: Config, graph: Graph, opts: VerifyOpts): Pr
   const batchFormat = fmt.format;
   // Collected per advisory rather than in one list, so the concat below can state the
   // PRIORITY explicitly. The cap is per run, so under it the order is the whole policy.
-  const neverRed: Finding[] = [], warnedKind: Finding[] = [], refutation: Finding[] = [];
+  const neverRed: Finding[] = [], warnedKind: Finding[] = [], refutation: Finding[] = [], cost: Finding[] = [];
   // Which invariants never-red already named — the refutation advisory is a superset of it
   // and would otherwise raise the same question twice under two keys.
   const neverRedInvariants = new Set<string>();
@@ -254,7 +296,12 @@ export async function runVerify(cfg: Config, graph: Graph, opts: VerifyOpts): Pr
     }
     return access;
   };
-  type Sig = { kind: "pass" | "fail" | "skip"; claim: string; node: string; detail?: string; declaredKind?: string };
+  // `ms`/`msSource` are the claim's HOLDING COST — what it costs, per run, to keep this claim
+  // true. Two sources, and which one answered is recorded rather than blended: "report" is the
+  // runner's own per-test duration (the only honest reading for a batch-resolved claim, whose
+  // wall time here is a map lookup), "wall" is verify's own clock around evalClaim (the only
+  // reading available for everything else — a typecheck, a fetch, a serial runner boot).
+  type Sig = { kind: "pass" | "fail" | "skip"; claim: string; node: string; detail?: string; declaredKind?: string; ms?: number; msSource?: "wall" | "report" };
   // Undeclared (the default) leaves the whole mechanism off: kinds are neither required
   // nor checked, and every existing spec in the world parses unchanged.
   const kindPolicy = cfg.claimKinds;
@@ -279,7 +326,7 @@ export async function runVerify(cfg: Config, graph: Graph, opts: VerifyOpts): Pr
     };
     for (const form of CLAIM_FORMS) {
       const m = form.match(claim);
-      if (m) { const r = await form.evaluate(ctx, m); return { kind: r.kind, claim, node, detail: r.detail, declaredKind }; }
+      if (m) { const r = await form.evaluate(ctx, m); return { kind: r.kind, claim, node, detail: r.detail, declaredKind, ms: r.ms }; }
     }
     return { kind: "skip", claim, node, detail: "no verifier (dialect gap)", declaredKind };
   };
@@ -295,7 +342,23 @@ export async function runVerify(cfg: Config, graph: Graph, opts: VerifyOpts): Pr
   // staged run doesn't dump every undocumented symbol in the repo as a job.
   const symbols = graph.nodes.filter((n) => n.kind === "symbol" && (!opts.only || (n.path != null && opts.only.has(ownerOf(n.path, compDirs)))));
   const sigs: Sig[] = [];
-  for (const c of comps) { const dir = c.id.slice(2); const diskDir = dir === "." ? root : join(root, dir); for (const cl of c.claims || []) sigs.push(await evalClaim(cl, diskDir, c.label, (c as any).claimKinds?.[cl])); }
+  // THE CLOCK RUNS AROUND EVERY CLAIM, and the form's own reading OUTRANKS it when there is
+  // one. Wall time here is the honest cost of a typecheck, a fetch or a serial runner boot;
+  // it is a lie for a batch-resolved claim, where the whole suite already ran once and this
+  // measurement would be a map lookup. So: report ms if the form supplied it, wall otherwise,
+  // and the record says which — a cost table that silently mixes the two is unreadable.
+  for (const c of comps) {
+    const dir = c.id.slice(2);
+    const diskDir = dir === "." ? root : join(root, dir);
+    for (const cl of c.claims || []) {
+      const t0 = performance.now();
+      const sg = await evalClaim(cl, diskDir, c.label, (c as any).claimKinds?.[cl]);
+      const wall = performance.now() - t0;
+      if (sg.ms == null) { sg.ms = wall; sg.msSource = "wall"; }
+      else sg.msSource = "report";
+      sigs.push(sg);
+    }
+  }
   const red = sigs.filter((s) => s.kind === "fail").length;
   console.log(`claims: ${sigs.length} · ${sigs.filter((s) => s.kind === "pass").length} green · ${red} red · ${sigs.filter((s) => s.kind === "skip").length} skipped`);
   for (const s of sigs) if (s.kind !== "pass") console.log(`  ${s.kind === "fail" ? "✗" : "·"} [${s.node}] ${s.claim}${s.detail ? ` — ${s.detail}` : ""}`);
@@ -385,6 +448,44 @@ export async function runVerify(cfg: Config, graph: Graph, opts: VerifyOpts): Pr
     }
   }
 
+  // ── HOLDING COST. The work ledger's other half: verification says whether the claims are
+  // true, this says what it costs to KEEP them true, every run, forever. The instrument is
+  // per-claim `ms` (see Sig) and the report is deliberately a TOP-N, not a table — the point
+  // is the tail that dominates, not a per-claim timing dump nobody reads.
+  //
+  // THE FLOOR IS THE SAME PHILOSOPHY AS THE REFUTATIONS FLOOR: an advisory that fires on every
+  // project on every run is one people learn to scroll past. On a fast suite there is nothing
+  // to say, so it says nothing — no "cost: 0.1s" line, no reassurance. It speaks only when the
+  // tier costs a noticeable second in aggregate, or when a single claim is heavy enough to be
+  // worth a name on its own.
+  const totalMs = sigs.reduce((n, s) => n + (s.ms ?? 0), 0);
+  const COST_TOTAL_FLOOR_MS = 1000, COST_CLAIM_FLOOR_MS = 250;
+  // Most expensive first — the report's top-5 and the record's stored vector are both slices
+  // of this one ordering, so the panel can never disagree with the console about what is
+  // expensive.
+  const timed = sigs.filter((s) => s.ms != null).sort((a, b) => (b.ms as number) - (a.ms as number));
+  {
+    const loud = totalMs >= COST_TOTAL_FLOOR_MS || timed.some((s) => (s.ms as number) >= COST_CLAIM_FLOOR_MS);
+    if (timed.length && loud) {
+      // WORDED AGAINST A MEASURED FACT, not a guess: the total is a SUM OF PER-CLAIM COSTS
+      // and a pooled runner overlaps them, so it is NOT the suite's wall clock. Measured on a
+      // 4-file vitest suite sleeping 800ms per file: wall 1.04s, sum 3.21s — a 3.1x overshoot,
+      // because each worker's ~800ms is a truthful reading of the same wall seconds. Calling
+      // this "took 3.2s" would be the instrument lying about what it measured.
+      console.log(`holding cost: ${(totalMs / 1000).toFixed(1)}s across ${timed.length} claim(s) — summed per-claim cost of keeping them true, per run (a pooled runner overlaps some of it)`);
+      for (const s of timed.slice(0, 5))
+        console.log(`  · [cost] [${s.node}] ${s.claim.length > 60 ? s.claim.slice(0, 59) + "…" : s.claim} — ${(s.ms as number).toFixed(0)}ms (${s.msSource})`);
+    }
+    // A claim raised for cost is one that is BOTH expensive in absolute terms and a large
+    // share of the bill: a whole second is the floor below which nobody should be asked a
+    // question, and a quarter of the tier is what makes one claim the answer to "why is this
+    // slow". Both, because a 1.1s claim in a 40s tier is not the story, and a 25% share of a
+    // 0.2s tier is not a cost.
+    for (const s of timed)
+      if ((s.ms as number) >= Math.max(COST_TOTAL_FLOOR_MS, totalMs * 0.25))
+        cost.push(costFinding(s.node, s.claim, s.ms as number, totalMs));
+  }
+
   // ── RAISING. One call, after every advisory has spoken, because the cap is per RUN and
   // a per-advisory cap would let three detectors open nine questions between them while
   // each believed it was being modest.
@@ -397,10 +498,15 @@ export async function runVerify(cfg: Config, graph: Graph, opts: VerifyOpts): Pr
   //   3. refutation    — every invariant lacking a negative control. Broadest, weakest, and
   //                      a strict superset of never-red's boundary claims, so it drops the
   //                      ones already asked about rather than asking the same thing twice.
+  //   4. holding-cost  — the weakest signal there is, and LAST on purpose: an expensive claim
+  //                      may be perfectly correct, so "costly to keep true" must never outrank
+  //                      a question about whether something is true at all. Cost is a question
+  //                      about the apparatus; the three above are questions about the record.
   {
     const findings = [
       ...neverRed, ...warnedKind,
       ...refutation.filter((f) => !neverRedInvariants.has(f.subject)),
+      ...cost,
     ];
     const report = raiseFindings(cfg, readJournal(cfg).records, findings, {
       enabled: opts.raise, cap: opts.raiseCap, session: opts.session, agent: opts.agent,
@@ -494,6 +600,11 @@ export async function runVerify(cfg: Config, graph: Graph, opts: VerifyOpts): Pr
         : null,
       jobs: jobs.length,
       failures,
+      // The HOLDING-COST vector, top-N rather than every claim: the record is read by the
+      // panel, which shows the head of it, and a per-claim timing dump would double the size
+      // of status.json to carry a tail nobody displays. `source` rides along per row because
+      // a report ms and a wall ms are not the same measurement (see Sig).
+      cost: { totalMs, claims: timed.slice(0, COST_RECORD_CAP).map((s) => ({ node: s.node, claim: s.claim, ms: s.ms as number, source: s.msSource ?? "wall" })) },
     });
   } catch { /* the record is best-effort; the console report already happened */ }
   return failures === 0 ? 0 : 1;

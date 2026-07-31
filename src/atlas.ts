@@ -19,10 +19,65 @@ import type { Config, Graph } from "./types.ts";
 import { scanSources } from "./sidecar.ts";
 import { allBoundaries, boundariesAt } from "./structural.ts";
 import { recordAtlas } from "./status.ts";
+import { readCommitLog, fileChurn, CHURN_WINDOW, type Commit } from "./evolution.ts";
 import { writeFile, mkdir } from "node:fs/promises";
 import { join } from "node:path";
 
 const pad = (s: unknown, n: number) => String(s).padEnd(n);
+
+// ── HEAT: where the map is being worked ───────────────────────────────────────────────
+//
+// A tier grade says how well a crossing is DEFENDED; it says nothing about whether anyone
+// has been near it lately. Heat is the other axis: the share of recent concern-carrying
+// commits that touched the file defining this chokepoint. A tier-3 convention crossing in
+// code nobody has opened in a year and a tier-3 crossing in the file half the repo's
+// commits touch are the same grade and completely different risks.
+//
+// HEAT IS A TEMPERATURE, NOT A CORRECTNESS FACT, and it therefore grades NOTHING: it is
+// absent from `--check` entirely (drift/dangling/over-claim are the only verdicts), it is
+// absent from the scene's visuals, and a crossing whose heat cannot be measured renders
+// `—`. See the `--check` block at the bottom of this file.
+
+const BARS = "▁▂▃▄▅▆▇█";
+
+/**
+ * Per-chokepoint HEAT — for each symbol, the MAX over its defining files of that file's
+ * churn share (touches / commits considered), using the shared EVOLUTION store's
+ * `fileChurn` (same 2…BULK concern filter every other derivation applies).
+ *
+ * MAX, NOT SUM OR MEAN. A symbol can resolve to more than one file (an overload, a re-export,
+ * the same name defined in two places). Summing would let a cold twin inflate a hot one past
+ * 100% of a share it never had; averaging would let a cold twin HIDE a genuinely hot
+ * definition, which is the failure that matters — the question heat answers is "is anyone
+ * working near this chokepoint", and one hot definition is a yes whatever the others say.
+ *
+ * ABSENCE IS NOT ZERO. A symbol with no node in the graph, and an empty history (nothing
+ * survived the concern filter), yield NO ENTRY — the caller renders `—`. A symbol that IS in
+ * the graph over a real history and was simply never touched yields 0, which is a measurement.
+ */
+export function crossingHeat(graph: Graph, syms: string[], commits: Commit[]): Map<string, number> {
+  const out = new Map<string, number>();
+  const { byFile, considered } = fileChurn(commits);
+  if (!considered) return out;
+  const paths = new Map<string, string[]>();
+  for (const n of graph.nodes)
+    if (n.kind === "symbol" && n.path) paths.set(n.label, [...(paths.get(n.label) ?? []), n.path]);
+  for (const sym of syms) {
+    const ps = paths.get(sym);
+    if (!ps || !ps.length) continue;
+    out.set(sym, Math.max(...ps.map((p) => (byFile.get(p) ?? 0) / considered)));
+  }
+  return out;
+}
+
+/** One crossing's heat as a bar + the raw share, normalized against the HOTTEST crossing in
+ *  this render so the bar reads as a comparison between crossings rather than against an
+ *  arbitrary absolute. `—` when the crossing has no reading at all. */
+export function heatCell(heat: number | undefined, max: number): string {
+  if (heat === undefined) return "—";
+  const i = max > 0 ? Math.round((heat / max) * (BARS.length - 1)) : 0;
+  return `${BARS[i]} ${Math.round(heat * 100)}%`;
+}
 
 export async function atlas(cfg: Config, graph: Graph, mode: "render" | "check"): Promise<number> {
   const a = cfg.atlas;
@@ -67,9 +122,20 @@ export async function atlas(cfg: Config, graph: Graph, mode: "render" | "check")
     return { tier: 2, label: "totality-checked", note: c.oracle + via, overclaim: false };
   };
 
+  // Heat, computed ONCE for every symbol the atlas could ask about — the crossing itself and
+  // the `anchoredBy` symbol a crossing cites when the crossing's own name has no graph node
+  // (the same fallback `tierOf` already uses for the boundary claim). One git read, one pass.
+  const heatSyms = [...Object.keys(transitions), ...Object.values(transitions).map((d) => d.anchoredBy).filter(Boolean) as string[]];
+  const heatOf = crossingHeat(graph, heatSyms, readCommitLog(cfg, CHURN_WINDOW));
+
   const edges = Object.entries(transitions).map(([sym, def]) => ({
     sym, ...def, ...tierOf(sym, def), present: symbolExists(sym), pending: knownPending.has(sym),
+    // undefined (never 0) when neither the crossing nor its anchor resolves to a graph symbol,
+    // or when history carries nothing to measure against.
+    heat: heatOf.get(sym) ?? (def.anchoredBy ? heatOf.get(def.anchoredBy) : undefined),
   }));
+  // The normalizer for the bar glyphs: the hottest crossing on this map.
+  const maxHeat = edges.reduce((m, e) => (e.heat !== undefined && e.heat > m ? e.heat : m), 0);
   // FAIL-CLOSED over-claim: `enshrined` markers with no backing `via guard` boundary claim.
   const overclaimed = edges.filter((e) => e.overclaim);
 
@@ -95,7 +161,7 @@ export async function atlas(cfg: Config, graph: Graph, mode: "render" | "check")
     out.push(`\n  ── tier-${tier} · ${label} ──`);
     for (const e of group) {
       const flags = (e.security ? "" : " [non-security]") + (!e.present ? (e.pending ? " [PENDING]" : " [DANGLING]") : "");
-      out.push(`    ${pad(`${e.from} → ${e.to}`, 38)} [tier-${e.tier}] ${pad(e.sym, 24)}${flags}`);
+      out.push(`    ${pad(`${e.from} → ${e.to}`, 38)} [tier-${e.tier}] ${pad(e.sym, 24)} ${pad(`heat ${heatCell(e.heat, maxHeat)}`, 12)}${flags}`);
       out.push(`      ${pad("", 38)} translates: ${e.translates}`);
     }
   }
@@ -130,11 +196,14 @@ export async function atlas(cfg: Config, graph: Graph, mode: "render" | "check")
     "## Charts (trust domains)", "", "| chart | description |", "| --- | --- |"];
   for (const [name, desc] of Object.entries(charts)) L.push(`| \`${name}\` | ${desc} |`);
   L.push("", "## Transition maps (chokepoints), by tier", "",
-    "| tier | from → to | chokepoint | oracle | re-establishes |", "| --- | --- | --- | --- | --- |");
+    "`heat` is the share of recent commits that touched the file defining the chokepoint — where",
+    "the map is being worked. It is a temperature, not a grade: it never affects `atlas --check`,",
+    "and `—` means unmeasurable (no such symbol in the graph, or no history), never cold.", "",
+    "| tier | from → to | chokepoint | oracle | re-establishes | heat |", "| --- | --- | --- | --- | --- | --- |");
   for (const tier of [1, 2, 3])
     for (const e of edges.filter((x) => x.tier === tier).sort((x, y) => x.sym.localeCompare(y.sym))) {
       const mark = e.present ? "" : (e.pending ? " _(pending)_" : " _(DANGLING)_");
-      L.push(`| tier-${e.tier} | \`${e.from}\` → \`${e.to}\` | \`${e.sym}\`${mark} | ${e.note} | ${e.translates} |`);
+      L.push(`| tier-${e.tier} | \`${e.from}\` → \`${e.to}\` | \`${e.sym}\`${mark} | ${e.note} | ${e.translates} | ${heatCell(e.heat, maxHeat)} |`);
     }
   L.push("", `**Tiers:** ${counts[0]} enshrined · ${counts[1]} totality-checked · ${counts[2]} convention (${edges.length} crossings).`, "");
   if (tier3sec.length) {
@@ -154,7 +223,10 @@ export async function atlas(cfg: Config, graph: Graph, mode: "render" | "check")
   try {
     await recordAtlas(cfg, {
       tiers: { enshrined: counts[0], checked: counts[1], convention: counts[2] },
-      crossings: edges.map((e) => ({ sym: e.sym, from: e.from, to: e.to, tier: e.tier, security: !!e.security, note: e.note, translates: e.translates, present: e.present, pending: e.pending })),
+      // `heat` is the RAW share (0..1), never the rendered bar: the record stores the
+      // measurement and leaves normalization to whoever draws it (the panel normalizes over
+      // its own top-N, this render over the whole map).
+      crossings: edges.map((e) => ({ sym: e.sym, from: e.from, to: e.to, tier: e.tier, security: !!e.security, note: e.note, translates: e.translates, present: e.present, pending: e.pending, heat: e.heat })),
       drift,
       dangling: dangling.map((e) => e.sym),
       overclaimed: overclaimed.map((e) => e.sym),
@@ -163,6 +235,11 @@ export async function atlas(cfg: Config, graph: Graph, mode: "render" | "check")
   } catch { /* record is best-effort */ }
 
   if (mode === "check") {
+    // HEAT IS ABSENT FROM THIS VERDICT, ON PURPOSE. `--check` fails on drift, dangling edges
+    // and over-claim — three statements about whether the map matches the territory. Heat is
+    // a temperature: a hot crossing is not wrong, a cold one is not right, and an unmeasurable
+    // one is not a defect. Grading on it would make a run's verdict depend on how recently
+    // somebody committed, which is the definition of a check nobody can act on.
     if (drift.length || dangling.length || overclaimed.length) {
       console.error("  ✗ atlas --check FAILED — the atlas is out of sync with the boundary claims.");
       if (drift.length) console.error("    drift: " + drift.join(", "));

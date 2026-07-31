@@ -155,3 +155,137 @@ test("coverage — a component with no claims, or no why, fails loudly", async (
     assert.match(b.out, /states no rationale/);
   });
 });
+
+// ── HOLDING COST — what it costs to keep the claims true, per run ─────────────────────
+//
+// Verification says whether a claim is true. This says what standing bill it leaves behind:
+// the oracle runs again on every commit, forever. Three properties are pinned here, and the
+// second is the one a future refactor is most likely to break:
+//   1. The RUNNER'S OWN duration outranks verify's wall clock, and the record says which
+//      clock answered — on a batch-resolved claim the wall clock times a map lookup.
+//   2. The vector is RUN-LEVEL and rewritten WHOLE: a claim that disappears from the specs
+//      must not leave a ghost row ranking a run that no longer exists.
+//   3. The report has a FLOOR. On a fast suite it says nothing at all.
+import { readFile as readFileP, writeFile as writeFileP, mkdir as mkdirP } from "node:fs/promises";
+import type { StatusRecord } from "../src/status.ts";
+
+/** A vitest-shaped report where each named test carries a known duration. */
+const timedReport = (tests: Array<[string, number]>) => JSON.stringify({
+  testResults: [{
+    name: "/proj/a.test.ts", status: "passed",
+    assertionResults: tests.map(([fullName, duration]) => ({
+      ancestorTitles: [], fullName, title: fullName, status: "passed", duration, failureMessages: [],
+    })),
+  }],
+});
+
+/** A fake batch runner that writes `body` to the --outputFile it was handed. */
+const reportRunner = (body: string) => `
+const fs = require("node:fs"), path = require("node:path");
+const of = process.argv.find((a) => a.startsWith("--outputFile="));
+const p = of.slice("--outputFile=".length);
+fs.mkdirSync(path.dirname(p), { recursive: true });
+fs.writeFileSync(p, ${JSON.stringify(body)});
+process.exit(0);
+`;
+
+const readRecord = async (root: string): Promise<StatusRecord> =>
+  JSON.parse(await readFileP(join(root, ".coherence", "status.json"), "utf8"));
+
+test("holding cost — the report prefers the RUNNER's duration over wall time, and says so", async () => {
+  const report = timedReport([["alpha", 2500], ["beta", 300], ["gamma", 40]]);
+  await withProject({ "runner.js": reportRunner(report) }, async (root) => {
+    const c = cfg(root, { testBatch: ["node", join(root, "runner.js"), "--outputFile=.coherence/r.json"] });
+    const g = graph([comp(".", { label: "Root", why: "r", claims: [
+      'passes test "alpha"', 'passes test "beta"', 'passes test "gamma"',
+    ] })]);
+    const r = await runCaptured(() => runVerify(c, g, {}));
+    assert.equal(r.code, 0, r.out);
+    // the total is a SUM OF PER-CLAIM COSTS, and the line must not read as suite wall time:
+    // measured, a pooled runner overlaps them (see the resolved conjecture in the journal)
+    assert.match(r.out, /holding cost: 2\.8s across 3 claim\(s\) — summed per-claim cost/);
+    assert.match(r.out, /a pooled runner overlaps some of it/);
+    // most expensive first, with the ms AND the clock that produced it
+    assert.match(r.out, /\[cost\] \[Root\] passes test "alpha" — 2500ms \(report\)/);
+    // the wall clock around a batch-resolved claim times a map lookup — it must NOT be what
+    // is reported, and the batch SPAWN (the expensive part) is not charged to claim one
+    assert.doesNotMatch(r.out, /passes test "alpha" — \d+ms \(wall\)/);
+
+    const rec = await readRecord(root);
+    assert.ok(rec.verify?.cost, "the cost vector is filed in the run record");
+    assert.equal(Math.round(rec.verify!.cost!.totalMs), 2840);
+    assert.deepEqual(rec.verify!.cost!.claims.map((x) => x.claim), [
+      'passes test "alpha"', 'passes test "beta"', 'passes test "gamma"',
+    ]);
+    assert.equal(rec.verify!.cost!.claims[0].source, "report");
+    assert.equal(rec.verify!.cost!.claims[0].node, "Root");
+  });
+});
+
+test("holding cost — the vector is REWRITTEN WHOLE: a dropped claim leaves no ghost row", async () => {
+  // The anti-merge property, asserted directly. `mergeClaimRecords` deliberately carries
+  // per-claim history forward across runs; the cost vector must NOT ride that path, or a row
+  // from run one would sit in run two's ranking describing a run that no longer happened.
+  const report = timedReport([["alpha", 2500], ["beta", 300], ["gamma", 40]]);
+  await withProject({ "runner.js": reportRunner(report) }, async (root) => {
+    const c = cfg(root, { testBatch: ["node", join(root, "runner.js"), "--outputFile=.coherence/r.json"] });
+    const three = graph([comp(".", { label: "Root", why: "r", claims: [
+      'passes test "alpha"', 'passes test "beta"', 'passes test "gamma"',
+    ] })]);
+    await runCaptured(() => runVerify(c, three, {}));
+    const first = await readRecord(root);
+    assert.equal(first.verify!.cost!.claims.length, 3);
+
+    // run two: the same project, one claim left
+    const one = graph([comp(".", { label: "Root", why: "r", claims: ['passes test "gamma"'] })]);
+    await runCaptured(() => runVerify(c, one, {}));
+    const second = await readRecord(root);
+    assert.deepEqual(second.verify!.cost!.claims.map((x) => x.claim), ['passes test "gamma"']);
+    assert.ok(!second.verify!.cost!.claims.some((x) => x.claim.includes("alpha")), "no ghost row from run one");
+    assert.ok(second.verify!.cost!.totalMs < 100, `run two's total is run two's alone (got ${second.verify!.cost!.totalMs})`);
+  });
+});
+
+test("holding cost — silent below the floor: a fast suite gets no cost report at all", async () => {
+  await withProject({ "present.txt": "" }, async (root) => {
+    const g = graph([comp(".", { claims: ["present.txt exists at root"], why: "r" })]);
+    const r = await runCaptured(() => runVerify(cfg(root), g, {}));
+    assert.equal(r.code, 0, r.out);
+    assert.doesNotMatch(r.out, /holding cost/, "an advisory that fires on every fast suite is one people scroll past");
+    // …but the measurement is still FILED: quiet on the console is not the same as unmeasured
+    const rec = await readRecord(root);
+    assert.ok(rec.verify?.cost, "the record carries the vector even when the console does not");
+  });
+});
+
+test("holding cost — a cost finding is raised LAST: it never displaces a correctness question", async () => {
+  const report = timedReport([["alpha", 2500]]);
+  await withProject({ "runner.js": reportRunner(report) }, async (root) => {
+    // Seed the record so `alpha` is SEASONED (3 green runs, never failed) — that makes it a
+    // never-red finding as well as the expensive one, so both advisories point at the same
+    // claim and the cap has to choose between them.
+    await mkdirP(join(root, ".coherence"), { recursive: true });
+    await writeFileP(join(root, ".coherence", "status.json"), JSON.stringify({
+      version: 1,
+      verify: {
+        at: "2026-01-01T00:00:00.000Z", commit: null, dirty: false, tier: "full", scope: null,
+        claims: [{ node: "Root", claim: 'passes test "alpha"', kind: "pass", at: "2026-01-01T00:00:00.000Z", commit: null, tier: "full", runs: 5, everFailed: false }],
+        coverage: { components: 1, claimed: 1, withWhy: 1, symbols: 0, documented: 0 },
+        invariants: { total: 0, anchored: 0, gaps: [] },
+        narrative: null, jobs: 0, failures: 0,
+      },
+    }, null, 2));
+    const c = cfg(root, { testBatch: ["node", join(root, "runner.js"), "--outputFile=.coherence/r.json"] });
+    const g = graph([comp(".", { label: "Root", why: "r", claims: ['passes test "alpha"'] })]);
+    const r = await runCaptured(() => runVerify(c, g, { raise: true, raiseCap: 1, session: "s-testtesttest" }));
+    assert.equal(r.code, 0, r.out);
+    // both advisories fired on the same claim …
+    assert.match(r.out, /holding cost:/);
+    assert.match(r.out, /never red: 1 claim/);
+    // … and the ONE question the cap allowed is the correctness one, not the cost one
+    assert.match(r.out, /RAISE — 1 question\(s\) opened/);
+    assert.match(r.out, /never-red:Root::passes test "alpha"/);
+    assert.doesNotMatch(r.out, /^ *[a-z0-9-]+ +holding-cost:/m);
+    assert.match(r.out, /WITHHELD 1 more — the cap is 1 per run \(holding-cost 1\)/);
+  });
+});

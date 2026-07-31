@@ -1,19 +1,23 @@
 {
   "version": 1,
   "verify": {
-    "at": "2026-07-30T03:09:16.047Z",
-    "commit": "c7efdfb",
+    "at": "2026-07-31T02:31:48.687Z",
+    "commit": "4e05778",
     "dirty": true,
     "tier": "fast",
     "scope": null,
-    "lastFastAt": "2026-07-30T03:09:16.047Z",
+    "cost": {
+      "totalMs": 0,
+      "claims": []
+    },
+    "lastFastAt": "2026-07-31T02:31:48.687Z",
     "claims": [],
     "coverage": {
       "components": 0,
       "claimed": 0,
       "withWhy": 0,
-      "symbols": 278,
-      "documented": 161
+      "symbols": 324,
+      "documented": 199
     },
     "invariants": {
       "total": 0,
@@ -21,7 +25,7 @@
       "gaps": []
     },
     "narrative": null,
-    "jobs": 117,
+    "jobs": 125,
     "failures": 0
   },
   "mass": {

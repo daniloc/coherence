@@ -723,3 +723,87 @@ test("runTestBatch — a report file the run did NOT write is refused as stale",
     assert.match(out.note, /was not written by this run/);
   });
 });
+
+// ── HOLDING COST: the runner's own per-assertion durations ───────────────────────────
+//
+// The report carries a `duration` per assertion, and it is the ONLY honest reading of what a
+// batch-resolved claim costs — coherence's own clock around such a claim measures a map
+// lookup. The rule these tests pin is the one that is easy to lose: ABSENCE IS NOT ZERO. A
+// report without timings must answer "unknown", never "free", because the second one ranks a
+// never-measured claim as the cheapest thing in the suite.
+
+/** The same shape the real reporter emits, with `duration` present (ms, per assertion). */
+const TIMED_REPORT = JSON.stringify({
+  numTotalTests: 4, success: true,
+  testResults: [
+    {
+      name: "/proj/slow.test.ts", status: "passed", message: "",
+      assertionResults: [
+        { ancestorTitles: ["big domain"], fullName: "big domain covers every member", title: "covers every member", status: "passed", duration: 1500, failureMessages: [] },
+        { ancestorTitles: ["big domain"], fullName: "big domain covers every member extended", title: "covers every member extended", status: "passed", duration: 400, failureMessages: [] },
+      ],
+    },
+    {
+      name: "/proj/fast.test.ts", status: "passed", message: "",
+      assertionResults: [
+        { ancestorTitles: [], fullName: "cheap check", title: "cheap check", status: "passed", duration: 3, failureMessages: [] },
+        // a real report can carry a null duration for a test that never ran
+        { ancestorTitles: [], fullName: "never ran", title: "never ran", status: "skipped", duration: null, failureMessages: [] },
+      ],
+    },
+  ],
+});
+const TIMED: BatchReport = parseVitestJson(TIMED_REPORT);
+
+test("cost — a report's per-assertion `duration` is carried onto every BatchTest", () => {
+  const by = new Map(TIMED.tests.map((t) => [t.fullName, t]));
+  assert.equal(by.get("big domain covers every member")?.duration, 1500);
+  assert.equal(by.get("cheap check")?.duration, 3);
+  // a null duration is NOT 0: it did not parse into a number, so the field stays absent
+  assert.equal(by.get("never ran")?.duration, undefined);
+});
+
+test("cost — a report WITHOUT durations leaves every duration undefined (absence, never zero)", () => {
+  // The original fixture at the top of this file was captured with timings dropped, which
+  // makes it exactly the case that must not read as a free suite.
+  assert.ok(REPORT.tests.every((t) => t.duration === undefined), "the untimed fixture must carry no durations");
+  assert.ok(REPORT.tests.every((t) => t.duration !== 0), "…and specifically not zeroes");
+});
+
+test("cost — resolveFromBatch SUMS the duration of every test the claim's name matched", () => {
+  // A claim whose name matches two tests is buying both, exactly as `-t` would run both.
+  assert.equal(resolveFromBatch(TIMED, "big domain covers every member").ms, 1900);
+  assert.equal(resolveFromBatch(TIMED, "cheap check").ms, 3);
+});
+
+test("cost — with no timings anywhere, ms is UNDEFINED rather than 0 (absence ≠ zero)", () => {
+  const r = resolveFromBatch(REPORT, "write policy totality covers every op");
+  assert.equal(r.ok, true);
+  assert.equal(r.ms, undefined, "an untimed report must answer `unknown`, not `free`");
+  // and the same for a red verdict — the cost question is independent of the verdict
+  assert.equal(resolveFromBatch(REPORT, "failing group this one fails").ms, undefined);
+});
+
+test("cost — a PARTIALLY timed match sums what was measured instead of dropping the reading", () => {
+  const partial: BatchReport = { format: "vitest-json", tests: [
+    { fullName: "mixed group timed", status: "passed", duration: 250 },
+    { fullName: "mixed group untimed", status: "passed" },
+  ] };
+  assert.equal(resolveFromBatch(partial, "mixed group").ms, 250);
+});
+
+test("cost — a VANISHED oracle has no cost at all: nothing ran, so there is nothing to sum", () => {
+  const r = resolveFromBatch(TIMED, "an oracle nobody wrote");
+  assert.equal(r.ok, false);
+  assert.match(r.detail, /VANISHED ORACLE/);
+  assert.equal(r.ms, undefined);
+});
+
+test("cost — a FAILING match still reports its cost: a red claim is not a free one", () => {
+  const red: BatchReport = { format: "vitest-json", tests: [
+    { fullName: "slow and wrong", status: "failed", duration: 900 },
+  ] };
+  const r = resolveFromBatch(red, "slow and wrong");
+  assert.equal(r.ok, false);
+  assert.equal(r.ms, 900);
+});

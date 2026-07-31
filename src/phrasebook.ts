@@ -22,8 +22,13 @@ import { resolveFromBatch, type OracleAccess } from "./test-batch.ts";
 
 const fileExists = async (p: string) => { try { await stat(p); return true; } catch { return false; } };
 
-/** The verdict a claim form returns — adapted into verify's `Sig` (which adds claim + node). */
-export interface ClaimResult { kind: "pass" | "fail" | "skip"; detail?: string }
+/** The verdict a claim form returns — adapted into verify's `Sig` (which adds claim + node).
+ *
+ *  `ms` is the HOLDING COST the form can attest to from the RUNNER'S OWN report, and only
+ *  the batch-resolved executable arm supplies it (see `execNamedTest`). Every other form
+ *  leaves it absent, so verify falls back to its own wall clock there — deliberately, since
+ *  a wall-clock reading over a batch lookup would measure a map hit, not the oracle. */
+export interface ClaimResult { kind: "pass" | "fail" | "skip"; detail?: string; ms?: number }
 
 /**
  * Everything a claim form needs to evaluate, threaded from runVerify. `nodeDir`/`node`
@@ -124,8 +129,14 @@ export const reEscape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
  *
  * Both arms require positive evidence and both go red on zero matches, so which one
  * answered is an operational detail, never a difference in what green means.
+ *
+ * `ms` — the claim's HOLDING COST, and ONLY the batch arm can report it. The report carries
+ * the runner's own per-test durations, so a batched claim's cost is measured by the thing
+ * that ran it. The serial arm returns none: what a wall clock sees there is a whole test-pool
+ * boot charged to whichever claim happened to trigger it, which is a fact about the profile,
+ * not about the claim. Verify's own wall clock takes over when this is absent.
  */
-function execNamedTest(ctx: ClaimCtx, name: string): { ok: boolean; detail: string } {
+function execNamedTest(ctx: ClaimCtx, name: string): { ok: boolean; detail: string; ms?: number } {
   const o = ctx.oracles?.();
   if (o?.report) return resolveFromBatch(o.report, name);
   const cfg = ctx.cfg;
@@ -227,7 +238,7 @@ export const CLAIM_FORMS: ClaimForm[] = [
       if (ctx.fast) return { kind: "skip", detail: "executable tier (--fast)" };
       if (!hasRunner(ctx)) return { kind: "skip", detail: "no test runner configured (config.test)" };
       const r = execNamedTest(ctx, m[1]);
-      return r.ok ? { kind: "pass" } : { kind: "fail", detail: r.detail };
+      return r.ok ? { kind: "pass", ms: r.ms } : { kind: "fail", detail: r.detail, ms: r.ms };
     },
   },
   {
@@ -259,8 +270,8 @@ export const CLAIM_FORMS: ClaimForm[] = [
       if (ctx.fast) return { kind: "skip", detail: "boundary oracle (--fast)" };
       if (!hasRunner(ctx)) return { kind: "skip", detail: "no test runner configured (config.test)" };
       const r = execNamedTest(ctx, test);
-      if (!r.ok) return { kind: "fail", detail: r.detail };
-      return { kind: "pass", detail: `${inv} @ ${sym}${verb === "guard" ? " (source-property guard)" : ""}` };
+      if (!r.ok) return { kind: "fail", detail: r.detail, ms: r.ms };
+      return { kind: "pass", detail: `${inv} @ ${sym}${verb === "guard" ? " (source-property guard)" : ""}`, ms: r.ms };
     },
   },
   {
@@ -309,8 +320,8 @@ export const CLAIM_FORMS: ClaimForm[] = [
       if (ctx.fast) return { kind: "skip", detail: "parity oracle (--fast)" };
       if (!hasRunner(ctx)) return { kind: "skip", detail: "no test runner configured (config.test)" };
       const r = execNamedTest(ctx, oracle);
-      if (!r.ok) return { kind: "fail", detail: r.detail };
-      return { kind: "pass", detail: `${inv}: ${f} ≡ ${g} over ${domain}` };
+      if (!r.ok) return { kind: "fail", detail: r.detail, ms: r.ms };
+      return { kind: "pass", detail: `${inv}: ${f} ≡ ${g} over ${domain}`, ms: r.ms };
     },
   },
   {

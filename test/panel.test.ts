@@ -5,7 +5,7 @@
 // shell over these; what can rot is here.
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { buildModel, lightFor, humanAge, wrapText, renderFrame, initialUI } from "../src/panel.ts";
+import { buildModel, lightFor, humanAge, wrapText, renderFrame, initialUI, mastheadHeight } from "../src/panel.ts";
 import type { StatusRecord, ClaimRecord } from "../src/status.ts";
 import { comp, graph } from "./_helpers.ts";
 
@@ -130,4 +130,91 @@ test("wrapText — wraps at width and preserves paragraph breaks", () => {
   assert.ok(out.every((l) => l.length <= 11));
   assert.ok(out.includes(""), "paragraph break preserved");
   assert.equal(out[out.length - 1], "second para");
+});
+
+// ── THE ENERGY STRIP — the work ledger at masthead altitude ──────────────────────────
+//
+// The panel builds from the graph + the status record and re-runs NOTHING (module header):
+// cost and heat are read out of the record other commands filed, never measured here. And
+// the strip is absent when there is nothing to say — unlike atlas/drift, which nag with
+// "not run" because they name a key the operator can press.
+
+const withCost = (s: StatusRecord, cost: NonNullable<StatusRecord["verify"]>["cost"]): StatusRecord =>
+  ({ ...s, verify: { ...s.verify!, cost } });
+
+const atlasSection = (crossings: Array<{ sym: string; heat?: number }>): StatusRecord["atlas"] => ({
+  at: "2026-07-10T11:58:00.000Z", commit: "aaaa111",
+  tiers: { enshrined: 1, checked: 1, convention: 1 },
+  crossings: crossings.map((c) => ({
+    sym: c.sym, from: "a", to: "b", tier: 2, security: true, note: "n", translates: "t",
+    present: true, pending: false, heat: c.heat,
+  })),
+  drift: [], dangling: [], overclaimed: [], tier3Security: [],
+});
+
+const oneComp = () => graph([comp("a", { label: "Root", claims: ["x.ts exists at this node"], why: "w" })]);
+
+test("buildModel — the cost vector maps straight from the record, head first, nothing re-timed", () => {
+  const status = withCost(statusWith([rec("Root", "x.ts exists at this node", "pass")]), {
+    totalMs: 2840,
+    claims: [
+      { node: "Root", claim: 'passes test "alpha"', ms: 2500, source: "report" },
+      { node: "Root", claim: 'passes test "beta"', ms: 300, source: "report" },
+    ],
+  });
+  const m = buildModel(oneComp(), status, { commit: "aaaa111", dirty: false }, NOW);
+  assert.equal(m.cost?.totalMs, 2840);
+  assert.equal(m.cost?.top?.ms, 2500);
+  assert.equal(m.cost?.top?.claim, 'passes test "alpha"');
+  assert.equal(m.cost?.top?.node, "Root");
+});
+
+test("buildModel — heat maps hottest-first, and crossings with NO reading are dropped, not zeroed", () => {
+  const status: StatusRecord = { ...statusWith([]), atlas: atlasSection([
+    { sym: "warm", heat: 0.3 }, { sym: "unmeasured" }, { sym: "hottest", heat: 0.9 },
+  ]) };
+  const m = buildModel(oneComp(), status, { commit: "aaaa111", dirty: false }, NOW);
+  assert.deepEqual(m.atlas?.heat?.map((h) => h.sym), ["hottest", "warm"]);
+  assert.ok(!m.atlas?.heat?.some((h) => h.sym === "unmeasured"), "an unmeasurable crossing is not a cold one");
+});
+
+test("buildModel — a record with no cost and no heat yields neither, so the strip has nothing to draw", () => {
+  const m = buildModel(oneComp(), statusWith([rec("Root", "x.ts exists at this node", "pass")]), { commit: "aaaa111", dirty: false }, NOW);
+  assert.equal(m.cost, undefined);
+  assert.equal(m.atlas, undefined);
+  assert.equal(mastheadHeight(m), 3);
+});
+
+test("renderFrame — the masthead carries the energy strip when the record has cost and heat", () => {
+  const status: StatusRecord = {
+    ...withCost(statusWith([rec("Root", "x.ts exists at this node", "pass")]), {
+      totalMs: 12400,
+      claims: [{ node: "Hive", claim: 'passes test "big domain"', ms: 4100, source: "report" }],
+    }),
+    atlas: atlasSection([{ sym: "writeClass", heat: 0.42 }, { sym: "mintToken", heat: 0.1 }]),
+  };
+  const m = buildModel(oneComp(), status, { commit: "aaaa111", dirty: false }, NOW);
+  assert.equal(mastheadHeight(m), 4, "the strip takes a row, and the scroll math must know it");
+  const text = renderFrame(m, initialUI(false), { cols: 120, rows: 30 }, false, NOW).join("\n");
+  assert.match(text, /energy/);
+  assert.match(text, /cost 12\.4s/);
+  assert.match(text, /top 4\.1s Hive/);
+  assert.match(text, /heat [▁▂▃▄▅▆▇█]{2} writeClass 42%/);
+});
+
+test("renderFrame — no cost and no heat means NO strip: there is no `energy: not run` nag", () => {
+  const m = buildModel(oneComp(), statusWith([rec("Root", "x.ts exists at this node", "pass")]), { commit: "aaaa111", dirty: false }, NOW);
+  const text = renderFrame(m, initialUI(false), { cols: 100, rows: 30 }, false, NOW).join("\n");
+  assert.doesNotMatch(text, /energy/);
+  // atlas and drift DO nag, because pressing a/d is the fix — the strip has no such key
+  assert.match(text, /atlas: not run/);
+});
+
+test("renderFrame — cost alone (no atlas yet) still draws the strip, with only what is known", () => {
+  const status = withCost(statusWith([rec("Root", "x.ts exists at this node", "pass")]), {
+    totalMs: 640, claims: [{ node: "Root", claim: "typechecks", ms: 600, source: "wall" }],
+  });
+  const text = renderFrame(buildModel(oneComp(), status, { commit: "aaaa111", dirty: false }, NOW), initialUI(false), { cols: 100, rows: 30 }, false, NOW).join("\n");
+  assert.match(text, /energy\s+cost 640ms/);
+  assert.doesNotMatch(text, /energy.*heat/);
 });
