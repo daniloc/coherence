@@ -1,308 +1,321 @@
 {
   "version": 1,
   "verify": {
-    "at": "2026-07-31T17:11:49.166Z",
-    "commit": "b8017f1",
+    "at": "2026-07-31T17:31:43.754Z",
+    "commit": "857fd52",
     "dirty": true,
-    "tier": "fast",
+    "tier": "full",
     "scope": null,
     "cost": {
-      "totalMs": 1.8969179999999994,
+      "totalMs": 1230.48096,
       "claims": [
         {
           "node": "Harness core",
-          "claim": "cli.ts imports ./config.ts",
-          "ms": 0.3011669999999924,
-          "source": "wall"
-        },
-        {
-          "node": "Harness core",
-          "claim": "boundary \"agent lifecycle preserves decisions and exposes the current change signal\" at runHook via guard \"hooks — generated wiring uses the low-cost entrypoint and observes writes\"",
-          "ms": 0.253832999999986,
-          "source": "wall"
-        },
-        {
-          "node": "Harness core",
-          "claim": "cli.ts imports ./derive.ts",
-          "ms": 0.21354199999998968,
+          "claim": "boundary \"predicted context closure is calibrated against observed reads and outcomes\" at calibrate via guard \"calibration reports coverage, outside reads, and defect rates by prediction misses\"",
+          "ms": 283.654708,
           "source": "wall"
         },
         {
           "node": "Harness core",
           "claim": "boundary \"significant behavioral growth acquires an anchor or patch-specific decision\" at signal via guard \"only a zero-anchor alarm without attestation needs a decision\"",
-          "ms": 0.16987499999999045,
+          "ms": 278.315209,
           "source": "wall"
         },
         {
-          "node": "Coherence",
-          "claim": "coherence.config.json exists at root",
-          "ms": 0.1693339999999921,
+          "node": "Harness core",
+          "claim": "boundary \"task context is bounded and names its approximations\" at contextFor via guard \"renderContext — byte-stable for the same inputs and names every approximation\"",
+          "ms": 274.87858299999994,
+          "source": "wall"
+        },
+        {
+          "node": "Harness core",
+          "claim": "boundary \"reviewed risk sites survive relocation but never duplication\" at reconcile via guard \"sinks — a moved file keeps its baselined identity and a genuinely new site still fails\"",
+          "ms": 132.79083300000002,
+          "source": "wall"
+        },
+        {
+          "node": "Harness core",
+          "claim": "boundary \"agent lifecycle preserves decisions and exposes the current change signal\" at runHook via guard \"hooks — generated wiring uses the low-cost entrypoint and observes writes\"",
+          "ms": 129.79025000000001,
           "source": "wall"
         }
       ]
     },
     "lastFastAt": "2026-07-31T17:11:49.166Z",
-    "lastFullAt": "2026-07-31T17:11:04.937Z",
+    "lastFullAt": "2026-07-31T17:31:43.754Z",
     "claims": [
       {
         "node": "Coherence",
         "claim": "coherence.config.json exists at root",
         "kind": "pass",
         "detail": "coherence.config.json @ root",
-        "at": "2026-07-31T17:11:49.166Z",
-        "commit": "b8017f1",
-        "tier": "fast",
+        "at": "2026-07-31T17:31:43.754Z",
+        "commit": "857fd52",
+        "tier": "full",
         "everFailed": false,
-        "runs": 10
+        "runs": 17
       },
       {
         "node": "Coherence",
         "claim": ".claude/settings.json exists at root",
         "kind": "pass",
         "detail": ".claude/settings.json @ root",
-        "at": "2026-07-31T17:11:49.166Z",
-        "commit": "b8017f1",
-        "tier": "fast",
+        "at": "2026-07-31T17:31:43.754Z",
+        "commit": "857fd52",
+        "tier": "full",
         "everFailed": false,
-        "runs": 10
+        "runs": 17
       },
       {
         "node": "Coherence",
         "claim": "package.json exists at root",
         "kind": "pass",
         "detail": "package.json @ root",
-        "at": "2026-07-31T17:11:49.166Z",
-        "commit": "b8017f1",
-        "tier": "fast",
+        "at": "2026-07-31T17:31:43.754Z",
+        "commit": "857fd52",
+        "tier": "full",
         "everFailed": false,
-        "runs": 10
+        "runs": 17
       },
       {
         "node": "Coherence",
         "claim": "README.md exists at root",
         "kind": "pass",
         "detail": "README.md @ root",
-        "at": "2026-07-31T17:11:49.166Z",
-        "commit": "b8017f1",
-        "tier": "fast",
+        "at": "2026-07-31T17:31:43.754Z",
+        "commit": "857fd52",
+        "tier": "full",
         "everFailed": false,
-        "runs": 10
+        "runs": 17
       },
       {
         "node": "Coherence",
         "claim": "src/cli.ts exists at root",
         "kind": "pass",
         "detail": "src/cli.ts @ root",
-        "at": "2026-07-31T17:11:49.166Z",
-        "commit": "b8017f1",
-        "tier": "fast",
+        "at": "2026-07-31T17:31:43.754Z",
+        "commit": "857fd52",
+        "tier": "full",
         "everFailed": false,
-        "runs": 10
+        "runs": 17
       },
       {
         "node": "Harness core",
         "claim": "cli.ts imports ./config.ts",
         "kind": "pass",
         "detail": "",
-        "at": "2026-07-31T17:11:49.166Z",
-        "commit": "b8017f1",
-        "tier": "fast",
+        "at": "2026-07-31T17:31:43.754Z",
+        "commit": "857fd52",
+        "tier": "full",
         "everFailed": false,
-        "runs": 10
+        "runs": 17
       },
       {
         "node": "Harness core",
         "claim": "cli.ts imports ./derive.ts",
         "kind": "pass",
         "detail": "",
-        "at": "2026-07-31T17:11:49.166Z",
-        "commit": "b8017f1",
-        "tier": "fast",
+        "at": "2026-07-31T17:31:43.754Z",
+        "commit": "857fd52",
+        "tier": "full",
         "everFailed": false,
-        "runs": 10
+        "runs": 17
       },
       {
         "node": "Harness core",
         "claim": "cli.ts imports ./verify.ts",
         "kind": "pass",
         "detail": "",
-        "at": "2026-07-31T17:11:49.166Z",
-        "commit": "b8017f1",
-        "tier": "fast",
+        "at": "2026-07-31T17:31:43.754Z",
+        "commit": "857fd52",
+        "tier": "full",
         "everFailed": false,
-        "runs": 10
+        "runs": 17
       },
       {
         "node": "Harness core",
         "claim": "hooks.ts imports ./decisions.ts",
         "kind": "pass",
         "detail": "",
-        "at": "2026-07-31T17:11:49.166Z",
-        "commit": "b8017f1",
-        "tier": "fast",
+        "at": "2026-07-31T17:31:43.754Z",
+        "commit": "857fd52",
+        "tier": "full",
         "everFailed": false,
-        "runs": 10
+        "runs": 17
       },
       {
         "node": "Harness core",
         "claim": "derive.ts imports ./walk.ts",
         "kind": "pass",
         "detail": "",
-        "at": "2026-07-31T17:11:49.166Z",
-        "commit": "b8017f1",
-        "tier": "fast",
+        "at": "2026-07-31T17:31:43.754Z",
+        "commit": "857fd52",
+        "tier": "full",
         "everFailed": false,
-        "runs": 10
+        "runs": 17
       },
       {
         "node": "Harness core",
         "claim": "boundary \"agent lifecycle preserves decisions and exposes the current change signal\" at runHook via guard \"hooks — generated wiring uses the low-cost entrypoint and observes writes\"",
         "kind": "pass",
         "detail": "agent lifecycle preserves decisions and exposes the current change signal @ runHook (source-property guard)",
-        "at": "2026-07-31T17:11:04.937Z",
-        "commit": "b8017f1",
+        "at": "2026-07-31T17:31:43.754Z",
+        "commit": "857fd52",
         "tier": "full",
         "everFailed": false,
-        "runs": 3
+        "runs": 10
       },
       {
         "node": "Harness core",
         "claim": "boundary \"significant behavioral growth acquires an anchor or patch-specific decision\" at signal via guard \"only a zero-anchor alarm without attestation needs a decision\"",
         "kind": "pass",
         "detail": "significant behavioral growth acquires an anchor or patch-specific decision @ signal (source-property guard)",
-        "at": "2026-07-31T17:11:04.937Z",
-        "commit": "b8017f1",
+        "at": "2026-07-31T17:31:43.754Z",
+        "commit": "857fd52",
         "tier": "full",
         "everFailed": false,
-        "runs": 3
+        "runs": 10
       },
       {
         "node": "Harness core",
         "claim": "boundary \"task context is bounded and names its approximations\" at contextFor via guard \"renderContext — byte-stable for the same inputs and names every approximation\"",
         "kind": "pass",
         "detail": "task context is bounded and names its approximations @ contextFor (source-property guard)",
-        "at": "2026-07-31T17:11:04.937Z",
-        "commit": "b8017f1",
+        "at": "2026-07-31T17:31:43.754Z",
+        "commit": "857fd52",
         "tier": "full",
         "everFailed": false,
-        "runs": 3
+        "runs": 10
       },
       {
         "node": "Harness core",
         "claim": "boundary \"cached decisions expose structurally expired premises\" at auditPremiseLeases via guard \"audit — retracted decisions disappear and only broken strong leases fail a check\"",
         "kind": "pass",
         "detail": "cached decisions expose structurally expired premises @ auditPremiseLeases (source-property guard)",
-        "at": "2026-07-31T17:11:04.937Z",
-        "commit": "b8017f1",
+        "at": "2026-07-31T17:31:43.754Z",
+        "commit": "857fd52",
         "tier": "full",
         "everFailed": true,
         "lastFailAt": "2026-07-31T17:11:03.459Z",
         "lastFailCommit": "b8017f1",
-        "runs": 3
+        "runs": 10
       },
       {
         "node": "Harness core",
         "claim": "boundary \"predicted context closure is calibrated against observed reads and outcomes\" at calibrate via guard \"calibration reports coverage, outside reads, and defect rates by prediction misses\"",
         "kind": "pass",
         "detail": "predicted context closure is calibrated against observed reads and outcomes @ calibrate (source-property guard)",
-        "at": "2026-07-31T17:11:04.937Z",
-        "commit": "b8017f1",
+        "at": "2026-07-31T17:31:43.754Z",
+        "commit": "857fd52",
         "tier": "full",
         "everFailed": false,
-        "runs": 3
+        "runs": 10
+      },
+      {
+        "node": "Harness core",
+        "claim": "boundary \"reviewed risk sites survive relocation but never duplication\" at reconcile via guard \"sinks — a moved file keeps its baselined identity and a genuinely new site still fails\"",
+        "kind": "pass",
+        "detail": "reviewed risk sites survive relocation but never duplication @ reconcile (source-property guard)",
+        "at": "2026-07-31T17:31:43.754Z",
+        "commit": "857fd52",
+        "tier": "full",
+        "everFailed": true,
+        "lastFailAt": "2026-07-31T17:29:19.595Z",
+        "lastFailCommit": "857fd52",
+        "runs": 7
       },
       {
         "node": "Source adapters",
         "claim": "typescript.ts exists at this node",
         "kind": "pass",
         "detail": "typescript.ts @ this node",
-        "at": "2026-07-31T17:11:49.166Z",
-        "commit": "b8017f1",
-        "tier": "fast",
+        "at": "2026-07-31T17:31:43.754Z",
+        "commit": "857fd52",
+        "tier": "full",
         "everFailed": false,
-        "runs": 10
+        "runs": 17
       },
       {
         "node": "Source adapters",
         "claim": "python.ts exists at this node",
         "kind": "pass",
         "detail": "python.ts @ this node",
-        "at": "2026-07-31T17:11:49.166Z",
-        "commit": "b8017f1",
-        "tier": "fast",
+        "at": "2026-07-31T17:31:43.754Z",
+        "commit": "857fd52",
+        "tier": "full",
         "everFailed": false,
-        "runs": 10
+        "runs": 17
       },
       {
         "node": "Source adapters",
         "claim": "cloudflare.ts exists at this node",
         "kind": "pass",
         "detail": "cloudflare.ts @ this node",
-        "at": "2026-07-31T17:11:49.166Z",
-        "commit": "b8017f1",
-        "tier": "fast",
+        "at": "2026-07-31T17:31:43.754Z",
+        "commit": "857fd52",
+        "tier": "full",
         "everFailed": false,
-        "runs": 10
+        "runs": 17
       },
       {
         "node": "Executable contracts",
         "claim": "_helpers.ts exists at this node",
         "kind": "pass",
         "detail": "_helpers.ts @ this node",
-        "at": "2026-07-31T17:11:49.166Z",
-        "commit": "b8017f1",
-        "tier": "fast",
+        "at": "2026-07-31T17:31:43.754Z",
+        "commit": "857fd52",
+        "tier": "full",
         "everFailed": false,
-        "runs": 10
+        "runs": 17
       },
       {
         "node": "Executable contracts",
         "claim": "verify.test.ts exists at this node",
         "kind": "pass",
         "detail": "verify.test.ts @ this node",
-        "at": "2026-07-31T17:11:49.166Z",
-        "commit": "b8017f1",
-        "tier": "fast",
+        "at": "2026-07-31T17:31:43.754Z",
+        "commit": "857fd52",
+        "tier": "full",
         "everFailed": false,
-        "runs": 10
+        "runs": 17
       },
       {
         "node": "Executable contracts",
         "claim": "decisions.test.ts exists at this node",
         "kind": "pass",
         "detail": "decisions.test.ts @ this node",
-        "at": "2026-07-31T17:11:49.166Z",
-        "commit": "b8017f1",
-        "tier": "fast",
+        "at": "2026-07-31T17:31:43.754Z",
+        "commit": "857fd52",
+        "tier": "full",
         "everFailed": false,
-        "runs": 10
+        "runs": 17
       },
       {
         "node": "Executable contracts",
         "claim": "commands.test.ts exists at this node",
         "kind": "pass",
         "detail": "commands.test.ts @ this node",
-        "at": "2026-07-31T17:11:49.166Z",
-        "commit": "b8017f1",
-        "tier": "fast",
+        "at": "2026-07-31T17:31:43.754Z",
+        "commit": "857fd52",
+        "tier": "full",
         "everFailed": false,
-        "runs": 10
+        "runs": 17
       }
     ],
     "coverage": {
       "components": 4,
       "claimed": 4,
       "withWhy": 4,
-      "symbols": 402,
-      "documented": 237
+      "symbols": 406,
+      "documented": 238
     },
     "invariants": {
-      "total": 5,
-      "anchored": 5,
+      "total": 6,
+      "anchored": 6,
       "gaps": []
     },
     "narrative": null,
-    "jobs": 165,
+    "jobs": 168,
     "failures": 0
   },
   "mass": {

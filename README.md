@@ -1561,7 +1561,16 @@ any is in **In detail** below — that half is authored, and does not cover all 
   decomposition, and emit why-from-history jobs. Output is proposals to review.
 - `coherence lint-sinks [--check | --update-baseline]` — interpolation-surface
   ratchet (raw SQL-identifier / HTML sinks). Mechanism in the harness; SAFE patterns
-  + scoped `sources` in config; baseline in `<outputDir>/sinks-baseline.json`.
+  + scoped `sources` in config; baseline in `<outputDir>/sinks-baseline.json`. The
+  baseline is **move-aware**: a site keyed `context|file|expr` whose file was relocated
+  is reconciled as a **MOVE** (reported `old → new`, does not fail) rather than as new
+  risk, because keying a reviewed site by its path made every refactor manufacture false
+  security alarms in proportion to how much code it moved — and a ratchet whose alarms
+  are routinely wrong is one reviewers learn to wave through. Absorption is
+  **count-conserving**: only a baselined site that *vanished* can absorb a relocated one,
+  one for one, so a site that was **copied** (the original still live) is still NOVEL and
+  still fails. Content-addressing alone would have let an already-reviewed expression
+  reappear in any number of new and more dangerous files for free.
 - `coherence conventions [--check | --update-baseline]` — guard-vs-contract detector
   + growth ratchet: a load-bearing guard at N sites with no boundary contract is a
   convention crossing; the baseline makes the set append-only-with-review.

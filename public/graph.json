@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-31 17:11Z",
+  "generatedAt": "2026-07-31 17:31Z",
   "root": "coherence",
   "absRoot": "/Users/daniloc/Documents/Development/coherence",
   "nodes": [
@@ -35,16 +35,22 @@
         "boundary \"significant behavioral growth acquires an anchor or patch-specific decision\" at signal via guard \"only a zero-anchor alarm without attestation needs a decision\"",
         "boundary \"task context is bounded and names its approximations\" at contextFor via guard \"renderContext — byte-stable for the same inputs and names every approximation\"",
         "boundary \"cached decisions expose structurally expired premises\" at auditPremiseLeases via guard \"audit — retracted decisions disappear and only broken strong leases fail a check\"",
-        "boundary \"predicted context closure is calibrated against observed reads and outcomes\" at calibrate via guard \"calibration reports coverage, outside reads, and defect rates by prediction misses\""
+        "boundary \"predicted context closure is calibrated against observed reads and outcomes\" at calibrate via guard \"calibration reports coverage, outside reads, and defect rates by prediction misses\"",
+        "boundary \"reviewed risk sites survive relocation but never duplication\" at reconcile via guard \"sinks — a moved file keeps its baselined identity and a genuinely new site still fails\""
       ],
       "prose": "The CLI is deliberately a thin composition root. Parsing, derivation, verification,\nrendering, and journaling remain independently addressable modules beneath this boundary.",
-      "why": "**agent lifecycle preserves decisions and exposes the current change signal.** Decisions\nand risk are cheapest to surface while the agent still holds the context that produced\nthem; waiting for a later reviewer externalizes both reconstruction costs.\n\n**significant behavioral growth acquires an anchor or patch-specific decision.** The cost\nof adding an invariant is immediate while the cost of omitting it appears later, so the\ncurrent patch must carry either enforcement or an addressable reason that it needs none.\n\n**task context is bounded and names its approximations.** A focused context packet is\nuseful only when its one-hop and heuristic limits stay visible; otherwise convenience is\nmisread as completeness and recreates the omission gradient this project exists to oppose.\n\n**cached decisions expose structurally expired premises.** A decision saves inference only\nwhile the repository addresses supporting it remain live. Broken explicit referents must\nbe louder than readable but stale rationale.\n\n**predicted context closure is calibrated against observed reads and outcomes.** Economy's\none-hop closure is a hypothesis about necessary reading, not cognition. Observed reads and\nlater defect labels give that model a path to correction instead of turning it into dogma.\n\n(The import claims above separately prove that the composition root still reaches the\nconfiguration loader, graph derivation, verifier, spec walker, and journal.)",
+      "why": "**agent lifecycle preserves decisions and exposes the current change signal.** Decisions\nand risk are cheapest to surface while the agent still holds the context that produced\nthem; waiting for a later reviewer externalizes both reconstruction costs.\n\n**significant behavioral growth acquires an anchor or patch-specific decision.** The cost\nof adding an invariant is immediate while the cost of omitting it appears later, so the\ncurrent patch must carry either enforcement or an addressable reason that it needs none.\n\n**task context is bounded and names its approximations.** A focused context packet is\nuseful only when its one-hop and heuristic limits stay visible; otherwise convenience is\nmisread as completeness and recreates the omission gradient this project exists to oppose.\n\n**cached decisions expose structurally expired premises.** A decision saves inference only\nwhile the repository addresses supporting it remain live. Broken explicit referents must\nbe louder than readable but stale rationale.\n\n**predicted context closure is calibrated against observed reads and outcomes.** Economy's\none-hop closure is a hypothesis about necessary reading, not cognition. Observed reads and\nlater defect labels give that model a path to correction instead of turning it into dogma.\n\n**reviewed risk sites survive relocation but never duplication.** A ratchet baseline is a\ncached review, and a cached fact that expires on a rename rots the same way a decision's\npremises do — a refactor then spends a reviewer's attention on sites nobody touched, and\nattention spent on false alarms is how a real one gets waved through. Relocation changes\nwhere a reviewed site lives; duplication changes how much unreviewed surface exists, and\nonly the second is news.\n\n(The import claims above separately prove that the composition root still reaches the\nconfiguration loader, graph derivation, verifier, spec walker, and journal.)",
       "invariants": [
         "agent lifecycle preserves decisions and exposes the current change signal",
         "significant behavioral growth acquires an anchor or patch-specific decision",
         "task context is bounded and names its approximations",
         "cached decisions expose structurally expired premises",
-        "predicted context closure is calibrated against observed reads and outcomes"
+        "predicted context closure is calibrated against observed reads and outcomes",
+        "reviewed risk sites survive relocation but never duplication"
+      ],
+      "refutations": [
+        "reviewed risk sites survive relocation but never duplication: mutated `reconcile` in BOTH directions and the guard reds each time. (a) `const from = undefined` — the pre-fix behaviour where the path is part of a site's identity: `claims: 23 · 22 green · 1 red`, the moved file reported as new risk. (b) absorb from every baselined address instead of only vanished ones, without consuming the pool — plain content-addressing: same `1 red`, the copied sink waved through. Restored, back to 23/23. The loosening direction is the one that matters: a fix for a false alarm that cannot fail (b) is a fix that deleted the ratchet.",
+        "cached decisions expose structurally expired premises: gutted `auditPremiseLeases` to return `{entries: [], expired: [], checked: 0}` unconditionally — the SAME mutation that left the tree \"✓ coherent\" while the claim carried no oracle. With the guard wired it reds by name: `claims: 22 · 21 green · 1 red`, `✗ 1 coherence failure(s)`. Restored, back to 22/22. The other four claims now execute (137ms, 135ms and siblings in the holding-cost block) but have not yet been individually mutated — that is the next increment, not a claim made here."
       ]
     },
     {
@@ -1405,7 +1411,44 @@
       "kind": "file",
       "sub": "src/lint-sinks.ts",
       "path": "src/lint-sinks.ts",
-      "prose": "lint-sinks.ts — the interpolation-surface ratchet (was mnemion's injection-lint.mjs).\nSurfaces every raw interpolation into a dangerous context (SQL identifier / HTML\nvalue), baselines the reviewed set, and RATCHETS: a NEW raw site fails `--check`. It\ndoesn't prove the baselined sites safe — it makes the surface visible and\nappend-only-with-review. The SAFE-by-construction patterns are config (`sinks`); the\ntwo contexts and the baseline live in the harness."
+      "prose": "lint-sinks.ts — the interpolation-surface ratchet (was mnemion's injection-lint.mjs).\nSurfaces every raw interpolation into a dangerous context (SQL identifier / HTML\nvalue), baselines the reviewed set, and RATCHETS: a NEW raw site fails `--check`. It\ndoesn't prove the baselined sites safe — it makes the surface visible and\nappend-only-with-review. The SAFE-by-construction patterns are config (`sinks`); the\ntwo contexts and the baseline live in the harness.\n\nThe baseline is a CACHED REVIEW, and a cached fact that goes stale on a rename is\npremise rot one layer down: keying a site by its file path meant a refactor\nmanufactured false alarms in proportion to how much code it moved. `reconcile` below\nre-addresses moved sites without letting a copied one through."
+    },
+    {
+      "id": "s:src/lint-sinks.ts#Finding",
+      "parent": "f:src/lint-sinks.ts",
+      "label": "Finding",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/lint-sinks.ts",
+      "line": 24
+    },
+    {
+      "id": "s:src/lint-sinks.ts#Move",
+      "parent": "f:src/lint-sinks.ts",
+      "label": "Move",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/lint-sinks.ts",
+      "line": 38
+    },
+    {
+      "id": "s:src/lint-sinks.ts#Reconciled",
+      "parent": "f:src/lint-sinks.ts",
+      "label": "Reconciled",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/lint-sinks.ts",
+      "line": 39
+    },
+    {
+      "id": "s:src/lint-sinks.ts#reconcile",
+      "parent": "f:src/lint-sinks.ts",
+      "label": "reconcile",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/lint-sinks.ts",
+      "line": 61,
+      "prose": "Split the current sites against the baseline into MOVES and genuinely NOVEL sites.\n\n The baseline addresses a site by `context|file|expr`, so relocating a file re-addresses\n every sink inside it. That turns a refactor into a pile of false security alarms — and a\n ratchet whose alarms are routinely wrong is a ratchet reviewers learn to wave through.\n\n A move is a **matched disappearance**: an unmatched current site is a move only if some\n baselined site with the same `context|expr` has VANISHED from the live set, and each\n vanished entry absorbs exactly ONE unmatched site. Count is therefore conserved per\n `context|expr` — a site that was COPIED (the original still live) finds nothing to\n absorb it and stays novel, so the ratchet cannot be laundered by duplicating an\n already-reviewed expression into a new and more dangerous file.\n\n What this deliberately does NOT promise: when several byte-identical sites share one\n `context|expr`, WHICH new path inherits which vanished review is arbitrary (paths are\n paired in sorted order for determinism, not for meaning). The guarantee is the count —\n n vanished sites absorb n relocations and the n+1st is novel. It is also, honestly, a\n loosening: a site that moved into a genuinely more exposed file no longer FAILS the\n check. It is reported by name, from → to, so the fact stays readable rather than\n silent; that is the trade for not crying wolf on every refactor."
     },
     {
       "id": "s:src/lint-sinks.ts#lintSinks",
@@ -1414,7 +1457,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/lint-sinks.ts",
-      "line": 22
+      "line": 86
     },
     {
       "id": "f:src/mass.ts",
@@ -4805,6 +4848,15 @@
       "prose": "signal.test.ts — per-change pressure: surface must gain an anchor or a patch-bound reason."
     },
     {
+      "id": "f:test/sinks.test.ts",
+      "parent": "c:test",
+      "label": "sinks.test.ts",
+      "kind": "file",
+      "sub": "test/sinks.test.ts",
+      "path": "test/sinks.test.ts",
+      "prose": "sinks.test.ts — the INTERPOLATION-SURFACE RATCHET (src/lint-sinks.ts), and specifically\nits addressing. The scanning half is a pair of regexes; the half that can actually lie is\nhow a live site is matched against the reviewed baseline:\n  · A MOVE READ AS NEW RISK — the baseline keys a site by `context|file|expr`, so\n    relocating a file used to re-address every sink inside it. A refactor then produced\n    false alarms in proportion to how much code it moved, and a ratchet whose alarms are\n    routinely wrong is a ratchet reviewers learn to wave through. (Observed live: eight\n    subsystems extracted out of one module, \"7 new sites\", four of them untouched.)\n  · A COPY READ AS A MOVE — the fix for the above must not become a laundering channel.\n    Dropping the path from identity would let an already-reviewed expression reappear in\n    a new and more dangerous file for free. Absorption is COUNT-CONSERVING: only a\n    baselined site that VANISHED can absorb a relocated one, one for one.\nBoth directions are pinned below; reversing either fails a test by name."
+    },
+    {
       "id": "f:test/status.test.ts",
       "parent": "c:test",
       "label": "status.test.ts",
@@ -7794,6 +7846,42 @@
     {
       "id": "f:test/signal.test.ts->f:test/_helpers.ts:imports",
       "source": "f:test/signal.test.ts",
+      "target": "f:test/_helpers.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/sinks.test.ts->x:node:test:imports",
+      "source": "f:test/sinks.test.ts",
+      "target": "x:node:test",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/sinks.test.ts->x:node:assert/strict:imports",
+      "source": "f:test/sinks.test.ts",
+      "target": "x:node:assert/strict",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/sinks.test.ts->x:node:fs/promises:imports",
+      "source": "f:test/sinks.test.ts",
+      "target": "x:node:fs/promises",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/sinks.test.ts->x:node:path:imports",
+      "source": "f:test/sinks.test.ts",
+      "target": "x:node:path",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/sinks.test.ts->f:src/lint-sinks.ts:imports",
+      "source": "f:test/sinks.test.ts",
+      "target": "f:src/lint-sinks.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/sinks.test.ts->f:test/_helpers.ts:imports",
+      "source": "f:test/sinks.test.ts",
       "target": "f:test/_helpers.ts",
       "kind": "imports"
     },
