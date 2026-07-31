@@ -14,6 +14,88 @@ evidence inside that record.
 
 ---
 
+## v0.20.1 — a reviewed risk site keeps its identity when the file moves
+
+Found by a consuming project, not by this repo. Eight subsystems were extracted out
+of one Durable Object into `shared/<name>/` modules; `lint-sinks --check` then failed
+CI with **"7 new raw interpolation sites."** Four of the seven were not new at all —
+`u.characteristic`, `pert.label`, `pert.characteristic`, `frame.reference.label` had
+been reviewed and baselined months earlier, under the path they lived at *before* the
+refactor moved them.
+
+The cause is one line. The baseline addressed a site as `` `${context}|${file}|${expr}` ``,
+so **the file path was part of the site's identity** and relocating a file re-addressed
+every sink inside it. A refactor manufactured false security alarms in proportion to how
+much code it moved.
+
+That is not a cosmetic annoyance, and it is the same failure class the rest of this
+release train is about. A ratchet baseline is a **cached review** — a fact paid for once
+by the party who had the answer in hand, so no later reader has to re-derive it. A cached
+fact that expires on a rename is premise rot one layer down. Worse, the expiry is
+*silent about being an expiry*: it presents as new risk. A reviewer who trusts the
+ratchet re-reviews sinks nobody touched, and a reviewer who has done that twice starts
+waving the whole report through — which is exactly the mislabeled-breaker failure this
+harness exists to prevent.
+
+### What changed
+
+`reconcile` (new, exported from `src/lint-sinks.ts`) splits the live sites against the
+baseline into **moves** and genuinely **novel** sites. A move is a **matched
+disappearance**: an unmatched site inherits a baselined review only if some baselined
+site with the same `context|expr` has *vanished* from the live set, and each vanished
+entry absorbs exactly **one** unmatched site. Moves are printed as their own block
+(`old → new`) and do not fail `--check`.
+
+The conservation rule is the whole design. The obvious fix — drop the path from the key
+and address a site by its content — makes the reported symptom disappear and quietly
+guts the ratchet: an already-reviewed `${row.name}` could then be copy-pasted into fifty
+new and more dangerous files for free, because `--check` would no longer be asking about
+*sites*. Counting per `context|expr` keeps the distinction that matters: **relocation
+changes where a reviewed site lives; duplication changes how much unreviewed surface
+exists, and only the second is news.** A copy — original still live, nothing vanished to
+absorb it — is still NOVEL and still fails.
+
+Also rejected: git-rename-aware reconciliation (`--find-renames`), which is more precise
+but makes a tree-reading ratchet depend on VCS history — shallow CI clones, non-git
+consumers, and uncommitted working-tree moves are exactly the conditions `--check` runs
+under (d-4544efd8).
+
+### What it gives up, said out loud
+
+A sink that moved into a genuinely *more exposed* file no longer fails `--check`. The
+sink **context** is still part of the address, so a move that changes the *kind* of sink
+(`sql-ident` ↔ `html-value`) is still novel and still fails; what is given up is
+path-level exposure judgment, which this lint never actually had — it only ever knew
+that a path string had changed. The fact does not vanish, it changes rung: every move is
+named in the report with its old and new path, so the reader can judge what the tool
+cannot (d-33abbd36).
+
+One honest limit: when several byte-identical sites share a `context|expr`, *which* new
+path inherits *which* vanished review is arbitrary — paths pair in sorted order for
+determinism, not for meaning. The guarantee is the count, and the tests assert the count
+(d-70ed7465).
+
+### The claim, and proof it can fail
+
+`src/harness.spec.md` gains a sixth invariant — *reviewed risk sites survive relocation
+but never duplication* — anchored at `reconcile` via guard `"sinks — a moved file keeps
+its baselined identity and a genuinely new site still fails"`, whose one oracle exercises
+all three directions end to end. Per the discipline v0.20.0 set for itself, it was
+mutated in both directions before being believed: reverting to path-as-identity reds it
+(the moved file reports as new risk), and switching to plain content-addressing without
+conservation reds it too (the copy is waved through). `claims: 23 · 22 green · 1 red`
+each time; restored, 23/23. The loosening direction is the one that mattered to test — a
+fix for a false alarm that cannot itself fail is a fix that deleted the ratchet.
+
+`conventions` was checked for the same exposure and **does not have it**: its baseline is
+`{name, sites}`, and `callSites()` counts across the whole source set regardless of file,
+so relocation is invisible to it by construction. Measured, not assumed — a guard's
+declaration *and* a call site were moved into a new directory and the ratchet stayed
+green. It was left unchanged; symmetry is not a reason to add machinery to a component
+that does not have the defect (d-044803b8).
+
+---
+
 ## v0.20.0 — the read side of the work ledger
 
 The README's newly-landed doctrine section says a codebase's real price is the
