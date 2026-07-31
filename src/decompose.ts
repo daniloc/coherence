@@ -9,11 +9,16 @@
 // inference (you) judges the wisdom — a metric can't know your future change.
 import { spawnSync } from "node:child_process";
 import type { Config, Graph } from "./types.ts";
+import { BULK, readCommitLog, type Commit } from "./evolution.ts";
 
-export const BULK = 40; // a commit touching more than this is mechanical (a rename/migration) — noise, not a concern signal
+// The EVOLUTION read moved to src/evolution.ts (one derivation that was spelled three
+// times — here, in drift.ts and inline in scene.ts). These three names are RE-EXPORTED
+// for one release so anything importing them from `decompose` keeps working; new callers
+// should import from `evolution.ts` directly.
+export { BULK, readCommitLog };
+export type { Commit };
+
 const HIST = 2000; // commits of history to read
-
-export interface Commit { hash: string; subject: string; files: string[] }
 
 interface Coupling {
   locality: number;            // EVOLUTION∩STRUCTURE: fraction of co-change pairs that stay within one component
@@ -22,21 +27,6 @@ interface Coupling {
   godFiles: [string, number][];// files co-changing across many concerns (missing-abstraction smell)
   hubs: [string, number][];    // STRUCTURE fan-in: components imported by many others (lying-leaf smell)
   commits: number;
-}
-
-// EVOLUTION graph, raw: every non-merge commit newest→oldest with its touched files
-// and subject. Shared by decompose (all-time coupling) and drift (recent trajectory).
-export function readCommitLog(cfg: Config, limit: number): Commit[] {
-  const r = spawnSync("git", ["log", `-n${limit}`, "--no-merges", "--name-only", "--pretty=format:%x00%H%x1f%s"], { cwd: cfg.root, encoding: "utf8", maxBuffer: 256 * 1024 * 1024 });
-  if (r.status !== 0) return [];
-  const commits: Commit[] = [];
-  let cur: Commit | null = null;
-  for (const line of r.stdout.split("\n")) {
-    if (line.startsWith("\x00")) { if (cur) commits.push(cur); const [hash, subject] = line.slice(1).split("\x1f"); cur = { hash, subject: subject ?? "", files: [] }; }
-    else if (line.trim() && cur) cur.files.push(line.trim());
-  }
-  if (cur) commits.push(cur);
-  return commits;
 }
 
 // STRUCTURE map: resolve a git-reported path (repo-root-relative) to its component

@@ -135,6 +135,14 @@ export interface Config {
     dismissed?: Record<string, string>; // guard name → why it is NOT an unguarded convention (covered by another contract)
   };
   sinks?: { safeSql?: string; safeHtml?: string }; // regex (string) for interpolation exprs that are SAFE by construction
+  // The MASS ratchet (`coherence mass`). The harness owns the mechanism (measure, pin,
+  // --check, --raise); the project owns what else counts as mass. `measures` are probes
+  // the harness cannot guess — each runs `cmd` from cfg.root and the LAST numeric token of
+  // its stdout is the value (a nonzero exit or unparseable output is UNMEASURABLE and
+  // fails --check; it is never read as 0). `deps: false` drops the package.json /
+  // package-lock.json dimensions. `tolerance` is per baseline key — how much growth is
+  // allowed before the ratchet says so (default 0: any growth is reported).
+  mass?: { measures?: { key: string; cmd: string[]; unit?: string }[]; deps?: boolean; tolerance?: Record<string, number> };
   atlas?: {
     charts: Record<string, string>;  // trust domain → description
     transitions: Record<string, { from: string; to: string; security?: boolean; anchoredBy?: string; translates: string; enshrined?: true }>; // chokepoint symbol → the crossing it manages. `enshrined: true` is an EXPLICIT project attestation that the illegal value at this crossing is unrepresentable (a runtime-branded capability), not just source-checked — it promotes a crossing to tier-1. It is NOT verb-inferred: a `via guard` claim alone is only source-totality evidence (tier-2). An `enshrined` marker MUST be backed by a `via guard` boundary claim (the source-totality guard the enshrinement rides on); an enshrinement with no backing guard fails `atlas --check` (fail-closed — an empty over-claim).

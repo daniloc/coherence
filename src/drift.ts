@@ -16,9 +16,9 @@
 // from the trajectory and the seam, and the verdict is weighted by the recent
 // gesture mix rather than the SPREAD slope alone (a single cross-cutting add or a
 // deletion shouldn't read as a smearing trend).
-import { spawnSync } from "node:child_process";
 import type { Config, Graph } from "./types.ts";
-import { BULK, componentMap, readCommitLog } from "./decompose.ts";
+import { componentMap } from "./decompose.ts";
+import { BULK, bucketize, commitDeltas, readCommitLog } from "./evolution.ts";
 import { recordDrift } from "./status.ts";
 
 const HIST = 400;   // recent commits to read — direction, not all-time archaeology
@@ -36,31 +36,10 @@ interface Window { locality: number; spread: number }
 type Kind = "converge" | "couple" | "smear" | "prune";
 interface Gesture { hash: string; subject: string; comps: string[]; kind: Kind }
 
-// Per-commit net line delta via a cheap separate --shortstat pass, so readCommitLog
-// (shared with decompose) stays untouched. A commit with more deletions than
-// insertions is a PRUNE — a shrink, not architectural divergence.
-function commitDeltas(cfg: Config, limit: number): Map<string, { added: number; deleted: number }> {
-  const r = spawnSync("git", ["log", `-n${limit}`, "--no-merges", "--shortstat", "--pretty=format:%x00%H"], { cwd: cfg.root, encoding: "utf8", maxBuffer: 256 * 1024 * 1024 });
-  const out = new Map<string, { added: number; deleted: number }>();
-  if (r.status !== 0) return out;
-  let hash = "";
-  for (const line of r.stdout.split("\n")) {
-    if (line.startsWith("\x00")) hash = line.slice(1).trim();
-    else if (hash && line.includes("changed")) {
-      const add = /(\d+) insertion/.exec(line), del = /(\d+) deletion/.exec(line);
-      out.set(hash, { added: add ? +add[1] : 0, deleted: del ? +del[1] : 0 });
-    }
-  }
-  return out;
-}
-
-function bucketize<T>(xs: T[], n: number): T[][] {
-  if (xs.length === 0) return [];
-  const k = Math.max(1, Math.ceil(xs.length / n));
-  const out: T[][] = [];
-  for (let i = 0; i < xs.length; i += k) out.push(xs.slice(i, i + k));
-  return out;
-}
+// `commitDeltas` (the --shortstat pass that identifies a PRUNE) and `bucketize` now live
+// in src/evolution.ts — the shared EVOLUTION store — because mass reads the same net-LOC
+// series. `spark`/`arrow` stay here: they are drift's RENDER vocabulary (panel.ts imports
+// them from this module), not a derivation of history.
 
 function analyze(cfg: Config, graph: Graph) {
   const { compOf } = componentMap(cfg, graph);

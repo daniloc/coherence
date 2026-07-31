@@ -53,7 +53,8 @@ import type { SceneModel, SceneComponent, SceneDiff, SceneGate, SceneLight, Scen
 import { parseBoundary, claimKey } from "./boundary.ts";
 import { ownerOf } from "./walk.ts";
 import { gitStamp, type StatusRecord, type ClaimRecord } from "./status.ts";
-import { readCommitLog, componentMap, BULK } from "./decompose.ts";
+import { componentMap } from "./decompose.ts";
+import { readCommitLog, componentChurn, CHURN_WINDOW } from "./evolution.ts";
 import { loadConfig } from "./config.ts";
 import { buildGraph } from "./derive.ts";
 
@@ -303,15 +304,11 @@ export async function buildSceneModel(cfg: Config, graph: Graph, status: StatusR
   }
 
   // HEAT: share of recent commits (≤BULK files, like drift) touching each component,
-  // normalized against the busiest. No history (or not a repo) → all cold.
+  // normalized against the busiest. No history (or not a repo) → all cold. The loop that
+  // was inline here is `componentChurn` in src/evolution.ts, and the window that was a
+  // bare `200` is `CHURN_WINDOW` — same numbers, one home (see that file's header).
   const { compOf } = componentMap(cfg, graph);
-  const churn = new Map<string, number>();
-  for (const c of readCommitLog(cfg, 200)) {
-    if (c.files.length > BULK) continue;
-    const touched = new Set<string>();
-    for (const f of c.files) { const l = compOf(f); if (l) touched.add(l); }
-    for (const l of touched) churn.set(l, (churn.get(l) ?? 0) + 1);
-  }
+  const churn = componentChurn(compOf, readCommitLog(cfg, CHURN_WINDOW));
   const maxChurn = Math.max(0, ...churn.values());
 
   const recBy = new Map<string, ClaimRecord>();

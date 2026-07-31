@@ -23,5 +23,59 @@
     "narrative": null,
     "jobs": 117,
     "failures": 0
+  },
+  "mass": {
+    "at": "2026-07-31T02:14:33.840Z",
+    "commit": "8d8abd9",
+    "dirty": true,
+    "dims": [
+      {
+        "key": "lines|total",
+        "value": 19898,
+        "unit": "lines"
+      },
+      {
+        "key": "lines|.",
+        "value": 19898,
+        "unit": "lines"
+      },
+      {
+        "key": "files|total",
+        "value": 76,
+        "unit": "files"
+      },
+      {
+        "key": "symbols|total",
+        "value": 320,
+        "unit": "symbols"
+      },
+      {
+        "key": "deps|direct",
+        "value": 0,
+        "unit": "deps"
+      },
+      {
+        "key": "deps|dev",
+        "value": 2,
+        "unit": "deps"
+      },
+      {
+        "key": "deps|transitive",
+        "value": 3,
+        "unit": "deps"
+      }
+    ],
+    "series": {
+      "locDelta": [
+        1937,
+        1872,
+        870,
+        2254,
+        8718,
+        1768,
+        3140,
+        2339
+      ]
+    }
   }
 }

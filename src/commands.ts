@@ -132,6 +132,7 @@ export const COMMANDS: Command[] = [
   // ── ratchet ──────────────────────────────────────────────────────────────────────────
   { name: "lint-sinks", group: "ratchet", usage: "[--check | --update-baseline]", summary: "interpolation-surface ratchet — raw SQL-identifier and HTML sinks" },
   { name: "conventions", group: "ratchet", usage: "[--check | --update-baseline]", summary: "guard-vs-contract detector + growth ratchet" },
+  { name: "mass", group: "ratchet", usage: "[--check|--update-baseline] [--raise]", summary: "how much machine there is — lines, files, symbols, deps and project measures, pinned" },
   { name: "atlas", group: "ratchet", usage: "[--check]", summary: "trust-graded manifold render + the drift / dangling / over-claim gate" },
   { name: "contracts", group: "ratchet", usage: "[--check]", summary: "producer/consumer contracts across deploy artifacts + the uncovered-surface detector" },
 

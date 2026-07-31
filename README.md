@@ -135,6 +135,7 @@ Full (every field the `Config` interface in `src/types.ts` accepts; defaults fro
 | `testDir` | `"__tests__"` | Path substring identifying test files for the ratchet scans. |
 | `conventions` | unset | `guardVerb` (regex for guard-function NAMES), `seed` (extra guard names), `dismissed` (guard → why it's covered elsewhere). |
 | `sinks` | unset | `safeSql`/`safeHtml` — regexes for interpolation expressions that are SAFE by construction. |
+| `mass` | unset | The mass ratchet's project-owned half: `measures` (`[{ key, cmd, unit? }]` — each `cmd` runs from the project root and the **last numeric token** of stdout is the value; a nonzero exit or unparseable output is UNMEASURABLE and fails `--check`, never `0`), `deps` (set `false` to drop the package.json / package-lock.json dimensions), `tolerance` (per baseline key — how much growth is allowed before the ratchet says so; default `0`). |
 | `atlas` | unset | Trust-manifold data: `charts` (trust domain → description), `transitions` (chokepoint symbol → crossing; each may set `enshrined: true` — see below), `nonTransition` (within-chart boundaries), `knownPending` (mapped symbols tolerated as not-yet-in-source). A transition's `enshrined: true` is an **explicit** attestation that the illegal value at that crossing is unrepresentable (a runtime-branded capability), promoting it to tier-1 — it is NOT inferred from a claim's verb, and it MUST be backed by a `via guard` boundary claim (an `enshrined` marker with no backing guard fails `atlas --check`). |
 | `novelty` | unset | Thresholds for `log`'s novelty-vs-anchor advisory: `minSurface` (8), `minLoc` (400), `ratio` (12). |
 | `redundancy` | unset | Thresholds for the `redundancy` advisory (undeclared duplicated domains): `minShared` (3), `containment` (0.7), `minScore` (3.5), `maxDf` (6), `top` (10). Every knob trades recall for precision — a wall of candidates is worse than silence. |
@@ -1103,7 +1104,7 @@ both is exactly what drifted.
      edit by hand — add the command to the registry and re-run. Everything OUTSIDE these
      markers is authored prose. -->
 
-_31 commands. This index is derived from the registry the dispatch is checked
+_32 commands. This index is derived from the registry the dispatch is checked
 against (`test/commands.test.ts` enumerates the live `cmd === …` chain and asserts the two
 sets are equal), so it cannot fall behind the CLI. The reasoning for the commands that have
 any is in **In detail** below — that half is authored, and does not cover all of them._
@@ -1142,6 +1143,7 @@ any is in **In detail** below — that half is authored, and does not cover all 
 
 - `coherence lint-sinks [--check | --update-baseline]` — interpolation-surface ratchet — raw SQL-identifier and HTML sinks
 - `coherence conventions [--check | --update-baseline]` — guard-vs-contract detector + growth ratchet
+- `coherence mass [--check|--update-baseline] [--raise]` — how much machine there is — lines, files, symbols, deps and project measures, pinned
 - `coherence atlas [--check]` — trust-graded manifold render + the drift / dangling / over-claim gate
 - `coherence contracts [--check]` — producer/consumer contracts across deploy artifacts + the uncovered-surface detector
 
@@ -1256,6 +1258,34 @@ any is in **In detail** below — that half is authored, and does not cover all 
 - `coherence conventions [--check | --update-baseline]` — guard-vs-contract detector
   + growth ratchet: a load-bearing guard at N sites with no boundary contract is a
   convention crossing; the baseline makes the set append-only-with-review.
+- `coherence mass [--check|--update-baseline] [--raise]` — the **mass ratchet**: how much
+  machine there is, pinned. Every other ratchet counts a *kind of debt*; this one counts
+  the thing a reader of an agent-built repo asks first — how much is there now, and did it
+  grow? A codebase does not decohere only by smearing concerns across boundaries; it also
+  decoheres by accumulating, one defensible edit at a time, which is exactly why the
+  aggregate needs a pin rather than a review. Dimensions, each an addressable baseline key:
+  `lines|total` and `lines|<component>` (from the same on-disk read the scene's towers
+  use), `files|total`, `symbols|total`, `deps|direct` / `deps|dev` (package.json) and
+  `deps|transitive` (the npm lockfile's `packages` map minus its root entry), plus
+  `measure|<key>` for each probe declared in `config.mass.measures` — the harness runs the
+  command from the project root and reads the **last numeric token** of its stdout, so a
+  bundle-size or table-count probe needs no plugin. Report mode also prints an 8-bucket
+  **net-LOC spark** over the last 400 commits: the pin says whether today is bigger than
+  the last pin, and the spark says what the road here looked like (a negative window is a
+  real, and welcome, shape). Ratchet mechanics are `conventions`': `--update-baseline`
+  writes `<outputDir>/mass-baseline.json`, `--check` fails on **new keys** and on growth
+  past `config.mass.tolerance[key]` (default 0), shrinkage never fails, and a baselined key
+  that has vanished prints as droppable. Two rules the dimensions obey, and both are
+  load-bearing: **absence is not emptiness** — no package.json or no lockfile OMITS those
+  dimensions instead of reporting `0`, because "the lockfile disappeared" must not read as
+  "nice, zero transitive deps"; and **an unmeasurable measure fails closed** — a probe that
+  exits nonzero or prints no number is reported loudly and fails `--check`, because a
+  broken bundle probe read as `0` is the most dangerous sentence a growth ratchet can
+  utter. The failure message does not print a diff you already had: it says *the movement
+  gained parts nobody named* and instructs `coherence decide "<what the new mass buys>"
+  --because "…"`, then a re-pin. `--raise` turns each excursion into an open conjecture
+  keyed on the **dimension** (never on its value), so a second run after more growth adds
+  no second question. The run is recorded in `.coherence/status.json` (`mass`).
 - `coherence atlas [--check]` — trust-graded manifold render + drift/dangling/over-claim
   gate; charts/crossings from `config.atlas`. Tier-1 (**enshrined**) is a crossing
   explicitly marked `enshrined: true` in config AND backed by a `via guard` boundary claim

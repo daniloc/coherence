@@ -24,6 +24,7 @@ import { scaffold } from "./scaffold.ts";
 import { structuralLog, changedFiles, affectedComponents } from "./structural.ts";
 import { lintSinks } from "./lint-sinks.ts";
 import { conventions } from "./conventions.ts";
+import { mass } from "./mass.ts";
 import { atlas } from "./atlas.ts";
 import { contracts } from "./contracts.ts";
 import { whyLint } from "./why-lint.ts";
@@ -450,6 +451,15 @@ if (cmd === "graph") {
   // Guard-vs-contract detector + growth ratchet. Reuses the graph's boundary claims.
   const mode = argv.includes("--update-baseline") ? "update" : check ? "check" : "report";
   await exit(await conventions(cfg, await buildGraph(cfg), mode));
+} else if (cmd === "mass") {
+  // How much machine there is, pinned: lines (total + per component), files, symbols,
+  // dependency counts, and the project's own `measures`. Same ratchet mechanics as
+  // conventions; baseline in <outputDir>/mass-baseline.json. `--raise` turns a growth
+  // excursion into an open question instead of a line that scrolls past.
+  const mode = argv.includes("--update-baseline") ? "update" : check ? "check" : "report";
+  await exit(await mass(cfg, await buildGraph(cfg), mode, {
+    raise, raiseCap, session: one("--session") ?? undefined, agent: one("--agent") ?? undefined,
+  }));
 } else if (cmd === "atlas") {
   // Trust-graded manifold; tiers derived from boundary claims, charts/crossings from config.
   await exit(await atlas(cfg, await buildGraph(cfg), check ? "check" : "render"));
