@@ -292,6 +292,8 @@ export async function economy(
   console.log("  files outside the graph (docs, config) are not counted — the closure is the graph's view.");
   console.log("  (advisory — closure is a cost, not a verdict; the metric surfaces, you judge)");
 
+  // swallowed on purpose: the series side-car is best-effort persistence for an ADVISORY —
+  // a failed write (read-only checkout, missing dir) must not fail the report it decorates.
   await recordEconomy(cfg, { considered, ...s, series }).catch(() => {});
 
   const report = raiseFindings(cfg, readJournal(cfg).records, economyFindings(attr, considered), {

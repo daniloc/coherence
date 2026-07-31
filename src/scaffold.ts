@@ -17,24 +17,36 @@ import { writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { Config } from "./types.ts";
 
+// The ## why template is a RATIONALE PROMPT, not prose to keep. It must NOT describe the
+// chokepoint/fail-closed/totality mechanics: the boundary claim already carries the WHAT,
+// `why-lint` flags prose that re-derives it, and scaffold output is exactly the text
+// adopters paste unmodified — a template that restates the mechanism exports the very
+// smell the linter exists to kill, into every consuming repo. The mechanics live in
+// CODE_TODO (below), which is a work order, not rationale.
 function boundaryFragments(name: string): { inv: string; claim: string; why: string } {
   const inv = `${name} property`;
   return {
     inv,
     claim: `boundary "${inv}" at ChokepointSymbol via test "${name} totality"`,
-    why: `The invariant "${inv}" is enforced at ONE chokepoint — \`ChokepointSymbol\` — that a new
-code path physically cannot avoid, with a FAIL-CLOSED default (absence of a declaration →
-the safe/denied state, never the open one), asserted by a totality oracle ("${name}
-totality") that fails loud if the chokepoint stops covering the whole domain. Do NOT
-re-implement the guard at call sites; route through the chokepoint. Adding a new case is a
-row in the declaration the chokepoint reads, not a new guard somewhere.`,
+    why: `**${inv}.** REPLACE this paragraph — it is a prompt, not prose to keep. The claim
+above records the mechanism and the code shows how it works; neither can record why it
+exists. Author that here (keep the invariant's name in the paragraph so it stays
+anchored): what breaks without this — the concrete failure, who hits it, and whether it
+surfaces loudly (a red build) or silently (wrong data, weeks later); the consequence
+class — an annoyance, a wrong answer, a corrupted record, a security hole; and what was
+REJECTED — the enforcement you did NOT choose (per-call-site checks, a convention doc,
+review vigilance) and why it loses here. Do not restate the mechanism; that is derivable
+and \`coherence why-lint\` flags it.`,
   };
 }
 
 const CODE_TODO = (name: string) => `<!-- TODO(code), in this order — the boundary claim stays RED until all three exist:
   1. ChokepointSymbol — the ONE place the rule lives (a required flag, a registry, a
-     factory). Everything that touches the invariant routes through it.
-  2. a FAIL-CLOSED default — an unclassified/unrouted case resolves to the safe state.
+     factory) that a new code path physically cannot avoid. Everything that touches the
+     invariant routes through it; never re-implement the guard at call sites — adding a
+     case is a row in the declaration the chokepoint reads, not a new guard somewhere.
+  2. a FAIL-CLOSED default — an unclassified/unrouted case resolves to the safe/denied
+     state, never the open one.
   3. a test "${name} totality" — asserts the chokepoint covers the enumerable domain
      (e.g. every member of KERNEL_TABLES is classified; every served sink is enumerated). -->`;
 
@@ -58,11 +70,11 @@ One-line intent: what this component IS (a noun, the thing it owns).
 - chokepoint.ts exists at this node
 - ${claim}
 
+${CODE_TODO(name)}
+
 ## why
 
 ${why}
-
-${CODE_TODO(name)}
 `;
 }
 
@@ -165,8 +177,9 @@ export async function scaffold(cfg: Config, kind: string, name: string): Promise
     console.log(`- ${inv}\n`);
     console.log(`## works when  (append — anchors the invariant; stays RED until the chokepoint + oracle exist)`);
     console.log(`- ${claim}\n`);
-    console.log(`## why  (append a paragraph)`);
+    console.log(`## why  (append a paragraph — it is a rationale prompt; author it, don't keep it)`);
     console.log(why + "\n");
+    console.log(`## code TODO  (paste beside the claim under ## works when — NOT under ## why)`);
     console.log(CODE_TODO(name));
     return 0;
   }

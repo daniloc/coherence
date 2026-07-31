@@ -25,8 +25,9 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import {
   COMMANDS, commandNames, dispatchTokens, usageBanner, renderCommandsBlock,
-  COMMANDS_BEGIN, COMMANDS_END,
+  COMMANDS_BEGIN, COMMANDS_END, renderPhrasebookBlock, PHRASEBOOK_BEGIN, PHRASEBOOK_END,
 } from "../src/commands.ts";
+import { CLAIM_FORMS } from "../src/phrasebook.ts";
 import { spliceBlock, extractBlock } from "../src/render-claude.ts";
 import { tmpProject, cleanup } from "./_helpers.ts";
 
@@ -213,6 +214,85 @@ test("`docs --check` does NOT fail a project that never opted in (absent markers
     const c = await run(process.execPath, [CLI_PATH, "docs", "--check"], { cwd: dir });
     assert.match(c.stdout, /docs current/);
     assert.equal(await readFile(`${dir}/README.md`, "utf8"), before, "an un-fenced README must never be touched");
+  } finally {
+    await cleanup(dir);
+  }
+});
+
+// ── the phrasebook block — the claim-form table, derived exactly like the command index ──
+//
+// The hand-kept table this replaces drifted precisely as its own caveat predicted: 8 forms
+// listed while CLAIM_FORMS carried 9 (`lives in` missing entirely), and a boundary grammar
+// that had lost the `[crossing <zone> -> <zone>]` clause. Same defect class as the command
+// index, same fix, same oracle discipline.
+
+test("the phrasebook block is TOTAL over CLAIM_FORMS: every form's name, grammar and example, in registry order", () => {
+  const block = renderPhrasebookBlock();
+  assert.ok(block.startsWith(PHRASEBOOK_BEGIN));
+  assert.ok(block.trimEnd().endsWith(PHRASEBOOK_END));
+  let cursor = -1;
+  for (const f of CLAIM_FORMS) {
+    const at = block.indexOf(`- **${f.name}**`);
+    assert.ok(at >= 0, `phrasebook block omits form \`${f.name}\``);
+    assert.ok(at > cursor, `form \`${f.name}\` is out of registry order — the order IS the precedence, so the render must keep it`);
+    cursor = at;
+    assert.ok(block.includes(`\`${f.grammar}\``), `phrasebook block omits \`${f.name}\`'s grammar`);
+    assert.ok(block.includes(`\`${f.example}\``), `phrasebook block omits \`${f.name}\`'s example`);
+    assert.ok(block.includes(`[${f.tier}]`), `phrasebook block omits \`${f.name}\`'s tier`);
+  }
+  assert.ok(block.includes(`_${CLAIM_FORMS.length} claim forms`), "the derived count should be in the block");
+  // The regression this derivation exists to kill: the two entries the hand-kept table lost.
+  assert.ok(block.includes("- **lives in**"), "`lives in` was the form the hand-kept table dropped entirely");
+  assert.ok(block.includes("[crossing <zone> -> <zone>]"), "the boundary grammar must carry the crossing clause the hand-kept table lost");
+  // Same constraint as the command index, same reason: `redundancy` reads a table's first
+  // column as an enumerated domain, so a generated table would hand it a fresh pair.
+  assert.ok(!/^\|/m.test(block), "the phrasebook block must be a bullet list, not a markdown table");
+});
+
+test("the phrasebook block round-trips through spliceBlock, and no other fence can see it", () => {
+  const host = `intro\n\n${PHRASEBOOK_BEGIN}\nstale\n${PHRASEBOOK_END}\n\nauthored notes\n`;
+  const spliced = spliceBlock(host, renderPhrasebookBlock(), { begin: PHRASEBOOK_BEGIN, end: PHRASEBOOK_END });
+  assert.ok(spliced !== null);
+  assert.match(spliced!, /authored notes/);
+  assert.doesNotMatch(spliced!, /^stale$/m);
+  // Three owned blocks now exist (CLAUDE.md's, the command index, this); each fence must
+  // be blind to the other two, or one command clobbers another's zone.
+  assert.equal(extractBlock(spliced!), null, "the phrasebook block must not be visible through CLAUDE.md's fence");
+  assert.equal(extractBlock(spliced!, FENCE), null, "the phrasebook block must not be visible through the command-index fence");
+});
+
+test("this repo's own committed README phrasebook block is CURRENT", async () => {
+  // Same gate as the command index above: `npm test` is the harness's own gate, so if
+  // CLAIM_FORMS changes (a new form, an edited grammar) and nobody re-runs `coherence
+  // docs`, this goes red instead of the README silently teaching last release's grammar.
+  const readme = await readFile(README_PATH, "utf8");
+  const current = extractBlock(readme, { begin: PHRASEBOOK_BEGIN, end: PHRASEBOOK_END });
+  assert.ok(current !== null, `README.md is missing the phrasebook markers ${PHRASEBOOK_BEGIN} / ${PHRASEBOOK_END}`);
+  assert.equal(current, renderPhrasebookBlock(), "README.md's claim-form table is stale — run `node src/cli.ts docs`");
+});
+
+test("`docs --check` FAILS on a stale phrasebook block, and names README.md", async () => {
+  const P_FENCE = { begin: PHRASEBOOK_BEGIN, end: PHRASEBOOK_END };
+  const dir = await tmpProject({
+    "README.md": `# fixture\n\n${PHRASEBOOK_BEGIN}\nstale — nothing like the real block\n${PHRASEBOOK_END}\n`,
+    "app/app.spec.md": "# app\n\nThe fixture component.\n\n## works when\n\n- app.ts exists at this node\n",
+    "app/app.ts": "export const x = 1;\n",
+  });
+  try {
+    await run(process.execPath, [CLI_PATH, "docs"], { cwd: dir });
+    const fresh = await run(process.execPath, [CLI_PATH, "docs", "--check"], { cwd: dir });
+    assert.match(fresh.stdout, /docs current/);
+
+    const readme = await readFile(`${dir}/README.md`, "utf8");
+    await writeFile(`${dir}/README.md`, spliceBlock(readme, `${PHRASEBOOK_BEGIN}\none registry entry behind\n${PHRASEBOOK_END}`, P_FENCE)!);
+
+    const stale = await run(process.execPath, [CLI_PATH, "docs", "--check"], { cwd: dir })
+      .then(() => ({ code: 0, stdout: "" }), (e: { code: number; stdout: string }) => e);
+    assert.equal(stale.code, 1, "a stale phrasebook block must fail `docs --check`");
+    assert.match(stale.stdout, /stale: .*README\.md \(phrasebook\)/);
+
+    await run(process.execPath, [CLI_PATH, "docs"], { cwd: dir });
+    assert.equal(extractBlock(await readFile(`${dir}/README.md`, "utf8"), P_FENCE), renderPhrasebookBlock());
   } finally {
     await cleanup(dir);
   }

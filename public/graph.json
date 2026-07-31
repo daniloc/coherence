@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-07-31 17:31Z",
-  "root": "coherence",
-  "absRoot": "/Users/daniloc/Documents/Development/coherence",
+  "generatedAt": "2026-07-31 18:35Z",
+  "root": "wt",
+  "absRoot": "/private/tmp/claude-501/-Users-daniloc-Documents-Development-hoist/3e2c9d10-82b3-4627-a861-555b53d9777d/scratchpad/wt",
   "nodes": [
     {
       "id": "c:.",
@@ -11,13 +11,10 @@
       "claimed": true,
       "claims": [
         "coherence.config.json exists at root",
-        ".claude/settings.json exists at root",
-        "package.json exists at root",
-        "README.md exists at root",
-        "src/cli.ts exists at root"
+        ".claude/settings.json exists at root"
       ],
       "prose": "Implementation belongs to the nested source and test components. This root component\nkeeps only the files that establish how those components are built, read, and released.",
-      "why": "An agent should encounter the project's purpose and its ownership seams before source\ndetail. The project hook wiring also records which repository reads informed a change and\nwhich decisions survived it. Keeping coordination separate from implementation makes that\nfirst read small while still checking that every deeper entry point is reachable."
+      "why": "An agent should encounter the project's purpose and its ownership seams before source\ndetail. The project hook wiring also records which repository reads informed a change and\nwhich decisions survived it. Keeping coordination separate from implementation makes that\nfirst read small while still checking that every deeper entry point is reachable.\n\nThis spec once claimed five files existed at root; three were pruned rather than\ndressed up, because a root claim earns its line only when the failure it detects would\notherwise be SILENT. `package.json`, `README.md`, and `src/cli.ts` fail loudly on their\nown — npm, the reader, and the CLI itself all scream within seconds of their absence —\nso claiming them was green weight that could never turn red for an interesting reason\n(the Known-limits section calls that spec \"coherent and worthless\"). The two claims\nkept are the ones whose absence the system absorbs without a sound: `loadConfig`\nfalls back to defaults when `coherence.config.json` is missing (verify would silently\nrun with no test runner, no serial pin, and the wrong testMatch), and a missing\n`.claude/settings.json` kills the journal hooks with no error at all — the exact\nsilent-death mode `coherence hooks --check` exists to detect. Fewer claims, honestly\nscoped, is the trade this harness teaches; making its own root spec take it is the\nleast it owes."
     },
     {
       "id": "c:src",
@@ -402,7 +399,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/commands.ts",
-      "line": 36,
+      "line": 38,
       "prose": "The README block `coherence docs` owns. A DISTINCT marker pair from CLAUDE.md's:\n a project may carry both files, the two blocks hold different things, and a shared\n marker would let one command clobber the other's zone."
     },
     {
@@ -412,7 +409,26 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/commands.ts",
-      "line": 37
+      "line": 39
+    },
+    {
+      "id": "s:src/commands.ts#PHRASEBOOK_BEGIN",
+      "parent": "f:src/commands.ts",
+      "label": "PHRASEBOOK_BEGIN",
+      "kind": "symbol",
+      "sub": "const",
+      "path": "src/commands.ts",
+      "line": 46,
+      "prose": "The SECOND README block `coherence docs` owns: the claim-form table, derived from the\n `CLAIM_FORMS` registry (src/phrasebook.ts) — the same registry `evalClaim` executes.\n Its own distinct marker pair, for the same reason as above. The renderer lives HERE\n rather than in phrasebook.ts because this file is where README-owned marker pairs and\n their splice-ready spellings are declared once and derived from."
+    },
+    {
+      "id": "s:src/commands.ts#PHRASEBOOK_END",
+      "parent": "f:src/commands.ts",
+      "label": "PHRASEBOOK_END",
+      "kind": "symbol",
+      "sub": "const",
+      "path": "src/commands.ts",
+      "line": 47
     },
     {
       "id": "s:src/commands.ts#CommandGroup",
@@ -421,7 +437,7 @@
       "kind": "symbol",
       "sub": "type",
       "path": "src/commands.ts",
-      "line": 42,
+      "line": 52,
       "prose": "Grouping for both derived spellings. Order comes from first appearance in `COMMANDS`,\n so the group sequence is declared exactly once — by the array below — and there is no\n second ordering list to fall out of step with it."
     },
     {
@@ -431,7 +447,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/commands.ts",
-      "line": 59
+      "line": 69
     },
     {
       "id": "s:src/commands.ts#COMMANDS",
@@ -440,7 +456,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/commands.ts",
-      "line": 75
+      "line": 85
     },
     {
       "id": "s:src/commands.ts#commandNames",
@@ -449,7 +465,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/commands.ts",
-      "line": 183,
+      "line": 193,
       "prose": "Every command name, in registry order. The `<a|b|c>` list — aliases excluded."
     },
     {
@@ -459,7 +475,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/commands.ts",
-      "line": 187,
+      "line": 197,
       "prose": "Every token the dispatch must accept: names AND aliases. The totality oracle compares\n THIS against the `cmd === \"…\"` literals it reads out of cli.ts."
     },
     {
@@ -469,7 +485,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/commands.ts",
-      "line": 214,
+      "line": 224,
       "prose": "SPELLING ONE — the usage banner, printed to stderr when the verb is unknown or absent.\nDerived in full: there is no command-name string literal left in cli.ts's help text, so\nthe banner cannot be 29 while the dispatch is 30, and two branches editing different\ncommands can no longer conflict on one line."
     },
     {
@@ -479,8 +495,18 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/commands.ts",
-      "line": 247,
+      "line": 257,
       "prose": "SPELLING TWO — the README's command index, markers inclusive, ready for `spliceBlock`.\n\nA BULLET LIST, not a markdown table, and that is a real constraint rather than taste:\n`redundancy` reads the first column of every markdown table as an enumerated domain, so\na generated table would hand it a fresh README↔dispatch pair to report — trading the\nfinding this change exists to remove for an identical one. A generated block that the\nproject's own detector still flags has not fixed anything.\n\nThe block is an INDEX and nothing more: name, arg shape, one line. The authored\nper-command reasoning lives OUTSIDE the markers, below the block, and is not expected to\ncover every command — completeness is what the derivation owes, depth is what the prose\nowes, and confusing the two is how the reference got twelve commands behind."
+    },
+    {
+      "id": "s:src/commands.ts#renderPhrasebookBlock",
+      "parent": "f:src/commands.ts",
+      "label": "renderPhrasebookBlock",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/commands.ts",
+      "line": 295,
+      "prose": "The README's claim-form index, markers inclusive, ready for `spliceBlock` — the same\ntreatment the command index got, for the same defect: the hand-kept table listed 8 forms\nwhile the registry carried 9 (`lives in` was missing entirely) and its boundary grammar\nhad lost the `[crossing <zone> -> <zone>]` clause. The README even predicted the drift\n(\"nothing compares it against the registry, so it *can* drift\"). Now something does.\n\nA BULLET LIST, not a markdown table, for the reason renderCommandsBlock records:\n`redundancy` reads the first column of every markdown table as an enumerated domain, so\na generated table would hand it a fresh README↔registry pair to report.\n\nThe block is the GRAMMAR and nothing more: name, tier, grammar, example — the fields the\nregistry actually carries. The authored per-form reasoning (tier behavior under `--fast`,\nthe meta-oracle, skip-vs-fail semantics) lives OUTSIDE the markers, below the block."
     },
     {
       "id": "f:src/config.ts",
@@ -2613,6 +2639,217 @@
       "prose": "Deterministic, pipe-safe text of the ledger (`coherence review` prints this). A masthead\n line, then one block per event: KIND (padded) · comp: inv · from→to · the detail sentence ·\n and the blast line when reliants hold a degraded asset. A steady state prints almost nothing."
     },
     {
+      "id": "f:src/prose.ts",
+      "parent": "c:src",
+      "label": "prose.ts",
+      "kind": "file",
+      "sub": "src/prose.ts",
+      "path": "src/prose.ts",
+      "prose": "prose.ts — the PROSE-ROT detector: one argument cached in two places, and whether the\ncopies still agree.\n\nThe doctrine this repo already holds says a cached fact is worth its cost only while it\nis cheaper than re-deriving — and the repo's own reading surfaces cache the SAME\nargument in README, RELEASE-NOTES and module headers with nothing tying the spellings\ntogether. That is `redundancy`'s definition of its finding, applied to prose, which\n`redundancy` deliberately does not scan (its unit is an enumerated domain, not a\nsentence). The historical record here is unambiguous: the command index drifted three\ntimes in two days until it was DERIVED; the hand-kept tables that stayed hand-kept\ndrifted. Prose copies rot the same way, and no compiler, test, or claim will ever see it.\n\nTHE SIGNAL IS DIVERGENCE, NOT DUPLICATION. \"You repeated yourself\" is a style remark;\na summary legitimately restates a fuller argument and must not read as a defect. The\nfinding worth a reader's attention is \"you repeated yourself AND the copies no longer\nagree\" — that is rot a reader cannot detect without diffing both sites, because each\ncopy reads as authoritative on its own. So every reported pair is labeled IDENTICAL\n(agreeing today, tied together by nothing) or DIVERGED (already disagreeing), and\nDIVERGED ranks first.\n\nWHAT THE FLOOR GIVES UP, ON PURPOSE. Pairs are sentences sharing 6-word shingles at\nJaccard ≥ the floor. Six words in a row is already a copy signature — an independent\nparaphrase of the same idea almost never reproduces six-word runs — and the floor on\ntop of it is precision-first: below it, a heavily-rewritten copy and a fresh paraphrase\nare indistinguishable from text alone, so BOTH are ignored. That makes this a LOWER\nBOUND on rot, the same way calibration.ts names its trace a lower bound: the copies\nthat drifted FURTHEST are exactly the ones this cannot see.\n\nWHAT IT CANNOT SEE AT ALL, and the render says so: it compares text, not meaning. It\ncannot tell a deliberate summary from a rotted copy, and a DIVERGED pair whose\ndifference is intended is a question to dismiss, not a defect to fix.\n\nDeliberately NOT scanned: inline comments below a module's header essay (they narrate\nlocal code, and pairing them would drown the reading-surface signal), test files\n(evidence, not a reading surface), generated markdown (AGENTS.md, CHANGELOG.md, and\n`<!-- coherence:* -->` blocks — derived text restates by construction), and code\nitself (`redundancy` owns enumerated domains; this module owns sentences).\n\nOutput is ADVISORY and it gates nothing — always exits 0. This is the advisory class\nwhere one false positive teaches people to ignore the instrument, so the default report\nis capped and floored; `--all` uncaps so precision can be judged rather than trusted."
+    },
+    {
+      "id": "s:src/prose.ts#ProseUnit",
+      "parent": "f:src/prose.ts",
+      "label": "ProseUnit",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/prose.ts",
+      "line": 53,
+      "prose": "One sentence, as found on a reading surface. `line` is a navigation aid, never\n identity — the same rule redundancy.ts and cli.ts already enforce."
+    },
+    {
+      "id": "s:src/prose.ts#SHINGLE",
+      "parent": "f:src/prose.ts",
+      "label": "SHINGLE",
+      "kind": "symbol",
+      "sub": "const",
+      "path": "src/prose.ts",
+      "line": 62
+    },
+    {
+      "id": "s:src/prose.ts#normalizeWords",
+      "parent": "f:src/prose.ts",
+      "label": "normalizeWords",
+      "kind": "symbol",
+      "sub": "const",
+      "path": "src/prose.ts",
+      "line": 66,
+      "prose": "Lowercase, strip everything but letters/digits, split. Both sides of a pair pass\n through the same rule, so a crude normalization stays symmetric."
+    },
+    {
+      "id": "s:src/prose.ts#shinglesOf",
+      "parent": "f:src/prose.ts",
+      "label": "shinglesOf",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/prose.ts",
+      "line": 70,
+      "prose": "k-word shingles as strings. Fewer than k words → empty set (the unit cannot pair)."
+    },
+    {
+      "id": "s:src/prose.ts#unitsFromLines",
+      "parent": "f:src/prose.ts",
+      "label": "unitsFromLines",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/prose.ts",
+      "line": 91,
+      "prose": "The shared paragraph→sentence pass. `lines[i]` is the cleaned text of source line\n i+offset, or null for a paragraph break / skipped line."
+    },
+    {
+      "id": "s:src/prose.ts#proseOfMarkdown",
+      "parent": "f:src/prose.ts",
+      "label": "proseOfMarkdown",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/prose.ts",
+      "line": 115,
+      "prose": "Pure — the sentences of one markdown document. Skips fenced code, tables, headings,\n and `<!-- coherence:* -->` generated blocks (derived text restates by construction)."
+    },
+    {
+      "id": "s:src/prose.ts#headerLines",
+      "parent": "f:src/prose.ts",
+      "label": "headerLines",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/prose.ts",
+      "line": 135,
+      "prose": "Pure — the leading comment block of a source file (the module header essay), as\n cleaned lines. Stops at the first line that is neither comment nor blank-inside-the-\n block; comments further down narrate local code and are deliberately out of scope."
+    },
+    {
+      "id": "s:src/prose.ts#proseOfHeader",
+      "parent": "f:src/prose.ts",
+      "label": "proseOfHeader",
+      "kind": "symbol",
+      "sub": "const",
+      "path": "src/prose.ts",
+      "line": 162
+    },
+    {
+      "id": "s:src/prose.ts#collectProse",
+      "parent": "f:src/prose.ts",
+      "label": "collectProse",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/prose.ts",
+      "line": 173,
+      "prose": "Every prose surface: markdown documents (minus generated ones) plus module header\n essays of code files under `cfg.sources` (default: the entry dir)."
+    },
+    {
+      "id": "s:src/prose.ts#ProsePair",
+      "parent": "f:src/prose.ts",
+      "label": "ProsePair",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/prose.ts",
+      "line": 200
+    },
+    {
+      "id": "s:src/prose.ts#ProseSuppressed",
+      "parent": "f:src/prose.ts",
+      "label": "ProseSuppressed",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/prose.ts",
+      "line": 210
+    },
+    {
+      "id": "s:src/prose.ts#ProseOpts",
+      "parent": "f:src/prose.ts",
+      "label": "ProseOpts",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/prose.ts",
+      "line": 212
+    },
+    {
+      "id": "s:src/prose.ts#PROSE_DEFAULTS",
+      "parent": "f:src/prose.ts",
+      "label": "PROSE_DEFAULTS",
+      "kind": "symbol",
+      "sub": "const",
+      "path": "src/prose.ts",
+      "line": 218
+    },
+    {
+      "id": "s:src/prose.ts#pairProse",
+      "parent": "f:src/prose.ts",
+      "label": "pairProse",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/prose.ts",
+      "line": 226,
+      "prose": "Pure — pair the sentences and rank them: DIVERGED first (the rot signal), then by\nsimilarity, so the most-verbatim disagreement — the clearest case of a copy that\nstopped being maintained — leads the report. Same-file pairs are excluded: repetition\nwithin one document is visible to its reader; the invisible rot is cross-file."
+    },
+    {
+      "id": "s:src/prose.ts#unitSubject",
+      "parent": "f:src/prose.ts",
+      "label": "unitSubject",
+      "kind": "symbol",
+      "sub": "const",
+      "path": "src/prose.ts",
+      "line": 277,
+      "prose": "A sentence has no name, so its identity is a digest of its own normalized words —\n the same call redundancy.ts makes for positional alternation sites, with the same\n honesty argument: an edited sentence IS a different sentence, so re-keying on edit is\n correct behaviour, not a leak. No line, no score."
+    },
+    {
+      "id": "s:src/prose.ts#prosePairSubject",
+      "parent": "f:src/prose.ts",
+      "label": "prosePairSubject",
+      "kind": "symbol",
+      "sub": "const",
+      "path": "src/prose.ts",
+      "line": 281,
+      "prose": "A|B and B|A are one question."
+    },
+    {
+      "id": "s:src/prose.ts#shownProse",
+      "parent": "f:src/prose.ts",
+      "label": "shownProse",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/prose.ts",
+      "line": 290,
+      "prose": "THE REPORTING FLOOR, in one place — what the render shows is exactly what may raise,\n by construction (the same rule redundancy.ts states at shownPairs)."
+    },
+    {
+      "id": "s:src/prose.ts#renderProse",
+      "parent": "f:src/prose.ts",
+      "label": "renderProse",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/prose.ts",
+      "line": 295
+    },
+    {
+      "id": "s:src/prose.ts#proseFindings",
+      "parent": "f:src/prose.ts",
+      "label": "proseFindings",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/prose.ts",
+      "line": 335,
+      "prose": "Only DIVERGED pairs become questions. An identical pair is a maintenance remark; a\n diverged pair is the two-candidate conjecture the render already prints and throws\n away — \"intended, or rotted\" — which is exactly a Finding."
+    },
+    {
+      "id": "s:src/prose.ts#ProseCmdOpts",
+      "parent": "f:src/prose.ts",
+      "label": "ProseCmdOpts",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/prose.ts",
+      "line": 358
+    },
+    {
+      "id": "s:src/prose.ts#prose",
+      "parent": "f:src/prose.ts",
+      "label": "prose",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/prose.ts",
+      "line": 361,
+      "prose": "The `coherence prose` command. Advisory: always returns 0."
+    },
+    {
       "id": "f:src/raise.ts",
       "parent": "c:src",
       "label": "raise.ts",
@@ -3160,7 +3397,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/scaffold.ts",
-      "line": 117
+      "line": 129
     },
     {
       "id": "f:src/scene-model.ts",
@@ -4773,6 +5010,15 @@
       "prose": "promise.test.ts — the DERIVATION half of the PROMISE GRAPH (`coherence contract`/`review`).\nLocks the load-bearing, rot-prone logic: the GRAMMAR (the optional `crossing` clause, the\n`## zones` section, `lives in` residence), the GRADE doctrine (A/B/C/D/U as a total function\nof one record), the reliance DOUBLE-ENTRY (covered/naked/same-zone/undeclared + the reliants\nposting), the review DIFF (one test per event kind, blast + severity), and the ledger TEXT.\nThe pure cores are exercised directly with hand-built graphs/models (no git, no status file);\nthe IO readers (zones off a spec) run against a temp project."
     },
     {
+      "id": "f:test/prose.test.ts",
+      "parent": "c:test",
+      "label": "prose.test.ts",
+      "kind": "file",
+      "sub": "test/prose.test.ts",
+      "path": "test/prose.test.ts",
+      "prose": "prose.test.ts — the PROSE-ROT detector. The failure it exists to catch: one argument\ncached verbatim on two reading surfaces, one copy updated, the other left to rot — and\nno reader able to see it without diffing both.\n\nThe load-bearing tests here are the NEGATIVE CONTROLS, because this is the advisory\nclass where one false positive teaches people to ignore the instrument: a genuine\nparaphrase of the same idea must NOT pair (that is a summary doing its job), and a\nsentence stamped into more places than maxDf must NOT pair (that is boilerplate, not a\ncached argument). The positive case — a mostly-verbatim copy with a local edit — must\npair AND be labeled DIVERGED, ranked above pairs that still agree."
+    },
+    {
       "id": "f:test/python-oracle.test.ts",
       "parent": "c:test",
       "label": "python-oracle.test.ts",
@@ -5255,6 +5501,12 @@
       "id": "f:src/cli.ts->f:src/calibration.ts:imports",
       "source": "f:src/cli.ts",
       "target": "f:src/calibration.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/commands.ts->f:src/phrasebook.ts:imports",
+      "source": "f:src/commands.ts",
+      "target": "f:src/phrasebook.ts",
       "kind": "imports"
     },
     {
@@ -5933,6 +6185,54 @@
       "id": "f:src/promise.ts->f:src/scene.ts:imports",
       "source": "f:src/promise.ts",
       "target": "f:src/scene.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/prose.ts->x:node:fs/promises:imports",
+      "source": "f:src/prose.ts",
+      "target": "x:node:fs/promises",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/prose.ts->x:node:path:imports",
+      "source": "f:src/prose.ts",
+      "target": "x:node:path",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/prose.ts->x:node:crypto:imports",
+      "source": "f:src/prose.ts",
+      "target": "x:node:crypto",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/prose.ts->f:src/types.ts:imports",
+      "source": "f:src/prose.ts",
+      "target": "f:src/types.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/prose.ts->f:src/novelty.ts:imports",
+      "source": "f:src/prose.ts",
+      "target": "f:src/novelty.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/prose.ts->f:src/decisions.ts:imports",
+      "source": "f:src/prose.ts",
+      "target": "f:src/decisions.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/prose.ts->f:src/raise.ts:imports",
+      "source": "f:src/prose.ts",
+      "target": "f:src/raise.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/prose.ts->f:src/oracle-domain.ts:imports",
+      "source": "f:src/prose.ts",
+      "target": "f:src/oracle-domain.ts",
       "kind": "imports"
     },
     {
@@ -6683,6 +6983,12 @@
       "id": "f:test/commands.test.ts->f:src/commands.ts:imports",
       "source": "f:test/commands.test.ts",
       "target": "f:src/commands.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/commands.test.ts->f:src/phrasebook.ts:imports",
+      "source": "f:test/commands.test.ts",
+      "target": "f:src/phrasebook.ts",
       "kind": "imports"
     },
     {
@@ -7546,6 +7852,42 @@
     {
       "id": "f:test/promise.test.ts->f:test/_helpers.ts:imports",
       "source": "f:test/promise.test.ts",
+      "target": "f:test/_helpers.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/prose.test.ts->x:node:test:imports",
+      "source": "f:test/prose.test.ts",
+      "target": "x:node:test",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/prose.test.ts->x:node:assert/strict:imports",
+      "source": "f:test/prose.test.ts",
+      "target": "x:node:assert/strict",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/prose.test.ts->x:node:fs/promises:imports",
+      "source": "f:test/prose.test.ts",
+      "target": "x:node:fs/promises",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/prose.test.ts->x:node:path:imports",
+      "source": "f:test/prose.test.ts",
+      "target": "x:node:path",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/prose.test.ts->f:src/prose.ts:imports",
+      "source": "f:test/prose.test.ts",
+      "target": "f:src/prose.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/prose.test.ts->f:test/_helpers.ts:imports",
+      "source": "f:test/prose.test.ts",
       "target": "f:test/_helpers.ts",
       "kind": "imports"
     },

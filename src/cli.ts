@@ -15,7 +15,7 @@ import { buildGraph } from "./derive.ts";
 import { renderOutline } from "./render-outline.ts";
 import { renderOverview } from "./render-overview.ts";
 import { renderClaude, spliceBlock, extractBlock, resolveClaudeMdPath, CLAUDE_BEGIN, CLAUDE_END } from "./render-claude.ts";
-import { renderCommandsBlock, usageBanner, COMMANDS_BEGIN, COMMANDS_END } from "./commands.ts";
+import { renderCommandsBlock, renderPhrasebookBlock, usageBanner, COMMANDS_BEGIN, COMMANDS_END, PHRASEBOOK_BEGIN, PHRASEBOOK_END } from "./commands.ts";
 import { runVerify, applyVerdicts } from "./verify.ts";
 import { onboard } from "./onboard.ts";
 import { decompose } from "./decompose.ts";
@@ -214,6 +214,30 @@ async function doCommands(): Promise<string[]> {
   return [];
 }
 
+// The FOURTH owned block: README.md's claim-form table, derived from the CLAIM_FORMS
+// registry with the same machinery as the command index above — one splicer, its own
+// marker pair, opt-in by markers, part of `docs` and `docs --check`. Same defect class,
+// same fix: the hand-kept table was 8 forms while the registry carried 9.
+async function doPhrasebook(): Promise<string[]> {
+  const path = join(cfg.root, "README.md");
+  const existing = await read(path);
+  const block = renderPhrasebookBlock();
+  const current = extractBlock(existing, { begin: PHRASEBOOK_BEGIN, end: PHRASEBOOK_END });
+  if (check) {
+    if (!existing || current === null) return [];
+    return current !== block ? ["README.md (phrasebook)"] : [];
+  }
+  if (!existing) return []; // doCommands already reported the missing README
+  const spliced = current === null ? null : spliceBlock(existing, block, { begin: PHRASEBOOK_BEGIN, end: PHRASEBOOK_END });
+  if (spliced === null) {
+    console.log(`phrasebook: README.md has no claim-form markers. Add this pair where the derived table should live:\n\n${PHRASEBOOK_BEGIN}\n${PHRASEBOOK_END}\n\nEverything between them is owned by \`coherence docs\`; the authored per-form notes stay outside. File left untouched.`);
+    return [];
+  }
+  await writeFile(path, spliced);
+  console.log("phrasebook: wrote the derived claim-form table into README.md");
+  return [];
+}
+
 if (cmd === "graph") {
   const stale = await doGraph();
   if (check) { console.log(stale.length ? `stale: ${stale.join(", ")}` : "graph current"); await exit(stale.length ? 1 : 0); }
@@ -221,7 +245,7 @@ if (cmd === "graph") {
   const stale = await doOverview();
   if (check) { console.log(stale.length ? `stale: ${stale.join(", ")}` : "overview current"); await exit(stale.length ? 1 : 0); }
 } else if (cmd === "docs") {
-  const stale = [...(await doOverview()), ...(await doGraph()), ...(await doCommands())];
+  const stale = [...(await doOverview()), ...(await doGraph()), ...(await doCommands()), ...(await doPhrasebook())];
   if (check) { console.log(stale.length ? `stale: ${stale.join(", ")}` : "docs current"); await exit(stale.length ? 1 : 0); }
 } else if (cmd === "claude") {
   const stale = await doClaude();
