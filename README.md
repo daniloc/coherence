@@ -159,6 +159,39 @@ relied on by re-deriving it, which is to say it is not being relied on, it is be
 rebuilt. Economy and trust are one quantity seen from two chairs — the builder asking
 what this costs, the relier asking what may be assumed.
 
+### The assembly these parts build: an envelope, in constant motion
+
+Scale the panel up and the whole discipline comes into view: coherence is an **envelope
+construction kit** for software. A building envelope is the boundary assembly that makes
+the interior governable, and its physics are the atlas's physics. Failures happen at
+**penetrations**, so that is where the effort concentrates: every deliberate crossing is
+flashed and sealed (a chokepoint with an oracle behind it), every non-penetration is
+documented as one (`nonTransition` is the note that says *this is wall, not window*), and
+the unsealed joints are on the drawing (`knownPending`) rather than discovered by the
+weather. The envelope's cardinal property is **continuity** — a 99% continuous vapor
+barrier is not 99% effective; one gap defeats it — which is the deep reason totality
+oracles exist and their exact building-science name: **a totality oracle is a blower-door
+test.** It does not check the seals you remember making. It pressurizes the assembly and
+asks whether any gap exists at all. (A refutation is the smoke pencil: proof the test can
+detect a leak.) And the payoff of the envelope is the **interior**: inside a sound one,
+local reasoning is valid and context closure stays small. Interior code gets to be simple
+because the boundary is doing the work — the economy frame and the envelope frame arriving
+at the same place.
+
+One thing separates this envelope from a building's: **the primary weather is the
+construction crew.** A building is sealed once and then maintained against an exterior; a
+codebase's chief threat and only maintainer are the same party, in constant motion, and
+so maintenance signal cannot come from periodic inspection — it has to be produced as
+**exhaust of the work itself**, at the moment of the work, by the worker, who is the only
+party holding the answer at zero inference cost. That is what the journal is: **signal
+residue.** Residue is what distinguishes a designed penetration from damage — a hole with
+a `decide` behind it is a feature; a hole without one is a leak, and in a system in
+motion that distinction cannot be recovered later, because it exists only at the moment
+of the cut. And residue is what keeps the atlas an **as-built drawing** instead of a
+blueprint: a static drawing of a moving building quietly stops resembling it, while a
+drawing fed by the decision stream, the drift series, and the heat readings moves with
+the walls.
+
 ## The mental model: the enforcement ladder
 
 Every rule a codebase depends on sits at one of three tiers. The harness exists to
