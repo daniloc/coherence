@@ -13,6 +13,7 @@
 import { readFile, readdir, stat } from "node:fs/promises";
 import { join } from "node:path";
 import { spawnSync } from "node:child_process";
+import { randomBytes } from "node:crypto";
 import type { Config, Graph } from "./types.ts";
 import { BOUNDARY_RE } from "./boundary.ts";
 import { PARITY_RE } from "./parity.ts";
@@ -136,15 +137,42 @@ export const reEscape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
  * boot charged to whichever claim happened to trigger it, which is a fact about the profile,
  * not about the claim. Verify's own wall clock takes over when this is absent.
  */
-function execNamedTest(ctx: ClaimCtx, name: string): { ok: boolean; detail: string; ms?: number } {
+export function execNamedTest(ctx: ClaimCtx, name: string): { ok: boolean; detail: string; ms?: number } {
   const o = ctx.oracles?.();
   if (o?.report) return resolveFromBatch(o.report, name);
-  const cfg = ctx.cfg;
-  const r = spawnSync(cfg.test[0], [...cfg.test.slice(1), reEscape(name)], { cwd: ctx.root, encoding: "utf8", timeout: 120000 });
+  return runSerialNamedTest(ctx.cfg, ctx.root, name);
+}
+
+/** The SERIAL arm of `execNamedTest`, factored so the canary below probes the EXACT code
+ *  path a claim's verdict rides on — same spawn, same exit-code reading, same `testMatch`
+ *  evidence rule. Exit 0 alone is not trusted: `testMatch` requires positive evidence the
+ *  named test actually ran (a zero-match runner that exits 0 would otherwise pass a
+ *  renamed/deleted oracle). */
+export function runSerialNamedTest(cfg: Config, root: string, name: string): { ok: boolean; detail: string } {
+  const r = spawnSync(cfg.test[0], [...cfg.test.slice(1), reEscape(name)], { cwd: root, encoding: "utf8", timeout: 120000 });
   const out = (r.stderr || "") + (r.stdout || "");
   if (r.status !== 0) return { ok: false, detail: out.split("\n").filter(Boolean).slice(-3).join(" | ").slice(0, 200) };
   if (cfg.testMatch && !new RegExp(cfg.testMatch).test(out)) return { ok: false, detail: `test "${name}" matched no run (testMatch)` };
   return { ok: true, detail: "" };
+}
+
+/**
+ * THE SERIAL CANARY — the repo's own doctrine applied to the instrument: a checker never
+ * observed to fail has not been shown to be a checker. The batch path proves a vanished
+ * oracle structurally (zero matches in the report is its own red); the serial path had to
+ * TRUST `config.test` + `testMatch`, on a runner class this repo has itself documented as
+ * un-guardable by testMatch (node:test multi-file: a real name and a name existing nowhere
+ * produce byte-identical passing output — measured, test-batch.ts:110, types.ts).
+ *
+ * So, once per serial verify, run the runner with a name that provably exists nowhere and
+ * require it to FAIL (nonzero exit, or a `testMatch` miss — the same reading a claim gets).
+ * A runner that PASSES the canary cannot filter by name: every green it would produce is
+ * green-by-absence, and verify must refuse it exactly as the batch path refuses. Cost is
+ * one extra runner boot per serial run.
+ */
+export function proveSerialRunnerCanFail(cfg: Config, root: string): { proven: boolean; canary: string } {
+  const canary = `coherence-canary-${randomBytes(6).toString("hex")}`;
+  return { proven: !runSerialNamedTest(cfg, root, canary).ok, canary };
 }
 
 /** Whether SOME runner is allowed to answer an executable claim: a batch report, or — only

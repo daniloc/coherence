@@ -22,6 +22,23 @@ test("merge — a skip never clobbers a real verdict; the old verdict rides thro
   assert.equal(out[0].at, "2026-01-01T00:00:00.000Z"); // the OLD stamp — staleness stays honest
 });
 
+test("merge — annotating a boundary with a crossing clause never erases its history (identity is claimKey, not the raw string)", () => {
+  // The trust-ledger amnesia case, demonstrated live 2026-07-31: the record held
+  // everFailed:true, runs:50 for the bare claim; one purely declarative `crossing`
+  // annotation — the exact edit normalizeBoundaryClaim exists to make safe — and a
+  // raw-string-keyed merge returned everFailed:false, runs:1. The lookup must go
+  // through claimKey on BOTH sides, so the pre-annotation record is found.
+  const bare = 'boundary "fail-closed writes" at applyWritePolicy via guard "g"';
+  const crossed = 'boundary "fail-closed writes" at applyWritePolicy crossing agent -> storage via guard "g"';
+  const prev = [rec("A", bare, "pass", { everFailed: true, lastFailAt: "2025-12-01T00:00:00.000Z", lastFailCommit: "dead111", runs: 50 })];
+  const out = mergeClaimRecords(prev, [rec("A", crossed, "pass", { at: "2026-02-01T00:00:00.000Z" })], null);
+  assert.equal(out.length, 1);
+  assert.equal(out[0].everFailed, true, "a claim that has ever been red must never be able to forget it — not even on pure annotation");
+  assert.equal(out[0].lastFailCommit, "dead111", "the failure's provenance rides through the rename");
+  assert.equal(out[0].runs, 51, "fifty prior runs plus this one — not a history reset to 1");
+  assert.equal(out[0].claim, crossed, "the record itself carries the raw annotated claim — normalization is strictly a lookup concern");
+});
+
 test("merge — a fail replaces a pass, and a pass replaces a fail (real verdicts always win)", () => {
   const prev = [rec("A", "x.ts exists at root", "pass")];
   const fresh = [rec("A", "x.ts exists at root", "fail", { at: "2026-02-01T00:00:00.000Z" })];
@@ -73,7 +90,8 @@ test("full-then-fast — the fast tier's skip does not erase the full tier's ora
   // A fake runner that always passes; the full run records the pass, then a --fast run
   // skips the executable tier — the record must keep the pass, and lastFastAt/lastFullAt
   // must age independently.
-  const runner = "process.exit(0);";
+  // Name-sensitive (the serial canary refuses a runner that cannot fail).
+  const runner = "process.exit(process.argv[2] === 'the oracle' ? 0 : 1);";
   const root = await tmpProject({ "runner.js": runner });
   try {
     const c = cfg(root, { test: ["node", join(root, "runner.js")] });

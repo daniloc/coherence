@@ -20,8 +20,8 @@ import { watch, type FSWatcher } from "node:fs";
 import * as readline from "node:readline";
 import type { Config, Graph } from "./types.ts";
 import { buildGraph } from "./derive.ts";
-import { parseBoundary } from "./boundary.ts";
-import { readStatus, gitStamp, type StatusRecord, type ClaimRecord } from "./status.ts";
+import { parseBoundary, claimKey } from "./boundary.ts";
+import { readStatus, gitStamp, indexClaimRecords, type StatusRecord, type ClaimRecord } from "./status.ts";
 import { spark, arrow } from "./drift.ts";
 
 // ── the model: graph + record → what the panel shows ──────────────────────────────
@@ -102,8 +102,9 @@ const zeroCounts = (): Record<LightKind, number> => ({ pass: 0, fail: 0, stale: 
 export function buildModel(graph: Graph, status: StatusRecord, head: { commit: string | null; dirty: boolean }, now: Date): PanelModel {
   const comps = graph.nodes.filter((n) => n.kind === "component");
   const rootNode = comps.find((c) => c.id === "c:.") ?? comps[0];
-  const recBy = new Map<string, ClaimRecord>();
-  for (const r of status.verify?.claims ?? []) recBy.set(`${r.node} ${r.claim}`, r);
+  // Keyed by claimKey (the branded identity), NEVER the raw string: a record written
+  // before a boundary gained its `crossing` clause must still light the annotated row.
+  const recBy = indexClaimRecords(status.verify?.claims ?? []);
   // Unanchored invariants: the record's gap list when a verify has run (authoritative —
   // it sees anchoring through `conforms to` words); a static parse as the cold-start
   // fallback so a never-verified tree still shows its ratchet reds.
@@ -125,7 +126,7 @@ export function buildModel(graph: Graph, status: StatusRecord, head: { commit: s
     const plain: PlainRow[] = [];
     const counts = zeroCounts();
     for (const claim of c.claims ?? []) {
-      const light = lightFor(recBy.get(`${c.label} ${claim}`), head.commit, now);
+      const light = lightFor(recBy.get(claimKey(c.label, claim)), head.commit, now);
       counts[light.kind]++; totals[light.kind]++;
       if (light.gap) { gapCount++; }
       const b = parseBoundary(claim);

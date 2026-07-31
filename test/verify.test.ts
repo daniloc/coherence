@@ -134,10 +134,41 @@ test("testMatch — a runner exiting 0 with no matching output FAILS (the rename
 
 test("testMatch — a runner that emits the expected token passes", async () => {
   await withProject({}, async (root) => {
-    const c = cfg(root, { test: ["node", "-e", "console.log('RAN ok')"], testMatch: "RAN" });
+    // The runner emits its token only for the name it knows: the canary hands it a name
+    // that exists nowhere and must see a testMatch miss, or the runner is refused.
+    const c = cfg(root, { test: ["node", "-e", "if (process.argv[1] === 'real') console.log('RAN ok')", "--"], testMatch: "RAN" });
     const g = graph([comp(".", { claims: ['passes test "real"'], why: "r" })]);
     const r = await runCaptured(() => runVerify(c, g, { serial: true }));
     assert.equal(r.code, 0);
+  });
+});
+
+test("CANARY — a serial runner that cannot fail is REFUSED, never trusted", async () => {
+  // The runner class this closes: exit 0 for EVERY name, output that satisfies testMatch
+  // for EVERY name — a real test and a test that exists nowhere produce byte-identical
+  // passing output (node:test's multi-file mode does exactly this; measured 2026-07-31).
+  // The repo's own doctrine applied to the instrument: a checker never observed to fail
+  // has not been shown to be a checker.
+  await withProject({}, async (root) => {
+    const c = cfg(root, { test: ["node", "-e", "console.log('pass 1')", "--"], testMatch: "pass [1-9]" });
+    const g = graph([comp(".", { claims: ['passes test "ghost"'], why: "r" })]);
+    const r = await runCaptured(() => runVerify(c, g, { serial: true }));
+    assert.equal(r.code, 1, "a run whose runner cannot fail must not exit green");
+    assert.match(r.out, /CANNOT FAIL/);
+    assert.match(r.out, /coherence-canary-/, "the refusal names the canary it passed");
+    assert.match(r.out, /1 skipped/, "the claim skips — it is not graded by a runner that offers no evidence");
+    assert.match(r.out, /executable tier refused/);
+  });
+});
+
+test("CANARY — a runner that reds unknown names is proven once and the run proceeds", async () => {
+  await withProject({ "runner.js": "process.exit(process.argv[2] === 'real' ? 0 : 1);" }, async (root) => {
+    const c = cfg(root, { test: ["node", join(root, "runner.js")] });
+    const g = graph([comp(".", { claims: ['passes test "real"'], why: "r" })]);
+    const r = await runCaptured(() => runVerify(c, g, { serial: true }));
+    assert.equal(r.code, 0, r.out);
+    assert.match(r.out, /1 green/);
+    assert.doesNotMatch(r.out, /CANNOT FAIL/);
   });
 });
 

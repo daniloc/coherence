@@ -6,9 +6,10 @@ import { join } from "node:path";
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import type { Config, Graph } from "./types.ts";
-import { CLAIM_FORMS, type ClaimCtx } from "./phrasebook.ts";
+import { CLAIM_FORMS, proveSerialRunnerCanFail, type ClaimCtx } from "./phrasebook.ts";
 import { ownerOf } from "./walk.ts";
-import { recordVerify, readStatus } from "./status.ts";
+import { claimKey } from "./boundary.ts";
+import { recordVerify, readStatus, indexClaimRecords } from "./status.ts";
 import { readJournal } from "./decisions.ts";
 import { raiseFindings, formatRaise, type Finding } from "./raise.ts";
 import { isDocumented } from "./derive.ts";
@@ -292,6 +293,28 @@ export async function runVerify(cfg: Config, graph: Graph, opts: VerifyOpts): Pr
   let refused = false;
   const oracles = (): OracleAccess => {
     if (access) return access;
+    // EVERY serial grant passes through here, and the CANARY runs first: before trusting
+    // the per-claim runner with any verdict, ask it to fail a test that provably exists
+    // nowhere. A runner that passes the canary cannot filter by name — every green it
+    // would produce is green-by-absence (the exact vacuity the batch path already closes
+    // structurally) — so it is REFUSED, exactly like a mode with no runner at all.
+    // Once per verify by construction: oracles() is memoized.
+    const grantSerial = (why: string): OracleAccess => {
+      if (cfg.test && cfg.test.length) {
+        const c = proveSerialRunnerCanFail(cfg, root);
+        if (!c.proven) {
+          refused = true;
+          console.log(`✗ [oracles] the serial runner CANNOT FAIL: it passed "${c.canary}" — a test that`);
+          console.log(`  provably exists nowhere. A runner that cannot red a vanished oracle offers no`);
+          console.log(`  evidence when it greens a real one. Make config.test exit nonzero on an unknown`);
+          console.log(`  name, or set config.testMatch to demand positive evidence of the run, or batch`);
+          console.log(`  (config.testBatch / --from-report), where absence is structurally observable.`);
+          return { report: null, serialAllowed: false };
+        }
+      }
+      for (const l of serialCostLines(executableish(), why)) console.log(l);
+      return { report: null, serialAllowed: true };
+    };
     const engage = (out: BatchOutcome, what: string): OracleAccess => {
       if (out.report) {
         batchEngaged = true;
@@ -303,8 +326,7 @@ export async function runVerify(cfg: Config, graph: Graph, opts: VerifyOpts): Pr
       // so it states the cost in full rather than just the reason.
       console.log(`  ! oracles: ${what} FAILED — ${out.note}`);
       console.log(`  ! FALLING BACK to the serial per-claim runner (config.test).`);
-      for (const l of serialCostLines(executableish(), "batch fallback")) console.log(l);
-      return { report: null, serialAllowed: true };
+      return grantSerial("batch fallback");
     };
     if (mode.kind === "from-report") {
       console.log(`oracles: reading an existing report — ${mode.file} (running no tests)`);
@@ -313,8 +335,7 @@ export async function runVerify(cfg: Config, graph: Graph, opts: VerifyOpts): Pr
       console.log(`oracles: batched — running the whole suite ONCE${mode.derived ? " (command derived from config.test)" : ""}: ${mode.cmd.join(" ")}`);
       access = engage(runTestBatch(mode.cmd, root, batchFormat), "the batch run");
     } else if (mode.kind === "serial") {
-      for (const l of serialCostLines(executableish(), mode.why)) console.log(l);
-      access = { report: null, serialAllowed: true };
+      access = grantSerial(mode.why);
     } else {
       // REFUSE. Fail closed and loud: no batch available, no report handed over, and nobody
       // asked for the slow profile. Silently running it would be the one outcome this
@@ -454,9 +475,12 @@ export async function runVerify(cfg: Config, graph: Graph, opts: VerifyOpts): Pr
   // record is new (a first run has no history to report).
   {
     const prior = await readStatus(cfg);
-    const hist = new Map((prior.verify?.claims || []).map((c) => [`${c.node} ${c.claim}`, c]));
+    // claimKey, not the raw string: a raw-keyed history lookup here made the checker with
+    // the richest failure record read as never-red the run after its boundary was annotated
+    // with a `crossing` clause (the record held the pre-annotation claim text).
+    const hist = indexClaimRecords(prior.verify?.claims || []);
     const seasoned = sigs.filter((sg) => {
-      const h = hist.get(`${sg.node} ${sg.claim}`);
+      const h = hist.get(claimKey(sg.node, sg.claim));
       return h && (h.runs ?? 0) >= 3 && !h.everFailed;
     });
     if (seasoned.length) {
@@ -466,11 +490,11 @@ export async function runVerify(cfg: Config, graph: Graph, opts: VerifyOpts): Pr
       if (bare.length) {
         console.log(`never red: ${bare.length} claim(s) green every run so far, with no recorded refutation`);
         listCapped(bare, (sg) => {
-          const h = hist.get(`${sg.node} ${sg.claim}`)!;
+          const h = hist.get(claimKey(sg.node, sg.claim))!;
           return `  · [never-red] [${sg.node}] ${sg.claim} — ${h.runs} run(s), never observed failing`;
         });
         for (const sg of bare) {
-          neverRed.push(neverRedFinding(sg.node, sg.claim, hist.get(`${sg.node} ${sg.claim}`)!.runs ?? 0));
+          neverRed.push(neverRedFinding(sg.node, sg.claim, hist.get(claimKey(sg.node, sg.claim))!.runs ?? 0));
           const m = /^boundary\s+"([^"]+)"/.exec(sg.claim);
           if (m) neverRedInvariants.add(`${sg.node}::${m[1]}`);
         }

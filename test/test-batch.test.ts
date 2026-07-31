@@ -354,7 +354,10 @@ test("verify — --from-report wins over a configured testBatch, and still fails
 });
 
 test("verify — a missing --from-report file falls back loudly, naming the file", async () => {
-  await withProject({ "ok.js": "process.exit(0)" }, async (root) => {
+  // The fake runner is NAME-SENSITIVE (fails anything it does not know): the serial
+  // canary refuses a runner that cannot fail, so `process.exit(0)` is no longer a
+  // legal fake — that shape is now itself a defect verify catches.
+  await withProject({ "ok.js": "process.exit(['whatever'].includes(process.argv[2]) ? 0 : 1)" }, async (root) => {
     const g = graph([comp(".", { claims: ['passes test "whatever"'], why: "r" })]);
     const r = await runCaptured(() => runVerify(
       cfg(root, { test: ["node", join(root, "ok.js")] }), g, { fromReport: "nope.json" }));
@@ -398,9 +401,10 @@ test("verify — a boundary `via test` oracle resolves from the batch too (the e
 });
 
 test("verify — a batch crash falls back to the per-claim path, LOUDLY, and still gets a verdict", async () => {
-  // The per-claim runner here passes anything, so a silent degrade would look like success.
-  // What must be observable is that the fallback ANNOUNCED itself and said why.
-  await withProject({ "ok.js": "process.exit(0)" }, async (root) => {
+  // The per-claim runner passes what it knows (the canary refuses one that passes
+  // anything), so a silent degrade would look like success. What must be observable is
+  // that the fallback ANNOUNCED itself and said why.
+  await withProject({ "ok.js": "process.exit(['whatever'].includes(process.argv[2]) ? 0 : 1)" }, async (root) => {
     const g = graph([comp(".", { claims: ['passes test "whatever"'], why: "r" })]);
     const r = await runCaptured(() => runVerify(cfg(root, {
       test: ["node", join(root, "ok.js")],
@@ -416,7 +420,7 @@ test("verify — a batch crash falls back to the per-claim path, LOUDLY, and sti
 test("verify — an unparsable report is a fallback with the reason, not a wave of false reds", async () => {
   await withProject({
     "runner.js": batchRunner("this is not json at all"),
-    "ok.js": "process.exit(0)",
+    "ok.js": "process.exit(['whatever'].includes(process.argv[2]) ? 0 : 1)",
   }, async (root) => {
     process.env.RUNS_LOG = join(root, "runs.log");
     const g = graph([comp(".", { claims: ['passes test "whatever"'], why: "r" })]);
@@ -669,7 +673,7 @@ test("verify — a project with no executable claims never refuses either", asyn
 });
 
 test("verify — SERIAL is reachable explicitly, and states its cost every single time", async () => {
-  await withProject({ "ok.js": "process.exit(0)" }, async (root) => {
+  await withProject({ "ok.js": "process.exit(['one','two','three'].includes(process.argv[2]) ? 0 : 1)" }, async (root) => {
     const g = graph([comp(".", {
       claims: ['passes test "one"', 'passes test "two"', 'passes test "three"'],
       why: "r",
@@ -685,7 +689,7 @@ test("verify — SERIAL is reachable explicitly, and states its cost every singl
 });
 
 test("verify — config.oracleExecution: \"serial\" is the durable form of the same opt-in", async () => {
-  await withProject({ "ok.js": "process.exit(0)" }, async (root) => {
+  await withProject({ "ok.js": "process.exit(['one'].includes(process.argv[2]) ? 0 : 1)" }, async (root) => {
     const g = graph([comp(".", { claims: ['passes test "one"'], why: "r" })]);
     const r = await runCaptured(() => runVerify(
       cfg(root, { test: ["node", join(root, "ok.js")], oracleExecution: "serial" }), g, {}));
@@ -697,7 +701,7 @@ test("verify — config.oracleExecution: \"serial\" is the durable form of the s
 test("verify — the crash fallback prints the serial cost too, not just the reason", async () => {
   // The one remaining route into serial that nobody typed. It must be as loud as the
   // opt-in, or the expensive profile arrives unannounced after all.
-  await withProject({ "ok.js": "process.exit(0)" }, async (root) => {
+  await withProject({ "ok.js": "process.exit(['one','two'].includes(process.argv[2]) ? 0 : 1)" }, async (root) => {
     const g = graph([comp(".", { claims: ['passes test "one"', 'passes test "two"'], why: "r" })]);
     const r = await runCaptured(() => runVerify(cfg(root, {
       test: ["node", join(root, "ok.js")], testBatch: ["node", join(root, "nope.js")],

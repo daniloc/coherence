@@ -40,6 +40,13 @@ jobs:
           mkdir -p "$RUNNER_TEMP/coherence-verify"
           git archive HEAD -o "$RUNNER_TEMP/coherence-verify.tar"
           tar -xf "$RUNNER_TEMP/coherence-verify.tar" -C "$RUNNER_TEMP/coherence-verify"
-      - name: Verify the repository's own specs
+          # The FULL tier boots guard oracles inside the snapshot; their test files
+          # resolve imports from the snapshot, so it borrows the workspace's deps.
+          ln -s "$GITHUB_WORKSPACE/node_modules" "$RUNNER_TEMP/coherence-verify/node_modules"
+      - name: Verify the repository's own specs (FULL tier)
+        # Full, not --fast, and this is load-bearing: --fast degrades `via guard` to
+        # symbol existence, so a renamed/orphaned guard oracle keeps every automated
+        # gate green (audit M4, 2026-07-31 — a retitled guard test left npm test
+        # passing and `verify --fast` "✓ coherent"; only the full tier reds it).
         working-directory: ${{ runner.temp }}/coherence-verify
-        run: node "$GITHUB_WORKSPACE/src/cli.ts" verify --fast
+        run: node "$GITHUB_WORKSPACE/src/cli.ts" verify

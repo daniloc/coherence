@@ -68,6 +68,17 @@ test("buildModel — worst light wins: a fail reddens the component; unanchored 
   assert.equal(m.totals.fail, 1);
 });
 
+test("buildModel — a record from before a boundary gained its crossing clause still lights the annotated row", () => {
+  // Same amnesia class as the merge: the panel's record lookup was raw-string keyed, so a
+  // purely declarative `crossing` annotation turned a claim's earned light into "none".
+  const bare = 'boundary "inv-a" at chokeA via guard "oracle a"';
+  const crossed = 'boundary "inv-a" at chokeA crossing agent -> storage via guard "oracle a"';
+  const g = graph([comp("a", { label: "A", intent: "does a", claims: [crossed], invariants: ["inv-a"], why: "w" })]);
+  const m = buildModel(g, statusWith([rec("A", bare, "pass")]), { commit: "aaaa111", dirty: false }, NOW);
+  const A = m.comps.find((c) => c.label === "A")!;
+  assert.equal(A.boundaries[0].light.kind, "pass", "the pre-annotation verdict must still be found through claimKey");
+});
+
 test("buildModel — with no verify record, unanchored invariants fall back to a static parse", () => {
   const g = graph([comp("a", { label: "A", claims: ['boundary "anchored" at sym'], invariants: ["anchored", "orphan"], why: "w" })]);
   const m = buildModel(g, { version: 1 }, { commit: null, dirty: false }, NOW);

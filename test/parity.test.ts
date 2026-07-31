@@ -147,8 +147,9 @@ test("parity claim — the oracle actually RUNS (a failing runner fails the clai
     assert.equal(r.code, 1);
   });
 
-  // And green when the runner passes.
-  await withProject({ "x.test.ts": GOOD_ORACLE, "runner.js": "process.exit(0);" }, async (root) => {
+  // And green when the runner passes — name-sensitively: the serial canary refuses a
+  // runner that cannot fail, so the fake must red a name it does not know.
+  await withProject({ "x.test.ts": GOOD_ORACLE, "runner.js": "process.exit(process.argv[2] === 'live equals settled' ? 0 : 1);" }, async (root) => {
     const g = graph([comp(".", { claims: [CLAIM], invariants: ["disclosure faithfulness"], why: "r" }), ...SYMS]);
     const r = await runCaptured(() =>
       runVerify(cfg(root, { test: ["node", join(root, "runner.js")] }), g, { fast: false, serial: true }));

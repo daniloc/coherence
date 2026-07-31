@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-07-31 18:35Z",
-  "root": "wt",
-  "absRoot": "/private/tmp/claude-501/-Users-daniloc-Documents-Development-hoist/3e2c9d10-82b3-4627-a861-555b53d9777d/scratchpad/wt",
+  "generatedAt": "2026-07-31 18:39Z",
+  "root": "coherence",
+  "absRoot": "/Users/daniloc/Documents/Development/coherence",
   "nodes": [
     {
       "id": "c:.",
@@ -33,21 +33,41 @@
         "boundary \"task context is bounded and names its approximations\" at contextFor via guard \"renderContext — byte-stable for the same inputs and names every approximation\"",
         "boundary \"cached decisions expose structurally expired premises\" at auditPremiseLeases via guard \"audit — retracted decisions disappear and only broken strong leases fail a check\"",
         "boundary \"predicted context closure is calibrated against observed reads and outcomes\" at calibrate via guard \"calibration reports coverage, outside reads, and defect rates by prediction misses\"",
-        "boundary \"reviewed risk sites survive relocation but never duplication\" at reconcile via guard \"sinks — a moved file keeps its baselined identity and a genuinely new site still fails\""
+        "boundary \"reviewed risk sites survive relocation but never duplication\" at reconcile via guard \"sinks — a moved file keeps its baselined identity and a genuinely new site still fails\"",
+        "boundary \"a claim goes green only on positive evidence its oracle ran\" at execNamedTest via guard \"testMatch — a runner exiting 0 with no matching output FAILS (the renamed-test trap)\"",
+        "boundary \"a vanished oracle reds its claim, never green-by-absence\" at resolveFromBatch via guard \"match — ZERO matching tests is its OWN state: the vanished oracle, named as such\"",
+        "boundary \"a declared invariant unanchored by any boundary fails coverage\" at runVerify via guard \"RATCHET — a declared invariant with no anchoring boundary fails coverage\"",
+        "boundary \"a via-test oracle that iterates no live domain fails its claim\" at analyzeOracle via guard \"META-ORACLE — a `via test` boundary whose oracle loops a LITERAL fails\"",
+        "boundary \"a skipped run never clobbers an oracle's recorded verdict\" at recordVerify via guard \"merge — a skip never clobbers a real verdict; the old verdict rides through with its own stamp\"",
+        "boundary \"a named oracle that no test runs cannot pass\" at runNamedTest via guard \"runner contract — a name that exists nowhere exits nonzero (the vanished oracle cannot pass)\""
       ],
       "prose": "The CLI is deliberately a thin composition root. Parsing, derivation, verification,\nrendering, and journaling remain independently addressable modules beneath this boundary.",
-      "why": "**agent lifecycle preserves decisions and exposes the current change signal.** Decisions\nand risk are cheapest to surface while the agent still holds the context that produced\nthem; waiting for a later reviewer externalizes both reconstruction costs.\n\n**significant behavioral growth acquires an anchor or patch-specific decision.** The cost\nof adding an invariant is immediate while the cost of omitting it appears later, so the\ncurrent patch must carry either enforcement or an addressable reason that it needs none.\n\n**task context is bounded and names its approximations.** A focused context packet is\nuseful only when its one-hop and heuristic limits stay visible; otherwise convenience is\nmisread as completeness and recreates the omission gradient this project exists to oppose.\n\n**cached decisions expose structurally expired premises.** A decision saves inference only\nwhile the repository addresses supporting it remain live. Broken explicit referents must\nbe louder than readable but stale rationale.\n\n**predicted context closure is calibrated against observed reads and outcomes.** Economy's\none-hop closure is a hypothesis about necessary reading, not cognition. Observed reads and\nlater defect labels give that model a path to correction instead of turning it into dogma.\n\n**reviewed risk sites survive relocation but never duplication.** A ratchet baseline is a\ncached review, and a cached fact that expires on a rename rots the same way a decision's\npremises do — a refactor then spends a reviewer's attention on sites nobody touched, and\nattention spent on false alarms is how a real one gets waved through. Relocation changes\nwhere a reviewed site lives; duplication changes how much unreviewed surface exists, and\nonly the second is news.\n\n(The import claims above separately prove that the composition root still reaches the\nconfiguration loader, graph derivation, verifier, spec walker, and journal.)",
+      "why": "**agent lifecycle preserves decisions and exposes the current change signal.** Decisions\nand risk are cheapest to surface while the agent still holds the context that produced\nthem; waiting for a later reviewer externalizes both reconstruction costs.\n\n**significant behavioral growth acquires an anchor or patch-specific decision.** The cost\nof adding an invariant is immediate while the cost of omitting it appears later, so the\ncurrent patch must carry either enforcement or an addressable reason that it needs none.\n\n**task context is bounded and names its approximations.** A focused context packet is\nuseful only when its one-hop and heuristic limits stay visible; otherwise convenience is\nmisread as completeness and recreates the omission gradient this project exists to oppose.\n\n**cached decisions expose structurally expired premises.** A decision saves inference only\nwhile the repository addresses supporting it remain live. Broken explicit referents must\nbe louder than readable but stale rationale.\n\n**predicted context closure is calibrated against observed reads and outcomes.** Economy's\none-hop closure is a hypothesis about necessary reading, not cognition. Observed reads and\nlater defect labels give that model a path to correction instead of turning it into dogma.\n\n**reviewed risk sites survive relocation but never duplication.** A ratchet baseline is a\ncached review, and a cached fact that expires on a rename rots the same way a decision's\npremises do — a refactor then spends a reviewer's attention on sites nobody touched, and\nattention spent on false alarms is how a real one gets waved through. Relocation changes\nwhere a reviewed site lives; duplication changes how much unreviewed surface exists, and\nonly the second is news.\n\n**a claim goes green only on positive evidence its oracle ran.** The verifier's whole\nauthority rests on this one property, and until now no claim cited it: an audit deleted\nthe rule and the tree stayed \"✓ coherent\" while the unit test failed unseen. An exit\ncode is the runner's statement about itself, not about the named test — a filter that\nmatched nothing exits clean on every runner class this repo has measured — so green\nmust require output that names the run, the one reading absence cannot produce.\n\n**a vanished oracle reds its claim, never green-by-absence.** A renamed or deleted test\nleaves a claim citing a name nothing owns, and that claim then guards nothing while\nwearing green. Absence has to be its own observable verdict, distinct from ran-and-failed,\nbecause the two demand different repairs: a red test needs the code fixed, a vanished\noracle needs the contract re-tied to something that exists.\n\n**a declared invariant unanchored by any boundary fails coverage.** A spec may not\nassert a property that nothing enforces: that is the ratchet the whole harness turns on,\nand if it silently loosened, specs would drift back into aspiration prose. The gap has to\ncost a red at the run that opened it, while the person who opened it still holds the\ncontext to close it.\n\n**a via-test oracle that iterates no live domain fails its claim.** A totality label on a\nsampling test is worse than no label: it retires the reader's suspicion without retiring\nthe risk. Deriving the checked set from the live registry the chokepoint actually serves\nis what makes \"covers every case\" a fact about the system rather than about the fixture\nlist the author remembered.\n\n**a skipped run never clobbers an oracle's recorded verdict.** The record is the last\nknown truth, honestly dated. A fast tier that skips the executable claims every commit\nwould otherwise erase last week's real pass — or, worse, a real fail — with \"did not\nlook\", and history that can be overwritten by not looking is not history.\n\n**a named oracle that no test runs cannot pass.** The serial runner is the component the\nexecutable tier leans its trust on, and it was outside the evidence perimeter — unclaimed,\nuntested, and (measured) willing to exit clean when the cited title survived only as a\nstring in a file. The runner itself must refuse a name it cannot show ran, because every\ngreen above it inherits that refusal.\n\n(The import claims above separately prove that the composition root still reaches the\nconfiguration loader, graph derivation, verifier, spec walker, and journal.)",
       "invariants": [
         "agent lifecycle preserves decisions and exposes the current change signal",
         "significant behavioral growth acquires an anchor or patch-specific decision",
         "task context is bounded and names its approximations",
         "cached decisions expose structurally expired premises",
         "predicted context closure is calibrated against observed reads and outcomes",
-        "reviewed risk sites survive relocation but never duplication"
+        "reviewed risk sites survive relocation but never duplication",
+        "a claim goes green only on positive evidence its oracle ran",
+        "a vanished oracle reds its claim, never green-by-absence",
+        "a declared invariant unanchored by any boundary fails coverage",
+        "a via-test oracle that iterates no live domain fails its claim",
+        "a skipped run never clobbers an oracle's recorded verdict",
+        "a named oracle that no test runs cannot pass"
       ],
       "refutations": [
         "reviewed risk sites survive relocation but never duplication: mutated `reconcile` in BOTH directions and the guard reds each time. (a) `const from = undefined` — the pre-fix behaviour where the path is part of a site's identity: `claims: 23 · 22 green · 1 red`, the moved file reported as new risk. (b) absorb from every baselined address instead of only vanished ones, without consuming the pool — plain content-addressing: same `1 red`, the copied sink waved through. Restored, back to 23/23. The loosening direction is the one that matters: a fix for a false alarm that cannot fail (b) is a fix that deleted the ratchet.",
-        "cached decisions expose structurally expired premises: gutted `auditPremiseLeases` to return `{entries: [], expired: [], checked: 0}` unconditionally — the SAME mutation that left the tree \"✓ coherent\" while the claim carried no oracle. With the guard wired it reds by name: `claims: 22 · 21 green · 1 red`, `✗ 1 coherence failure(s)`. Restored, back to 22/22. The other four claims now execute (137ms, 135ms and siblings in the holding-cost block) but have not yet been individually mutated — that is the next increment, not a claim made here."
+        "cached decisions expose structurally expired premises: gutted `auditPremiseLeases` to return `{entries: [], expired: [], checked: 0}` unconditionally — the SAME mutation that left the tree \"✓ coherent\" while the claim carried no oracle. With the guard wired it reds by name: `claims: 22 · 21 green · 1 red`, `✗ 1 coherence failure(s)`. Restored, back to 22/22. The other four claims now execute (137ms, 135ms and siblings in the holding-cost block) but have not yet been individually mutated — that is the next increment, not a claim made here.",
+        "predicted context closure is calibrated against observed reads and outcomes: hardcoded `calibrationStats`' defect count to `defects: 0` (audit M1, re-run 2026-07-31) -> full verify RED by name, `claims: 23 · 22 green · 1 red`, the calibration guard failing on strictEqual. Restored, back to green.",
+        "significant behavioral growth acquires an anchor or patch-specific decision: made `signalState` return `\"attested\"` for an unattested zero-anchor alarm (audit M2, re-run 2026-07-31) -> full verify RED by name, `claims: 23 · 22 green · 1 red`, the zero-anchor guard failing. Restored, back to green. The SAME mutation left `verify --fast` \"✓ coherent\" and `npm test` 589-pass when the guard's test was merely RETITLED (audit M4) — which is why CI now runs the full tier.",
+        "a claim goes green only on positive evidence its oracle ran: deleted the testMatch evidence rule from the serial arm — the audit-M3 mutation that previously left the tree 23/23 \"✓ coherent\" with the anti-vacuity mechanism gone -> now `claims: 26 · 25 green · 1 red`, this claim red by name. Restored, 26/26.",
+        "a vanished oracle reds its claim, never green-by-absence: made zero batch matches return `ok: true` -> `claims: 26 · 25 green · 1 red`, this claim red by name. Restored, 26/26.",
+        "a declared invariant unanchored by any boundary fails coverage: wrapped the gap-collection loop in `if (false)` -> `claims: 26 · 25 green · 1 red`, this claim red by name. Restored, 26/26.",
+        "a via-test oracle that iterates no live domain fails its claim: flipped the self-literal domain branch to report `live` -> `claims: 26 · 25 green · 1 red`, this claim red by name. Restored, 26/26.",
+        "a skipped run never clobbers an oracle's recorded verdict: made the merge take the fresh skip unconditionally -> `claims: 26 · 25 green · 1 red`, this claim red by name. Restored, 26/26.",
+        "a named oracle that no test runs cannot pass: made the no-owning-file branch exit 0 -> `claims: 26 · 25 green · 1 red`, this claim red by name (the guard test, run by the mutated runner itself, observed the quiet pass). Restored, 26/26."
       ]
     },
     {
@@ -242,14 +262,23 @@
       "prose": "The crossing clause is PURELY DECLARATIVE (topology, never a runtime check) — so it must\n not leak into verify-record identity. Records are keyed on the verbatim claim string, and\n without this normalization, ANNOTATING an existing boundary with a crossing orphans its\n prior verdict (the post-crossing claim no longer matches the pre-crossing record key —\n every such gate silently drops from its earned grade on pure annotation). This\n reconstructs the canonical claim WITHOUT the crossing clause; non-boundary claims pass\n through verbatim. Two claims that collide after stripping share inv+chokepoint+verb+oracle\n — genuinely the same gate. Applied on BOTH sides of every record lookup (store + read);\n verify still WRITES the raw claim — normalization is strictly a lookup concern."
     },
     {
+      "id": "s:src/boundary.ts#ClaimKey",
+      "parent": "f:src/boundary.ts",
+      "label": "ClaimKey",
+      "kind": "symbol",
+      "sub": "type",
+      "path": "src/boundary.ts",
+      "line": 68
+    },
+    {
       "id": "s:src/boundary.ts#claimKey",
       "parent": "f:src/boundary.ts",
       "label": "claimKey",
       "kind": "symbol",
       "sub": "const",
       "path": "src/boundary.ts",
-      "line": 65,
-      "prose": "The ONE record-lookup key both the scene and the promise graph use (store AND read), so a\n pre-crossing record matches a post-crossing claim and vice versa."
+      "line": 74,
+      "prose": "The ONE record-lookup key EVERY consumer of `status.verify.claims` uses (store AND read)\n — the scene, the promise graph, the panel, the merge, and verify's decoration filter —\n so a pre-crossing record matches a post-crossing claim and vice versa. Returns the\n branded `ClaimKey`: there is no other way to mint one."
     },
     {
       "id": "f:src/calibration.ts",
@@ -465,7 +494,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/commands.ts",
-      "line": 193,
+      "line": 194,
       "prose": "Every command name, in registry order. The `<a|b|c>` list — aliases excluded."
     },
     {
@@ -475,7 +504,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/commands.ts",
-      "line": 197,
+      "line": 198,
       "prose": "Every token the dispatch must accept: names AND aliases. The totality oracle compares\n THIS against the `cmd === \"…\"` literals it reads out of cli.ts."
     },
     {
@@ -485,7 +514,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/commands.ts",
-      "line": 224,
+      "line": 225,
       "prose": "SPELLING ONE — the usage banner, printed to stderr when the verb is unknown or absent.\nDerived in full: there is no command-name string literal left in cli.ts's help text, so\nthe banner cannot be 29 while the dispatch is 30, and two branches editing different\ncommands can no longer conflict on one line."
     },
     {
@@ -495,7 +524,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/commands.ts",
-      "line": 257,
+      "line": 258,
       "prose": "SPELLING TWO — the README's command index, markers inclusive, ready for `spliceBlock`.\n\nA BULLET LIST, not a markdown table, and that is a real constraint rather than taste:\n`redundancy` reads the first column of every markdown table as an enumerated domain, so\na generated table would hand it a fresh README↔dispatch pair to report — trading the\nfinding this change exists to remove for an identical one. A generated block that the\nproject's own detector still flags has not fixed anything.\n\nThe block is an INDEX and nothing more: name, arg shape, one line. The authored\nper-command reasoning lives OUTSIDE the markers, below the block, and is not expected to\ncover every command — completeness is what the derivation owes, depth is what the prose\nowes, and confusing the two is how the reference got twelve commands behind."
     },
     {
@@ -505,7 +534,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/commands.ts",
-      "line": 295,
+      "line": 296,
       "prose": "The README's claim-form index, markers inclusive, ready for `spliceBlock` — the same\ntreatment the command index got, for the same defect: the hand-kept table listed 8 forms\nwhile the registry carried 9 (`lives in` was missing entirely) and its boundary grammar\nhad lost the `[crossing <zone> -> <zone>]` clause. The README even predicted the drift\n(\"nothing compares it against the registry, so it *can* drift\"). Now something does.\n\nA BULLET LIST, not a markdown table, for the reason renderCommandsBlock records:\n`redundancy` reads the first column of every markdown table as an enumerated domain, so\na generated table would hand it a fresh README↔registry pair to report.\n\nThe block is the GRAMMAR and nothing more: name, tier, grammar, example — the fields the\nregistry actually carries. The authored per-form reasoning (tier behavior under `--fast`,\nthe meta-oracle, skip-vs-fail semantics) lives OUTSIDE the markers, below the block."
     },
     {
@@ -2044,7 +2073,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/panel.ts",
-      "line": 177
+      "line": 178
     },
     {
       "id": "s:src/panel.ts#initialUI",
@@ -2053,7 +2082,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/panel.ts",
-      "line": 187
+      "line": 188
     },
     {
       "id": "s:src/panel.ts#wrapText",
@@ -2062,7 +2091,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/panel.ts",
-      "line": 213
+      "line": 214
     },
     {
       "id": "s:src/panel.ts#renderFrame",
@@ -2071,7 +2100,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/panel.ts",
-      "line": 351,
+      "line": 352,
       "prose": "Assemble one full frame. Pure: no IO, no globals — testable, replayable."
     },
     {
@@ -2081,7 +2110,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/panel.ts",
-      "line": 398
+      "line": 399
     },
     {
       "id": "s:src/panel.ts#runPanel",
@@ -2090,7 +2119,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/panel.ts",
-      "line": 400
+      "line": 401
     },
     {
       "id": "x:node:readline",
@@ -2153,7 +2182,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/phrasebook.ts",
-      "line": 31,
+      "line": 32,
       "prose": "The verdict a claim form returns — adapted into verify's `Sig` (which adds claim + node).\n\n `ms` is the HOLDING COST the form can attest to from the RUNNER'S OWN report, and only\n the batch-resolved executable arm supplies it (see `execNamedTest`). Every other form\n leaves it absent, so verify falls back to its own wall clock there — deliberately, since\n a wall-clock reading over a batch lookup would measure a map hit, not the oracle."
     },
     {
@@ -2163,7 +2192,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/phrasebook.ts",
-      "line": 47,
+      "line": 48,
       "prose": "Everything a claim form needs to evaluate, threaded from runVerify. `nodeDir`/`node`\nare the DECLARING component's disk dir + label; `anchor` records a boundary-anchored\ninvariant for that component (so the coverage gate sees it — even when the boundary is\nreached through a `conforms to` word). `typecheck` is memoized upstream (one run/verify).\n`wordStack` is the `conforms to` expansion stack for cycle/depth safety.\n\n`oracles` is the EXECUTABLE-TIER seam, memoized upstream exactly like `typecheck`: at\nmost one whole-suite resolution per verify, LAZILY — a `--fast` run or a project with no\nexecutable claims never calls it. It answers with a batch report when one is available,\nand otherwise says whether the SERIAL per-claim path is permitted at all. A null report\nwith `serialAllowed: false` is a refusal (no batch, no report, nobody asked for serial),\nand the claim skips rather than quietly costing a full pool boot."
     },
     {
@@ -2173,7 +2202,25 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/phrasebook.ts",
-      "line": 60
+      "line": 61
+    },
+    {
+      "id": "s:src/phrasebook.ts#match()",
+      "parent": "f:src/phrasebook.ts",
+      "label": "match()",
+      "kind": "symbol",
+      "sub": "method",
+      "path": "src/phrasebook.ts",
+      "line": 67
+    },
+    {
+      "id": "s:src/phrasebook.ts#evaluate()",
+      "parent": "f:src/phrasebook.ts",
+      "label": "evaluate()",
+      "kind": "symbol",
+      "sub": "method",
+      "path": "src/phrasebook.ts",
+      "line": 68
     },
     {
       "id": "s:src/phrasebook.ts#Word",
@@ -2182,7 +2229,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/phrasebook.ts",
-      "line": 75,
+      "line": 76,
       "prose": "── the dictionary word file ──────────────────────────────────────────────────────────\n`<coherence root>/<dictionary>/<Word>.md`: a `# <Word>` heading, first non-blank line =\nintent, a `## commitments` bullet list where each bullet is a claim line in THIS grammar\n(including `boundary …` and nested `conforms to <OtherWord>`). Parsed with walk.ts's\nregex-heading style + markdown-unescape so a prettified word file still parses."
     },
     {
@@ -2192,7 +2239,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/phrasebook.ts",
-      "line": 79,
+      "line": 80,
       "prose": "Parse a dictionary word file, or null if it is not a well-formed word (a broken\n reference must go RED, not skip — a word is a contract)."
     },
     {
@@ -2202,7 +2249,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/phrasebook.ts",
-      "line": 98,
+      "line": 99,
       "prose": "Where a word file resolves, relative to the coherence root."
     },
     {
@@ -2212,7 +2259,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/phrasebook.ts",
-      "line": 106,
+      "line": 107,
       "prose": "A dictionary word plus the components that `conforms to` it — for the overview render."
     },
     {
@@ -2222,7 +2269,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/phrasebook.ts",
-      "line": 111,
+      "line": 112,
       "prose": "The `conforms to <Word>` grammar — SINGLE HOME. Consumed by the claim form's `match`,\n the dictionary cross-reference in `loadDictionary`, and the `--staged`/`--since` word-edit\n propagation scope in structural.ts. Capture group 1 is the word token."
     },
     {
@@ -2232,8 +2279,38 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/phrasebook.ts",
-      "line": 115,
+      "line": 116,
       "prose": "Regex-escape a string so it matches literally when interpolated into a RegExp or passed\n to a test runner whose `-t <name>` treats the arg as a regex (vitest, jest)."
+    },
+    {
+      "id": "s:src/phrasebook.ts#execNamedTest",
+      "parent": "f:src/phrasebook.ts",
+      "label": "execNamedTest",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/phrasebook.ts",
+      "line": 140,
+      "prose": "Resolve ONE named test — the shared executable arm of `passes test`,\n`boundary … via test`, and `parity … via test`. THE SINGLE FRONT DOOR: every runner\ninvocation coherence makes on a project's behalf goes through here, which is why\nbatching is a change to this one function rather than to three claim forms.\n\nTwo arms, one contract:\n  BATCH — a whole-suite report is available, so the answer is a lookup (`resolveFromBatch`).\n  PER-CLAIM — shell `config.test` with the name appended, regex-escaped for the runner's\n    `-t`; exit 0 alone is not trusted (`testMatch` requires positive evidence the named\n    test actually ran — an exit-0 runner that matched zero tests would otherwise pass a\n    renamed/deleted oracle).\n\nBoth arms require positive evidence and both go red on zero matches, so which one\nanswered is an operational detail, never a difference in what green means.\n\n`ms` — the claim's HOLDING COST, and ONLY the batch arm can report it. The report carries\nthe runner's own per-test durations, so a batched claim's cost is measured by the thing\nthat ran it. The serial arm returns none: what a wall clock sees there is a whole test-pool\nboot charged to whichever claim happened to trigger it, which is a fact about the profile,\nnot about the claim. Verify's own wall clock takes over when this is absent."
+    },
+    {
+      "id": "s:src/phrasebook.ts#runSerialNamedTest",
+      "parent": "f:src/phrasebook.ts",
+      "label": "runSerialNamedTest",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/phrasebook.ts",
+      "line": 151,
+      "prose": "The SERIAL arm of `execNamedTest`, factored so the canary below probes the EXACT code\n path a claim's verdict rides on — same spawn, same exit-code reading, same `testMatch`\n evidence rule. Exit 0 alone is not trusted: `testMatch` requires positive evidence the\n named test actually ran (a zero-match runner that exits 0 would otherwise pass a\n renamed/deleted oracle)."
+    },
+    {
+      "id": "s:src/phrasebook.ts#proveSerialRunnerCanFail",
+      "parent": "f:src/phrasebook.ts",
+      "label": "proveSerialRunnerCanFail",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/phrasebook.ts",
+      "line": 173,
+      "prose": "THE SERIAL CANARY — the repo's own doctrine applied to the instrument: a checker never\nobserved to fail has not been shown to be a checker. The batch path proves a vanished\noracle structurally (zero matches in the report is its own red); the serial path had to\nTRUST `config.test` + `testMatch`, on a runner class this repo has itself documented as\nun-guardable by testMatch (node:test multi-file: a real name and a name existing nowhere\nproduce byte-identical passing output — measured, test-batch.ts:110, types.ts).\n\nSo, once per serial verify, run the runner with a name that provably exists nowhere and\nrequire it to FAIL (nonzero exit, or a `testMatch` miss — the same reading a claim gets).\nA runner that PASSES the canary cannot filter by name: every green it would produce is\ngreen-by-absence, and verify must refuse it exactly as the batch path refuses. Cost is\none extra runner boot per serial run."
     },
     {
       "id": "s:src/phrasebook.ts#loadDictionary",
@@ -2242,7 +2319,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/phrasebook.ts",
-      "line": 163,
+      "line": 191,
       "prose": "Scan the dictionary dir + cross-reference the graph's `conforms to` claims. Empty when\n the project has no dictionary dir (so the overview's Dictionary section is omitted)."
     },
     {
@@ -2252,7 +2329,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/phrasebook.ts",
-      "line": 181
+      "line": 209
     },
     {
       "id": "f:src/premise.ts",
@@ -2585,7 +2662,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/promise.ts",
-      "line": 221,
+      "line": 220,
       "prose": "IO shell: read the entry zones, stat the files (unless handed in), stamp git, assemble."
     },
     {
@@ -2595,7 +2672,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/promise.ts",
-      "line": 323,
+      "line": 322,
       "prose": "PURE: the diff of two PromiseModels as typed events from the CLOSED vocabulary. Gates and\n reliances are compared only for components present at BOTH ends; a wholly new component is\n one `arrived` (its gates/reliances arrive folded in), a vanished one is one `razed` PLUS a\n `withdrawn` per gate (its promises are individually gone). Grade rank A>B>C>D>U decides\n promote vs demote; naked/sealed track a reliance crossing the naked↔covered boundary."
     },
     {
@@ -2605,7 +2682,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/promise.ts",
-      "line": 379,
+      "line": 378,
       "prose": "PURE: assemble a REVIEW model — head annotated with `change` (added/removed districts) and\n a populated `review`. Mirrors mergeSceneDiff: arrived components flag `added`, razed ones\n are injected as `removed`, and the event ledger + outside tally ride in `review`."
     },
     {
@@ -2615,7 +2692,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/promise.ts",
-      "line": 394,
+      "line": 393,
       "prose": "The repo-relative paths the graph OWNS (every file node's path) — the outside tally\n subtracts these so it counts only the change the contract doesn't model."
     },
     {
@@ -2625,7 +2702,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/promise.ts",
-      "line": 402,
+      "line": 401,
       "prose": "IO shell over withBaseWorktree: materialize `ref` in a throwaway worktree and assemble ITS\n PromiseModel. The LIVE status rides through unchanged so each record's freshness is graded\n against the BASE commit (gitStamp of the base worktree) — a pass taken at base is fresh\n there and stale at head, which is exactly what surfaces \"went stale\" as a real demotion.\n Returns the base model, its owned paths (for the outside tally), and the short base ref."
     },
     {
@@ -2635,7 +2712,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/promise.ts",
-      "line": 417,
+      "line": 416,
       "prose": "Deterministic, pipe-safe text of the ledger (`coherence review` prints this). A masthead\n line, then one block per event: KIND (padded) · comp: inv · from→to · the detail sentence ·\n and the blast line when reliants hold a degraded asset. A steady state prints almost nothing."
     },
     {
@@ -3382,6 +3459,35 @@
       "line": 112
     },
     {
+      "id": "f:src/run-named-test.ts",
+      "parent": "c:src",
+      "label": "run-named-test.ts",
+      "kind": "file",
+      "sub": "src/run-named-test.ts",
+      "path": "src/run-named-test.ts",
+      "prose": "run-named-test.ts — the per-claim oracle runner for node:test, INSIDE the evidence\nperimeter. This logic lived in scripts/run-named-test.mjs, which `sources: [\"src\"]`\ncould not see: the component that decides whether a named oracle exists was itself\nneither tested nor claimable — the exact vacuity class it was written to close.\nThe .mjs survives as a two-line entry so `config.test` is unchanged.\n\nWHY THIS EXISTS. `verify` answers an executable claim by spawning `config.test` with\nthe test's name appended, and node:test cannot serve that shape directly: with MORE\nTHAN ONE file argument node runs a subprocess per file and reports FILE-level counts,\nso `--test-name-pattern` stops being legible in the summary — a real name and a name\nthat exists nowhere produce byte-identical output. Wiring that as `config.test` would\nmake every claim green whether or not its oracle exists.\n\nWith exactly ONE file argument the pattern filters correctly and the summary reports\nindividual tests. So this resolves the name to its owning file first, then runs that\nfile alone. It also sidesteps a second hazard: two of this repo's suites fail under\nnode's PARALLEL multi-file mode while passing in isolation, so one-file-at-a-time is\nthe honest execution mode regardless.\n\nA name that matches no file exits NONZERO by design — a claim citing an oracle that\ndoes not exist must fail, not pass quietly. That property is what the serial canary\n(`proveSerialRunnerCanFail`, phrasebook.ts) probes for on every serial verify."
+    },
+    {
+      "id": "s:src/run-named-test.ts#unescapeTestName",
+      "parent": "f:src/run-named-test.ts",
+      "label": "unescapeTestName",
+      "kind": "symbol",
+      "sub": "const",
+      "path": "src/run-named-test.ts",
+      "line": 29,
+      "prose": "`verify` regex-escapes the name before handing it over (it is a --test-name-pattern);\n undo that to find the literal title in source."
+    },
+    {
+      "id": "s:src/run-named-test.ts#runNamedTest",
+      "parent": "f:src/run-named-test.ts",
+      "label": "runNamedTest",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/run-named-test.ts",
+      "line": 38,
+      "prose": "Run the ONE named test and return the exit code the shim should exit with:\n  0 — every owning file's filtered run passed\n  1 — a run failed, OR no test file contains the name (the vanished oracle)\n  2 — no name given (a usage error, distinct from a red oracle)"
+    },
+    {
       "id": "f:src/scaffold.ts",
       "parent": "c:src",
       "label": "scaffold.ts",
@@ -3634,7 +3740,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/scene.ts",
-      "line": 364,
+      "line": 363,
       "prose": "Materialize the base tree in a THROWAWAY git worktree and derive its SceneModel, so a\n review renders against the same geography. Structure is what matters here, so the base\n is built against an EMPTY status ({version:1}) — verification light/heat is only\n meaningful for the LIVE tree. Layout note: scene-layout.json is committed + append-only,\n so the base tree's lots agree with the current tree's for shared dirs — no reconciliation.\n The base derivation's ONLY writes (a new lot in scene-layout.json) land in the discarded\n tmpdir (baseCfg.root = tmp), never the current tree. ALWAYS tears the worktree down."
     },
     {
@@ -3644,7 +3750,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/scene.ts",
-      "line": 384,
+      "line": 383,
       "prose": "The SHARED base-tree acquisition both the scene and the promise graph ride on: resolve\n `ref`, materialize it in a THROWAWAY detached git worktree, load ITS config + build ITS\n graph, hand them to `fn`, and ALWAYS tear the worktree down. The ref is resolved FIRST —\n the clean gate for \"not a repo / unknown ref\" before any worktree machinery — and its\n short sha is passed to `fn` (the base ref a review records). Every write `fn` triggers\n (e.g. a new lot in scene-layout.json) lands in the discarded tmpdir, never the live tree.\n Extracting this keeps the two layers from re-deriving (and drifting on) worktree teardown."
     },
     {
@@ -3654,7 +3760,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/scene.ts",
-      "line": 429,
+      "line": 428,
       "prose": "One END of a diff: the per-file symbol-LABEL sets (structure signal) and content STATS\n (lines + hash — the height and the body-edit signal), both keyed by repo-relative path.\n Bundled so the pure merge takes one object per side instead of four loose maps."
     },
     {
@@ -3664,7 +3770,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/scene.ts",
-      "line": 466,
+      "line": 465,
       "prose": "The PURE spatial diff: annotate the CURRENT model with change against the base, keyed\n by `dir` (components) and `path` (pieces). Head-only district → `added`; base-only\n district → the whole base component injected as a `removed` ghost on its still-reserved\n lot (append-only geography → the lot exists in the current layout too), carrying its\n BASE pieces/mass so the ghost has honest shape; a matched district gets its pieces\n diffed. `outside` (the out-of-graph change tally, from deriveOutside) is threaded into\n model.diff so the map never silently truncates. model.diff records the short base ref —\n the flag that makes this a REVIEW scene."
     },
     {
@@ -3674,7 +3780,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/scene.ts",
-      "line": 486,
+      "line": 485,
       "prose": "The set of repo-relative paths the GRAPH owns — every piece path at EITHER end. The\n outside tally subtracts these so it counts ONLY the files the scene doesn't model."
     },
     {
@@ -3684,7 +3790,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/scene.ts",
-      "line": 497,
+      "line": 496,
       "prose": "PURE: tally the changed files OUTSIDE the graph from `git diff --name-status` output.\n A → added, D → removed, everything else (M, and R/C renames/copies) → changed. An entry\n whose path (either the old or the new for a rename) is graph-owned is DROPPED — those\n are the scene's own towers, already drawn. What's left is scripts/CI/docs the graph\n never modeled — counted so the renderer can badge \"N changes outside the map\"."
     },
     {
@@ -3694,7 +3800,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/scene.ts",
-      "line": 513,
+      "line": 512,
       "prose": "IO shell over outsideTally: run `git diff --name-status <base> HEAD` and tally what the\n graph does NOT own. A non-repo / failed diff yields an all-zero tally (nothing to badge)."
     },
     {
@@ -3704,7 +3810,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/scene.ts",
-      "line": 521,
+      "line": 520,
       "prose": "Roll up a diffed model's per-file change tallies for the CLI one-liner: added,\n removed, changed FILES. A wholly added/removed district contributes all its tiles."
     },
     {
@@ -3889,7 +3995,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/status.ts",
-      "line": 16
+      "line": 17
     },
     {
       "id": "s:src/status.ts#VerifySection",
@@ -3898,7 +4004,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/status.ts",
-      "line": 36
+      "line": 37
     },
     {
       "id": "s:src/status.ts#AtlasSection",
@@ -3907,7 +4013,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/status.ts",
-      "line": 70
+      "line": 71
     },
     {
       "id": "s:src/status.ts#DriftSection",
@@ -3916,7 +4022,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/status.ts",
-      "line": 89
+      "line": 90
     },
     {
       "id": "s:src/status.ts#MassSection",
@@ -3925,7 +4031,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/status.ts",
-      "line": 102,
+      "line": 103,
       "prose": "What the mass ratchet measured, and what it was measured AGAINST. `baseline` is per\n dimension and optional because a key can be new — the record has to be able to say\n \"measured, never pinned\" without inventing a number. `series` is the net-LOC-per-\n window shape the report prints; absent on a `--check`, which does not read history."
     },
     {
@@ -3935,7 +4041,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/status.ts",
-      "line": 119,
+      "line": 120,
       "prose": "The READ-side cost record: the context closure of a change over the recent window —\n what a reader must load to modify one thing safely. `mass` says how much machine there\n is; this says how much of it one change makes you hold.\n\n `considered` is the SAMPLE SIZE and is not optional, for evolution.ts:139-140's reason:\n a median over three commits and one over three hundred should never look alike, and a\n stored median with no count is a number a consumer cannot weigh.\n\n Lines are measured against the CURRENT tree — an approximation for historical commits,\n named in the report that produced them. `series` is median closure FILES per window,\n oldest → newest. Not yet read by the panel; the energy-strip follow-up owns that."
     },
     {
@@ -3945,7 +4051,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/status.ts",
-      "line": 127
+      "line": 128
     },
     {
       "id": "s:src/status.ts#statusPath",
@@ -3954,7 +4060,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/status.ts",
-      "line": 129
+      "line": 130
     },
     {
       "id": "s:src/status.ts#readStatus",
@@ -3963,7 +4069,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/status.ts",
-      "line": 131
+      "line": 132
     },
     {
       "id": "s:src/status.ts#gitStamp",
@@ -3972,8 +4078,18 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/status.ts",
-      "line": 141,
+      "line": 142,
       "prose": "Short HEAD + dirty flag — the provenance every section stamps itself with."
+    },
+    {
+      "id": "s:src/status.ts#indexClaimRecords",
+      "parent": "f:src/status.ts",
+      "label": "indexClaimRecords",
+      "kind": "symbol",
+      "sub": "const",
+      "path": "src/status.ts",
+      "line": 158,
+      "prose": "Index claim records by their ONE lookup identity (`claimKey`, boundary.ts) — the single\nmap-mint every reader of `status.verify.claims` goes through. The key is BRANDED, so a\nraw `` `${node} ${claim}` `` probe is a compile error rather than a silent miss: before\nthis, three sites (this merge, the panel, verify's never-red filter) keyed on the raw\nstring and quietly erased a claim's failure history when a boundary was annotated with a\npurely declarative `crossing` clause — the exact annotation `normalizeBoundaryClaim`\nexists to make safe. Last-wins on a key collision, same as Map semantics always were."
     },
     {
       "id": "s:src/status.ts#mergeClaimRecords",
@@ -3982,7 +4098,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/status.ts",
-      "line": 159,
+      "line": 172,
       "prose": "Merge a run's fresh claim verdicts over the previous record.\n- scope null (a full-tree run): the fresh set REPLACES the record, so claims that\n  vanished from the specs vanish from the record (no ghost rows).\n- scoped (--staged/--since): only the evaluated components' entries are replaced;\n  out-of-scope records ride through untouched — their own stamps keep aging.\n- A SKIP never clobbers a real verdict. Under --fast the executable tier skips, and\n  overwriting last week's oracle PASS with \"skipped (--fast)\" would erase the last\n  known truth; the old verdict is kept, its stamp saying how old it is. A skip only\n  lands where nothing real exists underneath (dialect gaps, never-run claims)."
     },
     {
@@ -3992,7 +4108,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/status.ts",
-      "line": 180,
+      "line": 192,
       "prose": "What runVerify hands the record-keeper (already computed for its own report)."
     },
     {
@@ -4002,7 +4118,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/status.ts",
-      "line": 194
+      "line": 206
     },
     {
       "id": "s:src/status.ts#recordAtlas",
@@ -4011,7 +4127,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/status.ts",
-      "line": 224
+      "line": 236
     },
     {
       "id": "s:src/status.ts#recordDrift",
@@ -4020,7 +4136,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/status.ts",
-      "line": 230
+      "line": 242
     },
     {
       "id": "s:src/status.ts#recordMass",
@@ -4029,7 +4145,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/status.ts",
-      "line": 236
+      "line": 248
     },
     {
       "id": "s:src/status.ts#recordEconomy",
@@ -4038,7 +4154,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/status.ts",
-      "line": 243
+      "line": 255
     },
     {
       "id": "f:src/structural.ts",
@@ -4472,7 +4588,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/verify.ts",
-      "line": 35,
+      "line": 36,
       "prose": "record subagent verdicts (the mechanical notary; judge ≠ notary, axiom #5)."
     },
     {
@@ -4482,7 +4598,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/verify.ts",
-      "line": 79,
+      "line": 80,
       "prose": "Rank doc gaps HOTTEST-FIRST by the churn share of the file that defines them — the same\n`fileChurn` reading `atlas` grades crossings' heat against.\n\nWHY THE JOB LIST HAS AN ORDER AT ALL. Undocumented symbols come out of the graph in walk\norder, which is alphabetical by path and says nothing about anything. A list of ninety\n`[doc]` jobs in that order is a list nobody works from the top of; the first one worth\nwriting is the symbol in the file half the recent history touched, because that is the\none somebody is about to read.\n\nZERO-CHURN GAPS KEEP THEIR SOURCE ORDER: `Array.prototype.sort` is required to be stable\n(ECMA-262), so a project with no git history — every share 0 — gets exactly the list it\ngot before this ranking existed, rather than a set that reshuffles between runs."
     },
     {
@@ -4492,7 +4608,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/verify.ts",
-      "line": 109,
+      "line": 110,
       "prose": "A claim that is green every run and that nobody has ever watched fail. Neither signal\n is worth much alone — a claim that has never been red may simply be a good invariant,\n and one with no refutation may simply be young — but together they are the honest\n suspect list, which is exactly the shape of a conjecture."
     },
     {
@@ -4502,7 +4618,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/verify.ts",
-      "line": 148,
+      "line": 149,
       "prose": "A claim that is expensive to KEEP TRUE. Every claim is a standing bill: the oracle behind\n it runs on every verify, forever, and one claim taking a quarter of the whole tier is a\n fact about the design of that oracle, not about the code it guards. This is the WEAKEST\n finding the harness raises — an expensive claim can be entirely correct, and often the\n honest answer is \"the domain really is that big\" — so it never displaces a correctness\n question (see the raise order below).\n\n IDENTITY IS THE CLAIM AND ITS NODE, WITH NO NUMBER IN IT. The millisecond reading is the\n most volatile thing here — it moves with machine load, cache state and the pool's mood —\n so it lives in the sentence, exactly like never-red's run count."
     },
     {
@@ -4512,7 +4628,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/verify.ts",
-      "line": 178,
+      "line": 179,
       "prose": "A named invariant with no observed negative control. Broader and weaker than never-red\n — it says nothing about how the claim has behaved — so it is raised LAST and only for\n invariants never-red did not already name."
     },
     {
@@ -4522,7 +4638,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/verify.ts",
-      "line": 201,
+      "line": 202,
       "prose": "A claim on a kind the project flagged. The project decided this category is one it\n distrusts; the advisory prints it every run and then forgets it."
     },
     {
@@ -4532,7 +4648,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/verify.ts",
-      "line": 228
+      "line": 229
     },
     {
       "id": "s:src/verify.ts#runVerify",
@@ -4541,7 +4657,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/verify.ts",
-      "line": 240
+      "line": 241
     },
     {
       "id": "f:src/walk.ts",
@@ -5076,6 +5192,15 @@
       "prose": "render-scene.test.ts — the scene renderer's load-bearing guarantees: it emits ONE\ncomplete, SELF-CONTAINED HTML document (no external resource can sneak in), the model\nsurvives the embed round-trip, model strings surface for the eye, and a hostile label\ncannot break out of the JSON blob. The pixels are judged by a human; these assertions\npin the properties a human can't eyeball on every run.\n\nThe renderer draws the SVG client-side, so the marks (towers, tokens, ghost wireframes,\nthe drag turntable) exist only after the inline script RUNS. A tiny DOM stub (below)\nexecutes that script against a fake document so we can assert on the produced tree:\ntower-per-file, capped gate tokens, drag-vs-click, the eased 60° snap, and — in a REVIEW\nscene — that ghost/accent marks materialize while the unchanged city recedes."
     },
     {
+      "id": "f:test/run-named-test.test.ts",
+      "parent": "c:test",
+      "label": "run-named-test.test.ts",
+      "kind": "file",
+      "sub": "test/run-named-test.test.ts",
+      "path": "test/run-named-test.test.ts",
+      "prose": "run-named-test.test.ts — the serial oracle runner's own contract, now INSIDE the\nevidence perimeter (src/run-named-test.ts; scripts/run-named-test.mjs is a thin entry).\nThe property that matters is the one the whole executable tier leans on: a name that\nexists NOWHERE exits nonzero — a claim citing a vanished oracle must fail, not pass\nquietly. This is the runner-side half of what the serial canary probes at verify time."
+    },
+    {
       "id": "f:test/scene.test.ts",
       "parent": "c:test",
       "label": "scene.test.ts",
@@ -5471,6 +5596,12 @@
       "id": "f:src/cli.ts->f:src/redundancy.ts:imports",
       "source": "f:src/cli.ts",
       "target": "f:src/redundancy.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/cli.ts->f:src/prose.ts:imports",
+      "source": "f:src/cli.ts",
+      "target": "f:src/prose.ts",
       "kind": "imports"
     },
     {
@@ -6080,6 +6211,12 @@
       "kind": "imports"
     },
     {
+      "id": "f:src/phrasebook.ts->x:node:crypto:imports",
+      "source": "f:src/phrasebook.ts",
+      "target": "x:node:crypto",
+      "kind": "imports"
+    },
+    {
       "id": "f:src/phrasebook.ts->f:src/types.ts:imports",
       "source": "f:src/phrasebook.ts",
       "target": "f:src/types.ts",
@@ -6374,6 +6511,24 @@
       "kind": "imports"
     },
     {
+      "id": "f:src/run-named-test.ts->x:node:fs:imports",
+      "source": "f:src/run-named-test.ts",
+      "target": "x:node:fs",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/run-named-test.ts->x:node:child_process:imports",
+      "source": "f:src/run-named-test.ts",
+      "target": "x:node:child_process",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/run-named-test.ts->x:node:path:imports",
+      "source": "f:src/run-named-test.ts",
+      "target": "x:node:path",
+      "kind": "imports"
+    },
+    {
       "id": "f:src/scaffold.ts->x:node:fs/promises:imports",
       "source": "f:src/scaffold.ts",
       "target": "x:node:fs/promises",
@@ -6596,6 +6751,12 @@
       "kind": "imports"
     },
     {
+      "id": "f:src/status.ts->f:src/boundary.ts:imports",
+      "source": "f:src/status.ts",
+      "target": "f:src/boundary.ts",
+      "kind": "imports"
+    },
+    {
       "id": "f:src/structural.ts->x:node:child_process:imports",
       "source": "f:src/structural.ts",
       "target": "x:node:child_process",
@@ -6731,6 +6892,12 @@
       "id": "f:src/verify.ts->f:src/walk.ts:imports",
       "source": "f:src/verify.ts",
       "target": "f:src/walk.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/verify.ts->f:src/boundary.ts:imports",
+      "source": "f:src/verify.ts",
+      "target": "f:src/boundary.ts",
       "kind": "imports"
     },
     {
@@ -8069,6 +8236,54 @@
       "id": "f:test/render-scene.test.ts->f:src/scene-model.ts:imports",
       "source": "f:test/render-scene.test.ts",
       "target": "f:src/scene-model.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/run-named-test.test.ts->x:node:test:imports",
+      "source": "f:test/run-named-test.test.ts",
+      "target": "x:node:test",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/run-named-test.test.ts->x:node:assert/strict:imports",
+      "source": "f:test/run-named-test.test.ts",
+      "target": "x:node:assert/strict",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/run-named-test.test.ts->x:node:fs/promises:imports",
+      "source": "f:test/run-named-test.test.ts",
+      "target": "x:node:fs/promises",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/run-named-test.test.ts->x:node:child_process:imports",
+      "source": "f:test/run-named-test.test.ts",
+      "target": "x:node:child_process",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/run-named-test.test.ts->x:node:os:imports",
+      "source": "f:test/run-named-test.test.ts",
+      "target": "x:node:os",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/run-named-test.test.ts->x:node:path:imports",
+      "source": "f:test/run-named-test.test.ts",
+      "target": "x:node:path",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/run-named-test.test.ts->x:node:url:imports",
+      "source": "f:test/run-named-test.test.ts",
+      "target": "x:node:url",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/run-named-test.test.ts->f:src/run-named-test.ts:imports",
+      "source": "f:test/run-named-test.test.ts",
+      "target": "f:src/run-named-test.ts",
       "kind": "imports"
     },
     {

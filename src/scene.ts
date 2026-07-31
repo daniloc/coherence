@@ -50,9 +50,9 @@ import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import type { Config, Graph, GraphNode } from "./types.ts";
 import type { SceneModel, SceneComponent, SceneDiff, SceneGate, SceneLight, ScenePiece } from "./scene-model.ts";
-import { parseBoundary, claimKey } from "./boundary.ts";
+import { parseBoundary, claimKey, type ClaimKey } from "./boundary.ts";
 import { ownerOf } from "./walk.ts";
-import { gitStamp, type StatusRecord, type ClaimRecord } from "./status.ts";
+import { gitStamp, indexClaimRecords, type StatusRecord, type ClaimRecord } from "./status.ts";
 import { componentMap } from "./decompose.ts";
 import { readCommitLog, componentChurn, CHURN_WINDOW } from "./evolution.ts";
 import { loadConfig } from "./config.ts";
@@ -232,7 +232,7 @@ export function symbolSetsByFile(graph: Graph): Map<string, Set<string>> {
  *  (no atlas): breached = the gate isn't holding (fail); steel = an oracle whose last
  *  verdict passed at HEAD; scaffold = everything else (no oracle, never verified, or an
  *  aging green at another commit — visibly temporary construction). */
-export function deriveGates(claims: string[], label: string, recBy: Map<string, ClaimRecord>, head: string | null): SceneGate[] {
+export function deriveGates(claims: string[], label: string, recBy: Map<ClaimKey, ClaimRecord>, head: string | null): SceneGate[] {
   const gates: SceneGate[] = [];
   for (const claim of claims) {
     const b = parseBoundary(claim);
@@ -311,8 +311,7 @@ export async function buildSceneModel(cfg: Config, graph: Graph, status: StatusR
   const churn = componentChurn(compOf, readCommitLog(cfg, CHURN_WINDOW));
   const maxChurn = Math.max(0, ...churn.values());
 
-  const recBy = new Map<string, ClaimRecord>();
-  for (const r of status.verify?.claims ?? []) recBy.set(claimKey(r.node, r.claim), r);
+  const recBy = indexClaimRecords(status.verify?.claims ?? []);
   const records = status.verify?.claims ?? [];
   // Unanchored invariants: the record's gap list is authoritative once a verify has run
   // (it sees anchoring through `conforms to` words); a static parse is the cold-start

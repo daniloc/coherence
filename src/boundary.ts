@@ -60,6 +60,16 @@ export function normalizeBoundaryClaim(claim: string): string {
   return `boundary "${m[1]}" at ${m[2]}${m[5] ? ` via ${m[5]} "${m[6]}"` : ""}`;
 }
 
-/** The ONE record-lookup key both the scene and the promise graph use (store AND read), so a
- *  pre-crossing record matches a post-crossing claim and vice versa. */
-export const claimKey = (node: string, claim: string) => `${node} ${normalizeBoundaryClaim(claim)}`;
+/** The BRAND that makes raw-string record lookup a compile error. Only `claimKey` can mint
+ *  one, so a `Map<ClaimKey, …>` cannot be probed with `` `${node} ${claim}` `` — the exact
+ *  bypass that let mergeClaimRecords/panel/verify forget a claim's failure history on pure
+ *  crossing annotation while scene/promise remembered it. */
+declare const CLAIM_KEY_BRAND: unique symbol;
+export type ClaimKey = string & { readonly [CLAIM_KEY_BRAND]: true };
+
+/** The ONE record-lookup key EVERY consumer of `status.verify.claims` uses (store AND read)
+ *  — the scene, the promise graph, the panel, the merge, and verify's decoration filter —
+ *  so a pre-crossing record matches a post-crossing claim and vice versa. Returns the
+ *  branded `ClaimKey`: there is no other way to mint one. */
+export const claimKey = (node: string, claim: string): ClaimKey =>
+  `${node} ${normalizeBoundaryClaim(claim)}` as ClaimKey;

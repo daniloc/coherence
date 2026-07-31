@@ -34,9 +34,9 @@ import type { Config, Graph, GraphNode } from "./types.ts";
 import type {
   PromiseModel, PromiseComponent, PromiseGate, Reliance, Zone, Grade, PromiseEvent,
 } from "./promise-model.ts";
-import { parseBoundary, claimKey } from "./boundary.ts";
+import { parseBoundary, claimKey, type ClaimKey } from "./boundary.ts";
 import { parseZones, findSpec } from "./walk.ts";
-import { gitStamp, type StatusRecord, type ClaimRecord } from "./status.ts";
+import { gitStamp, indexClaimRecords, type StatusRecord, type ClaimRecord } from "./status.ts";
 import { fileStats, claimedFilePaths, withBaseWorktree, type FileStat } from "./scene.ts";
 
 // ── grammar readers (residence + zones) ──────────────────────────────────────────────
@@ -87,7 +87,7 @@ function gradeOf(verb: string, rec: ClaimRecord | undefined, head: string | null
  *  the DOCTRINE over it; crossing is the declared wall (null = UNPLACED); freshest is the
  *  newest pass stamp if any; reliants start empty and are POSTED by the reliance pass. */
 export function deriveGates(
-  claims: string[], label: string, recBy: Map<string, ClaimRecord>, head: string | null,
+  claims: string[], label: string, recBy: Map<ClaimKey, ClaimRecord>, head: string | null,
 ): PromiseGate[] {
   const gates: PromiseGate[] = [];
   for (const claim of claims) {
@@ -154,8 +154,7 @@ export function assemblePromiseModel(
     if (sd && td && sd !== td) (importsByDir.get(sd) ?? importsByDir.set(sd, new Set()).get(sd)!).add(td);
   }
 
-  const recBy = new Map<string, ClaimRecord>();
-  for (const r of status.verify?.claims ?? []) recBy.set(claimKey(r.node, r.claim), r);
+  const recBy = indexClaimRecords(status.verify?.claims ?? []);
   const linesOf = (p: string) => stats.get(p)?.lines ?? 0;
 
   // First pass: gates, residence, mass/accounted (relies filled in the second pass).

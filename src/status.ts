@@ -12,6 +12,7 @@ import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { join } from "node:path";
 import { spawnSync } from "node:child_process";
 import type { Config } from "./types.ts";
+import { claimKey, type ClaimKey } from "./boundary.ts";
 
 export interface ClaimRecord {
   node: string;            // declaring component's label
@@ -146,6 +147,18 @@ export function gitStamp(root: string): { commit: string | null; dirty: boolean 
 }
 
 /**
+ * Index claim records by their ONE lookup identity (`claimKey`, boundary.ts) — the single
+ * map-mint every reader of `status.verify.claims` goes through. The key is BRANDED, so a
+ * raw `` `${node} ${claim}` `` probe is a compile error rather than a silent miss: before
+ * this, three sites (this merge, the panel, verify's never-red filter) keyed on the raw
+ * string and quietly erased a claim's failure history when a boundary was annotated with a
+ * purely declarative `crossing` clause — the exact annotation `normalizeBoundaryClaim`
+ * exists to make safe. Last-wins on a key collision, same as Map semantics always were.
+ */
+export const indexClaimRecords = (claims: ClaimRecord[]): Map<ClaimKey, ClaimRecord> =>
+  new Map(claims.map((c) => [claimKey(c.node, c.claim), c]));
+
+/**
  * Merge a run's fresh claim verdicts over the previous record.
  * - scope null (a full-tree run): the fresh set REPLACES the record, so claims that
  *   vanished from the specs vanish from the record (no ghost rows).
@@ -157,12 +170,11 @@ export function gitStamp(root: string): { commit: string | null; dirty: boolean 
  *   lands where nothing real exists underneath (dialect gaps, never-run claims).
  */
 export function mergeClaimRecords(prev: ClaimRecord[], fresh: ClaimRecord[], scope: Set<string> | null): ClaimRecord[] {
-  const key = (c: ClaimRecord) => `${c.node} ${c.claim}`;
-  const prevBy = new Map(prev.map((c) => [key(c), c]));
+  const prevBy = indexClaimRecords(prev);
   const out: ClaimRecord[] = [];
   if (scope) for (const c of prev) if (!scope.has(c.node)) out.push(c);
   for (const c of fresh) {
-    const old = prevBy.get(key(c));
+    const old = prevBy.get(claimKey(c.node, c.claim));
     // A skip never clobbers a real verdict (see above) — but it must not clobber the
     // HISTORY either, so the sticky fields are carried across both branches.
     const kept = c.kind === "skip" && old && old.kind !== "skip" ? { ...old } : { ...c };
