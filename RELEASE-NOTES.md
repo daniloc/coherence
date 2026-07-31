@@ -14,6 +14,22 @@ evidence inside that record.
 
 ---
 
+## v0.19.1 — heat tells the truth in a subdirectory
+
+The first consumer to adopt v0.19.0 roots coherence at `<repo>/app`, and every
+crossing read `heat ▁ 0%` — the hottest chokepoints in the project reading
+coldest, which is worse than no reading. The adopting agent doubted the number
+before the code and was right: git reports commit paths from the repository
+root, the graph addresses files from `cfg.root`, and `crossingHeat` compared
+the two address spaces raw. The translation existed — spelled privately inside
+`componentMap` since decompose shipped — so the fix is the same one-spelling
+move the evolution store itself was: `gitPrefix()` / `rebaseCommits()` now live
+in the store, and both consumers use them. Heat on that project now reads
+Patient ≈ 31% where the hand computation said it should (d-ee05c4a2; the
+consumer's journal holds the discovery as d-99949758 → d-d0bbb52c).
+
+---
+
 ## v0.19.0 — the work ledger reaches the claims and the map
 
 v0.18.0 pinned how much machine there is. This release asks the two follow-on
