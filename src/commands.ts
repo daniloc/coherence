@@ -89,6 +89,10 @@ export const COMMANDS: Command[] = [
     name: "log", group: "verify", usage: "[<refA> [<refB>]] [--strict]",
     summary: "structural diff of the invariant/boundary set between two refs, then the novelty advisory",
   },
+  {
+    name: "signal", group: "verify", usage: "[--check] [--since <ref>] [--attest-no-invariant --because <why>]",
+    summary: "require significant behavioral growth to gain an anchor or a patch-bound decision",
+  },
 
   // ── journal ──────────────────────────────────────────────────────────────────────────
   { name: "decide", group: "journal", usage: '"<chose>" --over "<alt>" --because "<why>"', summary: "log one choice and what it was chosen OVER" },
@@ -128,6 +132,10 @@ export const COMMANDS: Command[] = [
   { name: "scene", group: "perceive", usage: "[--diff <ref>]", summary: "the persistent isometric worksite (`_scene.html`); `--diff` renders a review against `<ref>`" },
   { name: "contract", group: "perceive", summary: "the promise graph — graded gates + the reliance ledger (`_contract.html`)" },
   { name: "review", group: "perceive", usage: "<ref>", summary: "diff the contract against `<ref>` and print the event ledger" },
+  {
+    name: "context", group: "perceive", usage: "[<file>...] [--symbol <name>] [--changed|--staged]",
+    summary: "emit the smallest graph-addressed context packet for a file, symbol, or current change",
+  },
 
   // ── ratchet ──────────────────────────────────────────────────────────────────────────
   { name: "lint-sinks", group: "ratchet", usage: "[--check | --update-baseline]", summary: "interpolation-surface ratchet — raw SQL-identifier and HTML sinks" },
@@ -144,6 +152,11 @@ export const COMMANDS: Command[] = [
   {
     name: "economy", group: "advisory", usage: "[--raise]",
     summary: "the context closure of a change — what a reader must load to modify one thing safely",
+  },
+  { name: "premise", group: "advisory", usage: "[--check]", summary: "audit whether standing decisions' named structural addresses still resolve" },
+  {
+    name: "calibrate", group: "advisory", usage: "[--outcome <clean|defect>] [--session <id>]",
+    summary: "compare economy's predicted context with observed agent reads and labeled outcomes",
   },
 
   // ── bootstrap ────────────────────────────────────────────────────────────────────────

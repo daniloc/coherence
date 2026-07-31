@@ -27,13 +27,18 @@ be answered at:
    cheaper. It is also the only price that is silent. Nothing in the repo records that
    it was charged.
 2. **Read** — looked up, because somebody cached the fact. A claim, an atlas entry, a
-   journal line. Paid **once**, at write time, by the party who already had the answer
-   in hand and was therefore the cheapest possible payer. Approximately free after that.
+   journal line. The expensive reconstruction is paid **once**, at write time, by the
+   party who already had the answer in hand and was therefore the cheapest possible
+   payer. It is **not free after that**: every reader still pays retrieval, integration,
+   and enough verification to trust the cache. The cache wins by making those payments
+   smaller and bounded, not by making reading disappear.
 3. **Unaskable** — the question cannot arise, because the fact is structural. A
    capability that carries its own scope does not make a cross-tenant read *checked*;
    it leaves "could this read another tenant's rows?" with no site to be asked at. A
    sealed schema does not warn about an open object — an open object is a compile
-   error. **Zero cost, every reader, permanently.**
+   error. **Zero read-time cost for that question**; the design and migration that made
+   it unaskable still had a construction cost, and future structural changes can incur
+   another.
 
 Coherence is a machine for moving facts **down** that ladder.
 
@@ -69,6 +74,29 @@ unaskable if it can be made unaskable; write it down if it cannot; and treat eve
 still living at the inference rung — on hot paths especially — as **the tangle
 inventory**. That inventory is the work list, and it is the thing `atlas`, `conventions`,
 `redundancy`, and `contracts` each report a slice of.
+
+The symbol **Σ** makes the asymmetry explicit. It means “sum this cost over every
+instance,” here every future reader or change:
+
+```text
+repository reading cost = Σᵣ (retrievalᵣ + integrationᵣ + verificationᵣ)
+```
+
+For an implicit fact, retrieval includes discovery and verification includes rebuilding
+the proof from code; for a declared fact, those terms are smaller but still present. The
+problem agents sharpen is that reader `r` pays the whole term now while the damage from a
+miss is propagated into later terms. Under a short-horizon prompt, reading broadly is a
+visible cost and preserving context is mostly somebody else's benefit. The local gradient
+therefore points toward the smallest patch that satisfies the prompt, including patches
+that preserve or amplify a bad structure.
+
+Coherence cannot repeal that gradient; it can move part of the future Σ onto the current
+change. `context` makes a bounded, task-shaped first read cheaper without calling it
+complete. `signal --check` makes significant new surface carry an anchor or a
+patch-fingerprinted decision now. `premise` makes expired decision addresses visible.
+The read/write hook trace and `calibrate` test economy's predicted context against what
+agents actually loaded and whether labeled outcomes were clean. These are pressure and
+instrumentation, not a proof that the right context was read.
 
 Two secondary economies fall out of the same frame. **Economy of writes is locality**:
 one intent should produce one write site, and co-change across a boundary is write
@@ -771,15 +799,20 @@ hook-opened sessions* means the hook is dead, and it says so with the throwaway
 `coherence decide` is a plain command; without the hook you put the instruction in
 each agent's brief instead.
 
-The block `coherence hooks` prints carries **three** events. `SubagentStart` and
+The block `coherence hooks` prints carries **five** event names. `SubagentStart` and
 `SessionStart` do the same job at two scales: each OPENS a session — the only place that
 can guarantee one id per *agent* rather than one per shell command — and injects the
 instruction. `SubagentStart` fires for every agent a run spawns; `SessionStart` fires for
 the session itself, so work that never spawns an agent still journals under an id of its
-own instead of falling back to a derived one. `SubagentStop` reports what the journal
-holds and never blocks (below). An event the harness does not recognize is deliberately
-*not* an error — hook sets grow, and a harness that crashes on a new name breaks every
-session that added one. Then:
+own instead of falling back to a derived one. `PostToolUse` records only explicit
+read/write path fields in a transient per-session trace; it does no graph or git analysis
+on that high-frequency path. `SubagentStop` and `Stop` snapshot calibration and report
+both what the journal holds and the patch's current change signal. That non-error feedback
+gets one turn; a `stop_hook_active` follow-up is silent so it cannot loop or become a gate.
+`signal --check` is the CI gate. The generated block invokes the dedicated
+`coherence-hook` binary so loading the full command registry is not part of every read.
+An event the harness does not recognize is deliberately *not* an error — hook sets grow,
+and a harness that crashes on a new name breaks every session that added one. Then:
 
 ```sh
 coherence decide "species gas physics as its own commit" \
@@ -1296,7 +1329,7 @@ both is exactly what drifted.
      edit by hand — add the command to the registry and re-run. Everything OUTSIDE these
      markers is authored prose. -->
 
-_33 commands. This index is derived from the registry the dispatch is checked
+_37 commands. This index is derived from the registry the dispatch is checked
 against (`test/commands.test.ts` enumerates the live `cmd === …` chain and asserts the two
 sets are equal), so it cannot fall behind the CLI. The reasoning for the commands that have
 any is in **In detail** below — that half is authored, and does not cover all of them._
@@ -1312,6 +1345,7 @@ any is in **In detail** below — that half is authored, and does not cover all 
 
 - `coherence verify [--fast] [--staged | --since <ref>] [--raise [--raise-cap N]] [--apply <verdicts>] [--from-report <file>] [--serial-oracles]` — run the claims, the evidence chain and coverage — the gate
 - `coherence log [<refA> [<refB>]] [--strict]` — structural diff of the invariant/boundary set between two refs, then the novelty advisory
+- `coherence signal [--check] [--since <ref>] [--attest-no-invariant --because <why>]` — require significant behavioral growth to gain an anchor or a patch-bound decision
 
 **The decision journal — appends only, gates nothing**
 
@@ -1330,6 +1364,7 @@ any is in **In detail** below — that half is authored, and does not cover all 
 - `coherence scene [--diff <ref>]` — the persistent isometric worksite (`_scene.html`); `--diff` renders a review against `<ref>`
 - `coherence contract` — the promise graph — graded gates + the reliance ledger (`_contract.html`)
 - `coherence review <ref>` — diff the contract against `<ref>` and print the event ledger
+- `coherence context [<file>...] [--symbol <name>] [--changed|--staged]` — emit the smallest graph-addressed context packet for a file, symbol, or current change
 
 **Ratchets and gates**
 
@@ -1346,6 +1381,8 @@ any is in **In detail** below — that half is authored, and does not cover all 
 - `coherence decompose` — the wise-decomposition report — a LOCALITY score plus the smells that lower it
 - `coherence drift` — decompose's derivative — converging on one home, or decohering across boundaries
 - `coherence economy [--raise]` — the context closure of a change — what a reader must load to modify one thing safely
+- `coherence premise [--check]` — audit whether standing decisions' named structural addresses still resolve
+- `coherence calibrate [--outcome <clean|defect>] [--session <id>]` — compare economy's predicted context with observed agent reads and labeled outcomes
 
 **Bootstrap and scaffold**
 
@@ -1429,6 +1466,23 @@ any is in **In detail** below — that half is authored, and does not cover all 
   deletions tracking additions) it self-qualifies: *"disregard if recent work was mostly
   refactor"*. Thresholds in `config.novelty` (`minSurface` 8 · `minLoc` 400 · `ratio`
   12). Advisory only — never the exit code.
+- `coherence signal [--check] [--since <ref>]` — the per-change pressure layer over
+  `log`'s novelty instrument. Significant behavioral surface with zero new invariant,
+  boundary or parity anchors fails under `--check`; smaller changes and anchored changes
+  pass. The deliberate escape hatch is not a permanent config switch:
+  `--attest-no-invariant --because "…"` appends a decision whose finding key contains a
+  fingerprint of the base commit, assessable changed paths and their current bytes. Any
+  patch change outside the harness's own `.coherence/` records invalidates that
+  attestation. Presence of an anchor is not proof that it is the right
+  one; this gate makes the omission visible and addressable, then leaves semantics to
+  review and verification.
+- `coherence context [<file>...] [--symbol <name>] [--changed|--staged]` — a bounded,
+  graph-addressed first read for a task. It returns the selected files' owning components,
+  intent and why, invariants and claims, chokepoints/oracles, direct imports and importers,
+  structurally relevant tests, standing decisions, open conjectures, unresolved inputs,
+  and an explicit limitations section. File, symbol and git-change selectors compose.
+  The closure is deliberately one hop and heuristic; it lowers retrieval cost without
+  claiming to have found every semantically relevant file.
 - `coherence decompose` — the **wise-decomposition** report. Coherence holds the Intent
   graph (spec tree) and the Structure graph (imports); this adds the Evolution graph (git
   change-coupling) and measures their *agreement*. Prints a **LOCALITY** score (the
@@ -1477,6 +1531,20 @@ any is in **In detail** below — that half is authored, and does not cover all 
   larger closure than one with no specs at all. The run is recorded in
   `.coherence/status.json` (`economy`), sample size included — a median over three commits
   and one over three hundred must never look alike.
+- `coherence premise [--check]` — audit whether the structural addresses cached in
+  standing journal decisions still resolve. Explicit `files` leases are check-grade:
+  a missing file fails `--check`; uniquely moved candidates and missing/ambiguous symbols
+  are reported with stable finding keys. Code-shaped paths inferred from prose remain
+  advisory because prose is not authority, and decisions with no extractable lease are
+  counted rather than invented. This detects broken referents, not a rationale whose
+  words still point at live code while its meaning has gone stale.
+- `coherence calibrate [--outcome clean|defect] [--session <id>]` — compare economy's
+  predicted one-hop read set with observed explicit file reads, then label the patch
+  outcome. Compact append-only samples live per session in `.coherence/calibration/`;
+  raw hook traces remain transient. Write-bearing hooks scope changed files to the
+  session that edited them; hosts without those events fall back to the shared worktree
+  union and say so. Coverage and defect-rate differences are calibration evidence, not
+  causal proof, and shell/editor/remembered reads are intentionally not guessed.
 - `coherence scaffold <boundary|component|invariant|parity> <name>` — the gradient-flip
   generator: make the complete shape the cheapest thing to ship.
   - `boundary` — a NEW component spec pre-wired with `## invariants` + a `boundary` claim
@@ -1648,8 +1716,10 @@ any is in **In detail** below — that half is authored, and does not cover all 
   ledger to stdout; the render carries the same ledger.
 - `coherence hooks [--check]` — print the `.claude/settings.json` block that injects the
   journal instructions into every agent at startup; `--check` answers whether it has ever
-  actually FIRED, because a dead hook is silent. `coherence hook <event>` is the hook body
-  itself, invoked by the harness rather than by you.
+  actually FIRED, because a dead hook is silent. The block also traces explicit read/write
+  paths at `PostToolUse` and emits the patch signal plus calibration snapshot at Stop.
+  `coherence-hook <event>` is the dependency-light lifecycle body; `coherence hook
+  <event>` remains the general-CLI spelling.
 - `coherence why-lint` — the **`## why` discipline**, two advisory checks against the
   graph the harness already holds:
   1. **mechanism-restatement** — a sentence that names an anchored chokepoint/oracle
@@ -1961,6 +2031,20 @@ meant.
 
 ## Known limits (read this section; it is the point)
 
+- **The task context is a bounded hypothesis, not completeness.** It uses graph ownership,
+  one-hop imports/importers, structural test links and journal addresses. Dynamic loading,
+  semantic coupling and external state can live beyond that packet; its limitations are
+  printed in every result.
+- **Premise leases detect dead addresses, not dead meanings.** Missing explicit files are
+  strong failures; inferred prose paths are advisory. A live file or symbol can still
+  support a rationale that is semantically obsolete.
+- **Read calibration is an explicit-path lower bound.** Shell commands, editor buffers and
+  remembered context are not inferred. Per-agent patch attribution requires write-bearing
+  tool events; without them a sample uses the shared worktree's changed-file union.
+- **The change signal measures surface and anchor presence, not semantic adequacy.** A
+  trivial anchor can satisfy its structural condition, and a patch-specific journal
+  decision can attest that no anchor is needed. Review and claim verification still judge
+  whether either choice is true.
 - **The meta-oracle is necessary, not sufficient.** It proves the oracle's iteration
   root is live-derived — NOT that the effective domain is complete
   (`app.routes.filter(r => PUBLIC.has(r) || r === "…")` passes while covering a

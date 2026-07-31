@@ -1,31 +1,308 @@
 {
   "version": 1,
   "verify": {
-    "at": "2026-07-31T02:31:48.687Z",
-    "commit": "4e05778",
+    "at": "2026-07-31T17:11:49.166Z",
+    "commit": "b8017f1",
     "dirty": true,
     "tier": "fast",
     "scope": null,
     "cost": {
-      "totalMs": 0,
-      "claims": []
+      "totalMs": 1.8969179999999994,
+      "claims": [
+        {
+          "node": "Harness core",
+          "claim": "cli.ts imports ./config.ts",
+          "ms": 0.3011669999999924,
+          "source": "wall"
+        },
+        {
+          "node": "Harness core",
+          "claim": "boundary \"agent lifecycle preserves decisions and exposes the current change signal\" at runHook via guard \"hooks — generated wiring uses the low-cost entrypoint and observes writes\"",
+          "ms": 0.253832999999986,
+          "source": "wall"
+        },
+        {
+          "node": "Harness core",
+          "claim": "cli.ts imports ./derive.ts",
+          "ms": 0.21354199999998968,
+          "source": "wall"
+        },
+        {
+          "node": "Harness core",
+          "claim": "boundary \"significant behavioral growth acquires an anchor or patch-specific decision\" at signal via guard \"only a zero-anchor alarm without attestation needs a decision\"",
+          "ms": 0.16987499999999045,
+          "source": "wall"
+        },
+        {
+          "node": "Coherence",
+          "claim": "coherence.config.json exists at root",
+          "ms": 0.1693339999999921,
+          "source": "wall"
+        }
+      ]
     },
-    "lastFastAt": "2026-07-31T02:31:48.687Z",
-    "claims": [],
+    "lastFastAt": "2026-07-31T17:11:49.166Z",
+    "lastFullAt": "2026-07-31T17:11:04.937Z",
+    "claims": [
+      {
+        "node": "Coherence",
+        "claim": "coherence.config.json exists at root",
+        "kind": "pass",
+        "detail": "coherence.config.json @ root",
+        "at": "2026-07-31T17:11:49.166Z",
+        "commit": "b8017f1",
+        "tier": "fast",
+        "everFailed": false,
+        "runs": 10
+      },
+      {
+        "node": "Coherence",
+        "claim": ".claude/settings.json exists at root",
+        "kind": "pass",
+        "detail": ".claude/settings.json @ root",
+        "at": "2026-07-31T17:11:49.166Z",
+        "commit": "b8017f1",
+        "tier": "fast",
+        "everFailed": false,
+        "runs": 10
+      },
+      {
+        "node": "Coherence",
+        "claim": "package.json exists at root",
+        "kind": "pass",
+        "detail": "package.json @ root",
+        "at": "2026-07-31T17:11:49.166Z",
+        "commit": "b8017f1",
+        "tier": "fast",
+        "everFailed": false,
+        "runs": 10
+      },
+      {
+        "node": "Coherence",
+        "claim": "README.md exists at root",
+        "kind": "pass",
+        "detail": "README.md @ root",
+        "at": "2026-07-31T17:11:49.166Z",
+        "commit": "b8017f1",
+        "tier": "fast",
+        "everFailed": false,
+        "runs": 10
+      },
+      {
+        "node": "Coherence",
+        "claim": "src/cli.ts exists at root",
+        "kind": "pass",
+        "detail": "src/cli.ts @ root",
+        "at": "2026-07-31T17:11:49.166Z",
+        "commit": "b8017f1",
+        "tier": "fast",
+        "everFailed": false,
+        "runs": 10
+      },
+      {
+        "node": "Harness core",
+        "claim": "cli.ts imports ./config.ts",
+        "kind": "pass",
+        "detail": "",
+        "at": "2026-07-31T17:11:49.166Z",
+        "commit": "b8017f1",
+        "tier": "fast",
+        "everFailed": false,
+        "runs": 10
+      },
+      {
+        "node": "Harness core",
+        "claim": "cli.ts imports ./derive.ts",
+        "kind": "pass",
+        "detail": "",
+        "at": "2026-07-31T17:11:49.166Z",
+        "commit": "b8017f1",
+        "tier": "fast",
+        "everFailed": false,
+        "runs": 10
+      },
+      {
+        "node": "Harness core",
+        "claim": "cli.ts imports ./verify.ts",
+        "kind": "pass",
+        "detail": "",
+        "at": "2026-07-31T17:11:49.166Z",
+        "commit": "b8017f1",
+        "tier": "fast",
+        "everFailed": false,
+        "runs": 10
+      },
+      {
+        "node": "Harness core",
+        "claim": "hooks.ts imports ./decisions.ts",
+        "kind": "pass",
+        "detail": "",
+        "at": "2026-07-31T17:11:49.166Z",
+        "commit": "b8017f1",
+        "tier": "fast",
+        "everFailed": false,
+        "runs": 10
+      },
+      {
+        "node": "Harness core",
+        "claim": "derive.ts imports ./walk.ts",
+        "kind": "pass",
+        "detail": "",
+        "at": "2026-07-31T17:11:49.166Z",
+        "commit": "b8017f1",
+        "tier": "fast",
+        "everFailed": false,
+        "runs": 10
+      },
+      {
+        "node": "Harness core",
+        "claim": "boundary \"agent lifecycle preserves decisions and exposes the current change signal\" at runHook via guard \"hooks — generated wiring uses the low-cost entrypoint and observes writes\"",
+        "kind": "pass",
+        "detail": "agent lifecycle preserves decisions and exposes the current change signal @ runHook (source-property guard)",
+        "at": "2026-07-31T17:11:04.937Z",
+        "commit": "b8017f1",
+        "tier": "full",
+        "everFailed": false,
+        "runs": 3
+      },
+      {
+        "node": "Harness core",
+        "claim": "boundary \"significant behavioral growth acquires an anchor or patch-specific decision\" at signal via guard \"only a zero-anchor alarm without attestation needs a decision\"",
+        "kind": "pass",
+        "detail": "significant behavioral growth acquires an anchor or patch-specific decision @ signal (source-property guard)",
+        "at": "2026-07-31T17:11:04.937Z",
+        "commit": "b8017f1",
+        "tier": "full",
+        "everFailed": false,
+        "runs": 3
+      },
+      {
+        "node": "Harness core",
+        "claim": "boundary \"task context is bounded and names its approximations\" at contextFor via guard \"renderContext — byte-stable for the same inputs and names every approximation\"",
+        "kind": "pass",
+        "detail": "task context is bounded and names its approximations @ contextFor (source-property guard)",
+        "at": "2026-07-31T17:11:04.937Z",
+        "commit": "b8017f1",
+        "tier": "full",
+        "everFailed": false,
+        "runs": 3
+      },
+      {
+        "node": "Harness core",
+        "claim": "boundary \"cached decisions expose structurally expired premises\" at auditPremiseLeases via guard \"audit — retracted decisions disappear and only broken strong leases fail a check\"",
+        "kind": "pass",
+        "detail": "cached decisions expose structurally expired premises @ auditPremiseLeases (source-property guard)",
+        "at": "2026-07-31T17:11:04.937Z",
+        "commit": "b8017f1",
+        "tier": "full",
+        "everFailed": true,
+        "lastFailAt": "2026-07-31T17:11:03.459Z",
+        "lastFailCommit": "b8017f1",
+        "runs": 3
+      },
+      {
+        "node": "Harness core",
+        "claim": "boundary \"predicted context closure is calibrated against observed reads and outcomes\" at calibrate via guard \"calibration reports coverage, outside reads, and defect rates by prediction misses\"",
+        "kind": "pass",
+        "detail": "predicted context closure is calibrated against observed reads and outcomes @ calibrate (source-property guard)",
+        "at": "2026-07-31T17:11:04.937Z",
+        "commit": "b8017f1",
+        "tier": "full",
+        "everFailed": false,
+        "runs": 3
+      },
+      {
+        "node": "Source adapters",
+        "claim": "typescript.ts exists at this node",
+        "kind": "pass",
+        "detail": "typescript.ts @ this node",
+        "at": "2026-07-31T17:11:49.166Z",
+        "commit": "b8017f1",
+        "tier": "fast",
+        "everFailed": false,
+        "runs": 10
+      },
+      {
+        "node": "Source adapters",
+        "claim": "python.ts exists at this node",
+        "kind": "pass",
+        "detail": "python.ts @ this node",
+        "at": "2026-07-31T17:11:49.166Z",
+        "commit": "b8017f1",
+        "tier": "fast",
+        "everFailed": false,
+        "runs": 10
+      },
+      {
+        "node": "Source adapters",
+        "claim": "cloudflare.ts exists at this node",
+        "kind": "pass",
+        "detail": "cloudflare.ts @ this node",
+        "at": "2026-07-31T17:11:49.166Z",
+        "commit": "b8017f1",
+        "tier": "fast",
+        "everFailed": false,
+        "runs": 10
+      },
+      {
+        "node": "Executable contracts",
+        "claim": "_helpers.ts exists at this node",
+        "kind": "pass",
+        "detail": "_helpers.ts @ this node",
+        "at": "2026-07-31T17:11:49.166Z",
+        "commit": "b8017f1",
+        "tier": "fast",
+        "everFailed": false,
+        "runs": 10
+      },
+      {
+        "node": "Executable contracts",
+        "claim": "verify.test.ts exists at this node",
+        "kind": "pass",
+        "detail": "verify.test.ts @ this node",
+        "at": "2026-07-31T17:11:49.166Z",
+        "commit": "b8017f1",
+        "tier": "fast",
+        "everFailed": false,
+        "runs": 10
+      },
+      {
+        "node": "Executable contracts",
+        "claim": "decisions.test.ts exists at this node",
+        "kind": "pass",
+        "detail": "decisions.test.ts @ this node",
+        "at": "2026-07-31T17:11:49.166Z",
+        "commit": "b8017f1",
+        "tier": "fast",
+        "everFailed": false,
+        "runs": 10
+      },
+      {
+        "node": "Executable contracts",
+        "claim": "commands.test.ts exists at this node",
+        "kind": "pass",
+        "detail": "commands.test.ts @ this node",
+        "at": "2026-07-31T17:11:49.166Z",
+        "commit": "b8017f1",
+        "tier": "fast",
+        "everFailed": false,
+        "runs": 10
+      }
+    ],
     "coverage": {
-      "components": 0,
-      "claimed": 0,
-      "withWhy": 0,
-      "symbols": 324,
-      "documented": 199
+      "components": 4,
+      "claimed": 4,
+      "withWhy": 4,
+      "symbols": 402,
+      "documented": 237
     },
     "invariants": {
-      "total": 0,
-      "anchored": 0,
+      "total": 5,
+      "anchored": 5,
       "gaps": []
     },
     "narrative": null,
-    "jobs": 125,
+    "jobs": 165,
     "failures": 0
   },
   "mass": {

@@ -10,12 +10,9 @@ dist/
 .coherence/*
 !.coherence/decisions/
 !.coherence/status.json
+!.coherence/calibration/
 
-# `coherence docs` run against THIS repo emits these. They are near-empty: coherence has
-# no `coherence.config.json` and no `*.spec.md` of its own, so there is no graph to derive
-# — the files exist only because a verification step invoked `docs --check`. Committing
-# empty scaffolding would imply this repo dogfoods its own derivation, which it does not
-# (yet). Untracked-and-unignored was the worst of the three states: every `docs` run left
-# them sitting in `git status` looking like work in progress.
-AGENTS.md
-public/
+# AGENTS.md and public/{graph.json,_graph.html,_overview.html} are committed, fully-owned
+# reading surfaces now that this repository has a real spec tree. `coherence docs --check`
+# gates their freshness; the other public artifacts are independently generated and already
+# tracked where their commands own them.

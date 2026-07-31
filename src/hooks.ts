@@ -12,25 +12,37 @@
 // journal's whole premise is that context is the scarce resource; a mechanism that
 // spends context to save context is self-defeating.
 //
-// THE NUDGE DOES NOT BLOCK. `SubagentStop` reports what the agent logged and stops
-// there. Exit 2 would make the journal a gate, and a gate acquires an incentive to be
-// complete — at which point it is a transcript again, which is the thing it exists to
-// compress.
+// THE NUDGE DOES NOT FAIL THE STOP. `SubagentStop` returns non-error feedback once, then
+// stays silent when the host marks the follow-up stop as active. Exit 2 would make the
+// journal a gate, and a gate acquires an incentive to be complete — at which point it is
+// a transcript again, which is the thing it exists to compress.
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { readJournal, openSession, resolve } from "./decisions.ts";
 import type { Config } from "./types.ts";
 
+/** Use the source entrypoint only while this repository dogfoods itself. Consumers get
+ * the installed binary. Keeping this choice here also means the injected command is the
+ * command an agent can actually run, rather than release-oriented prose copied locally. */
+function projectCli(cfg: Config): string {
+  try {
+    const pkg = JSON.parse(readFileSync(join(cfg.root, "package.json"), "utf8"));
+    if (pkg?.name === "coherence-harness" && existsSync(join(cfg.root, "src", "cli.ts"))) return "node src/cli.ts";
+  } catch { /* an absent package is an ordinary consumer project */ }
+  return "npx coherence";
+}
+
 /** The text every agent is handed at startup. Short on purpose: it is paid for by
  *  every agent on every job, and an instruction nobody finishes reading is a comment. */
-export function agentInstructions(session: string): string {
+export function agentInstructions(session: string, cli = "npx coherence", agent?: string): string {
+  const scope = `--session ${JSON.stringify(session)}${agent ? ` --agent ${JSON.stringify(agent)}` : ""}`;
   return [
     "DECISION JOURNAL — this repo keeps one, and you are expected to write to it.",
     "",
     "When you make a decision — a point where the work could have gone more than one",
     "way and you picked — record it BEFORE moving on:",
     "",
-    `  npx coherence decide "<what you chose>" --over "<what you rejected>" --because "<why>" --session ${session}`,
+    `  ${cli} decide "<what you chose>" --over "<what you rejected>" --because "<why>" ${scope}`,
     "",
     `YOUR SESSION ID IS ${session}. Pass it on every call — it is what keeps your`,
     "decisions attributable to you when four other agents are writing at the same time.",
@@ -42,10 +54,10 @@ export function agentInstructions(session: string): string {
     "WHEN A NUMBER SURPRISES YOU, DOUBT THE INSTRUMENT BEFORE THE SUBJECT — and record",
     "the question even if you cannot chase it. An unresolved conjecture is a real entry:",
     "",
-    `  npx coherence conjecture "<the surprising observation>" --could-be "<explanation>" \\`,
-    `    --discriminated-by "<the test that would separate them>" --session ${session}`,
-    `  npx coherence resolved <id> --because "<what that test showed>" --as "<which candidate won>"`,
-    `  npx coherence dismiss <id> --because "<why it is not worth chasing>"`,
+    `  ${cli} conjecture "<the surprising observation>" --could-be "<explanation>" \\`,
+    `    --discriminated-by "<the test that would separate them>" ${scope}`,
+    `  ${cli} resolved <id> --because "<what that test showed>" --as "<which candidate won>" ${scope}`,
+    `  ${cli} dismiss <id> --because "<why it is not worth chasing>" ${scope}`,
     "",
     'You need not supply "the instrument is wrong" — it is added for you. It is the',
     "highest-prior explanation for a surprising measurement and the one everyone skips.",
@@ -56,8 +68,8 @@ export function agentInstructions(session: string): string {
     "one thing this journal cannot recover from.",
     "",
     "Two more verbs:",
-    `  npx coherence blocked "<what you could not do>" --because "<why>" --session ${session}`,
-    `  npx coherence retract <id> --because "<what refuted it>" --session ${session}`,
+    `  ${cli} blocked "<what you could not do>" --because "<why>" ${scope}`,
+    `  ${cli} retract <id> --because "<what refuted it>" ${scope}`,
     "",
     "This gates nothing. It cannot fail your build and it is not a checklist — log the",
     "handful of choices a reader who never saw your transcript would need, not every step.",
@@ -65,23 +77,62 @@ export function agentInstructions(session: string): string {
   ].join("\n");
 }
 
+/** A Stop feedback turn stops again. Hosts mark that second pass so a non-blocking nudge
+ * can be emitted exactly once instead of accidentally becoming an eight-turn gate. */
+export function stopFeedbackActive(payload: unknown): boolean {
+  const p = payload && typeof payload === "object" ? payload as Record<string, unknown> : {};
+  return p.stop_hook_active === true || p.stopHookActive === true;
+}
+
 /** `coherence hook <event>` — the hook body itself, so nothing has to be written to
  *  disk or kept in sync with a script file. Reads the event payload on stdin (unused
  *  today, but hooks are fed JSON and ignoring it silently would be rude to the next
  *  person who needs a field from it) and prints the documented output shape. */
 export async function runHook(cfg: Config, event: string): Promise<number> {
-  await readStdin(); // drained deliberately: an unread pipe can SIGPIPE the caller
+  const raw = await readStdin(); // drained deliberately: an unread pipe can SIGPIPE the caller
+  let payload: unknown = {};
+  try { payload = raw.trim() ? JSON.parse(raw) : {}; } catch { /* hooks must survive a host's malformed payload */ }
+  const p = payload && typeof payload === "object" ? payload as Record<string, unknown> : {};
+  const hostScope = p.agent_id ?? p.agentId ?? p.session_id ?? p.sessionId;
 
   if (event === "SubagentStart" || event === "SessionStart") {
     // The session is OPENED here, by the hook, once per agent — which is the only
     // place that can guarantee one id per agent rather than one per shell command.
-    const rec = openSession(cfg, { agent: process.env.COHERENCE_AGENT, job: process.env.COHERENCE_JOB });
-    emit(event, agentInstructions(rec.session));
+    const rec = openSession(cfg, {
+      session: hostScope === undefined ? undefined : String(hostScope),
+      agent: String(p.agent_type ?? p.agentType ?? process.env.COHERENCE_AGENT ?? "main"),
+      job: String(p.session_id ?? p.sessionId ?? process.env.COHERENCE_JOB ?? "-"),
+    });
+    emit(event, agentInstructions(rec.session, projectCli(cfg), rec.agent));
+    return 0;
+  }
+
+  // The CHEAP tick: collect only explicit file paths. No graph build, no git worktree,
+  // and no attempt to reverse-engineer shell command strings. These transient rows are
+  // what `calibrate` later compares with economy's predicted closure.
+  if (event === "PostToolUse") {
+    const { recordHookReads } = await import("./read-trace.ts");
+    recordHookReads(cfg, payload);
     return 0;
   }
 
   if (event === "SubagentStop" || event === "Stop") {
-    emit(event, stopReport(cfg));
+    // Stop additionalContext gives the agent one feedback turn. Without this host flag
+    // guard, that turn stops again, receives the same feedback again, and loops until the
+    // host's hard cap — expensive signaling turning into an accidental gate.
+    if (stopFeedbackActive(payload)) return 0;
+    // The EXPENSIVE tick runs once, when a patch is about to leave the context that made
+    // it. Snapshot any observed reads, then put the patch's anchor signal directly in the
+    // final instruction. Neither operation gates the stop hook; CI's `signal --check` is
+    // the enforcement point after the agent has had this chance to settle it.
+    const session = String(hostScope ?? process.env.COHERENCE_SESSION ?? "unknown");
+    const [{ recordCalibrationSample }, { analyzeChange, formatSignal }] = await Promise.all([
+      import("./calibration.ts"), import("./signal.ts"),
+    ]);
+    await recordCalibrationSample(cfg, session).catch(() => null);
+    const change = await analyzeChange(cfg).then((s) => formatSignal(s).join("\n"))
+      .catch((e: unknown) => `CHANGE SIGNAL unavailable: ${e instanceof Error ? e.message : String(e)}`);
+    emit(event, `${stopReport(cfg)}\n\n${change}`);
     return 0;
   }
 
@@ -94,6 +145,7 @@ export async function runHook(cfg: Config, event: string): Promise<number> {
  *  without a stdin pipe — the hook body drains stdin, and a report you can only observe
  *  by feeding a process is a report nobody tests. */
 export function stopReport(cfg: Config): string {
+  const cli = projectCli(cfg);
   const { records, unreadable } = readJournal(cfg);
   const n = records.filter((r) => r.kind !== "session").length;
   // A REPORT, NOT A QUESTION — and that distinction is load-bearing, because the first
@@ -130,9 +182,9 @@ export function stopReport(cfg: Config): string {
     + " already in the code.";
   return msg + restate + (open.length
     ? `\n\n${open.length} OPEN CONJECTURE(S) in this repo — noticed, not yet chased.`
-      + " If your work settled one, close it with `npx coherence resolved <id> --because ...`;"
-      + " if one is not worth chasing, `npx coherence dismiss <id> --because ...` retires it."
-      + " `npx coherence decisions --open` lists them."
+      + ` If your work settled one, close it with \`${cli} resolved <id> --because ...\`;`
+      + ` if one is not worth chasing, \`${cli} dismiss <id> --because ...\` retires it.`
+      + ` \`${cli} decisions --open\` lists them.`
     : "");
 }
 
@@ -173,7 +225,11 @@ export function checkHooks(cfg: Config): number {
       const j = JSON.parse(readFileSync(f, "utf8"));
       for (const ev of Object.keys(j?.hooks ?? {})) {
         const cmds = JSON.stringify(j.hooks[ev]);
-        if (cmds.includes("coherence hook")) configured.push(`${ev} (${f.endsWith("local.json") ? "local" : "project"})`);
+        // Accept the general CLI and the dedicated low-cost hook entrypoint, installed
+        // or source-local. They all reach `runHook`; spelling must not hide a live hook.
+        if (/(?:\bcoherence\s+hook\b|\bcoherence-hook\b|src\/(?:cli|hook-cli)\.ts\b)/.test(cmds)) {
+          configured.push(`${ev} (${f.endsWith("local.json") ? "local" : "project"})`);
+        }
       }
     } catch { console.log(`  ! ${f} is not valid JSON`); }
   }
@@ -209,11 +265,17 @@ export function checkHooks(cfg: Config): number {
 /** `coherence hooks` — print the block to paste into .claude/settings.json, plus the
  *  instruction text so a reader can see what agents will actually be told. */
 export function printHooks(cfg: Config): void {
+  const hook = '"${CLAUDE_PROJECT_DIR}/node_modules/.bin/coherence-hook"';
   const block = {
     hooks: {
-      SubagentStart: [{ hooks: [{ type: "command", command: "npx coherence hook SubagentStart" }] }],
-      SessionStart: [{ hooks: [{ type: "command", command: "npx coherence hook SessionStart" }] }],
-      SubagentStop: [{ hooks: [{ type: "command", command: "npx coherence hook SubagentStop" }] }],
+      SubagentStart: [{ hooks: [{ type: "command", command: `${hook} SubagentStart` }] }],
+      SessionStart: [{ hooks: [{ type: "command", command: `${hook} SessionStart` }] }],
+      SubagentStop: [{ hooks: [{ type: "command", command: `${hook} SubagentStop` }] }],
+      Stop: [{ hooks: [{ type: "command", command: `${hook} Stop` }] }],
+      PostToolUse: [{
+        matcher: "Read|Grep|Glob|Write|Edit|MultiEdit|NotebookEdit",
+        hooks: [{ type: "command", command: `${hook} PostToolUse` }],
+      }],
     },
   };
   console.log("Paste into .claude/settings.json (merge with any existing `hooks` key),");
@@ -221,9 +283,12 @@ export function printHooks(cfg: Config): void {
   console.log(JSON.stringify(block, null, 2));
   console.log(`
 SubagentStart / SessionStart inject the instruction below into the agent's context.
-SubagentStop reports what the journal holds — it NEVER blocks, because a journal that
-can fail a build acquires an incentive to be complete, and a complete journal is a
-transcript again.
+PostToolUse records explicit file reads and writes for per-agent economy calibration; it
+emits no instruction and uses a dedicated dependency-light entrypoint.
+SubagentStop / Stop report what the journal holds AND the current patch's change signal —
+they return non-error feedback once, then stay silent when the host marks the follow-up
+stop active. They never fail a stop, because a journal that can fail a build acquires an
+incentive to be complete, and a complete journal is a transcript again.
 
 The journal lives in .coherence/decisions/ — ONE APPEND-ONLY FILE PER AGENT SESSION,
 so two branches merge without a conflict and writers can never interleave. Commit the

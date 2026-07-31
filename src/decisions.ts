@@ -219,12 +219,11 @@ export function sessionPath(cfg: Config, session: string): string {
   return join(decisionsDir(cfg), `${slug(session)}.jsonl`);
 }
 
-/** A fresh session id. Random rather than derived: two agents started in the same
+/** A fresh fallback session id. Random rather than derived: two agents started in the same
  *  second on the same branch with the same name must not collide, and they can.
  *
- *  THIS IS FOR THE HOOK, and only for it. `SubagentStart` mints one id per agent start,
- *  where the concurrency is real and randomness is the only thing that separates them.
- *  It is NOT the fallback for a hookless `coherence decide` — see `derivedSessionId`. */
+ *  A host-supplied unique id is preferred by the hook. Randomness is its fallback, never
+ *  the fallback for a hookless `coherence decide` — see `derivedSessionId`. */
 export function newSessionId(): string {
   return "s-" + randomBytes(6).toString("hex");
 }
@@ -346,10 +345,14 @@ export interface DecideInput {
   now?: string; // injectable for tests
 }
 
-/** Open a session: mint an id and write its header record. The header makes each file
- *  self-describing, so the merger never has to parse a filename to know who wrote it. */
-export function openSession(cfg: Config, o: { agent?: string; job?: string; now?: string } = {}): DecisionRecord {
-  const session = newSessionId();
+/** Open a session and write its header record. A lifecycle host may supply its stable,
+ *  unique agent/session id so later tool hooks, calibration labels and journal writes all
+ *  address the same file. Hookless callers still mint a collision-safe random id. */
+export function openSession(
+  cfg: Config,
+  o: { agent?: string; job?: string; session?: string; now?: string } = {},
+): DecisionRecord {
+  const session = o.session || newSessionId();
   return write(cfg, session, {
     kind: "session", chose: "(session opened)", because: "agent session start",
     agent: o.agent, job: o.job, now: o.now,

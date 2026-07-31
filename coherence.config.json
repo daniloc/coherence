@@ -1,0 +1,34 @@
+{
+  "outputDir": "public",
+  "entryDir": ".",
+  "tooling": [
+    "test"
+  ],
+  "ignore": [
+    "node_modules",
+    ".git",
+    "dist",
+    ".turbo",
+    ".wrangler"
+  ],
+  "codeExt": [
+    "ts"
+  ],
+  "typecheck": [
+    "npm",
+    "run",
+    "build"
+  ],
+  "test": [
+    "node",
+    "scripts/run-named-test.mjs"
+  ],
+  "language": "typescript",
+  "platform": null,
+  "sources": [
+    "src"
+  ],
+  "testDir": "test",
+  "testMatch": "pass [1-9]",
+  "oracleExecution": "serial"
+}

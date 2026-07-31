@@ -13,9 +13,33 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # signal compares this change with the real PR/push base
       - uses: actions/setup-node@v4
         with:
           node-version: '22' # engines: >=22 (native TS type-stripping, no --flag needed)
           cache: npm
       - run: npm ci # installs deps + runs prepare → tsc build (a build break fails here)
       - run: npm test
+      - name: Check per-change read signaling
+        env:
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PUSH_BASE: ${{ github.event.before }}
+        run: |
+          base="${PR_BASE:-${PUSH_BASE:-HEAD^}}"
+          git cat-file -e "$base^{commit}" 2>/dev/null || base=HEAD^
+          node src/cli.ts signal --check --since "$base"
+      - name: Check premise leases
+        run: node src/cli.ts premise --check
+      - name: Check committed coherence reading surfaces
+        run: node src/cli.ts docs --check
+      - name: Check invariant rationale coverage
+        run: node src/cli.ts why-lint --check
+      - name: Materialize a read-only verification snapshot
+        run: |
+          mkdir -p "$RUNNER_TEMP/coherence-verify"
+          git archive HEAD -o "$RUNNER_TEMP/coherence-verify.tar"
+          tar -xf "$RUNNER_TEMP/coherence-verify.tar" -C "$RUNNER_TEMP/coherence-verify"
+      - name: Verify the repository's own specs
+        working-directory: ${{ runner.temp }}/coherence-verify
+        run: node "$GITHUB_WORKSPACE/src/cli.ts" verify --fast

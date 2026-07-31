@@ -24,7 +24,7 @@ import {
   derivedSessionId, slug, compactJournal, planCompaction, COMPACT_QUIET_MS,
   LABEL_SOFT_MAX,
 } from "../src/decisions.ts";
-import { checkHooks } from "../src/hooks.ts";
+import { checkHooks, printHooks, stopFeedbackActive } from "../src/hooks.ts";
 import { runCaptured, cleanup } from "./_helpers.ts";
 import type { Config } from "../src/types.ts";
 
@@ -200,13 +200,26 @@ test("hooks --check — a hook-opened session is the tell that it IS firing", as
   const cfg = await root();
   await mkdir(join(cfg.root, ".claude"), { recursive: true });
   await writeFile(join(cfg.root, ".claude", "settings.json"), JSON.stringify({
-    hooks: { SubagentStart: [{ hooks: [{ type: "command", command: "npx coherence hook SubagentStart" }] }] },
+    hooks: { SubagentStart: [{ hooks: [{ type: "command", command: "node ./src/hook-cli.ts SubagentStart" }] }] },
   }));
-  openSession(cfg, { now: T(0) });                    // what the hook does, and only the hook
+  const opened = openSession(cfg, { session: "agent-abc", now: T(0) });
+  assert.equal(opened.session, "agent-abc", "the host id must address journal and tool trace alike");
   const { code, out } = await runCaptured(() => Promise.resolve(checkHooks(cfg)));
   assert.equal(code, 0);
   assert.match(out, /FIRING\. 1 session\(s\)/);
   await rm(cfg.root, { recursive: true, force: true });
+});
+
+test("hooks — generated wiring uses the low-cost entrypoint and observes writes", async () => {
+  const cfg = await root();
+  const { out } = await runCaptured(async () => { printHooks(cfg); return 0; });
+  assert.match(out, /node_modules\/\.bin\/coherence-hook/);
+  assert.match(out, /SubagentStart/);
+  assert.match(out, /Read\|Grep\|Glob\|Write\|Edit\|MultiEdit\|NotebookEdit/);
+  assert.doesNotMatch(out, /npx coherence hook PostToolUse/);
+  assert.equal(stopFeedbackActive({ stop_hook_active: true }), true);
+  assert.equal(stopFeedbackActive({ stop_hook_active: false }), false);
+  await cleanup(cfg.root);
 });
 
 test("hooks --check — no configuration at all is a different verdict from a dead one", async () => {

@@ -203,6 +203,12 @@ test("open — the instruction every agent is handed teaches the verb", async ()
   assert.match(t, /coherence conjecture/);
   assert.match(t, /--discriminated-by/);
   assert.match(t, /DOUBT THE INSTRUMENT BEFORE THE SUBJECT/);
+  assert.match(agentInstructions("agent-abc", "node src/cli.ts"), /node src\/cli\.ts decide/,
+    "the dogfood hook must inject a command that works before this package is installed");
+  const attributed = agentInstructions("agent-abc", "node src/cli.ts", "Explore");
+  assert.match(attributed, /--session "agent-abc" --agent "Explore"/);
+  assert.match(attributed, /resolved <id>.*--session "agent-abc"/,
+    "closing a question must remain in the lifecycle host's attributable session");
 });
 
 // ── 3. resolving something that cannot be resolved ───────────────────────────────

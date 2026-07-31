@@ -40,6 +40,10 @@ import { recordObservation, formatObserved } from "./observed.ts";
 import { printHooks, checkHooks, runHook } from "./hooks.ts";
 import { redundancy } from "./redundancy.ts";
 import { economy } from "./economy.ts";
+import { signal } from "./signal.ts";
+import { contextFromProject, renderContext } from "./context.ts";
+import { premise } from "./premise.ts";
+import { calibrate, type CalibrationOutcome } from "./calibration.ts";
 
 const cmd = process.argv[2];
 const argv = process.argv.slice(3);
@@ -58,7 +62,7 @@ const diffRef = diffIdx >= 0 ? argv[diffIdx + 1] : null;
 // count of candidates IS the signal. One candidate is a hunch dressed as an inquiry.
 const VALUED = new Set(["--since", "--apply", "--diff", "--over", "--because", "--agent", "--job", "--file", "--for", "--session", "--branch",
   "--could-be", "--discriminated-by", "--as",
-  "--value", "--baseline", "--threshold", "--unit", "--why", "--raise-cap"]);
+  "--value", "--baseline", "--threshold", "--unit", "--why", "--raise-cap", "--symbol", "--outcome"]);
 const many = (flag: string): string[] => argv.reduce<string[]>((acc, a, i) => (a === flag && argv[i + 1] !== undefined ? [...acc, argv[i + 1]] : acc), []);
 const one = (flag: string): string | null => { const v = many(flag); return v.length ? v[v.length - 1] : null; };
 const positional = argv.filter((a, i) => !a.startsWith("--") && !VALUED.has(argv[i - 1] ?? ""));
@@ -245,6 +249,17 @@ if (cmd === "graph") {
 } else if (cmd === "log") {
   // The temporal ledger: what did refA → refB do to the invariant/boundary set.
   await exit(await structuralLog(cfg, positional[0] ?? "HEAD", positional[1] ?? null, strict));
+} else if (cmd === "signal") {
+  // Make novelty's zero-anchor alarm part of the CURRENT patch's acceptance function.
+  // The only waiver is an explicit decision bound to a fingerprint of the patch bytes.
+  const attest = argv.includes("--attest-no-invariant");
+  await exit(await signal(cfg, undefined, {
+    since: since ?? undefined,
+    check,
+    attestBecause: attest ? (one("--because") ?? "") : undefined,
+    session: one("--session") ?? undefined,
+    agent: one("--agent") ?? undefined,
+  }));
 } else if (cmd === "decide" || cmd === "blocked") {
   // The write half of the decision journal. Deliberately the cheapest thing in the
   // CLI to call: one shell line, no server, no session. Anything an agent has to set
@@ -546,6 +561,17 @@ if (cmd === "graph") {
   await writeFile(out("promise.json"), JSON.stringify(model, null, 2));
   await writeFile(out("_contract.html"), renderContract(model, stamp));
   await exit(0);
+} else if (cmd === "context") {
+  // A task packet, not a repo dump. Explicit selectors compose with a Git-derived scope.
+  const scope = argv.includes("--staged") ? "staged" : argv.includes("--changed") ? "changed" : undefined;
+  const symbols = many("--symbol");
+  if (!positional.length && !symbols.length && !scope) {
+    console.error("usage: coherence context [<file>...] [--symbol <name>] [--changed|--staged]");
+    await exit(2);
+  }
+  const packet = contextFromProject(cfg, await buildGraph(cfg), { files: positional, symbols, scope });
+  console.log(renderContext(packet));
+  await exit(0);
 } else if (cmd === "contracts") {
   // Producer/consumer contracts across deploy artifacts + the uncovered cross-artifact
   // surface detector. Charts analog: artifacts/contracts are config data, mechanism here.
@@ -565,6 +591,19 @@ if (cmd === "graph") {
   // side; this is the other axis, and it always exits 0 (a closure is a cost, not a defect).
   await exit(await economy(cfg, await buildGraph(cfg), {
     raise, raiseCap, session: one("--session") ?? undefined, agent: one("--agent") ?? undefined,
+  }));
+} else if (cmd === "premise") {
+  await exit(await premise(cfg, await buildGraph(cfg), check ? "check" : "report"));
+} else if (cmd === "calibrate") {
+  const raw = one("--outcome");
+  if (raw !== null && raw !== "clean" && raw !== "defect") {
+    console.error("usage: coherence calibrate [--outcome <clean|defect>] [--session <id>]");
+    await exit(2);
+  }
+  await exit(await calibrate(cfg, {
+    outcome: raw as CalibrationOutcome | undefined,
+    session: one("--session") ?? undefined,
+    graph: raw === null ? undefined : await buildGraph(cfg),
   }));
 } else if (cmd === "why-lint") {
   // Advisory: ## why prose restating a mechanism a boundary claim already anchors.
