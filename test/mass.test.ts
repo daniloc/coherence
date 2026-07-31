@@ -12,7 +12,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { join } from "node:path";
-import { mass, excursions, lastNumber, massFindings, type MassDim } from "../src/mass.ts";
+import { mass, excursions, lastNumber, massFindings, structuralDims, type MassDim } from "../src/mass.ts";
 import type { StatusRecord } from "../src/status.ts";
 import { tmpProject, cleanup, cfg, comp, fileNode, sym, graph, runCaptured } from "./_helpers.ts";
 import type { Config } from "../src/types.ts";
@@ -281,4 +281,50 @@ test("without --raise nothing is written: the journal dir stays absent, and the 
   const { out } = await runCaptured(() => mass(c, G, "check"));
   assert.match(out, /RAISE — .* never been asked about/);
   await assert.rejects(() => readFile(join(root, ".coherence", "decisions", "s-abcabcabcabc.jsonl"), "utf8"));
+});
+
+// ── undocumented|symbols — the UNDECLARED SURFACE dimension ──────────────────────────────
+//
+// `symbols|total` counts how much surface there is; this counts how much of it a reader has
+// to derive by reading the body. The risk is not the count — it is the PREDICATE drifting
+// from verify's, so that a symbol the coverage advisory calls undocumented is not the one
+// the ratchet pins. Both now read `derive.ts`'s single `isDocumented`; the whitespace case
+// below is the one where two hand-written spellings would plausibly disagree.
+
+const documented = (name: string, path: string, prose?: string) =>
+  ({ id: `s:${path}#${name}`, label: name, kind: "symbol" as const, path, line: 1, prose });
+
+test("undocumented|symbols — counts exactly what fails isDocumented, whitespace-only prose included", async (t) => {
+  const root = await project();
+  t.after(() => cleanup(root));
+  const g = graph([
+    comp("A"), fileNode("A/a.ts", "A"),
+    documented("hasDoc", "A/a.ts", "it does the thing"),
+    documented("blankDoc", "A/a.ts", "   \n\t "),   // present but empty — undocumented
+    documented("noDoc", "A/a.ts"),
+  ]);
+  const dims = await structuralDims(cfg(root), g);
+  assert.equal(dims.find((d) => d.key === "symbols|total")!.value, 3);
+  assert.equal(dims.find((d) => d.key === "undocumented|symbols")!.value, 2, "whitespace-only prose is not documentation");
+  assert.equal(dims.find((d) => d.key === "undocumented|symbols")!.unit, "symbols");
+});
+
+test("undocumented|symbols — a repo pinned before v0.20.0 reds on the NEW key, with the re-pin instruction", async (t) => {
+  // The designed adoption path: `excursions` already fails a key that is new, and the
+  // failure message is the one that asks what the surface BUYS rather than printing a diff.
+  const root = await project();
+  t.after(() => cleanup(root));
+  const c = cfg(root);
+  const stale: MassDim[] = [
+    { key: "lines|total", value: 4 }, { key: "lines|A", value: 3 }, { key: "lines|B", value: 1 },
+    { key: "files|total", value: 2 }, { key: "symbols|total", value: 2 },
+    { key: "deps|direct", value: 0 }, { key: "deps|dev", value: 0 },
+  ];
+  await mkdir(join(root, "public"), { recursive: true });
+  await writeFile(join(root, "public", "mass-baseline.json"), JSON.stringify(stale, null, 2));
+
+  const { code, err } = await runCaptured(() => mass(c, G, "check"));
+  assert.equal(code, 1);
+  assert.match(err, /NEW dimension: undocumented\|symbols = 2/);
+  assert.match(err, /coherence mass --update-baseline/);
 });

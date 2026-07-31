@@ -40,6 +40,7 @@ import { spawnSync } from "node:child_process";
 import type { Config, Graph, GraphNode } from "./types.ts";
 import { readBaseline, writeBaseline } from "./sidecar.ts";
 import { fileStats } from "./scene.ts";
+import { isDocumented } from "./derive.ts";
 import { spark } from "./drift.ts";
 import { commitDeltas, locDeltaSeries, readCommitLog } from "./evolution.ts";
 import { recordMass } from "./status.ts";
@@ -92,6 +93,12 @@ export async function structuralDims(cfg: Config, graph: Graph): Promise<MassDim
     ...[...byComp.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([label, lines]) => ({ key: `lines|${label}`, value: lines, unit: "lines" })),
     { key: "files|total", value: files.length, unit: "files" },
     { key: "symbols|total", value: symbols.length, unit: "symbols" },
+    // UNDECLARED SURFACE, pinned. `symbols|total` counts how much there is; this counts how
+    // much of it a reader has to derive by reading the body — the inference mass the header
+    // above says byte mass cannot see. The predicate is `derive.ts`'s single `isDocumented`,
+    // the same one verify's coverage line and its `[doc]` jobs read: a symbol the advisory
+    // calls undocumented is exactly one this key counts.
+    { key: "undocumented|symbols", value: symbols.filter((s) => !isDocumented(s)).length, unit: "symbols" },
   ];
 }
 

@@ -14,6 +14,114 @@ evidence inside that record.
 
 ---
 
+## v0.20.0 — the read side of the work ledger
+
+The README's newly-landed doctrine section says a codebase's real price is the
+**economy of inference**: what a reader must derive before they may safely act.
+Everything the harness measured until now priced the *write* side. `decompose`
+grades whether what changes together lives together; `drift` shows which way that
+is moving; `mass` pins how much machine there is. All three answer "what did
+changing this cost to build". None answered the question a maintainer pays every
+day: **to change one thing safely, how much do I have to load first?**
+
+The economy of writes is locality. The economy of reads is **context closure**,
+and this release builds its instruments.
+
+### `coherence economy` — the context closure of a change
+
+For every commit in the recent concern band, the closure is the touched files
+the graph knows, **plus their direct import neighbours in both directions**,
+plus the spec files of the components those files belong to. Both directions is
+the load-bearing half: a safe modifier needs what the touched file depends on
+(or the edit is written against imagined behaviour) *and* who depends on it (or
+the edit is a silent breaking change), and a one-way closure reports a hub as
+cheap (d-ab4ffddc). The report prints the median and p90 closure in files and
+lines, an 8-window trend, the worst closures, the **read-side hubs** (files
+appearing in most closures), and the mean closure per component. `--raise` opens
+one conjecture per file in half or more of the closures, keyed on the bare path,
+with the two candidates that actually explain one — a declared hub whose cost is
+bought, or a missing abstraction with a read-side price tag.
+
+The window is 400 commits, shared with `drift` and `mass` through the evolution
+memo's `<root>|400` key, because closure is a trajectory instrument and not
+all-time archaeology (d-6ff3b30a). Two approximations ride along, and both are
+named **on the report itself** rather than in a footnote (mass.ts's precedent: a
+number whose universe is not the reader's must say so on the line):
+
+- **Lines are measured against the current tree.** A per-commit `git show` would
+  be exact and would buy precision the ranking does not turn on (d-9dfa5f1e).
+- **The universe is the graph.** A commit that touched only docs, config or a
+  lockfile contributes *no* closure rather than a zero — a zero would claim a
+  change was free to read that the instrument never saw.
+
+It exits 0 always: a closure is a cost, not a defect. A project whose specs are
+worth reading has a larger closure than one with no specs at all, and the second
+is not healthier. The run is filed to `.coherence/status.json` with its **sample
+size**, because a median over three commits and one over three hundred must
+never look alike (d-970c1488). *A panel energy strip for closure is a named
+follow-up, not in this release.*
+
+Dogfooded on this repo, the first run reported a median closure of 39 files
+against a 77-file graph — surprising enough to doubt the instrument before the
+subject (d-2396264c). The discriminating test recomputed the median over a
+narrow 2–3-file band: it fell to 15, with a floor of 6, so the concern band
+inflates the *level* on a repo this small but does not manufacture the finding.
+The hub structure is real — one flat component over a shared `types.ts` and a
+`cli.ts` that imports nearly everything (d-37a7963c).
+
+### `atlas` — the inference hazard
+
+A tier grade says how well a crossing is defended; heat says whether anyone has
+been near it. The **join** is the new line: a tier-3 crossing (an undeclared
+junction, where every reader who arrives re-derives what may legally cross) with
+heat **≥ 10%** (somebody keeps needing to know). It renders in the console and in
+`atlas.md`, lands in the recorded atlas section as an optional `hazards` field —
+pre-0.20 status files still parse — and under `--raise` opens one conjecture keyed
+on the crossing **symbol**, never on its heat, which moves weekly. An unmeasurable
+heat is never a hazard: absence is not cold. Like the heat it is built on, it
+grades nothing — `atlas --check` still fails only on drift, dangling edges and
+over-claim (d-cfe4a359).
+
+### `mass` gains `undocumented|symbols`
+
+`symbols|total` counts how much surface there is. The new dimension counts how
+much of it a reader must derive by reading the body — the inference mass that byte
+mass cannot see. The predicate gets **one home**: `isDocumented`, exported from
+`src/derive.ts` (the module that sets `prose`) and read by `mass`, by `verify`'s
+coverage line and by its `[doc]` jobs, so a symbol the advisory calls undocumented
+is exactly one the ratchet counts. It was spelled twice inside `verify.ts` alone
+before this (d-eded250c).
+
+**CONSUMING REPOS: your next `coherence mass --check` will red** with
+`NEW dimension: undocumented|symbols = N`. That failure is correct and
+self-explaining — it is the designed adoption path, and the message already says
+what to do: `coherence decide "<what the new surface buys>"`, then
+`coherence mass --update-baseline`. Growth thereafter fails like any other
+dimension, which is the point: undeclared surface that keeps growing deserves a
+decide. All four features ship in one release precisely so this costs one
+re-pin cycle rather than two (d-c1316af0).
+
+### `verify` ranks `[doc]` jobs by churn
+
+The undocumented-symbol list is the longest thing verify prints, and it came out
+in walk order — alphabetical by path, which correlates with nothing. It is now
+ranked by the churn share of the **defining file**, hottest first, annotated
+`(hot: N% of recent commits)` above a 5% floor. Zero-churn gaps keep their source
+order (`Array.prototype.sort` is stable), so a project with no history gets
+exactly the list it always got (d-5e1c36bd). Same `fileChurn` reading atlas heat
+uses, through the same memo — one git read, two consumers.
+
+### Reference
+
+The README's `### In detail` entries gained what v0.19 shipped but never
+documented outside its doctrine section: `atlas` now covers heat and the hazard,
+`verify` covers the holding cost (report-vs-wall clocks, the floor, the run-level
+record), and `economy` has an entry of its own.
+
+551 tests (was 520).
+
+---
+
 ## v0.19.1 — heat tells the truth in a subdirectory
 
 The first consumer to adopt v0.19.0 roots coherence at `<repo>/app`, and every

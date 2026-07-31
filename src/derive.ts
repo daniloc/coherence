@@ -12,6 +12,15 @@ import { cloudflare } from "./adapters/cloudflare.ts";
 const LANGUAGES: Record<string, LanguageAdapter> = { typescript, python };
 const PLATFORMS: Record<string, PlatformAdapter> = { cloudflare };
 
+/** THE documented-symbol predicate — one spelling, homed with the code that SETS `prose`
+ *  (the `add({ …, prose: what || undefined })` call below). verify's coverage line
+ *  ("symbols N/M documented"), its `[doc]` jobs, and mass's `undocumented|symbols`
+ *  dimension all read this, so a symbol the coverage advisory calls undocumented is
+ *  exactly one the ratchet counts. It was spelled twice inside verify.ts alone before this
+ *  — the harness's own `redundancy` finding, fixed the way that advisory prescribes:
+ *  derive one spelling from the other, here by deleting the others. */
+export const isDocumented = (n: GraphNode): boolean => !!(n.prose && String(n.prose).trim());
+
 export async function buildGraph(cfg: Config): Promise<Graph> {
   const root = cfg.root;
   const lang = LANGUAGES[cfg.language] ?? typescript;

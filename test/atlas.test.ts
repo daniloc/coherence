@@ -273,3 +273,103 @@ test("atlas — heat does not enter the `--check` verdict: a hot repo with real 
   assert.match(out + err, /ATLAS DRIFT/);
   assert.match(out, /heat █ 100%/, "the hot reading is still rendered — it just grades nothing");
 });
+
+// ── INFERENCE HAZARDS — a tier-3 crossing with change traffic through it ─────────────
+//
+// A tier grade says nobody wrote down what may cross here; heat says people keep needing to
+// know. The JOIN is the only line on this map that reports a cost being paid REPEATEDLY,
+// and it is advisory for the same reason heat is: a verdict that moved with the commit
+// calendar is one nobody could act on. These tests pin both halves — that it fires on the
+// join and only on the join, and that `--check` never notices it.
+
+/** src/mod.ts (mintToken) is touched by all 11 commits; src/cold.ts (coldChoke) by 1 of 11
+ *  — 9%, deliberately just UNDER the 10% floor, so the cold case is a MEASURED reading and
+ *  not an absent one. */
+async function hazardRepo(): Promise<string> {
+  const root = await mkdtemp(join(tmpdir(), "coh-atlas-hazard-"));
+  git(["init", "-q"], root);
+  git(["config", "user.email", "t@test"], root);
+  git(["config", "user.name", "t"], root);
+  git(["config", "commit.gpgsign", "false"], root);
+  const write = async (p: string, c: string) => { await mkdir(dirname(join(root, p)), { recursive: true }); await writeFile(join(root, p), c); };
+  await write("src/mod.ts", "export function mintToken() {}\n");
+  await write("src/cold.ts", "export function coldChoke() {}\n");
+  await write("src/other.ts", "export const x = 0;\n");
+  git(["add", "-A"], root); git(["commit", "-q", "-m", "init"], root);
+  for (let i = 0; i < 10; i++) {
+    // Both files must actually CHANGE, or git records a one-file commit and the 2…BULK
+    // concern band drops it — which would move `considered` and with it the cold reading.
+    await write("src/mod.ts", `export function mintToken() { return ${i + 1}; }\n`);
+    await write("src/other.ts", `export const x = ${i + 1};\n`);
+    git(["add", "-A"], root); git(["commit", "-q", "-m", `edit ${i}`], root);
+  }
+  return root;
+}
+
+const HAZARD_TRANSITIONS = {
+  mintToken: { from: "untrusted", to: "trusted", security: true, translates: "raw → branded" },
+  coldChoke: { from: "untrusted", to: "trusted", security: true, translates: "raw → checked" },
+};
+const hazardCfg = (root: string) => cfg(root, {
+  atlas: { charts: { untrusted: "raw", trusted: "safe" }, transitions: HAZARD_TRANSITIONS },
+});
+const hazardGraph = (claims: string[] = []) => graph([
+  comp(".", { label: "Auth", claims, invariants: claims.length ? ["capability"] : undefined, why: "r" }),
+  sym("mintToken", "src/mod.ts"), sym("coldChoke", "src/cold.ts"),
+]);
+
+test("atlas — a HOT tier-3 crossing is an inference hazard; a COLD one, measured, is not", async (t) => {
+  const root = await hazardRepo();
+  t.after(() => { _resetEvolutionMemo(); return cleanup(root); });
+  _resetEvolutionMemo();
+  const { code, out } = await runCaptured(() => atlas(hazardCfg(root), hazardGraph(), "check"));
+  assert.equal(code, 0, "a hazard is advisory — it must not move the verdict");
+  assert.match(out, /INFERENCE HAZARD — 1 crossing\(s\)/);
+  assert.match(out, /mintToken\s+untrusted → trusted — heat 100%/);
+  assert.doesNotMatch(out, /coldChoke\s+untrusted → trusted — heat/, "9% is under the floor: measured, and not a hazard");
+  assert.match(out, /never --check/, "the line says what it is not");
+
+  const md = await readFile(join(root, "public", "atlas.md"), "utf8");
+  assert.match(md, /### Inference hazards/);
+  assert.match(md, /never affects `atlas --check`/);
+
+  const rec: StatusRecord = JSON.parse(await readFile(join(root, ".coherence", "status.json"), "utf8"));
+  assert.deepEqual(rec.atlas!.hazards, ["mintToken"], "the record carries the hazard set");
+});
+
+test("atlas — a HOT tier-2 crossing is NOT a hazard: the junction is declared, whatever the traffic", async (t) => {
+  const root = await hazardRepo();
+  t.after(() => { _resetEvolutionMemo(); return cleanup(root); });
+  _resetEvolutionMemo();
+  const g = hazardGraph(['boundary "capability" at mintToken via guard "brand totality"']);
+  const { code, out } = await runCaptured(() => atlas(hazardCfg(root), g, "check"));
+  assert.equal(code, 0, out);
+  assert.match(out, /heat █ 100%/, "still the hottest crossing on the map");
+  assert.doesNotMatch(out, /INFERENCE HAZARD/, "a boundary claim answers the question once, for every reader");
+  const rec: StatusRecord = JSON.parse(await readFile(join(root, ".coherence", "status.json"), "utf8"));
+  assert.deepEqual(rec.atlas!.hazards, []);
+});
+
+test("atlas — an UNMEASURABLE tier-3 crossing is never a hazard (absence is not cold)", async (t) => {
+  const root = await tmpProject({ "src/mod.ts": "export function mintToken() {}\nexport function coldChoke() {}\n" });
+  t.after(() => { _resetEvolutionMemo(); return cleanup(root); });
+  _resetEvolutionMemo();
+  const { code, out } = await runCaptured(() => atlas(hazardCfg(root), hazardGraph(), "check"));
+  assert.equal(code, 0);
+  assert.match(out, /heat —/);
+  assert.doesNotMatch(out, /INFERENCE HAZARD/);
+});
+
+test("atlas --raise — a hazard opens ONE question keyed on the SYMBOL, and a second run opens none", async (t) => {
+  const root = await hazardRepo();
+  t.after(() => { _resetEvolutionMemo(); return cleanup(root); });
+  _resetEvolutionMemo();
+  const c = hazardCfg(root);
+  const first = await runCaptured(() => atlas(c, hazardGraph(), "render", { raise: true, session: "s-abcabcabcabc" }));
+  assert.match(first.out, /RAISE — 1 question\(s\) opened/);
+  assert.match(first.out, /inference-hazard:mintToken/, "the key is the symbol — heat moves weekly and must not be in it");
+
+  const again = await runCaptured(() => atlas(c, hazardGraph(), "render", { raise: true, session: "s-abcabcabcabc" }));
+  assert.match(again.out, /already open/);
+  assert.doesNotMatch(again.out, /RAISE — [1-9]\d* question\(s\) opened/);
+});

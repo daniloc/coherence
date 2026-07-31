@@ -133,7 +133,7 @@ export const COMMANDS: Command[] = [
   { name: "lint-sinks", group: "ratchet", usage: "[--check | --update-baseline]", summary: "interpolation-surface ratchet — raw SQL-identifier and HTML sinks" },
   { name: "conventions", group: "ratchet", usage: "[--check | --update-baseline]", summary: "guard-vs-contract detector + growth ratchet" },
   { name: "mass", group: "ratchet", usage: "[--check|--update-baseline] [--raise]", summary: "how much machine there is — lines, files, symbols, deps and project measures, pinned" },
-  { name: "atlas", group: "ratchet", usage: "[--check]", summary: "trust-graded manifold render + the drift / dangling / over-claim gate" },
+  { name: "atlas", group: "ratchet", usage: "[--check] [--raise]", summary: "trust-graded manifold render + the drift / dangling / over-claim gate" },
   { name: "contracts", group: "ratchet", usage: "[--check]", summary: "producer/consumer contracts across deploy artifacts + the uncovered-surface detector" },
 
   // ── advisory ─────────────────────────────────────────────────────────────────────────
@@ -141,6 +141,10 @@ export const COMMANDS: Command[] = [
   { name: "why-lint", group: "advisory", usage: "[--check]", summary: "`## why` prose restating a mechanism a boundary claim already anchors" },
   { name: "decompose", group: "advisory", summary: "the wise-decomposition report — a LOCALITY score plus the smells that lower it" },
   { name: "drift", group: "advisory", summary: "decompose's derivative — converging on one home, or decohering across boundaries" },
+  {
+    name: "economy", group: "advisory", usage: "[--raise]",
+    summary: "the context closure of a change — what a reader must load to modify one thing safely",
+  },
 
   // ── bootstrap ────────────────────────────────────────────────────────────────────────
   { name: "onboard", group: "bootstrap", summary: "bootstrap a repo with no specs — output is proposals to review, not writes" },

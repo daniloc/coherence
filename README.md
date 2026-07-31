@@ -1288,7 +1288,7 @@ both is exactly what drifted.
      edit by hand — add the command to the registry and re-run. Everything OUTSIDE these
      markers is authored prose. -->
 
-_32 commands. This index is derived from the registry the dispatch is checked
+_33 commands. This index is derived from the registry the dispatch is checked
 against (`test/commands.test.ts` enumerates the live `cmd === …` chain and asserts the two
 sets are equal), so it cannot fall behind the CLI. The reasoning for the commands that have
 any is in **In detail** below — that half is authored, and does not cover all of them._
@@ -1328,7 +1328,7 @@ any is in **In detail** below — that half is authored, and does not cover all 
 - `coherence lint-sinks [--check | --update-baseline]` — interpolation-surface ratchet — raw SQL-identifier and HTML sinks
 - `coherence conventions [--check | --update-baseline]` — guard-vs-contract detector + growth ratchet
 - `coherence mass [--check|--update-baseline] [--raise]` — how much machine there is — lines, files, symbols, deps and project measures, pinned
-- `coherence atlas [--check]` — trust-graded manifold render + the drift / dangling / over-claim gate
+- `coherence atlas [--check] [--raise]` — trust-graded manifold render + the drift / dangling / over-claim gate
 - `coherence contracts [--check]` — producer/consumer contracts across deploy artifacts + the uncovered-surface detector
 
 **Advisories — they surface, you judge**
@@ -1337,6 +1337,7 @@ any is in **In detail** below — that half is authored, and does not cover all 
 - `coherence why-lint [--check]` — `## why` prose restating a mechanism a boundary claim already anchors
 - `coherence decompose` — the wise-decomposition report — a LOCALITY score plus the smells that lower it
 - `coherence drift` — decompose's derivative — converging on one home, or decohering across boundaries
+- `coherence economy [--raise]` — the context closure of a change — what a reader must load to modify one thing safely
 
 **Bootstrap and scaffold**
 
@@ -1366,6 +1367,21 @@ any is in **In detail** below — that half is authored, and does not cover all 
   `--raise [--raise-cap N]` turns its three advisories — never-red, warned claim kinds,
   unrefuted invariants — into open conjectures in the decision journal instead of lines
   on a terminal (see "`--raise`" above). Opt-in, capped per run, deduped on the claim.
+  It also reports the **holding cost** — not whether the claims are true, but what it costs
+  to keep them true, every run, forever. Each executable claim carries a duration *and the
+  clock that produced it*: `report` is the runner's own per-test number, `wall` is verify's
+  clock around the claim, and the two are never blended. The printed total is a **sum of
+  per-claim costs, not the suite's wall time** — a pooled runner overlaps them, and a 4-file
+  suite sleeping 800ms per file measures wall 1.0s against a sum of 3.2s, so calling that
+  "took 3.2s" would be the instrument lying about what it measured. There is a **floor**:
+  nothing prints unless the tier costs a second in aggregate or some single claim costs
+  250ms, because an advisory that fires on every project on every run is one people learn to
+  scroll past. A claim that is *both* over a second and over a quarter of the bill is raised
+  as a question under `--raise` — both, because a 1.1s claim in a 40s tier is not the story
+  and a 25% share of a 0.2s tier is not a cost. The vector lands in `.coherence/status.json`
+  as `verify.cost` (the total, plus the five most expensive claims with their clock),
+  **run-level and rewritten whole** rather than per claim: a verdict is a verdict, a timing
+  is provenance about the instrument, like `commit` and `dirty`.
 - `coherence panel [--no-watch | --once]` — the **operator's instrument panel**: a
   zero-dependency TUI over the graph + the status record (see "The status record and
   the panel" below). Masthead (identity, enforcement-ladder tier bar, claim lights,
@@ -1425,6 +1441,34 @@ any is in **In detail** below — that half is authored, and does not cover all 
   honest about its limit — it sees gesture *shape*, not intent (a chokepoint-building edit
   and a guard-scattering one can look alike); read the diff at the seam, and use
   `coherence verify` for whether each invariant is actually anchored.
+- `coherence economy [--raise]` — the **context closure** of a change: what a reader must
+  load to modify one thing safely. `decompose`, `drift` and `mass` all measure the *write*
+  side — whether co-change stays inside one component, which way that is moving, how much
+  machine there is. This is the read side, and it moves independently: a repo can hold
+  perfect locality and still demand nine files be held in the head for any edit, because
+  the component's files all reach through one hub. Per commit, the closure is the touched
+  files **the graph knows**, plus their direct import neighbours **in both directions**,
+  plus the spec files of the components those files belong to. Both directions is the
+  load-bearing half — a safe modifier needs what the touched file depends on (or the edit
+  is written against imagined behaviour) *and* who depends on it (or the edit is a silent
+  breaking change); a one-way closure would report a hub as cheap. The report is the median
+  and p90 closure in files and lines over the last 400 commits (the 2–40-file concern band
+  every other derivation applies), an 8-window trend of the median, the **worst closures**
+  (which changes demanded the most context), the **files in most closures** (read-side hubs
+  — everything needs these), and the mean closure per component. Two approximations, both
+  named on the report itself rather than in a footnote: **lines are measured against the
+  current tree**, which is an approximation for historical commits (per-commit `git show`
+  buys precision the ranking does not turn on), and **the universe is the graph** — a commit
+  that touched only docs, config or a lockfile contributes *no* closure rather than a zero,
+  because a zero would claim a change was free to read that this instrument never saw.
+  `--raise` opens a conjecture for each file appearing in **half or more** of the recent
+  closures, keyed on the bare path, with the two candidates that actually explain one: a
+  declared hub (the cost is the honest price of one home — record it and dismiss) or a
+  missing abstraction (`decompose`'s smell, with a read-side price tag). It exits 0 always:
+  a closure is a cost, not a defect, and a project whose specs are worth reading has a
+  larger closure than one with no specs at all. The run is recorded in
+  `.coherence/status.json` (`economy`), sample size included — a median over three commits
+  and one over three hundred must never look alike.
 - `coherence scaffold <boundary|component|invariant|parity> <name>` — the gradient-flip
   generator: make the complete shape the cheapest thing to ship.
   - `boundary` — a NEW component spec pre-wired with `## invariants` + a `boundary` claim
@@ -1494,6 +1538,21 @@ any is in **In detail** below — that half is authored, and does not cover all 
   list — with a double-entry check: the atlas `enshrined` set must **equal** the gate's
   tier-1 set, and drift in either direction (an enshrined crossing the gate does not grade,
   or a gate tier-1 the atlas does not enshrine) is a red.
+  Every crossing also carries a **heat** reading — the share of the recent concern-carrying
+  commits (the last 200, 2–40 files each) that touched the file defining the chokepoint,
+  rendered as a bar normalized against the hottest crossing on this map plus the raw
+  percentage. It answers the axis a tier cannot: a tier-3 crossing nobody has opened in a
+  year and a tier-3 in the file half the repo's commits touch are the same grade and
+  completely different risks. **Heat never affects `--check`** — a hot crossing is not
+  wrong, a cold one is not right — and `—` means *unmeasurable* (no such symbol in the
+  graph, or no history), never cold. The **inference hazard** line is the join of the two:
+  a tier-3 crossing (an undeclared junction — every reader who arrives re-derives what may
+  legally cross) whose heat is **≥ 10%** (somebody keeps needing to know). It renders in the
+  console and gets its own `### Inference hazards` section in `atlas.md`, and `--raise`
+  opens one conjecture per hazard keyed on the crossing **symbol** — never on its heat,
+  which moves weekly and would mint a fresh question every warm run. Like the heat it is
+  built on, a hazard grades nothing: `--check` still fails only on drift, dangling edges
+  and over-claim.
 - `coherence contracts [--check]` — **producer/consumer contracts across deploy
   artifacts** (the atlas's split, applied to data contracts: project data, harness
   mechanism). `config.artifacts` names the deploy units as path globs (a file may sit

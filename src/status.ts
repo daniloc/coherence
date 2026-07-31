@@ -79,6 +79,11 @@ export interface AtlasSection {
   dangling: string[];      // mapped symbols no longer in source
   overclaimed: string[];   // `enshrined` markers with no backing `via guard`
   tier3Security: string[]; // the headline — unmanaged security crossings
+  // INFERENCE HAZARDS — tier-3 crossings with heat over the floor: an undeclared junction
+  // with traffic through it. OPTIONAL because a record written before v0.20.0 has no such
+  // field and must still parse; a consumer that never heard of hazards reads the rest
+  // unchanged. Like `heat`, it grades nothing — `atlas --check` never reads it.
+  hazards?: string[];
 }
 
 export interface DriftSection {
@@ -100,7 +105,26 @@ export interface MassSection {
   series?: { locDelta: number[] };
 }
 
-export interface StatusRecord { version: 1; verify?: VerifySection; atlas?: AtlasSection; drift?: DriftSection; mass?: MassSection }
+/** The READ-side cost record: the context closure of a change over the recent window —
+ *  what a reader must load to modify one thing safely. `mass` says how much machine there
+ *  is; this says how much of it one change makes you hold.
+ *
+ *  `considered` is the SAMPLE SIZE and is not optional, for evolution.ts:139-140's reason:
+ *  a median over three commits and one over three hundred should never look alike, and a
+ *  stored median with no count is a number a consumer cannot weigh.
+ *
+ *  Lines are measured against the CURRENT tree — an approximation for historical commits,
+ *  named in the report that produced them. `series` is median closure FILES per window,
+ *  oldest → newest. Not yet read by the panel; the energy-strip follow-up owns that. */
+export interface EconomySection {
+  at: string; commit: string | null; dirty: boolean;
+  considered: number;
+  medianFiles: number; medianLines: number;
+  p90Files: number; p90Lines: number;
+  series: number[];
+}
+
+export interface StatusRecord { version: 1; verify?: VerifySection; atlas?: AtlasSection; drift?: DriftSection; mass?: MassSection; economy?: EconomySection }
 
 export const statusPath = (cfg: Config) => join(cfg.root, ".coherence", "status.json");
 
@@ -213,5 +237,12 @@ export async function recordMass(cfg: Config, s: Omit<MassSection, "at" | "commi
   const prev = await readStatus(cfg);
   const { commit, dirty } = gitStamp(cfg.root);
   prev.mass = { at: new Date().toISOString(), commit, dirty, ...s };
+  await writeStatus(cfg, prev);
+}
+
+export async function recordEconomy(cfg: Config, s: Omit<EconomySection, "at" | "commit" | "dirty">): Promise<void> {
+  const prev = await readStatus(cfg);
+  const { commit, dirty } = gitStamp(cfg.root);
+  prev.economy = { at: new Date().toISOString(), commit, dirty, ...s };
   await writeStatus(cfg, prev);
 }

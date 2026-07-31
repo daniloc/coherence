@@ -289,3 +289,67 @@ test("holding cost — a cost finding is raised LAST: it never displaces a corre
     assert.match(r.out, /WITHHELD 1 more — the cap is 1 per run \(holding-cost 1\)/);
   });
 });
+
+// ── [doc] job ranking by defining-file churn ─────────────────────────────────────────────
+//
+// The undocumented-symbol list is the longest thing verify prints, and it used to come out
+// in walk order — alphabetical by path, which correlates with nothing. Ranking it by the
+// churn share of the defining file puts the symbol somebody is about to read at the top.
+// Two properties are load-bearing and both are pinned below: hot-first, and ZERO-churn gaps
+// keeping their source order (a repo with no history must get the list it always got).
+import { spawnSync } from "node:child_process";
+import { mkdtemp, mkdir, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { dirname } from "node:path";
+import { rankDocGaps } from "../src/verify.ts";
+import { _resetEvolutionMemo } from "../src/evolution.ts";
+
+test("rankDocGaps — hottest defining file first; the share is a fraction of the commits considered", () => {
+  const gaps = [{ path: "cold.ts", n: 1 }, { path: "hot.ts", n: 2 }, { path: "warm.ts", n: 3 }];
+  const byFile = new Map([["hot.ts", 8], ["warm.ts", 4], ["cold.ts", 0]]);
+  const ranked = rankDocGaps(gaps, byFile, 10);
+  assert.deepEqual(ranked.map((g) => g.path), ["hot.ts", "warm.ts", "cold.ts"]);
+  assert.deepEqual(ranked.map((g) => g.share), [0.8, 0.4, 0]);
+});
+
+test("rankDocGaps — zero-churn gaps keep SOURCE order (Array.prototype.sort is stable)", () => {
+  const gaps = ["z.ts", "a.ts", "m.ts"].map((path) => ({ path }));
+  assert.deepEqual(rankDocGaps(gaps, new Map(), 10).map((g) => g.path), ["z.ts", "a.ts", "m.ts"]);
+});
+
+test("rankDocGaps — no history at all (considered 0) is every share 0, never a division by zero", () => {
+  const gaps = [{ path: "a.ts" }, { path: undefined }];
+  const ranked = rankDocGaps(gaps, new Map([["a.ts", 5]]), 0);
+  assert.deepEqual(ranked.map((g) => g.share), [0, 0]);
+  assert.deepEqual(ranked.map((g) => g.path), ["a.ts", undefined]);
+});
+
+test("[doc] jobs — the hot symbol leads the list and its line says how hot", async (t) => {
+  // hot.ts is touched by every commit; cold.ts only by the first of twenty-one, which puts
+  // it under the 5% hot floor. Both define one undocumented symbol, and cold.ts sorts FIRST
+  // alphabetically — so an unranked list would put it on top, which is what this replaces.
+  const root = await mkdtemp(join(tmpdir(), "coh-docrank-"));
+  t.after(() => { _resetEvolutionMemo(); return cleanup(root); });
+  _resetEvolutionMemo();
+  const git = (args: string[]) => spawnSync("git", args, { cwd: root, encoding: "utf8" });
+  const write = async (p: string, c: string) => { await mkdir(dirname(join(root, p)), { recursive: true }); await writeFile(join(root, p), c); };
+  git(["init", "-q"]); git(["config", "user.email", "t@test"]); git(["config", "user.name", "t"]); git(["config", "commit.gpgsign", "false"]);
+  await write("cold.ts", "export const chilly = 0;\n");
+  await write("hot.ts", "export const blazing = 0;\n");
+  await write("filler.ts", "export const f = 0;\n");
+  git(["add", "-A"]); git(["commit", "-q", "-m", "init"]);
+  for (let i = 0; i < 20; i++) {
+    await write("hot.ts", `export const blazing = ${i + 1};\n`);
+    await write("filler.ts", `export const f = ${i + 1};\n`);
+    git(["add", "-A"]); git(["commit", "-q", "-m", `edit ${i}`]);
+  }
+  const g = graph([
+    comp(".", { claims: ["hot.ts exists at root"], why: "r" }),
+    sym("chilly", "cold.ts"), sym("blazing", "hot.ts"),
+  ]);
+  const { out } = await runCaptured(() => runVerify(cfg(root), g, { fast: true }));
+  const docLines = out.split("\n").filter((l) => l.includes("[doc]"));
+  assert.equal(docLines.length, 2);
+  assert.match(docLines[0], /\[doc\] blazing at hot\.ts:1 \(hot: 100% of recent commits\)/);
+  assert.match(docLines[1], /\[doc\] chilly at cold\.ts:1$/, "a cold gap carries no annotation — 0 is not a temperature worth printing");
+});

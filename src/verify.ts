@@ -11,6 +11,11 @@ import { ownerOf } from "./walk.ts";
 import { recordVerify, readStatus } from "./status.ts";
 import { readJournal } from "./decisions.ts";
 import { raiseFindings, formatRaise, type Finding } from "./raise.ts";
+import { isDocumented } from "./derive.ts";
+// The SAME history read `atlas` heat uses — and the same one, not a second one: the
+// evolution memo is keyed `<root>|<limit>`, so a run that already measured heat pays
+// nothing here, and a change to the window or the concern band lands in both at once.
+import { readCommitLog, fileChurn, gitPrefix, rebaseCommits, CHURN_WINDOW } from "./evolution.ts";
 import {
   resolveBatchFormat, runTestBatch, readReportFile, selectOracleMode, serialCostLines,
   type BatchOutcome, type OracleAccess,
@@ -53,6 +58,31 @@ const ADVISORY_LIST_CAP = 8;
  *  a cost ranking is its head — the tail is a per-claim timing dump that would grow the
  *  record by a row per claim to show nothing. */
 const COST_RECORD_CAP = 5;
+/** A doc gap is HOT once its defining file appears in this share of recent concern commits.
+ *  It is an annotation floor, not a filter: every gap is still emitted as a job, and 5% is
+ *  simply the point below which "somebody was near this lately" stops being a claim. */
+const HOT_DOC_FLOOR = 0.05;
+/**
+ * Rank doc gaps HOTTEST-FIRST by the churn share of the file that defines them — the same
+ * `fileChurn` reading `atlas` grades crossings' heat against.
+ *
+ * WHY THE JOB LIST HAS AN ORDER AT ALL. Undocumented symbols come out of the graph in walk
+ * order, which is alphabetical by path and says nothing about anything. A list of ninety
+ * `[doc]` jobs in that order is a list nobody works from the top of; the first one worth
+ * writing is the symbol in the file half the recent history touched, because that is the
+ * one somebody is about to read.
+ *
+ * ZERO-CHURN GAPS KEEP THEIR SOURCE ORDER: `Array.prototype.sort` is required to be stable
+ * (ECMA-262), so a project with no git history — every share 0 — gets exactly the list it
+ * got before this ranking existed, rather than a set that reshuffles between runs.
+ */
+export function rankDocGaps<T extends { path?: string }>(
+  gaps: T[], byFile: Map<string, number>, considered: number,
+): Array<T & { share: number }> {
+  const share = (p?: string) => (p != null && considered ? (byFile.get(p) ?? 0) / considered : 0);
+  return gaps.map((g) => ({ ...g, share: share(g.path) })).sort((a, b) => b.share - a.share);
+}
+
 function listCapped<T>(items: T[], line: (t: T) => string): void {
   for (const t of items.slice(0, ADVISORY_LIST_CAP)) console.log(line(t));
   const rest = items.length - ADVISORY_LIST_CAP;
@@ -537,14 +567,24 @@ export async function runVerify(cfg: Config, graph: Graph, opts: VerifyOpts): Pr
   // every export produces stale busywork and a perpetually-red baseline that trains
   // contributors to ignore the gate. Undocumented symbols still surface as jobs.
   const compGaps = comps.filter((c) => !(c.claims && c.claims.length));
-  const docGaps = symbols.filter((s) => !s.prose || !String(s.prose).trim());
+  const docGaps = symbols.filter((s) => !isDocumented(s));
   const whyGaps = comps.filter((c) => !c.why || !String(c.why).trim());
   console.log(`coverage: components ${comps.length - compGaps.length}/${comps.length} claimed, ${comps.length - whyGaps.length}/${comps.length} with why · symbols ${symbols.length - docGaps.length}/${symbols.length} documented (advisory)`);
   for (const c of compGaps) { console.log(`  ✗ [coverage] component "${c.label}" has no claims`); jobs.push({ kind: "generate-claims", id: c.id, name: c.label }); }
   for (const c of whyGaps) { console.log(`  ✗ [coverage] component "${c.label}" states no rationale (why)`); jobs.push({ kind: "author-why", id: c.id, name: c.label }); }
-  // advisory only — emitted as jobs, never gated
-  for (const s of docGaps) jobs.push({ kind: "generate-doc", id: s.id, file: s.path, line: s.line, name: s.label });
-  if (docGaps.length) console.log(`  · [advisory] ${docGaps.length} symbol(s) undocumented (not gated)`);
+  // advisory only — emitted as jobs, never gated, but ORDERED: hottest defining file first,
+  // so the top of a ninety-job list is the symbol somebody is about to read. The git read is
+  // guarded because a docs-complete project must not spawn one to rank an empty list.
+  if (docGaps.length) {
+    const { byFile, considered } = fileChurn(rebaseCommits(readCommitLog(cfg, CHURN_WINDOW), gitPrefix(cfg)));
+    for (const s of rankDocGaps(docGaps, byFile, considered)) {
+      // `hot` is ADDITIVE in verify-jobs.json: an older consumer ignores a field it does not
+      // know, and a cold gap carries no field at all rather than a `hot: 0` that would read
+      // as a measurement of coldness.
+      jobs.push({ kind: "generate-doc", id: s.id, file: s.path, line: s.line, name: s.label, ...(s.share >= HOT_DOC_FLOOR ? { hot: s.share } : {}) });
+    }
+    console.log(`  · [advisory] ${docGaps.length} symbol(s) undocumented (not gated)`);
+  }
   // RATCHET coverage: a named invariant with no `boundary` claim is a property the spec
   // asserts but nothing enforces/anchors — fail it, the way a boundary shipped without
   // its totality oracle should fail loud rather than rot silently.
@@ -563,7 +603,7 @@ export async function runVerify(cfg: Config, graph: Graph, opts: VerifyOpts): Pr
     await writeFile(jobsPath(cfg), JSON.stringify(jobs, null, 2) + "\n");
     console.log(`\n=== JOBS — ${jobs.length} (dispatch a subagent) · .coherence/verify-jobs.json ===`);
     if (verifyJobs.length) { console.log(`\n VERIFY (evidence changed — judge if the statement still holds):`); console.log(`   → write .coherence/verify-verdicts.json, then re-run with --apply .coherence/verify-verdicts.json`); for (const j of verifyJobs) console.log(`   [${j.id}] "${j.statement}"`); }
-    if (genJobs.length) { console.log(`\n GENERATE — the WHAT (derivable; write into source, re-run):`); for (const j of genJobs) console.log(j.kind === "generate-doc" ? `   [doc] ${j.name} at ${j.file}:${j.line}` : `   [claims] component "${j.name}" — add a ## works when block`); }
+    if (genJobs.length) { console.log(`\n GENERATE — the WHAT (derivable; write into source, re-run):`); for (const j of genJobs) console.log(j.kind === "generate-doc" ? `   [doc] ${j.name} at ${j.file}:${j.line}${j.hot ? ` (hot: ${Math.round(j.hot * 100)}% of recent commits)` : ""}` : `   [claims] component "${j.name}" — add a ## works when block`); }
     if (authorJobs.length) { console.log(`\n AUTHOR — the WHY (NOT derivable — do not fabricate; needs a human/attested author):`); for (const j of authorJobs) console.log(`   [why] component "${j.name}" — states no rationale`); }
   }
 
@@ -591,7 +631,7 @@ export async function runVerify(cfg: Config, graph: Graph, opts: VerifyOpts): Pr
         claimed: allComps.filter((c) => c.claims && c.claims.length).length,
         withWhy: allComps.filter((c) => c.why && String(c.why).trim()).length,
         symbols: allSymbols.length,
-        documented: allSymbols.filter((s) => s.prose && String(s.prose).trim()).length,
+        documented: allSymbols.filter(isDocumented).length,
       },
       invTotal: allComps.reduce((n, c) => n + (c.invariants?.length ?? 0), 0),
       invGaps,

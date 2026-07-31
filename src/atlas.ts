@@ -19,6 +19,8 @@ import type { Config, Graph } from "./types.ts";
 import { scanSources } from "./sidecar.ts";
 import { allBoundaries, boundariesAt } from "./structural.ts";
 import { recordAtlas } from "./status.ts";
+import { readJournal } from "./decisions.ts";
+import { raiseFindings, formatRaise, type Finding } from "./raise.ts";
 import { readCommitLog, fileChurn, gitPrefix, rebaseCommits, CHURN_WINDOW, type Commit } from "./evolution.ts";
 import { writeFile, mkdir } from "node:fs/promises";
 import { join } from "node:path";
@@ -39,6 +41,19 @@ const pad = (s: unknown, n: number) => String(s).padEnd(n);
 // `—`. See the `--check` block at the bottom of this file.
 
 const BARS = "▁▂▃▄▅▆▇█";
+
+/**
+ * THE INFERENCE HAZARD FLOOR. A tier-3 crossing is an UNDECLARED JUNCTION — no boundary
+ * claim governs it, so every reader who arrives there re-derives what it is allowed to do.
+ * That is free when nobody goes there. It is expensive exactly in proportion to traffic,
+ * and heat is the traffic. The JOIN of the two facts — undeclared AND worked in — is the
+ * only thing on this map that says "somebody is inferring this repeatedly, right now".
+ *
+ * 10% of the recent concern commits is the point at which "somebody was near it" stops
+ * being noise on a 200-commit window (one commit in ten is a pattern; one in a hundred is
+ * an anecdote). It NEVER affects `--check` — see the verdict block at the bottom.
+ */
+const HAZARD_HEAT_FLOOR = 0.10;
 
 /**
  * Per-chokepoint HEAT — for each symbol, the MAX over its defining files of that file's
@@ -79,7 +94,9 @@ export function heatCell(heat: number | undefined, max: number): string {
   return `${BARS[i]} ${Math.round(heat * 100)}%`;
 }
 
-export async function atlas(cfg: Config, graph: Graph, mode: "render" | "check"): Promise<number> {
+export interface AtlasOpts { raise?: boolean; raiseCap?: number; session?: string; agent?: string }
+
+export async function atlas(cfg: Config, graph: Graph, mode: "render" | "check", opts: AtlasOpts = {}): Promise<number> {
   const a = cfg.atlas;
   if (!a || !a.charts || !a.transitions) {
     console.log("\n  atlas: no `atlas` config (charts + transitions) — nothing to render.\n");
@@ -141,6 +158,12 @@ export async function atlas(cfg: Config, graph: Graph, mode: "render" | "check")
   const maxHeat = edges.reduce((m, e) => (e.heat !== undefined && e.heat > m ? e.heat : m), 0);
   // FAIL-CLOSED over-claim: `enshrined` markers with no backing `via guard` boundary claim.
   const overclaimed = edges.filter((e) => e.overclaim);
+  // INFERENCE HAZARDS: undeclared junctions with change traffic through them. `heat ===
+  // undefined` is UNMEASURABLE and never a hazard — the whole design of heat is that
+  // absence is not zero, and a hazard list that treated "we cannot tell" as "it is cold"
+  // would silently exclude exactly the crossings nobody has a graph symbol for.
+  const hazards = edges.filter((e) => e.tier === 3 && e.heat !== undefined && e.heat >= HAZARD_HEAT_FLOOR)
+    .sort((a, b) => (b.heat as number) - (a.heat as number) || a.sym.localeCompare(b.sym));
 
   // (a) DRIFT: a boundary chokepoint with no transition entry, unless it's a declared
   //     within-chart non-transition or the `anchoredBy` symbol a crossing cites.
@@ -167,6 +190,11 @@ export async function atlas(cfg: Config, graph: Graph, mode: "render" | "check")
       out.push(`    ${pad(`${e.from} → ${e.to}`, 38)} [tier-${e.tier}] ${pad(e.sym, 24)} ${pad(`heat ${heatCell(e.heat, maxHeat)}`, 12)}${flags}`);
       out.push(`      ${pad("", 38)} translates: ${e.translates}`);
     }
+  }
+  if (hazards.length) {
+    out.push(`\n  ◆ INFERENCE HAZARD — ${hazards.length} crossing(s) with change traffic through an undeclared junction`);
+    out.push(`    (tier-3: no boundary claim; heat ≥ ${Math.round(HAZARD_HEAT_FLOOR * 100)}% of recent concern commits — advisory, never --check):`);
+    for (const e of hazards) out.push(`      ${pad(e.sym, 24)} ${e.from} → ${e.to} — heat ${Math.round((e.heat as number) * 100)}%`);
   }
   out.push("\n  ── flags ──");
   if (drift.length) {
@@ -213,6 +241,14 @@ export async function atlas(cfg: Config, graph: Graph, mode: "render" | "check")
     L.push("### Headline — tier-3 security crossings (unmanaged)", "", "Security boundaries enforced by convention, not a chokepoint + totality oracle:", "");
     for (const e of tier3sec) L.push(`- \`${e.sym}\` (\`${e.from}\` → \`${e.to}\`) — ${e.translates}`);
   } else L.push("### Headline", "", "No tier-3 security crossings — every security transition is enshrined or totality-checked.");
+  if (hazards.length) {
+    L.push("", "### Inference hazards", "",
+      "Tier-3 crossings (no governing boundary claim) that recent history keeps touching — an undeclared",
+      `junction with traffic through it, so the same inference is being re-derived by every reader who`,
+      `arrives. Floor: heat ≥ ${Math.round(HAZARD_HEAT_FLOOR * 100)}%. **Advisory — this never affects \`atlas --check\`**, because heat`,
+      "is a temperature and a verdict that moved with the commit calendar is one nobody could act on.", "");
+    for (const e of hazards) L.push(`- \`${e.sym}\` (\`${e.from}\` → \`${e.to}\`) — heat ${Math.round((e.heat as number) * 100)}% — ${e.translates}`);
+  }
   if (overclaimed.length) {
     L.push("", "### Over-claim — `enshrined` markers with no backing `via guard` (fails `atlas --check`)", "",
       "An enshrinement marker with no source-totality guard is an empty over-claim — it is rendered at its real evidence tier, not tier-1:", "");
@@ -234,15 +270,52 @@ export async function atlas(cfg: Config, graph: Graph, mode: "render" | "check")
       dangling: dangling.map((e) => e.sym),
       overclaimed: overclaimed.map((e) => e.sym),
       tier3Security: tier3sec.map((e) => e.sym),
+      // OPTIONAL in the section type: a status.json written before v0.20.0 must still parse,
+      // and a consumer that never heard of hazards must not need a migration to keep reading.
+      hazards: hazards.map((e) => e.sym),
     });
   } catch { /* record is best-effort */ }
 
+  // RAISING. A hazard is the atlas's only finding that is a QUESTION rather than a verdict:
+  // drift/dangling/over-claim each have one correct answer and fail the check, while "this
+  // undeclared junction is being worked" has two live explanations and no gate. Opt-in, for
+  // raise.ts's reason — an advisory that writes to the journal as a side effect of a render
+  // is a surprising write.
+  const findings: Finding[] = hazards.map((e) => ({
+    advisory: "inference-hazard",
+    // The SYMBOL and nothing else: heat moves every week, and a key carrying it would mint
+    // a new question about the same junction on every warm run.
+    subject: e.sym,
+    observation: `${e.sym} (${e.from} → ${e.to}) is a tier-3 crossing — no boundary claim governs it —`
+      + ` and ${Math.round((e.heat as number) * 100)}% of recent concern commits touched the file defining it`,
+    because:
+      "An undeclared junction costs a fresh inference from every reader who arrives at it, and"
+      + " traffic is what turns that per-reader cost into a recurring one. The tier says nobody"
+      + " wrote down what may cross here; the heat says people keep needing to know.",
+    couldBe: [
+      "the junction is REAL and undefended — it deserves a boundary claim plus the oracle that makes the claim mean something",
+      "the heat is NEIGHBOURHOOD NOISE — the defining file carries much besides this crossing, and the commits were never about it",
+    ],
+    discriminatedBy:
+      `read the recent commits that touched the file defining \`${e.sym}\`. If they modify the crossing's own`
+      + ` behaviour, write the boundary claim (\`coherence scaffold invariant\` prints the paste-in kit) and the`
+      + ` hazard closes by becoming tier-2. If they never touch it, the heat is the file's and not the crossing's:`
+      + ` dismiss this, and the same finding will not be raised again.`,
+  }));
+  const raiseReport = raiseFindings(cfg, readJournal(cfg).records, findings, {
+    enabled: opts.raise, cap: opts.raiseCap, session: opts.session, agent: opts.agent,
+  });
+  for (const line of formatRaise(raiseReport)) console.log(line);
+
   if (mode === "check") {
-    // HEAT IS ABSENT FROM THIS VERDICT, ON PURPOSE. `--check` fails on drift, dangling edges
-    // and over-claim — three statements about whether the map matches the territory. Heat is
-    // a temperature: a hot crossing is not wrong, a cold one is not right, and an unmeasurable
-    // one is not a defect. Grading on it would make a run's verdict depend on how recently
-    // somebody committed, which is the definition of a check nobody can act on.
+    // HEAT IS ABSENT FROM THIS VERDICT, ON PURPOSE — AND SO IS THE INFERENCE HAZARD BUILT ON
+    // IT. `--check` fails on drift, dangling edges and over-claim: three statements about
+    // whether the map matches the territory. Heat is a temperature — a hot crossing is not
+    // wrong, a cold one is not right, and an unmeasurable one is not a defect — and a hazard
+    // is a JOIN of a grade with a temperature, so it inherits exactly that status: it renders,
+    // it raises a question, it grades nothing. Failing on either would make a run's verdict
+    // depend on how recently somebody committed, which is the definition of a check nobody
+    // can act on.
     if (drift.length || dangling.length || overclaimed.length) {
       console.error("  ✗ atlas --check FAILED — the atlas is out of sync with the boundary claims.");
       if (drift.length) console.error("    drift: " + drift.join(", "));

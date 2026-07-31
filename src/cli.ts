@@ -39,6 +39,7 @@ import { appendDecision, renderJournal, readJournal, resolvableConjecture, compa
 import { recordObservation, formatObserved } from "./observed.ts";
 import { printHooks, checkHooks, runHook } from "./hooks.ts";
 import { redundancy } from "./redundancy.ts";
+import { economy } from "./economy.ts";
 
 const cmd = process.argv[2];
 const argv = process.argv.slice(3);
@@ -462,7 +463,11 @@ if (cmd === "graph") {
   }));
 } else if (cmd === "atlas") {
   // Trust-graded manifold; tiers derived from boundary claims, charts/crossings from config.
-  await exit(await atlas(cfg, await buildGraph(cfg), check ? "check" : "render"));
+  // `--raise` opens an INFERENCE HAZARD (a tier-3 crossing with change traffic through it)
+  // as a question instead of a line. Hazards never enter the --check verdict either way.
+  await exit(await atlas(cfg, await buildGraph(cfg), check ? "check" : "render", {
+    raise, raiseCap, session: one("--session") ?? undefined, agent: one("--agent") ?? undefined,
+  }));
 } else if (cmd === "panel") {
   // The operator's instrument panel: a live TUI over the graph + the status record
   // (`.coherence/status.json`). Watch mode re-runs the fast tier on change; --once
@@ -553,6 +558,13 @@ if (cmd === "graph") {
   await exit(await redundancy(cfg, await buildGraph(cfg), {
     all: argv.includes("--all"), raise, raiseCap,
     session: one("--session") ?? undefined, agent: one("--agent") ?? undefined,
+  }));
+} else if (cmd === "economy") {
+  // Advisory: the READ side of the ledger — the context closure of a change, i.e. what a
+  // reader must load to modify one thing safely. decompose/drift/mass all measure the WRITE
+  // side; this is the other axis, and it always exits 0 (a closure is a cost, not a defect).
+  await exit(await economy(cfg, await buildGraph(cfg), {
+    raise, raiseCap, session: one("--session") ?? undefined, agent: one("--agent") ?? undefined,
   }));
 } else if (cmd === "why-lint") {
   // Advisory: ## why prose restating a mechanism a boundary claim already anchors.
