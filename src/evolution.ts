@@ -96,6 +96,29 @@ export function commitDeltas(cfg: Config, limit: number): Map<string, Delta> {
   return out;
 }
 
+// ── the address-space translation ─────────────────────────────────────────────────────
+
+/** git reports paths from the REPO root; the graph is relative to cfg.root, which may be
+ *  a subdirectory ("app/" in one consumer). This is the prefix separating the two address
+ *  spaces — "" when they coincide. It lives with the reader because every consumer that
+ *  compares commit paths against graph paths needs the SAME translation, and the first
+ *  one that spelled it privately (componentMap) was followed by one that forgot it
+ *  entirely (atlas heat, which measured 0% on every crossing of a subdirectory-rooted
+ *  project — a wrong number, not a missing one). */
+export function gitPrefix(cfg: Config): string {
+  return (spawnSync("git", ["rev-parse", "--show-prefix"], { cwd: cfg.root, encoding: "utf8" }).stdout || "").trim();
+}
+
+/** The commits re-addressed relative to cfg.root: files outside the root are dropped,
+ *  the rest lose the prefix. Rebasing happens BEFORE any size filter downstream, so a
+ *  repo-wide sweep that touched three files inside the root reads as a three-file commit
+ *  here — the subtree's own view of its history, which is what a subtree-scoped
+ *  instrument should measure. */
+export function rebaseCommits(commits: Commit[], prefix: string): Commit[] {
+  if (!prefix) return commits;
+  return commits.map((c) => ({ ...c, files: c.files.filter((f) => f.startsWith(prefix)).map((f) => f.slice(prefix.length)) }));
+}
+
 // ── the pure derivations (commit-array-injectable) ────────────────────────────────────
 
 /** Split `xs` into at most `n` contiguous buckets, order preserved. Fewer than `n` when

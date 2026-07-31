@@ -7,9 +7,8 @@
 // concern (Intent). Divergence IS sludge, and every classic decomposition smell is a
 // specific divergence, surfaced here. Advisory only: it names the candidate; directed
 // inference (you) judges the wisdom — a metric can't know your future change.
-import { spawnSync } from "node:child_process";
 import type { Config, Graph } from "./types.ts";
-import { BULK, readCommitLog, type Commit } from "./evolution.ts";
+import { BULK, gitPrefix, readCommitLog, type Commit } from "./evolution.ts";
 
 // The EVOLUTION read moved to src/evolution.ts (one derivation that was spelled three
 // times — here, in drift.ts and inline in scene.ts). These three names are RE-EXPORTED
@@ -34,7 +33,7 @@ interface Coupling {
 // (which may be a subdir), so strip the prefix to line the two address spaces up.
 // `fileComp` is the raw graph-path→label map (graph edges are already cfg.root-relative).
 export function componentMap(cfg: Config, graph: Graph): { compOf: (gitPath: string) => string | undefined; fileComp: Map<string, string> } {
-  const prefix = (spawnSync("git", ["rev-parse", "--show-prefix"], { cwd: cfg.root, encoding: "utf8" }).stdout || "").trim();
+  const prefix = gitPrefix(cfg);
   const rel = (p: string): string | null => prefix ? (p.startsWith(prefix) ? p.slice(prefix.length) : null) : p;
   const compLabel = new Map<string, string>();
   for (const n of graph.nodes) if (n.kind === "component") compLabel.set(n.id, n.label);

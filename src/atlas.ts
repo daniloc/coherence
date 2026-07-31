@@ -19,7 +19,7 @@ import type { Config, Graph } from "./types.ts";
 import { scanSources } from "./sidecar.ts";
 import { allBoundaries, boundariesAt } from "./structural.ts";
 import { recordAtlas } from "./status.ts";
-import { readCommitLog, fileChurn, CHURN_WINDOW, type Commit } from "./evolution.ts";
+import { readCommitLog, fileChurn, gitPrefix, rebaseCommits, CHURN_WINDOW, type Commit } from "./evolution.ts";
 import { writeFile, mkdir } from "node:fs/promises";
 import { join } from "node:path";
 
@@ -126,7 +126,10 @@ export async function atlas(cfg: Config, graph: Graph, mode: "render" | "check")
   // the `anchoredBy` symbol a crossing cites when the crossing's own name has no graph node
   // (the same fallback `tierOf` already uses for the boundary claim). One git read, one pass.
   const heatSyms = [...Object.keys(transitions), ...Object.values(transitions).map((d) => d.anchoredBy).filter(Boolean) as string[]];
-  const heatOf = crossingHeat(graph, heatSyms, readCommitLog(cfg, CHURN_WINDOW));
+  // git speaks repo-root-relative paths; the graph speaks cfg.root-relative ones. Rebase
+  // BEFORE measuring, or a subdirectory-rooted project reads a measured 0% on every
+  // crossing — a wrong number, where the design wants either a true share or absence.
+  const heatOf = crossingHeat(graph, heatSyms, rebaseCommits(readCommitLog(cfg, CHURN_WINDOW), gitPrefix(cfg)));
 
   const edges = Object.entries(transitions).map(([sym, def]) => ({
     sym, ...def, ...tierOf(sym, def), present: symbolExists(sym), pending: knownPending.has(sym),

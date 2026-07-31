@@ -13,6 +13,7 @@ import { mkdtemp, mkdir, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, dirname } from "node:path";
 import {
+  gitPrefix, rebaseCommits,
   BULK, CHURN_WINDOW, bucketize, commitDeltas, componentChurn, fileChurn,
   locDeltaSeries, readCommitLog, _resetEvolutionMemo, type Commit, type Delta,
 } from "../src/evolution.ts";
@@ -231,4 +232,30 @@ test("glue — componentChurn over a REAL log is the same heat the scene used to
   const churn = componentChurn(compOf, readCommitLog(cfg(root), CHURN_WINDOW));
   assert.equal(churn.get("A"), 2);
   assert.equal(churn.get("B"), 1);
+});
+
+test("rebaseCommits — pure: strips the prefix, drops files outside the root, keeps '' as-is", () => {
+  const cs = [commit(["app/a.ts", "app/sub/b.ts", "README.md"]), commit(["README.md"])];
+  const rebased = rebaseCommits(cs, "app/");
+  assert.deepEqual(rebased[0].files, ["a.ts", "sub/b.ts"]);
+  assert.deepEqual(rebased[1].files, []);           // nothing inside the root — an empty commit, not a dropped one
+  assert.equal(rebaseCommits(cs, ""), cs);          // root project: the same array, untouched
+});
+
+test("gitPrefix + rebaseCommits — glue: a cfg.root that is a SUBDIRECTORY reads its own history", async (t) => {
+  // The regression that motivated the helper: a consumer rooted at <repo>/app measured
+  // heat 0% on every crossing because git speaks repo-root paths and the graph does not.
+  const root = await initRepo();
+  t.after(() => { _resetEvolutionMemo(); return cleanup(root); });
+  _resetEvolutionMemo();
+  await gitCommit(root, "one", { "app/x.ts": "1", "app/y.ts": "1", "docs/readme.md": "outside" });
+  await gitCommit(root, "two", { "app/x.ts": "2", "app/z.ts": "1" });
+  const sub = join(root, "app");
+  assert.equal(gitPrefix(cfg(sub)), "app/");
+  const rebased = rebaseCommits(readCommitLog(cfg(sub), CHURN_WINDOW), gitPrefix(cfg(sub)));
+  const { byFile, considered } = fileChurn(rebased);
+  assert.equal(considered, 2);
+  assert.equal(byFile.get("x.ts"), 2);              // addressed the way the graph addresses it
+  assert.equal(byFile.get("app/x.ts"), undefined);  // the un-rebased spelling is gone
+  assert.equal(byFile.get("readme.md"), undefined); // outside the root: dropped, not misfiled
 });
