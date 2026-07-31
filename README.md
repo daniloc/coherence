@@ -771,7 +771,15 @@ hook-opened sessions* means the hook is dead, and it says so with the throwaway
 `coherence decide` is a plain command; without the hook you put the instruction in
 each agent's brief instead.
 
-`SubagentStart` mints a session id per agent and injects the instruction. Then:
+The block `coherence hooks` prints carries **three** events. `SubagentStart` and
+`SessionStart` do the same job at two scales: each OPENS a session — the only place that
+can guarantee one id per *agent* rather than one per shell command — and injects the
+instruction. `SubagentStart` fires for every agent a run spawns; `SessionStart` fires for
+the session itself, so work that never spawns an agent still journals under an id of its
+own instead of falling back to a derived one. `SubagentStop` reports what the journal
+holds and never blocks (below). An event the harness does not recognize is deliberately
+*not* an error — hook sets grow, and a harness that crashes on a new name breaks every
+session that added one. Then:
 
 ```sh
 coherence decide "species gas physics as its own commit" \
