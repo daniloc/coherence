@@ -14,6 +14,58 @@ evidence inside that record.
 
 ---
 
+## v0.19.0 — the work ledger reaches the claims and the map
+
+v0.18.0 pinned how much machine there is. This release asks the two follow-on
+questions: what does each **claim** cost to keep true, and where is the map
+**hot**?
+
+### Holding cost — `verify` now prices its own promises
+
+Every claim's verification time is measured and recorded: the runner's own
+per-assertion `duration` when the batch report carries one, verify's wall clock
+otherwise, and the answering clock is named per row (`report` / `wall` —
+d-3fe015df). The vector is **run-level** on `VerifySection`, rewritten whole
+every run, deliberately not a field on `ClaimRecord`: the skip-carry argument
+that already settled `batched` applies verbatim, and a carried ms would price a
+verdict from a previous run (d-86a6c498). The advisory block stays quiet below
+a floor and shows the top five above it; under `--raise`, a claim eating ≥25%
+of the total becomes a journal question — ranked **last**, because
+expensive-to-keep-true never outranks a correctness finding (d-3aa93a9b).
+
+One number in this feature was interrogated before it shipped. The plan filed a
+standing conjecture: does a pooled runner's per-assertion duration mean
+wall-clock share? The discriminating test ran — four 800ms test files under the
+concurrent pool summed to 3,207ms of assertion time against 1.04s of wall, a
+3.1× overshoot with all four start times identical to the millisecond. The
+durations are truthful in-worker readings that count the same wall seconds once
+per worker; the instrument was right and the first report wording was not, so
+the line now says what the number is: "summed per-claim cost … (a pooled runner
+overlaps some of it)" (d-fe9ebf1e → d-0f3c7154 → d-d126843f).
+
+### Atlas heat — a temperature on every crossing
+
+Each mapped transition now carries **heat**: the share of the last 200 commits
+(the shared `CHURN_WINDOW`) touching a file that defines the chokepoint symbol
+— max over defining files, **absent** (never zero) when nothing resolves or
+history is empty (d-90a2f7a7). It renders as a bar normalized across the map
+plus the raw percent, in the console and a new `atlas.md` column, and lands raw
+in the recorded crossings (d-be02ab02). Heat never affects `--check`: it is a
+temperature, not a correctness fact — a hot tier-1 crossing is not wrong, it is
+*load-bearing and busy*, which is exactly what a reader deciding where to be
+careful wants to know. The scene remains glow-free; the recorded audit decision
+and its test stand.
+
+### The panel's energy strip
+
+The masthead gains one line, present only when the data is: total holding cost
+with the most expensive claim, and a heat spark over the hottest crossings.
+Everything comes from `status.json` — the panel still re-runs nothing.
+
+518 tests (was 493).
+
+---
+
 ## v0.18.0 — the harness begins to account for work, not just trust
 
 Coherence has always been flux accounting for **trust**: where the untrusted
