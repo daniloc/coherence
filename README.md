@@ -4,15 +4,166 @@ A standalone coherence harness for agent-developed projects. It derives a
 multi-resolution graph from a `*.spec.md` tree plus the code, renders a navigable
 outline and an agent map, and verifies that the docs/claims haven't rotted.
 
+That is the mechanism. The **purpose** is narrower and worth stating before any of it:
+the expensive resource in a codebase is not bytes and not lines — it is **inference**,
+and this is a machine for spending less of it. Read the next section first; every
+command below is an instrument in that economy.
+
 The **core is platform- and language-agnostic.** Project-specific knowledge lives
 behind two adapters:
 - **language adapter** (`src/adapters/typescript.ts`) — symbols, imports, docblocks.
 - **platform adapter** (`src/adapters/cloudflare.ts`) — infra bindings (wrangler.jsonc + .toml). Optional.
 
+## The economy of inference: what a codebase actually costs
+
+A reader arrives at code with a question. *Can I change this safely. What breaks if I
+do. Why is it this way.* The reader is a human at 2am or an agent with a 400k window;
+the question is the same and so is the invoice. There are exactly three prices it can
+be answered at:
+
+1. **Inferred** — reconstructed by reading the code and simulating it in the reader's
+   head. The most expensive operation in the system, and the only one that is paid
+   **again by every reader, forever**: nobody's inference makes the next reader's
+   cheaper. It is also the only price that is silent. Nothing in the repo records that
+   it was charged.
+2. **Read** — looked up, because somebody cached the fact. A claim, an atlas entry, a
+   journal line. Paid **once**, at write time, by the party who already had the answer
+   in hand and was therefore the cheapest possible payer. Approximately free after that.
+3. **Unaskable** — the question cannot arise, because the fact is structural. A
+   capability that carries its own scope does not make a cross-tenant read *checked*;
+   it leaves "could this read another tenant's rows?" with no site to be asked at. A
+   sealed schema does not warn about an open object — an open object is a compile
+   error. **Zero cost, every reader, permanently.**
+
+Coherence is a machine for moving facts **down** that ladder.
+
+- A **claim** is a cached inference. "Does X hold across all of its sites?" — a
+  question that otherwise costs a read of every site plus a mental proof — collapses to
+  one anchored line with an oracle behind it. The build re-derives it so no reader has
+  to.
+- The atlas's **`nonTransition` registry** is cached *negative* inference, which is the
+  half nobody writes down. It pre-answers *"do I have to worry about this symbol?"*
+  with a reasoned **no**. Without the entry, every future reader re-derives that no
+  from scratch — and derives it slower, and less confidently, as the surrounding code
+  grows.
+- The journal's **`--over`** caches the most expensive inference there is: the search
+  that does not have to be run again. A settled question with its rejected alternatives
+  attached is a question the next agent does not re-litigate, and re-litigation is
+  full-price inference for an answer that already existed in the repo's history and was
+  merely unaddressable.
+- **The tier system is this ladder, priced.** Tier-3 *convention* means the fact still
+  lives at the inference rung — prose, sampled tests, memory. Tier-2 *totality-checked*
+  means it has moved to **read**: one declarative home, plus an oracle that holds the
+  cache warm and fails loud the moment the cache and the domain disagree. Tier-1
+  *enshrined* means **unaskable**: the type system or the addressing scheme carries it
+  and no oracle is needed to keep it true. The enforcement ladder below and this one
+  are the same ladder, read from opposite ends — enforcement is what it costs to keep a
+  fact true, price is what it costs to find out.
+- **Ratchets** exist because facts climb back **up**. A domain re-spelled by hand, a
+  guard added at an N+1th site, an interpolation sink reopened: each is a fact demoted
+  from read back to inferred, and each demotion is individually defensible. The
+  baseline is what makes the aggregate visible.
+
+The reducer function, in one line: **dissolve > declare > infer.** Make a fact
+unaskable if it can be made unaskable; write it down if it cannot; and treat every fact
+still living at the inference rung — on hot paths especially — as **the tangle
+inventory**. That inventory is the work list, and it is the thing `atlas`, `conventions`,
+`redundancy`, and `contracts` each report a slice of.
+
+Two secondary economies fall out of the same frame. **Economy of writes is locality**:
+one intent should produce one write site, and co-change across a boundary is write
+amplification — `decompose` and `drift` measure exactly that. **Economy of reads is
+context closure**: how much has to be loaded before one thing can be changed safely.
+Neither is byte count. **Byte mass is orthogonal to all of it** — 500KB of font files
+carries zero inference surface, while a clever ten-line implicit coupling can be the
+single most expensive object in the repo.
+
+Two cautions keep the doctrine honest, and the harness is shaped by both. **A cached
+fact is itself mass, and it can go stale.** Declared-but-wrong is strictly worse than
+undeclared: the reader stops inferring, which was the entire point, and now stops at the
+wrong answer. The whole "what happens when the claim being enforced is wrong?" discipline
+— refutations, claim kinds, the never-red advisory, the meta-oracle's stated ceiling —
+exists for this one hazard. And **the bottom rung is the only free one.** Every rung
+above `unaskable` costs something to keep, which is why "declare everything" is not the
+strategy and never was.
+
+### The work ledger: making the price perceptible
+
+Trust accounting says *where the untrusted becomes verified*. Work accounting says *what
+that costs to keep, continuously* — and the instruments in v0.18–0.19 exist because the
+dissipation is otherwise imperceptible. A mechanical watch loses amplitude with every
+complication added and the watchmaker feels it; software's invoice arrives as velocity
+quietly decaying, months later, attributable to nothing.
+
+- **`mass`** pins how much machine there is. Byte mass is not inference mass — but
+  unpinned growth is where undeclared facts accumulate, and its failure message asks for
+  the one thing the ratchet cannot know: *name what the new mass buys* (`coherence
+  decide`), then re-pin.
+- **holding cost** (`verify`) prices each promise: what this project pays, per run,
+  to keep one cached fact warm. A claim eating a quarter of the run is not wrong — it is
+  expensive, and expensive-to-keep-true is a real position to hold knowingly.
+- **heat** (`atlas`) puts a temperature on every crossing: the share of recent commits
+  touching a file that defines the chokepoint. A hot tier-1 crossing is not a finding; it
+  is load-bearing and busy.
+
+The compound reading is the useful one: **heat × tier**. High change traffic at an
+undeclared junction is a place where every edit is paying full inference price, over and
+over, in the busiest part of the map. That is where a fact should be moved down the
+ladder next.
+
+### The same ladder, read as trust
+
+Everything above is the **builder's** view: what does it cost to work here. Turn the
+same ladder around and it is the **relier's** view: what may be safely assumed without
+checking. These are not two properties. **Trust is the license to skip inference** —
+and the ladder measures exactly that license, rung by rung. Going down it, cost falls;
+going up it, the license to rely weakens until it is nothing but hope.
+
+The image is an electrical panel. A tidy panel — every breaker labeled, the work to
+code, the cover sealed, the permit history in the door pocket — is more trustworthy than
+a tangled unlabeled one, and the reason is not aesthetic. It is that a trustworthy panel
+can be **acted on from its representations**, while an untrustworthy one has to be
+re-derived by tracing wires. Tracing wires is inference. Every part of that panel that
+earns trust is a part that spared someone the trace:
+
+- **Labels are claims** — and what makes a label trustworthy is not that it was written,
+  it is that it was **checked**. A mislabeled breaker is worse than an unlabeled one: the
+  unlabeled breaker gets traced, the mislabeled one gets believed. That is
+  declared-but-wrong-is-worse-than-undeclared in one image, and it is why a claim without
+  a live oracle behind it is a liability rather than an asset.
+- **Code compliance is dictionary conformance.** The vetted pattern carries the safety
+  argument, so the inspector does not re-derive it per installation — which is precisely
+  what `conforms to <Word>` buys, and precisely why a word's commitments have to be real
+  (a green `conforms to` that ran none of its commitments would be a code stamp sold, not
+  earned).
+- **The sealed cover is tier-1.** The mistake is not forbidden, it is made
+  unrepresentable. Nothing to remember, nothing to check, nothing to re-derive.
+- **Trust is risk-weighted, and so is the compliance bar.** "No security boundary without
+  a totality oracle" is the same rule as stricter code on the 240V circuits — over-
+  enshrining a lighting circuit is waste, under-enshrining a service entrance is how
+  people get hurt. Match rigor to consequence.
+- **The permit and inspection history are the journal and the track record.** Provenance
+  is a trust instrument: who decided this, over what, and why (`decide --over`), and which
+  checkers have ever actually been seen to fail (the never-red advisory's `everFailed`).
+- **The atlas and `contract` are inspection artifacts** — the panel schedule taped inside
+  the door. They are written for the **relying party**, not for the author, which is what
+  makes them different in kind from the code they describe.
+- **Refutations are proving the breaker trips.** A checker never observed to fail has not
+  been shown to be a checker. A negative control is how a label stops being a claim about
+  the label and becomes a claim about the circuit.
+
+Which closes the loop: **dissolve > declare > infer is also the trust gradient.** A fact
+dissolved into structure needs no trust at all; a fact declared and checked can be relied
+on to the exact strength of its oracle; a fact left at the inference rung can only be
+relied on by re-deriving it, which is to say it is not being relied on, it is being
+rebuilt. Economy and trust are one quantity seen from two chairs — the builder asking
+what this costs, the relier asking what may be assumed.
+
 ## The mental model: the enforcement ladder
 
 Every rule a codebase depends on sits at one of three tiers. The harness exists to
-move rules **up** the ladder and to make the current tier of every rule *visible*:
+move rules **up** the ladder — which is the same motion as moving the fact **down** the
+price ladder above — and to make the current tier of every rule *visible*:
 
 1. **Enshrined (structural)** — the wrong state is *unrepresentable*. A capability
    type with no trust parameter to dial at a call site; a constructor that only
@@ -1169,7 +1320,10 @@ any is in **In detail** below — that half is authored, and does not cover all 
 
 ### In detail
 
-- `coherence verify` — run claims, the narrative evidence chain, and coverage.
+- `coherence verify` — run claims, the narrative evidence chain, and coverage. Every
+  claim it runs is a **cached inference** and every tier verdict is a rung on the price
+  ladder: this is the command that keeps the caches warm and reports which facts are
+  still being paid for at full price.
   Emits inference jobs (`.coherence/verify-jobs.json`) for a subagent on change;
   `--apply <verdicts>` records the subagent's verdicts; `--fast` skips the
   live/executable tiers (see "The verify loop" below).
@@ -1261,8 +1415,12 @@ any is in **In detail** below — that half is authored, and does not cover all 
 - `coherence mass [--check|--update-baseline] [--raise]` — the **mass ratchet**: how much
   machine there is, pinned. Every other ratchet counts a *kind of debt*; this one counts
   the thing a reader of an agent-built repo asks first — how much is there now, and did it
-  grow? A codebase does not decohere only by smearing concerns across boundaries; it also
-  decoheres by accumulating, one defensible edit at a time, which is exactly why the
+  grow? Byte mass is **orthogonal** to inference mass — a font file costs a reader nothing,
+  while a ten-line implicit coupling can cost more than the rest of the repo — so this
+  ratchet measures the other axis on purpose, and it measures the axis along which
+  undeclared facts quietly accumulate. A codebase does not decohere only by smearing
+  concerns across boundaries; it also decoheres by accumulating, one defensible edit at
+  a time, which is exactly why the
   aggregate needs a pin rather than a review. Dimensions, each an addressable baseline key:
   `lines|total` and `lines|<component>` (from the same on-disk read the scene's towers
   use), `files|total`, `symbols|total`, `deps|direct` / `deps|dev` (package.json) and
@@ -1287,7 +1445,9 @@ any is in **In detail** below — that half is authored, and does not cover all 
   keyed on the **dimension** (never on its value), so a second run after more growth adds
   no second question. The run is recorded in `.coherence/status.json` (`mass`).
 - `coherence atlas [--check]` — trust-graded manifold render + drift/dangling/over-claim
-  gate; charts/crossings from `config.atlas`. Tier-1 (**enshrined**) is a crossing
+  gate; charts/crossings from `config.atlas`. Its `nonTransition` half is the registry of
+  **cached negative inference** — symbols a reader would otherwise have to re-derive a
+  *no* about, answered once. Tier-1 (**enshrined**) is a crossing
   explicitly marked `enshrined: true` in config AND backed by a `via guard` boundary claim
   (the guard is the source-totality evidence the enshrinement rides on); a bare `via guard`
   or `via test` claim is tier-2 (**totality-checked**); no governing claim is tier-3
@@ -1355,7 +1515,8 @@ any is in **In detail** below — that half is authored, and does not cover all 
   `.coherence/decisions/<session>.jsonl`, and **none of them gates anything**:
   - `coherence decide "<chose>" --over "<rejected>" --because "<why>"` — a choice made.
     `--over` is repeatable and is the field that matters: what was REJECTED is what
-    stops the next agent re-opening a settled question.
+    stops the next agent re-opening a settled question. It is the cache entry for the
+    most expensive inference in the repo — the search that no longer has to be run.
   - `coherence blocked "<what>" --because "<why>"` — what could NOT be determined.
     First-class, not a footnote; it is the section that gets dropped under length pressure.
   - `coherence conjecture "<observation>" --could-be "<explanation>" --discriminated-by "<test>"`
@@ -1378,7 +1539,9 @@ any is in **In detail** below — that half is authored, and does not cover all 
     (branch, month) and is judged by leaving this render character-for-character identical.
 - `coherence contract` — the **promise graph**: derive declared zones, graded gates and the
   reliance double-entry into a self-contained `_contract.html`, plus `promise.json` for
-  agents and tools. It embeds live grades, so it is always regenerated — there is no
+  agents and tools. It is the **reliance ledger** — an inspection artifact written for the
+  relying party rather than the author, answering *what may be assumed here, and on whose
+  evidence*, which is the trust-side reading of the ladder above. It embeds live grades, so it is always regenerated — there is no
   `--check` for it.
 - `coherence review <ref>` — the contract **diffed against a base ref**. Builds the base
   tree's promise model in a throwaway worktree, diffs it against HEAD, and prints the event
