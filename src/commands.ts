@@ -96,6 +96,27 @@ export interface Command {
    *  commands that write nothing. test/commands.test.ts enforces the flag against OBSERVED
    *  writes, so a new generator that forgets it fails rather than silently going unguarded. */
   writesArtifacts?: true;
+  /** This command pins a BASELINE under `outputDir` — a ratchet's memory of a reading it
+   *  once took (`mass-baseline.json`, `conventions-baseline.json`, `sinks-baseline.json`).
+   *
+   *  WHAT READS IT: test/commands.test.ts, twice and behaviorally. Once from OBSERVATION —
+   *  every command seen writing a `*baseline*.json` must carry the flag — and once in the
+   *  other direction: every command carrying it must REFUSE an empty reading over a live
+   *  baseline, at both `--check` and `--update-baseline`. That second oracle is the point.
+   *  A flag that is merely declared protects nothing; what protects the next ratchet is
+   *  that the day it is registered, the suite demands the refusal from it too.
+   *
+   *  Why this could not be `writesArtifacts` widened: the floor guarding the generators is
+   *  ONE predicate read from the graph (`vacuityRefusal`, applied in cli.ts before the
+   *  command runs), and it is the WRONG instrument here — `lintSinks(cfg, mode)` never
+   *  receives a graph at all, it reads `scanSources`. Each ratchet supplies its own
+   *  denominator (`RatchetReading`) and floor.ts owns the rule that consumes it.
+   *
+   *  This question was left OPEN in the journal when `writesArtifacts` landed ("whether a
+   *  broken deriver should also be barred from zeroing a baseline is a real and separate
+   *  question"). It is answered here, in the affirmative, by measurement: it does not merely
+   *  wash out, it INVERTS — see mass.ts's header for the transcript. */
+  writesBaseline?: true;
 }
 
 export const COMMANDS: Command[] = [
@@ -162,9 +183,9 @@ export const COMMANDS: Command[] = [
   },
 
   // ── ratchet ──────────────────────────────────────────────────────────────────────────
-  { name: "lint-sinks", group: "ratchet", usage: "[--check | --update-baseline]", summary: "interpolation-surface ratchet — raw SQL-identifier and HTML sinks" },
-  { name: "conventions", group: "ratchet", usage: "[--check | --update-baseline]", summary: "guard-vs-contract detector + growth ratchet" },
-  { name: "mass", group: "ratchet", usage: "[--check|--update-baseline] [--raise]", summary: "how much machine there is — lines, files, symbols, deps and project measures, pinned" },
+  { name: "lint-sinks", group: "ratchet", usage: "[--check | --update-baseline]", summary: "interpolation-surface ratchet — raw SQL-identifier and HTML sinks", writesBaseline: true },
+  { name: "conventions", group: "ratchet", usage: "[--check | --update-baseline]", summary: "guard-vs-contract detector + growth ratchet", writesBaseline: true },
+  { name: "mass", group: "ratchet", usage: "[--check|--update-baseline] [--raise]", summary: "how much machine there is — lines, files, symbols, deps and project measures, pinned", writesBaseline: true },
   { name: "atlas", group: "ratchet", usage: "[--check] [--raise]", summary: "trust-graded manifold render + the drift / dangling / over-claim gate", writesArtifacts: true },
   { name: "contracts", group: "ratchet", usage: "[--check]", summary: "producer/consumer contracts across deploy artifacts + the uncovered-surface detector" },
 

@@ -19,7 +19,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import ts from "typescript";
-import { readFile, writeFile, readdir } from "node:fs/promises";
+import { readFile, writeFile, readdir, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { execFile } from "node:child_process";
@@ -380,4 +380,104 @@ test("TOTALITY: every command that writes a generated artifact declares `writesA
   // returned a constant would make the assertion above vacuously true — which is precisely
   // the failure mode this release exists to close, so it is checked rather than trusted.
   assert.ok(observed.length >= 3, `the oracle observed only ${observed.length} writer(s) — the instrument is broken, not the registry`);
+});
+
+// ── writesBaseline: the flag the ratchet floor reads, enforced from BOTH directions ─────
+//
+// The question these two oracles settle was left OPEN in the journal when `writesArtifacts`
+// landed, in the comment above: "whether a broken deriver should also be barred from
+// zeroing a baseline is a real and separate question". It is answered, by measurement: a
+// gutted `buildGraph` made `mass --check` print "✓ mass ratchet held" over a reading that
+// had collapsed to nothing, then prescribe the re-pin that banks it, and the resulting
+// baseline of zeroes INVERTED once derivation was restored — the project's own untouched
+// mass then read as GROWTH. So the flag exists, and it is load-bearing in both directions:
+// declared → the refusal is DEMANDED of it here; observed → it must be declared.
+
+/** A ratchet fixture with something to find in every ratchet's own unit: a guard called at
+ *  two sites (a convention), a raw SQL identifier and a raw HTML value (two sinks), and
+ *  files and symbols (mass). Every baseline it pins is NON-EMPTY, which is what makes the
+ *  second half of the test — empty the tree, keep the baseline — a real collapse. */
+const RATCHET_FIXTURE = {
+  "coherence.config.json": JSON.stringify({ outputDir: "public", entryDir: "app" }),
+  "app/app.spec.md": "# app\n\nThe fixture component.\n\n## works when\n\n- app.ts exists at this node\n",
+  "app/app.ts":
+    "export function isAllowed(x: string) { return x === \"ok\"; }\n"
+    + "export const q = (t: string) => `select * from \"${t}\"`;\n"
+    + "export const h = (v: string) => `<div>${v}</div>`;\n"
+    + "export const a = () => isAllowed(\"a\");\n"
+    + "export const b = () => isAllowed(\"b\");\n",
+};
+
+/** Every `*baseline*.json` under `outputDir`, content-addressed — the same before/after
+ *  comparison `artifactSnapshot` makes, over the files a ratchet pins. */
+async function baselineSnapshot(dir: string): Promise<string> {
+  const out = join(dir, "public");
+  const names = (await readdir(out).catch(() => [] as string[])).filter((n) => n.includes("baseline"));
+  return (await Promise.all(names.sort().map(async (n) =>
+    n + ":" + await readFile(join(out, n), "utf8").catch(() => "")))).join(" ");
+}
+
+test("TOTALITY: every command that pins a baseline declares `writesBaseline`", async () => {
+  // OBSERVED, not listed — the `writesArtifacts` argument, one file over. `--update-baseline`
+  // is passed to every command in the registry; a command that does not take the flag
+  // ignores it, and only the ones that actually move a baseline file are counted.
+  const observed: string[] = [];
+  await Promise.all(COMMANDS.map(async (c) => {
+    const dir = await tmpProject(RATCHET_FIXTURE);
+    try {
+      const before = await baselineSnapshot(dir);
+      const p = run(process.execPath, [CLI_PATH, c.name, "--update-baseline"], { cwd: dir, timeout: 60_000 });
+      p.child.stdin?.end(); // `hook` reads stdin; see the artifact oracle above
+      await p.catch(() => {});
+      if (await baselineSnapshot(dir) !== before) observed.push(c.name);
+    } finally { await cleanup(dir); }
+  }));
+
+  const declared = COMMANDS.filter((c) => c.writesBaseline).map((c) => c.name);
+  assert.deepEqual(observed.filter((n) => !declared.includes(n)).sort(), [],
+    `these commands PINNED a baseline but do not declare \`writesBaseline\`, so nothing demands they refuse an empty reading: ${observed.filter((n) => !declared.includes(n)).join(", ")}`);
+  // Instrument-check first: a snapshot that saw nothing would make the line above vacuously
+  // true, which is the exact defect this release exists to close.
+  assert.ok(observed.length >= 3, `the oracle observed only ${observed.length} baseline writer(s) — the instrument is broken, not the registry`);
+});
+
+test("TOTALITY: every `writesBaseline` command REFUSES an empty reading over a live baseline", async () => {
+  // THE DIRECTION THAT MATTERS. The oracle above only proves the flag matches what the
+  // commands do; this one proves the flag BUYS something. For each declared ratchet: pin a
+  // baseline over a real population, then delete the population and leave the pin. Both
+  // seams must refuse — `--check` must not report "held" over nothing, and
+  // `--update-baseline` must not overwrite the pin with the collapse.
+  //
+  // Deleting the code file is the honest general collapse: it empties the graph (mass's
+  // denominator) and the source scan (conventions' and lint-sinks') at once, WITHOUT the
+  // test having to know which of them any given ratchet reads. A fourth ratchet added next
+  // month is covered on the day it is registered, whatever it measures.
+  const declared = COMMANDS.filter((c) => c.writesBaseline);
+  assert.ok(declared.length >= 3, "the registry declares fewer baselined ratchets than this repo has");
+
+  for (const c of declared) {
+    const dir = await tmpProject(RATCHET_FIXTURE);
+    try {
+      const pin = await run(process.execPath, [CLI_PATH, c.name, "--update-baseline"], { cwd: dir, timeout: 60_000 });
+      assert.match(pin.stdout, /^Pinned \d+ /m, `${c.name} --update-baseline did not pin anything against the ratchet fixture`);
+      const pinned = await baselineSnapshot(dir);
+      assert.ok(pinned.length > 0, `${c.name} declares writesBaseline but pinned no file this oracle can see`);
+
+      await rm(join(dir, "app", "app.ts"));
+
+      const checked = await run(process.execPath, [CLI_PATH, c.name, "--check"], { cwd: dir, timeout: 60_000 })
+        .then(() => ({ code: 0, stdout: "", stderr: "" }), (e: { code: number; stdout: string; stderr: string }) => e);
+      assert.notEqual(checked.code, 0,
+        `${c.name} --check exited 0 over an EMPTY reading with a live baseline — a ratchet that "holds" when it measured nothing reports success over nothing`);
+      assert.match(`${checked.stdout}${checked.stderr}`, /\[floor\]/,
+        `${c.name} --check failed without naming the floor — the refusal has to say that NOTHING was examined, not merely fail`);
+
+      const updated = await run(process.execPath, [CLI_PATH, c.name, "--update-baseline"], { cwd: dir, timeout: 60_000 })
+        .then(() => ({ code: 0, stdout: "", stderr: "" }), (e: { code: number; stdout: string; stderr: string }) => e);
+      assert.notEqual(updated.code, 0,
+        `${c.name} --update-baseline pinned an EMPTY reading over a live baseline — that is how a broken reading becomes the new floor`);
+      assert.equal(await baselineSnapshot(dir), pinned,
+        `${c.name} --update-baseline MODIFIED the baseline while refusing — the refusal must not write`);
+    } finally { await cleanup(dir); }
+  }
 });
