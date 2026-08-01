@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-01 03:16Z",
+  "generatedAt": "2026-08-01 03:49Z",
   "root": "coherence",
   "absRoot": "/Users/daniloc/Documents/Development/coherence",
   "nodes": [
@@ -44,7 +44,7 @@
         "boundary \"an empty derivation against a remembered surface refuses, never passes\" at vacuityRefusal via guard \"FLOOR — an empty derivation against a remembered surface REFUSES, never reports coherent\""
       ],
       "prose": "The CLI is deliberately a thin composition root. Parsing, derivation, verification,\nrendering, and journaling remain independently addressable modules beneath this boundary.",
-      "why": "**agent lifecycle preserves decisions and exposes the current change signal.** Decisions\nand risk are cheapest to surface while the agent still holds the context that produced\nthem; waiting for a later reviewer externalizes both reconstruction costs.\n\n**significant behavioral growth acquires an anchor or patch-specific decision.** The cost\nof adding an invariant is immediate while the cost of omitting it appears later, so the\ncurrent patch must carry either enforcement or an addressable reason that it needs none.\n\n**task context is bounded and names its approximations.** A focused context packet is\nuseful only when its one-hop and heuristic limits stay visible; otherwise convenience is\nmisread as completeness and recreates the omission gradient this project exists to oppose.\n\n**cached decisions expose structurally expired premises.** A decision saves inference only\nwhile the repository addresses supporting it remain live. Broken explicit referents must\nbe louder than readable but stale rationale.\n\n**predicted context closure is calibrated against observed reads and outcomes.** Economy's\none-hop closure is a hypothesis about necessary reading, not cognition. Observed reads and\nlater defect labels give that model a path to correction instead of turning it into dogma.\n\n**reviewed risk sites survive relocation but never duplication.** A ratchet baseline is a\ncached review, and a cached fact that expires on a rename rots the same way a decision's\npremises do — a refactor then spends a reviewer's attention on sites nobody touched, and\nattention spent on false alarms is how a real one gets waved through. Relocation changes\nwhere a reviewed site lives; duplication changes how much unreviewed surface exists, and\nonly the second is news.\n\n**pinned mass follows a value-conserving rename but never absorbs growth.** A mass\ndimension's key embeds a name someone chose — a spec H1, a measure's config key — so a\nrename re-addresses the pin, and a ratchet that reads its own re-addressing as \"gained\nparts nobody named\" prints a lie beside the unchanged total that refutes it (measured:\none H1 edit, 35 lines relabeled, zero gained, gate red). The repair must stay\ncount-conserving: only a vanished pin with the same family, unit and exact value can\nabsorb a new name, or growth and novelty would ride in under renames.\n\n**a claim goes green only on positive evidence its oracle ran.** The verifier's whole\nauthority rests on this one property, and until now no claim cited it: an audit deleted\nthe rule and the tree stayed \"✓ coherent\" while the unit test failed unseen. An exit\ncode is the runner's statement about itself, not about the named test — a filter that\nmatched nothing exits clean on every runner class this repo has measured — so green\nmust require output that names the run, the one reading absence cannot produce.\n\n**a vanished oracle reds its claim, never green-by-absence.** A renamed or deleted test\nleaves a claim citing a name nothing owns, and that claim then guards nothing while\nwearing green. Absence has to be its own observable verdict, distinct from ran-and-failed,\nbecause the two demand different repairs: a red test needs the code fixed, a vanished\noracle needs the contract re-tied to something that exists.\n\n**a declared invariant unanchored by any boundary fails coverage.** A spec may not\nassert a property that nothing enforces: that is the ratchet the whole harness turns on,\nand if it silently loosened, specs would drift back into aspiration prose. The gap has to\ncost a red at the run that opened it, while the person who opened it still holds the\ncontext to close it.\n\n**a via-test oracle that iterates no live domain fails its claim.** A totality label on a\nsampling test is worse than no label: it retires the reader's suspicion without retiring\nthe risk. Deriving the checked set from the live registry the chokepoint actually serves\nis what makes \"covers every case\" a fact about the system rather than about the fixture\nlist the author remembered.\n\n**a skipped run never clobbers an oracle's recorded verdict.** The record is the last\nknown truth, honestly dated. A fast tier that skips the executable claims every commit\nwould otherwise erase last week's real pass — or, worse, a real fail — with \"did not\nlook\", and history that can be overwritten by not looking is not history.\n\n**a named oracle that no test runs cannot pass.** The serial runner is the component the\nexecutable tier leans its trust on, and it was outside the evidence perimeter — unclaimed,\nuntested, and (measured) willing to exit clean when the cited title survived only as a\nstring in a file. The runner itself must refuse a name it cannot show ran, because every\ngreen above it inherits that refusal.\n\n**an empty derivation against a remembered surface refuses, never passes.** Every verdict\nin this file rests on the graph deriving non-empty, and nothing checked that premise:\ngutting `buildGraph` left the gate printing \"claims: 0\" and \"✓ coherent\", exit 0 —\ndeeper than a vanished oracle, because it empties every check at once while announcing\nthey all passed. The record remembers how many claims the last run graded, so a run that\nsuddenly sees zero must refuse rather than report success over nothing; the only\nlegitimate zero (a project adopting from nothing) is exactly the one with no memory, and\nit gets the adoption ladder instead. The floor deliberately stops at zero: a partial\ncollapse where every component keeps a claim is observationally identical to deliberate\npruning, and coverage already reds any component whose claims all vanished.\n\n(The import claims above separately prove that the composition root still reaches the\nconfiguration loader, graph derivation, verifier, spec walker, and journal.)",
+      "why": "**agent lifecycle preserves decisions and exposes the current change signal.** Decisions\nand risk are cheapest to surface while the agent still holds the context that produced\nthem; waiting for a later reviewer externalizes both reconstruction costs.\n\n**significant behavioral growth acquires an anchor or patch-specific decision.** The cost\nof adding an invariant is immediate while the cost of omitting it appears later, so the\ncurrent patch must carry either enforcement or an addressable reason that it needs none.\n\n**task context is bounded and names its approximations.** A focused context packet is\nuseful only when its one-hop and heuristic limits stay visible; otherwise convenience is\nmisread as completeness and recreates the omission gradient this project exists to oppose.\n\n**cached decisions expose structurally expired premises.** A decision saves inference only\nwhile the repository addresses supporting it remain live. Broken explicit referents must\nbe louder than readable but stale rationale.\n\n**predicted context closure is calibrated against observed reads and outcomes.** Economy's\none-hop closure is a hypothesis about necessary reading, not cognition. Observed reads and\nlater defect labels give that model a path to correction instead of turning it into dogma.\n\n**reviewed risk sites survive relocation but never duplication.** A ratchet baseline is a\ncached review, and a cached fact that expires on a rename rots the same way a decision's\npremises do — a refactor then spends a reviewer's attention on sites nobody touched, and\nattention spent on false alarms is how a real one gets waved through. Relocation changes\nwhere a reviewed site lives; duplication changes how much unreviewed surface exists, and\nonly the second is news.\n\n**pinned mass follows a value-conserving rename but never absorbs growth.** A mass\ndimension's key embeds a name someone chose — a spec H1, a measure's config key — so a\nrename re-addresses the pin, and a ratchet that reads its own re-addressing as \"gained\nparts nobody named\" prints a lie beside the unchanged total that refutes it (measured:\none H1 edit, 35 lines relabeled, zero gained, gate red). The repair must stay\ncount-conserving: only a vanished pin with the same family, unit and exact value can\nabsorb a new name, or growth and novelty would ride in under renames.\n\n**a claim goes green only on positive evidence its oracle ran.** The verifier's whole\nauthority rests on this one property, and until now no claim cited it: an audit deleted\nthe rule and the tree stayed \"✓ coherent\" while the unit test failed unseen. An exit\ncode is the runner's statement about itself, not about the named test — a filter that\nmatched nothing exits clean on every runner class this repo has measured — so green\nmust require output that names the run, the one reading absence cannot produce.\n\n**a vanished oracle reds its claim, never green-by-absence.** A renamed or deleted test\nleaves a claim citing a name nothing owns, and that claim then guards nothing while\nwearing green. Absence has to be its own observable verdict, distinct from ran-and-failed,\nbecause the two demand different repairs: a red test needs the code fixed, a vanished\noracle needs the contract re-tied to something that exists.\n\n**a declared invariant unanchored by any boundary fails coverage.** A spec may not\nassert a property that nothing enforces: that is the ratchet the whole harness turns on,\nand if it silently loosened, specs would drift back into aspiration prose. The gap has to\ncost a red at the run that opened it, while the person who opened it still holds the\ncontext to close it.\n\n**a via-test oracle that iterates no live domain fails its claim.** A totality label on a\nsampling test is worse than no label: it retires the reader's suspicion without retiring\nthe risk. Deriving the checked set from the live registry the chokepoint actually serves\nis what makes \"covers every case\" a fact about the system rather than about the fixture\nlist the author remembered.\n\n**a skipped run never clobbers an oracle's recorded verdict.** The record is the last\nknown truth, honestly dated. A fast tier that skips the executable claims every commit\nwould otherwise erase last week's real pass — or, worse, a real fail — with \"did not\nlook\", and history that can be overwritten by not looking is not history.\n\n**a named oracle that no test runs cannot pass.** The serial runner is the component the\nexecutable tier leans its trust on, and it was outside the evidence perimeter — unclaimed,\nuntested, and (measured) willing to exit clean when the cited title survived only as a\nstring in a file. The runner itself must refuse a name it cannot show ran, because every\ngreen above it inherits that refusal.\n\n**an empty derivation against a remembered surface refuses, never passes.** Every verdict\nin this file rests on the graph deriving non-empty, and nothing checked that premise:\ngutting `buildGraph` left the gate printing \"claims: 0\" and \"✓ coherent\", exit 0 —\ndeeper than a vanished oracle, because it empties every check at once while announcing\nthey all passed. The record remembers how many claims the last run graded, so a run that\nsuddenly sees zero must refuse rather than report success over nothing; the only\nlegitimate zero (a project adopting from nothing) is exactly the one with no memory, and\nit gets the adoption ladder instead. The floor deliberately stops at zero: a partial\ncollapse where every component keeps a claim is observationally identical to deliberate\npruning, and deletion has to stay free or people stop deleting. What the complement\nunderneath it actually reaches is narrower than it first appears — a component stripped of\nits claims is still a node someone can red, while a component the walk never discovered\nleaves nothing behind to notice, so an N→1 slide reads as N ordinary prunings. Pinning the\npopulation as a mass dimension is the honest answer there, because the question it settles\nis not whether anything survived but whether as much survived as last time.\n\n(The import claims above separately prove that the composition root still reaches the\nconfiguration loader, graph derivation, verifier, spec walker, and journal.)",
       "invariants": [
         "agent lifecycle preserves decisions and exposes the current change signal",
         "significant behavioral growth acquires an anchor or patch-specific decision",
@@ -514,13 +514,23 @@
       "prose": "Every token the dispatch must accept: names AND aliases. The totality oracle compares\n THIS against the `cmd === \"…\"` literals it reads out of cli.ts."
     },
     {
+      "id": "s:src/commands.ts#commandFor",
+      "parent": "f:src/commands.ts",
+      "label": "commandFor",
+      "kind": "symbol",
+      "sub": "const",
+      "path": "src/commands.ts",
+      "line": 253,
+      "prose": "The registry entry a typed token names — BY NAME OR BY ALIAS. The one lookup any guard\nkeyed on a flag (`writesArtifacts`, `writesBaseline`) may use.\n\nThe floor guarding the generators matched `c.name === cmd` and nothing else, which is a\nlatent bypass with no current victim: the only alias in the registry, `resolve`, writes\nnothing. But `aliases` exists precisely so a writing command can acquire a second\nspelling, and the day one does, the guard would silently exempt it — a gate that fails\nopen on a rename is the class of defect this whole file exists to end. Closed here\nrather than at the call site, because the call site is where it was forgotten once."
+    },
+    {
       "id": "s:src/commands.ts#usageBanner",
       "parent": "f:src/commands.ts",
       "label": "usageBanner",
       "kind": "symbol",
       "sub": "function",
       "path": "src/commands.ts",
-      "line": 267,
+      "line": 281,
       "prose": "SPELLING ONE — the usage banner, printed to stderr when the verb is unknown or absent.\nDerived in full: there is no command-name string literal left in cli.ts's help text, so\nthe banner cannot be 29 while the dispatch is 30, and two branches editing different\ncommands can no longer conflict on one line."
     },
     {
@@ -530,7 +540,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/commands.ts",
-      "line": 300,
+      "line": 314,
       "prose": "SPELLING TWO — the README's command index, markers inclusive, ready for `spliceBlock`.\n\nA BULLET LIST, not a markdown table, and that is a real constraint rather than taste:\n`redundancy` reads the first column of every markdown table as an enumerated domain, so\na generated table would hand it a fresh README↔dispatch pair to report — trading the\nfinding this change exists to remove for an identical one. A generated block that the\nproject's own detector still flags has not fixed anything.\n\nThe block is an INDEX and nothing more: name, arg shape, one line. The authored\nper-command reasoning lives OUTSIDE the markers, below the block, and is not expected to\ncover every command — completeness is what the derivation owes, depth is what the prose\nowes, and confusing the two is how the reference got twelve commands behind."
     },
     {
@@ -540,7 +550,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/commands.ts",
-      "line": 338,
+      "line": 352,
       "prose": "The README's claim-form index, markers inclusive, ready for `spliceBlock` — the same\ntreatment the command index got, for the same defect: the hand-kept table listed 8 forms\nwhile the registry carried 9 (`lives in` was missing entirely) and its boundary grammar\nhad lost the `[crossing <zone> -> <zone>]` clause. The README even predicted the drift\n(\"nothing compares it against the registry, so it *can* drift\"). Now something does.\n\nA BULLET LIST, not a markdown table, for the reason renderCommandsBlock records:\n`redundancy` reads the first column of every markdown table as an enumerated domain, so\na generated table would hand it a fresh README↔registry pair to report.\n\nThe block is the GRAMMAR and nothing more: name, tier, grammar, example — the fields the\nregistry actually carries. The authored per-form reasoning (tier behavior under `--fast`,\nthe meta-oracle, skip-vs-fail semantics) lives OUTSIDE the markers, below the block."
     },
     {
@@ -559,7 +569,8 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/config.ts",
-      "line": 19
+      "line": 33,
+      "prose": "THE PROJECT'S CONFIG over the defaults — and a REFUSAL when a config is there and\ncannot be read (floor.ts's `readJsonOrRefuse`). ABSENT is legitimate and stays exactly\nas it was: every field has a default, and running with none of them overridden is the\nfirst rung of the adoption ladder.\n\nUNPARSEABLE never was. It used to degrade to the DEFAULTS silently, which is not a\nmilder version of the same thing — it is a harness reading a different tree than the\none it was configured to read, and reporting on it with full confidence. `ignore`,\n`codeExt` and `sources` all revert, so the walk changes shape; and `name` reverts to\nabsent, which resurrects the cross-checkout `docs --check` false positive b32965d\nshipped to kill. Every downstream refusal on this page is then computed over the\nwrong population."
     },
     {
       "id": "f:src/context.ts",
@@ -1394,7 +1405,7 @@
       "kind": "file",
       "sub": "src/floor.ts",
       "path": "src/floor.ts",
-      "prose": "floor.ts — the NON-VACUITY FLOOR and the adoption on-ramp: one reading of the derived\nverification surface, answered two ways depending on what the record remembers.\n\nTHE DEFECT THIS CLOSES (measured twice, 2026-07-31): gut `buildGraph` to return an\nempty graph and `verify` printed `claims: 0 · 0 green · 0 red · 0 skipped` and\n`✓ coherent`, exit 0. Every claim-defended verdict in a project silently rests on the\ngraph deriving non-empty, and nothing checked that premise. It is the instrument-check-\nfirst idiom (test/commands.test.ts checks its AST scanner finds a plausible dispatch\nBEFORE trusting any set comparison) applied to verify itself: before grading claims,\nprove there is a surface to grade.\n\nA repo with a gutted deriver and a repo that never adopted the harness produce the\nIDENTICAL observation — zero components, zero claims. What separates them is MEMORY:\n`.coherence/status.json` remembers how many claims the last run graded. So one reading\n(readSurface) feeds two answers:\n  · remembered > 0, surface empty  → REFUSE (vacuityRefusal). A verification surface\n    does not vanish because the work is done; it vanishes when derivation breaks.\n  · nothing remembered, no claims  → the ON-RAMP (adoptionLadder): name the adoption\n    state and print THE ONE NEXT ACTION, re-runnable, one rung per run.\n\nWHAT THE FLOOR DELIBERATELY DOES NOT CATCH: a PARTIAL collapse (27 → 3) where every\ncomponent still carries at least one claim. That shape is observationally identical to\ndeliberate spec pruning — this repo pruned green trivialities from its own spec the day\nthis floor was written — and refusing it would train people to reset the record instead\nof reading the refusal. The complementary gate already exists: coverage reds any\ncomponent whose claims ALL vanished, so a collapse that stays green requires every\ncomponent to keep one, which is exactly what pruning looks like. A project that wants\nthe count itself pinned can pin it as a `measures` dimension in `mass`.\n\nSCOPED RUNS CANNOT TRIP THE FLOOR, structurally: the floor reads the DERIVED GRAPH,\nwhich is always full-tree — `--staged`/`--since` narrow which components are EVALUATED,\nnever what is derived. A reading taken above the scoping seam needs no scope exemption.\n\nTHE SAME READING, GENERALIZED (2026-07-31, the same day as the graph floor above). A verdict has two halves: the POPULATION an\ninstrument examined and what it found there. Drop the population and `0 of 0` renders\nexactly like `0 of 500` — \"I looked and found nothing wrong\" becomes indistinguishable\nfrom \"I did not look\". Two more shapes of that defect live here beside the graph floor,\nbecause they are one doctrine and not three:\n  · `ratchetVacuityRefusal` — the BASELINED ratchets (mass, conventions, lint-sinks) hold\n    the same memory/reading pair verify does, with the baseline playing status.json's\n    part. Each supplies its OWN denominator: mass counts graph files+symbols, while\n    lint-sinks never sees a graph at all (it reads scanSources), so \"the graph has no\n    claims\" is the wrong instrument for it. The rule is shared; the reading is not.\n  · `Unrunnable` — green-by-absence wearing the opposite face. An instrument that cannot\n    run must say WHY in a sentence; a stack trace is a report that failed to say what was\n    and was not measured, which is the same defect with the sign flipped."
+      "prose": "floor.ts — the NON-VACUITY FLOOR and the adoption on-ramp: one reading of the derived\nverification surface, answered two ways depending on what the record remembers.\n\nTHE DEFECT THIS CLOSES (measured twice, 2026-07-31): gut `buildGraph` to return an\nempty graph and `verify` printed `claims: 0 · 0 green · 0 red · 0 skipped` and\n`✓ coherent`, exit 0. Every claim-defended verdict in a project silently rests on the\ngraph deriving non-empty, and nothing checked that premise. It is the instrument-check-\nfirst idiom (test/commands.test.ts checks its AST scanner finds a plausible dispatch\nBEFORE trusting any set comparison) applied to verify itself: before grading claims,\nprove there is a surface to grade.\n\nA repo with a gutted deriver and a repo that never adopted the harness produce the\nIDENTICAL observation — zero components, zero claims. What separates them is MEMORY:\n`.coherence/status.json` remembers how many claims the last run graded. So one reading\n(readSurface) feeds two answers:\n  · remembered > 0, surface empty  → REFUSE (vacuityRefusal). A verification surface\n    does not vanish because the work is done; it vanishes when derivation breaks.\n  · nothing remembered, no claims  → the ON-RAMP (adoptionLadder): name the adoption\n    state and print THE ONE NEXT ACTION, re-runnable, one rung per run.\n\nWHAT THE FLOOR DELIBERATELY DOES NOT CATCH: a PARTIAL collapse (27 → 3) where every\ncomponent still carries at least one claim. That shape is observationally identical to\ndeliberate spec pruning — this repo pruned green trivialities from its own spec the day\nthis floor was written, and evicted two whole components in the same release — and\nrefusing it would train people to reset the record instead of reading the refusal.\n\nAND THE COMPLEMENT IS WEAKER THAN THIS COMMENT USED TO CLAIM. It said coverage reds any\ncomponent whose claims all vanished, \"so a collapse that stays green requires every\ncomponent to keep one\". That holds only when the component NODE SURVIVES with zero\nclaims — a broken spec parse. Coverage iterates the DERIVED graph, so a component the\nWALK dropped entirely is invisible to it: there is no node left to red. Measured\n2026-07-31 with an ignore/glob-bug simulacrum (one component removed from what the walk\ndiscovers): the record remembered 2 claims, the run printed `claims: 1 · 1 green` and\n`✓ coherent` exit 0 with `components 1/1 claimed`, and the record was laundered down to\n1 claim in the same run — so a gradual N→1 collapse never accumulates toward this floor\nat all. Each step looks like one pruned component.\n\nTHAT HOLE IS NAMED RATHER THAN CLOSED, and deliberately. A vanished node is exactly what\ndeleting a component's spec produces, and deletion must stay free — a gate that punishes\nremoval teaches people to stop removing, which is the same argument\n`ratchetVacuityRefusal` makes below for partial shrinkage. THE MITIGATION IS A PIN, not\na gate: a `measures` dimension in `config.mass` whose command counts the population\n(component nodes or claim lines in the derived graph) makes the shrink a RATCHET\nfinding — reviewable, waivable by re-pinning with a diff, and answering the question\nthis floor cannot: not \"is there anything left?\" but \"is there as much as there was?\".\n\nSCOPED RUNS CANNOT TRIP THE FLOOR, structurally: the floor reads the DERIVED GRAPH,\nwhich is always full-tree — `--staged`/`--since` narrow which components are EVALUATED,\nnever what is derived. A reading taken above the scoping seam needs no scope exemption.\n\nTHE SAME READING, GENERALIZED (2026-07-31, the same day as the graph floor above). A verdict has two halves: the POPULATION an\ninstrument examined and what it found there. Drop the population and `0 of 0` renders\nexactly like `0 of 500` — \"I looked and found nothing wrong\" becomes indistinguishable\nfrom \"I did not look\". Two more shapes of that defect live here beside the graph floor,\nbecause they are one doctrine and not three:\n  · `ratchetVacuityRefusal` — the BASELINED ratchets (mass, conventions, lint-sinks) hold\n    the same memory/reading pair verify does, with the baseline playing status.json's\n    part. Each supplies its OWN denominator: mass counts graph files+symbols, while\n    lint-sinks never sees a graph at all (it reads scanSources), so \"the graph has no\n    claims\" is the wrong instrument for it. The rule is shared; the reading is not.\n  · `Unrunnable` — green-by-absence wearing the opposite face. An instrument that cannot\n    run must say WHY in a sentence; a stack trace is a report that failed to say what was\n    and was not measured, which is the same defect with the sign flipped.\n  · `readJsonOrRefuse` — the same defect ONE LAYER DOWN, in the memory every floor above\n    reads. Every one of these gates is a comparison between a live reading and a\n    REMEMBERED one, and each remembered one lives in a JSON file that was loaded by\n    `catch → return default`. That catch cannot tell \"the file is not there\" from \"the\n    file is there and I could not read it\", so a single unparseable byte turned every\n    floor on this page off."
     },
     {
       "id": "s:src/floor.ts#SurfaceReading",
@@ -1403,7 +1414,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/floor.ts",
-      "line": 54,
+      "line": 77,
       "prose": "The derived surface vs the remembered one. `remembered` is the prior record's claim-row\n count; null means no verify section has ever been filed (a genuinely new project)."
     },
     {
@@ -1413,7 +1424,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/floor.ts",
-      "line": 62
+      "line": 85
     },
     {
       "id": "s:src/floor.ts#vacuityRefusal",
@@ -1422,7 +1433,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/floor.ts",
-      "line": 82,
+      "line": 105,
       "prose": "THE FLOOR — the refusal, or null when the run may proceed to grading.\n\nRefuses exactly when the record remembers a non-empty surface (≥1 claim row) and the\nderived graph carries ZERO claims — whether because it derived zero components (the\ngutted-deriver shape) or components stripped of every claim (a broken spec parse).\nThe refusal is a run failure that must be printed and exited 1 WITHOUT filing a\nrecord: a refusal that overwrote the memory it refused against would refuse only once."
     },
     {
@@ -1432,7 +1443,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/floor.ts",
-      "line": 109,
+      "line": 132,
       "prose": "ONE RATCHET'S READING, as the shared rule needs it. Every field is supplied by the\nratchet itself, because no two of them measure the same population: `mass` reads the\nderived graph, `conventions` and `lint-sinks` read `scanSources` and never see a graph.\nA single predicate over one of those (verify's \"the graph has no claims\") would guard\none ratchet and silently exempt the other two."
     },
     {
@@ -1442,7 +1453,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/floor.ts",
-      "line": 145,
+      "line": 168,
       "prose": "THE RATCHET FLOOR — the refusal, or null when the run may proceed.\n\nRefuses exactly when the live population is EMPTY while the baseline remembers a\nnon-empty one, at both seams: `--check` must not report \"held\" over nothing, and\n`--update-baseline` must not pin nothing over something. The two failures compound —\na `held` that also prescribes re-pinning is an instrument talking an operator into\nbanking its own breakage as the new floor, which is measured, not hypothetical\n(2026-07-31: a gutted `buildGraph` made `mass --check` print \"✓ mass ratchet held\" and\n\"4 dimension(s) SHRANK — re-pin to bank it\", and the pin that followed zeroed four\ndimensions and dropped a fifth).\n\nWHAT THIS DELIBERATELY DOES NOT CATCH — and it is the same line the graph floor draws\ntwenty lines up: PARTIAL shrinkage. Deletion is real work and must stay free; a ratchet\nthat punishes removal teaches people to stop removing. The discriminator is TOTAL\nCOLLAPSE, which no amount of ordinary pruning reaches, because a project that still has\none file still has a denominator."
     },
     {
@@ -1452,8 +1463,28 @@
       "kind": "symbol",
       "sub": "class",
       "path": "src/floor.ts",
-      "line": 180,
+      "line": 203,
       "prose": "AN INSTRUMENT THAT CANNOT RUN, carrying the sentence an operator needs instead of the\nstack that produced it. Thrown from the seam that KNOWS what is missing (it is the only\nplace that can name the requirement), rendered by the CLI, which is the only place that\nowns an exit code.\n\nWHY A TYPED THROW AND NOT A PRE-CHECK AT EACH CALLER. A pre-check is a second spelling\nof the requirement, one per caller, and the third caller added next month is the one\nthat forgets — the same drift this repo's command registry exists to end. The throw\nkeeps the requirement stated ONCE, at the seam that discovers it, and the renderer is\ntotal over every command by construction rather than by review."
+    },
+    {
+      "id": "s:src/floor.ts#JsonMemory",
+      "parent": "f:src/floor.ts",
+      "label": "JsonMemory",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/floor.ts",
+      "line": 223,
+      "prose": "WHAT A PERSISTENT READER MUST BE ABLE TO SAY ABOUT ITS OWN FILE. Absence and\nunreadability are DIFFERENT FACTS and the caller is the only place that knows what each\none means for it, so each supplies its own sentences — the same argument\n`RatchetReading` makes for the ratchets: the rule is shared, the reading is not."
+    },
+    {
+      "id": "s:src/floor.ts#readJsonOrRefuse",
+      "parent": "f:src/floor.ts",
+      "label": "readJsonOrRefuse",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/floor.ts",
+      "line": 260,
+      "prose": "READ A JSON FILE THAT MAY LEGITIMATELY BE ABSENT AND MAY NEVER LEGITIMATELY BE GARBAGE.\n\nABSENT → null, and the caller does exactly what it did before: defaults, no baseline,\na fresh record. That state is ordinary and every floor here depends on it staying\nordinary — it is what adoption, a first run and an unpinned ratchet all look like.\n\nPRESENT AND UNPARSEABLE → `Unrunnable`. There is no reading of an unparseable file that\nmakes it an empty one. A crashed write, a merge conflict left in place, a truncated\ncheckout: all of them are defects, and all of them used to be answered with the same\nsilence as absence — which is how ONE unparseable byte in `.coherence/status.json`\ndisarmed the vacuity floor, the six guarded generators and the ratchets at once, and\nthen, because the run went on to FILE A FRESH RECORD over the corpse, kept them\ndisarmed for every run after it. Where `.coherence/` is untracked there was not even a\ndiff to notice.\n\nIT REFUSES BEFORE ANYTHING IS WRITTEN, and that ordering is the whole fix rather than a\ndetail of it. A reader that repaired the file by overwriting it would convert a\none-run failure into a permanent one, silently — the same reason `vacuityRefusal`\nfiles no record and the ratchet floor refuses the pin as well as the check."
     },
     {
       "id": "s:src/floor.ts#AdoptionState",
@@ -1462,7 +1493,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/floor.ts",
-      "line": 199
+      "line": 303
     },
     {
       "id": "s:src/floor.ts#adoptionLadder",
@@ -1471,7 +1502,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/floor.ts",
-      "line": 216,
+      "line": 320,
       "prose": "THE ON-RAMP — which rung of the adoption ladder this project stands on, or null once\nit has graduated (oracle-backed claims + at least one recorded refutation). Re-runnable\nby design: each run names the state and prints THE ONE NEXT ACTION, so `verify` walks\na bare repo up one step at a time instead of dumping a checklist.\n\nThis is what replaced `coherence onboard` (evicted 2026-07-31, v0.22.x): a repo with\nzero specs and a repo with a gutted graph produced identical output, so the same code\npath now answers both — by knowing, via the record, which one it is looking at."
     },
     {
@@ -3586,7 +3617,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/sidecar.ts",
-      "line": 11
+      "line": 12
     },
     {
       "id": "s:src/sidecar.ts#scanSources",
@@ -3595,7 +3626,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/sidecar.ts",
-      "line": 21,
+      "line": 22,
       "prose": "Code files, scoped to `cfg.sources` (default: the whole tree under `entryDir`),\n split into source vs test by `cfg.testDir`."
     },
     {
@@ -3605,7 +3636,8 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/sidecar.ts",
-      "line": 38
+      "line": 49,
+      "prose": "THE PIN, or null when nothing is pinned — and a REFUSAL when a baseline is there and\ncannot be read (floor.ts's `readJsonOrRefuse`). Null means \"never pinned\", which every\nratchet handles as its first run; it must NOT also mean \"the pin is corrupt\", because\nthe ratchet floor's whole discriminator is whether the baseline remembers a non-empty\npopulation. Truncating `mass-baseline.json` over a real project made\n`mass --update-baseline` print \"Pinned 4 mass dimension(s)\" and exit 0 with every\ndimension at zero — the exact inversion incident mass.ts's own header describes,\nreachable again through one unparseable byte."
     },
     {
       "id": "s:src/sidecar.ts#writeBaseline",
@@ -3614,7 +3646,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/sidecar.ts",
-      "line": 42
+      "line": 62
     },
     {
       "id": "f:src/signal.ts",
@@ -3746,7 +3778,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/status.ts",
-      "line": 17
+      "line": 18
     },
     {
       "id": "s:src/status.ts#VerifySection",
@@ -3755,7 +3787,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/status.ts",
-      "line": 37
+      "line": 38
     },
     {
       "id": "s:src/status.ts#AtlasSection",
@@ -3764,7 +3796,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/status.ts",
-      "line": 71
+      "line": 72
     },
     {
       "id": "s:src/status.ts#DriftSection",
@@ -3773,7 +3805,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/status.ts",
-      "line": 90
+      "line": 91
     },
     {
       "id": "s:src/status.ts#MassSection",
@@ -3782,7 +3814,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/status.ts",
-      "line": 103,
+      "line": 104,
       "prose": "What the mass ratchet measured, and what it was measured AGAINST. `baseline` is per\n dimension and optional because a key can be new — the record has to be able to say\n \"measured, never pinned\" without inventing a number. `series` is the net-LOC-per-\n window shape the report prints; absent on a `--check`, which does not read history."
     },
     {
@@ -3792,7 +3824,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/status.ts",
-      "line": 120,
+      "line": 121,
       "prose": "The READ-side cost record: the context closure of a change over the recent window —\n what a reader must load to modify one thing safely. `mass` says how much machine there\n is; this says how much of it one change makes you hold.\n\n `considered` is the SAMPLE SIZE and is not optional, for evolution.ts:139-140's reason:\n a median over three commits and one over three hundred should never look alike, and a\n stored median with no count is a number a consumer cannot weigh.\n\n Lines are measured against the CURRENT tree — an approximation for historical commits,\n named in the report that produced them. `series` is median closure FILES per window,\n oldest → newest. Not yet read by the panel; the energy-strip follow-up owns that."
     },
     {
@@ -3802,7 +3834,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/status.ts",
-      "line": 128
+      "line": 129
     },
     {
       "id": "s:src/status.ts#statusPath",
@@ -3811,7 +3843,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/status.ts",
-      "line": 130
+      "line": 131
     },
     {
       "id": "s:src/status.ts#readStatus",
@@ -3820,7 +3852,8 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/status.ts",
-      "line": 132
+      "line": 143,
+      "prose": "THE RECORD, or a fresh one — and a REFUSAL when there is a record here that cannot be\nread (floor.ts's `readJsonOrRefuse`). This was `catch → return { version: 1 }`, which\ncould not tell a project that has never filed a report from one whose report is\ncorrupt, and the second reading is what every floor in the harness is measured\nagainst. Truncating this file (a crashed write; the file is untracked in most\nprojects, so there is no diff either) turned `verify`'s `✗ [floor]` refusal into the\nadoption ladder and exit 0 — and the run then filed a fresh empty record over the\nremains, so verify and all six guarded generators passed forever after."
     },
     {
       "id": "s:src/status.ts#gitStamp",
@@ -3829,7 +3862,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/status.ts",
-      "line": 142,
+      "line": 163,
       "prose": "Short HEAD + dirty flag — the provenance every section stamps itself with."
     },
     {
@@ -3839,7 +3872,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/status.ts",
-      "line": 158,
+      "line": 179,
       "prose": "Index claim records by their ONE lookup identity (`claimKey`, boundary.ts) — the single\nmap-mint every reader of `status.verify.claims` goes through. The key is BRANDED, so a\nraw `` `${node} ${claim}` `` probe is a compile error rather than a silent miss: before\nthis, three sites (this merge, the panel, verify's never-red filter) keyed on the raw\nstring and quietly erased a claim's failure history when a boundary was annotated with a\npurely declarative `crossing` clause — the exact annotation `normalizeBoundaryClaim`\nexists to make safe. Last-wins on a key collision, same as Map semantics always were."
     },
     {
@@ -3849,7 +3882,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/status.ts",
-      "line": 172,
+      "line": 193,
       "prose": "Merge a run's fresh claim verdicts over the previous record.\n- scope null (a full-tree run): the fresh set REPLACES the record, so claims that\n  vanished from the specs vanish from the record (no ghost rows).\n- scoped (--staged/--since): only the evaluated components' entries are replaced;\n  out-of-scope records ride through untouched — their own stamps keep aging.\n- A SKIP never clobbers a real verdict. Under --fast the executable tier skips, and\n  overwriting last week's oracle PASS with \"skipped (--fast)\" would erase the last\n  known truth; the old verdict is kept, its stamp saying how old it is. A skip only\n  lands where nothing real exists underneath (dialect gaps, never-run claims)."
     },
     {
@@ -3859,7 +3892,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/status.ts",
-      "line": 192,
+      "line": 213,
       "prose": "What runVerify hands the record-keeper (already computed for its own report)."
     },
     {
@@ -3869,7 +3902,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/status.ts",
-      "line": 206
+      "line": 227
     },
     {
       "id": "s:src/status.ts#recordAtlas",
@@ -3878,7 +3911,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/status.ts",
-      "line": 236
+      "line": 257
     },
     {
       "id": "s:src/status.ts#recordDrift",
@@ -3887,7 +3920,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/status.ts",
-      "line": 242
+      "line": 263
     },
     {
       "id": "s:src/status.ts#recordMass",
@@ -3896,7 +3929,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/status.ts",
-      "line": 248
+      "line": 269
     },
     {
       "id": "s:src/status.ts#recordEconomy",
@@ -3905,7 +3938,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/status.ts",
-      "line": 255
+      "line": 276
     },
     {
       "id": "f:src/structural.ts",
@@ -3943,7 +3976,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/structural.ts",
-      "line": 162,
+      "line": 166,
       "prose": "Every boundary claim in the graph, keyed by its CHOKEPOINT symbol — the shared\n input the atlas (tier derivation) and conventions (anchored set) subcommands both\n consume, parsed ONCE from the graph the harness already built (no spec re-walk)."
     },
     {
@@ -3953,7 +3986,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/structural.ts",
-      "line": 177,
+      "line": 181,
       "prose": "EVERY boundary claim whose chokepoint is `sym` — not the single kept claim `allBoundaries`\n keeps per symbol. A chokepoint can carry several claims (e.g. one `via test` and one\n `via guard`); `allBoundaries` collapses them order-dependently, so any caller that must ask\n an ∃/∀ question across a symbol's claims (the atlas: \"is ANY claim here `via guard`?\" when\n grading enshrinement) has to consult the full list, not whichever claim the map happened\n to keep. Returns [] when no claim anchors that symbol."
     },
     {
@@ -3963,7 +3996,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/structural.ts",
-      "line": 190,
+      "line": 194,
       "prose": "Run `fn` against the project root AS IT EXISTS at a git ref (null = the live\n working tree — no checkout). The temp worktree lives only for the callback, so a\n caller can derive anything it needs from that tree (the graph, a surface scan) in\n ONE checkout instead of one per artifact."
     },
     {
@@ -3973,7 +4006,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/structural.ts",
-      "line": 236,
+      "line": 240,
       "prose": "Build the graph as it exists at a git ref (null = the live working tree)."
     },
     {
@@ -3983,7 +4016,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/structural.ts",
-      "line": 240
+      "line": 244
     },
     {
       "id": "s:src/structural.ts#diffGraphs",
@@ -3992,7 +4025,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/structural.ts",
-      "line": 254
+      "line": 258
     },
     {
       "id": "s:src/structural.ts#renderDiff",
@@ -4001,7 +4034,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/structural.ts",
-      "line": 296,
+      "line": 300,
       "prose": "Render the diff; return the count of LOSSES (removed invariants/boundaries/parities/components)."
     },
     {
@@ -4011,7 +4044,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/structural.ts",
-      "line": 342,
+      "line": 346,
       "prose": "Files changed refA → refB (refB null = the working tree, plus untracked). Paths\n relative to cfg.root. The domain the novelty surface scan is scoped to."
     },
     {
@@ -4021,7 +4054,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/structural.ts",
-      "line": 355,
+      "line": 359,
       "prose": "LOC added/deleted refA → refB across CODE files (cfg.codeExt), with cfg.ignore dirs\n and binary rows excluded. Untracked files (refB = null) are not counted — the\n headline use is a committed ref range."
     },
     {
@@ -4031,7 +4064,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/structural.ts",
-      "line": 371
+      "line": 375
     },
     {
       "id": "x:node:os",
@@ -4547,8 +4580,8 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/walk.ts",
-      "line": 151,
-      "prose": "the deepest node dir that is a prefix of file's dir"
+      "line": 168,
+      "prose": "The deepest node dir that is a prefix of the file's dir — or NULL when no node dir owns\nit at all.\n\nTHE NULL IS THE POINT. This used to return `\".\"` unconditionally on a miss, which is\nthe same value it returns when a root `*.spec.md` genuinely owns the file, so no caller\ncould tell \"the root component owns this\" from \"nothing owns this\". On a project with\nno root component that fabricated a component out of a miss, and\n`affectedComponents` fed it straight into verify's scope set: measured 2026-07-31 on a\nhealthy two-component tree whose only change was an unowned root-level file, `verify\n--staged` printed `scoped to 1 changed component(s): .`, graded `claims: 0 · 0 green`,\nand pronounced `✓ coherent` — a LIVE vacuous green needing no mutation to reach.\n\nAn unowned file is ordinary, not an error: a root config, a build script, a stray\nmodule in a tree that is still being decomposed. So the miss is REPRESENTED rather than\nrefused, and each of the three callers says what it does with one (derive: an unparented\nfile node; verify and structural: out of every component's scope)."
     },
     {
       "id": "f:src/why-lint.ts",
@@ -5442,15 +5475,15 @@
       "kind": "imports"
     },
     {
-      "id": "f:src/config.ts->x:node:fs/promises:imports",
-      "source": "f:src/config.ts",
-      "target": "x:node:fs/promises",
-      "kind": "imports"
-    },
-    {
       "id": "f:src/config.ts->x:node:path:imports",
       "source": "f:src/config.ts",
       "target": "x:node:path",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/config.ts->f:src/floor.ts:imports",
+      "source": "f:src/config.ts",
+      "target": "f:src/floor.ts",
       "kind": "imports"
     },
     {
@@ -6396,6 +6429,12 @@
       "kind": "imports"
     },
     {
+      "id": "f:src/sidecar.ts->f:src/floor.ts:imports",
+      "source": "f:src/sidecar.ts",
+      "target": "f:src/floor.ts",
+      "kind": "imports"
+    },
+    {
       "id": "f:src/sidecar.ts->f:src/types.ts:imports",
       "source": "f:src/sidecar.ts",
       "target": "f:src/types.ts",
@@ -6495,6 +6534,12 @@
       "id": "f:src/status.ts->f:src/boundary.ts:imports",
       "source": "f:src/status.ts",
       "target": "f:src/boundary.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/status.ts->f:src/floor.ts:imports",
+      "source": "f:src/status.ts",
+      "target": "f:src/floor.ts",
       "kind": "imports"
     },
     {
@@ -7443,6 +7488,12 @@
       "id": "f:test/floor.test.ts->f:src/status.ts:imports",
       "source": "f:test/floor.test.ts",
       "target": "f:src/status.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/floor.test.ts->f:src/commands.ts:imports",
+      "source": "f:test/floor.test.ts",
+      "target": "f:src/commands.ts",
       "kind": "imports"
     },
     {
