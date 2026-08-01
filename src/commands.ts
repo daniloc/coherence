@@ -175,6 +175,15 @@ export const COMMANDS: Command[] = [
   },
 
   // ── perceive ─────────────────────────────────────────────────────────────────────────
+  {
+    // `writesArtifacts` is not optional decoration here: the behavioural totality oracle in
+    // test/commands.test.ts RUNS every command against a fixture and fails any writer that
+    // does not declare it, and the flag is what wires the non-vacuity floor — so a broken
+    // deriver cannot overwrite a good Index with a blank one.
+    name: "index", group: "perceive", usage: "[--since <ref>]",
+    summary: "the returning human's page — MAP · JOURNAL · TRAJECTORY, framed against what you last saw (`_index.html` + `index.json`)",
+    writesArtifacts: true,
+  },
   { name: "panel", group: "perceive", usage: "[--no-watch | --once]", summary: "live TUI over the graph + the status record" },
   { name: "contract", group: "perceive", summary: "the promise graph — graded gates + the reliance ledger (`_contract.html`)", writesArtifacts: true },
   {

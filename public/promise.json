@@ -1,8 +1,8 @@
 {
   "root": "coherence",
   "intent": "The repository-level reading surface: configuration, package contract, generated maps, and the authored explanation of why the harness exists.",
-  "generatedAt": "2026-08-01T18:27:02.453Z",
-  "head": "4ea7565",
+  "generatedAt": "2026-08-01T21:08:32.003Z",
+  "head": "1ad12d2",
   "dirty": true,
   "zones": [],
   "components": [
@@ -35,9 +35,9 @@
           "oracle": "hooks — generated wiring uses the low-cost entrypoint and observes writes",
           "crossing": null,
           "grade": "C",
-          "verdict": "pass",
+          "verdict": "stale",
           "reliants": [],
-          "freshest": "2026-08-01T18:26:32.093Z"
+          "freshest": "2026-08-01T21:06:07.976Z"
         },
         {
           "inv": "significant behavioral growth acquires an anchor or patch-specific decision",
@@ -46,9 +46,9 @@
           "oracle": "only a zero-anchor alarm without attestation needs a decision",
           "crossing": null,
           "grade": "C",
-          "verdict": "pass",
+          "verdict": "stale",
           "reliants": [],
-          "freshest": "2026-08-01T18:26:32.093Z"
+          "freshest": "2026-08-01T21:06:07.976Z"
         },
         {
           "inv": "task context is bounded and names its approximations",
@@ -57,9 +57,9 @@
           "oracle": "renderContext — byte-stable for the same inputs and names every approximation",
           "crossing": null,
           "grade": "C",
-          "verdict": "pass",
+          "verdict": "stale",
           "reliants": [],
-          "freshest": "2026-08-01T18:26:32.093Z"
+          "freshest": "2026-08-01T21:06:07.976Z"
         },
         {
           "inv": "cached decisions expose structurally expired premises",
@@ -68,9 +68,9 @@
           "oracle": "audit — retracted decisions disappear and only broken strong leases fail a check",
           "crossing": null,
           "grade": "C",
-          "verdict": "pass",
+          "verdict": "stale",
           "reliants": [],
-          "freshest": "2026-08-01T18:26:32.093Z"
+          "freshest": "2026-08-01T21:06:07.976Z"
         },
         {
           "inv": "predicted context closure is calibrated against observed reads and outcomes",
@@ -79,9 +79,9 @@
           "oracle": "calibration reports coverage, outside reads, and defect rates by prediction misses",
           "crossing": null,
           "grade": "C",
-          "verdict": "pass",
+          "verdict": "stale",
           "reliants": [],
-          "freshest": "2026-08-01T18:26:32.093Z"
+          "freshest": "2026-08-01T21:06:07.976Z"
         },
         {
           "inv": "reviewed risk sites survive relocation but never duplication",
@@ -90,9 +90,9 @@
           "oracle": "sinks — a moved file keeps its baselined identity and a genuinely new site still fails",
           "crossing": null,
           "grade": "C",
-          "verdict": "pass",
+          "verdict": "stale",
           "reliants": [],
-          "freshest": "2026-08-01T18:26:32.093Z"
+          "freshest": "2026-08-01T21:06:07.976Z"
         },
         {
           "inv": "pinned mass follows a value-conserving rename but never absorbs growth",
@@ -101,9 +101,9 @@
           "oracle": "mass — a renamed component keeps its pin; growth and novelty are never absorbed",
           "crossing": null,
           "grade": "C",
-          "verdict": "pass",
+          "verdict": "stale",
           "reliants": [],
-          "freshest": "2026-08-01T18:26:32.093Z"
+          "freshest": "2026-08-01T21:06:07.976Z"
         },
         {
           "inv": "a claim goes green only on positive evidence its oracle ran",
@@ -112,9 +112,9 @@
           "oracle": "testMatch — a runner exiting 0 with no matching output FAILS (the renamed-test trap)",
           "crossing": null,
           "grade": "C",
-          "verdict": "pass",
+          "verdict": "stale",
           "reliants": [],
-          "freshest": "2026-08-01T18:26:32.093Z"
+          "freshest": "2026-08-01T21:06:07.976Z"
         },
         {
           "inv": "a vanished oracle reds its claim, never green-by-absence",
@@ -123,9 +123,9 @@
           "oracle": "match — ZERO matching tests is its OWN state: the vanished oracle, named as such",
           "crossing": null,
           "grade": "C",
-          "verdict": "pass",
+          "verdict": "stale",
           "reliants": [],
-          "freshest": "2026-08-01T18:26:32.093Z"
+          "freshest": "2026-08-01T21:06:07.976Z"
         },
         {
           "inv": "a declared invariant unanchored by any boundary fails coverage",
@@ -134,9 +134,9 @@
           "oracle": "RATCHET — a declared invariant with no anchoring boundary fails coverage",
           "crossing": null,
           "grade": "C",
-          "verdict": "pass",
+          "verdict": "stale",
           "reliants": [],
-          "freshest": "2026-08-01T18:26:32.093Z"
+          "freshest": "2026-08-01T21:06:07.976Z"
         },
         {
           "inv": "a via-test oracle that iterates no live domain fails its claim",
@@ -145,9 +145,9 @@
           "oracle": "META-ORACLE — a `via test` boundary whose oracle loops a LITERAL fails",
           "crossing": null,
           "grade": "C",
-          "verdict": "pass",
+          "verdict": "stale",
           "reliants": [],
-          "freshest": "2026-08-01T18:26:32.093Z"
+          "freshest": "2026-08-01T21:06:07.976Z"
         },
         {
           "inv": "a skipped run never clobbers an oracle's recorded verdict",
@@ -156,9 +156,9 @@
           "oracle": "merge — a skip never clobbers a real verdict; the old verdict rides through with its own stamp",
           "crossing": null,
           "grade": "C",
-          "verdict": "pass",
+          "verdict": "stale",
           "reliants": [],
-          "freshest": "2026-08-01T18:26:32.093Z"
+          "freshest": "2026-08-01T21:06:07.976Z"
         },
         {
           "inv": "a named oracle that no test runs cannot pass",
@@ -167,9 +167,9 @@
           "oracle": "runner contract — a name that exists nowhere exits nonzero (the vanished oracle cannot pass)",
           "crossing": null,
           "grade": "C",
-          "verdict": "pass",
+          "verdict": "stale",
           "reliants": [],
-          "freshest": "2026-08-01T18:26:32.093Z"
+          "freshest": "2026-08-01T21:06:07.976Z"
         },
         {
           "inv": "an empty derivation against a remembered surface refuses, never passes",
@@ -178,9 +178,9 @@
           "oracle": "FLOOR — an empty derivation against a remembered surface REFUSES, never reports coherent",
           "crossing": null,
           "grade": "C",
-          "verdict": "pass",
+          "verdict": "stale",
           "reliants": [],
-          "freshest": "2026-08-01T18:26:32.093Z"
+          "freshest": "2026-08-01T21:06:07.976Z"
         }
       ],
       "relies": [
@@ -191,12 +191,12 @@
         }
       ],
       "mass": {
-        "files": 49,
-        "lines": 13119
+        "files": 51,
+        "lines": 14464
       },
       "accounted": {
         "files": 3,
-        "lines": 1068
+        "lines": 1088
       }
     },
     {
@@ -235,8 +235,8 @@
         }
       ],
       "mass": {
-        "files": 41,
-        "lines": 10148
+        "files": 42,
+        "lines": 10620
       },
       "accounted": {
         "files": 4,

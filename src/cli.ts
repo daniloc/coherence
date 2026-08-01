@@ -43,6 +43,8 @@ import { signal } from "./signal.ts";
 import { contextFromProject, renderContext } from "./context.ts";
 import { premise } from "./premise.ts";
 import { calibrate, type CalibrationOutcome } from "./calibration.ts";
+import { buildIndexModel, INDEX_HTML, INDEX_JSON } from "./index-model.ts";
+import { renderIndex, formatIndexSummary } from "./render-index.ts";
 
 const cmd = process.argv[2];
 const argv = process.argv.slice(3);
@@ -552,6 +554,24 @@ if (cmd === "graph") {
   await exit(await atlas(cfg, await buildGraph(cfg), check ? "check" : "render", {
     raise, raiseCap, session: one("--session") ?? undefined, agent: one("--agent") ?? undefined,
   }));
+} else if (cmd === "index") {
+  // THE INDEX: the one artifact addressed to the HUMAN who has been away. The other three
+  // browser renders are complete dumps of one moment — every component, every claim, every
+  // edge — and they go unread because a complete picture carries no attention budget and no
+  // delta. This is three views and no more (MAP · JOURNAL · TRAJECTORY), each framed
+  // against what the reader last saw, and it derives NOTHING: every figure on the page is a
+  // reading the graph, the promise model, the run record or the journals already took.
+  //
+  // `index.json` is written FIRST-CLASS beside the page, and not as a debugging courtesy:
+  // the render is a pure function of it (so nothing on the page is unverifiable), and its
+  // `head` is the CURSOR the next run frames "since I last looked" against.
+  const graph = await buildGraph(cfg);
+  const model = await buildIndexModel(cfg, graph, { since, stamp });
+  await writeOutputs();
+  await writeFile(out(INDEX_JSON), JSON.stringify(model, null, 2) + "\n");
+  await writeFile(out(INDEX_HTML), renderIndex(model));
+  for (const line of formatIndexSummary(model, join(cfg.outputDir, INDEX_HTML))) console.log(line);
+  await exit(0);
 } else if (cmd === "panel") {
   // The operator's instrument panel: a live TUI over the graph + the status record
   // (`.coherence/status.json`). Watch mode re-runs the fast tier on change; --once

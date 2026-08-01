@@ -1,0 +1,1033 @@
+{
+  "project": "coherence",
+  "intent": "The repository-level reading surface: configuration, package contract, generated maps, and the authored explanation of why the harness exists.",
+  "generatedAt": "2026-08-01 21:08Z",
+  "head": {
+    "commit": "1ad12d2",
+    "dirty": true
+  },
+  "frame": {
+    "kind": "cursor",
+    "ref": "d9053b8",
+    "commit": "d9053b8",
+    "at": "2026-08-01T14:27:27-04:00",
+    "commits": 1,
+    "why": "the HEAD this Index recorded the last time it ran — literally since you last looked."
+  },
+  "sources": [
+    {
+      "name": "graph",
+      "ok": true,
+      "detail": "4 component(s), 29 claim(s), 96 file(s) derived from the spec tree"
+    },
+    {
+      "name": ".coherence/status.json — verify",
+      "ok": true,
+      "detail": "29 claim verdict(s), 0 failure(s), tier full",
+      "at": "2026-08-01T21:06:07.976Z",
+      "commit": "d9053b8",
+      "stale": true
+    },
+    {
+      "name": ".coherence/status.json — atlas",
+      "ok": false,
+      "detail": "no atlas reading recorded — either this project declares no `atlas` config, or `coherence atlas` has not run. The crossings table is EMPTY BECAUSE NOTHING WAS READ, not because there are none.",
+      "stale": false
+    },
+    {
+      "name": "git history",
+      "ok": true,
+      "detail": "87 concern-carrying commit(s) in the last 200, touching 165 path(s)",
+      "commit": "1ad12d2"
+    },
+    {
+      "name": ".coherence/decisions",
+      "ok": true,
+      "detail": "230 record(s) across 40 session(s)"
+    },
+    {
+      "name": "structural diff vs d9053b8",
+      "ok": true,
+      "detail": "0 structural change(s), 0 loss(es)",
+      "commit": "d9053b8"
+    }
+  ],
+  "map": {
+    "components": [
+      {
+        "label": "Coherence",
+        "dir": ".",
+        "zone": null,
+        "files": 0,
+        "lines": 0,
+        "accountedFiles": 0,
+        "claims": 2,
+        "gates": 0,
+        "grades": {
+          "A": 0,
+          "B": 0,
+          "C": 0,
+          "D": 0,
+          "U": 0
+        },
+        "breaches": 0,
+        "invariants": 0,
+        "anchored": 0,
+        "witnessed": 0,
+        "symbols": 0,
+        "undocumented": 0,
+        "naked": 0
+      },
+      {
+        "label": "Harness core",
+        "dir": "src",
+        "zone": null,
+        "files": 51,
+        "lines": 14464,
+        "accountedFiles": 3,
+        "claims": 20,
+        "gates": 14,
+        "grades": {
+          "A": 0,
+          "B": 0,
+          "C": 14,
+          "D": 0,
+          "U": 0
+        },
+        "breaches": 0,
+        "invariants": 14,
+        "anchored": 14,
+        "witnessed": 12,
+        "symbols": 440,
+        "undocumented": 166,
+        "naked": 0
+      },
+      {
+        "label": "Source adapters",
+        "dir": "src/adapters",
+        "zone": null,
+        "files": 3,
+        "lines": 225,
+        "accountedFiles": 3,
+        "claims": 3,
+        "gates": 0,
+        "grades": {
+          "A": 0,
+          "B": 0,
+          "C": 0,
+          "D": 0,
+          "U": 0
+        },
+        "breaches": 0,
+        "invariants": 0,
+        "anchored": 0,
+        "witnessed": 0,
+        "symbols": 3,
+        "undocumented": 3,
+        "naked": 0
+      },
+      {
+        "label": "Executable contracts",
+        "dir": "test",
+        "zone": null,
+        "files": 42,
+        "lines": 10620,
+        "accountedFiles": 4,
+        "claims": 4,
+        "gates": 0,
+        "grades": {
+          "A": 0,
+          "B": 0,
+          "C": 0,
+          "D": 0,
+          "U": 0
+        },
+        "breaches": 0,
+        "invariants": 0,
+        "anchored": 0,
+        "witnessed": 0,
+        "symbols": 9,
+        "undocumented": 2,
+        "naked": 0
+      }
+    ],
+    "zones": [],
+    "gates": {
+      "shown": [
+        {
+          "comp": "Harness core",
+          "inv": "a claim goes green only on positive evidence its oracle ran",
+          "chokepoint": "execNamedTest",
+          "verb": "guard",
+          "oracle": "testMatch — a runner exiting 0 with no matching output FAILS (the renamed-test trap)",
+          "grade": "C",
+          "verdict": "stale",
+          "crossing": null,
+          "reliants": 0,
+          "witnessed": true
+        },
+        {
+          "comp": "Harness core",
+          "inv": "a declared invariant unanchored by any boundary fails coverage",
+          "chokepoint": "runVerify",
+          "verb": "guard",
+          "oracle": "RATCHET — a declared invariant with no anchoring boundary fails coverage",
+          "grade": "C",
+          "verdict": "stale",
+          "crossing": null,
+          "reliants": 0,
+          "witnessed": true
+        },
+        {
+          "comp": "Harness core",
+          "inv": "a named oracle that no test runs cannot pass",
+          "chokepoint": "runNamedTest",
+          "verb": "guard",
+          "oracle": "runner contract — a name that exists nowhere exits nonzero (the vanished oracle cannot pass)",
+          "grade": "C",
+          "verdict": "stale",
+          "crossing": null,
+          "reliants": 0,
+          "witnessed": true
+        },
+        {
+          "comp": "Harness core",
+          "inv": "a skipped run never clobbers an oracle's recorded verdict",
+          "chokepoint": "recordVerify",
+          "verb": "guard",
+          "oracle": "merge — a skip never clobbers a real verdict; the old verdict rides through with its own stamp",
+          "grade": "C",
+          "verdict": "stale",
+          "crossing": null,
+          "reliants": 0,
+          "witnessed": true
+        },
+        {
+          "comp": "Harness core",
+          "inv": "a vanished oracle reds its claim, never green-by-absence",
+          "chokepoint": "resolveFromBatch",
+          "verb": "guard",
+          "oracle": "match — ZERO matching tests is its OWN state: the vanished oracle, named as such",
+          "grade": "C",
+          "verdict": "stale",
+          "crossing": null,
+          "reliants": 0,
+          "witnessed": true
+        },
+        {
+          "comp": "Harness core",
+          "inv": "a via-test oracle that iterates no live domain fails its claim",
+          "chokepoint": "analyzeOracle",
+          "verb": "guard",
+          "oracle": "META-ORACLE — a `via test` boundary whose oracle loops a LITERAL fails",
+          "grade": "C",
+          "verdict": "stale",
+          "crossing": null,
+          "reliants": 0,
+          "witnessed": true
+        },
+        {
+          "comp": "Harness core",
+          "inv": "agent lifecycle preserves decisions and exposes the current change signal",
+          "chokepoint": "runHook",
+          "verb": "guard",
+          "oracle": "hooks — generated wiring uses the low-cost entrypoint and observes writes",
+          "grade": "C",
+          "verdict": "stale",
+          "crossing": null,
+          "reliants": 0,
+          "witnessed": false
+        },
+        {
+          "comp": "Harness core",
+          "inv": "an empty derivation against a remembered surface refuses, never passes",
+          "chokepoint": "vacuityRefusal",
+          "verb": "guard",
+          "oracle": "FLOOR — an empty derivation against a remembered surface REFUSES, never reports coherent",
+          "grade": "C",
+          "verdict": "stale",
+          "crossing": null,
+          "reliants": 0,
+          "witnessed": true
+        },
+        {
+          "comp": "Harness core",
+          "inv": "cached decisions expose structurally expired premises",
+          "chokepoint": "auditPremiseLeases",
+          "verb": "guard",
+          "oracle": "audit — retracted decisions disappear and only broken strong leases fail a check",
+          "grade": "C",
+          "verdict": "stale",
+          "crossing": null,
+          "reliants": 0,
+          "witnessed": true
+        },
+        {
+          "comp": "Harness core",
+          "inv": "pinned mass follows a value-conserving rename but never absorbs growth",
+          "chokepoint": "reconcileMass",
+          "verb": "guard",
+          "oracle": "mass — a renamed component keeps its pin; growth and novelty are never absorbed",
+          "grade": "C",
+          "verdict": "stale",
+          "crossing": null,
+          "reliants": 0,
+          "witnessed": true
+        },
+        {
+          "comp": "Harness core",
+          "inv": "predicted context closure is calibrated against observed reads and outcomes",
+          "chokepoint": "calibrate",
+          "verb": "guard",
+          "oracle": "calibration reports coverage, outside reads, and defect rates by prediction misses",
+          "grade": "C",
+          "verdict": "stale",
+          "crossing": null,
+          "reliants": 0,
+          "witnessed": true
+        },
+        {
+          "comp": "Harness core",
+          "inv": "reviewed risk sites survive relocation but never duplication",
+          "chokepoint": "reconcile",
+          "verb": "guard",
+          "oracle": "sinks — a moved file keeps its baselined identity and a genuinely new site still fails",
+          "grade": "C",
+          "verdict": "stale",
+          "crossing": null,
+          "reliants": 0,
+          "witnessed": true
+        },
+        {
+          "comp": "Harness core",
+          "inv": "significant behavioral growth acquires an anchor or patch-specific decision",
+          "chokepoint": "signal",
+          "verb": "guard",
+          "oracle": "only a zero-anchor alarm without attestation needs a decision",
+          "grade": "C",
+          "verdict": "stale",
+          "crossing": null,
+          "reliants": 0,
+          "witnessed": true
+        },
+        {
+          "comp": "Harness core",
+          "inv": "task context is bounded and names its approximations",
+          "chokepoint": "contextFor",
+          "verb": "guard",
+          "oracle": "renderContext — byte-stable for the same inputs and names every approximation",
+          "grade": "C",
+          "verdict": "stale",
+          "crossing": null,
+          "reliants": 0,
+          "witnessed": false
+        }
+      ],
+      "withheld": 0,
+      "total": 14
+    },
+    "gatesClean": 0,
+    "gatesTotal": 14,
+    "grades": {
+      "A": 0,
+      "B": 0,
+      "C": 14,
+      "D": 0,
+      "U": 0
+    },
+    "crossings": {
+      "shown": [],
+      "withheld": 0,
+      "total": 0
+    },
+    "atlas": null,
+    "darknesses": [
+      {
+        "key": "unwitnessed",
+        "label": "unwitnessed",
+        "what": "invariants with no observed negative control — nothing has ever been seen to break them",
+        "dark": 2,
+        "total": 14,
+        "unit": "declared invariants",
+        "worst": {
+          "shown": [
+            "Harness core — agent lifecycle preserves decisions and exposes the current change signal",
+            "Harness core — task context is bounded and names its approximations"
+          ],
+          "withheld": 0,
+          "total": 2
+        }
+      },
+      {
+        "key": "unclaimed",
+        "label": "unclaimed",
+        "what": "files no claim names — code inside the map that nothing in the spec points at",
+        "dark": 86,
+        "total": 96,
+        "unit": "files in the graph",
+        "worst": {
+          "shown": [
+            "src/atlas.ts",
+            "src/boundary.ts",
+            "src/calibration.ts",
+            "src/commands.ts",
+            "src/config.ts",
+            "src/context.ts",
+            "src/contracts.ts",
+            "src/conventions.ts"
+          ],
+          "withheld": 78,
+          "total": 86
+        }
+      },
+      {
+        "key": "undocumented",
+        "label": "undocumented",
+        "what": "symbols with no docblock — meaning a reader has to derive from the body",
+        "dark": 171,
+        "total": 452,
+        "unit": "symbols",
+        "worst": {
+          "shown": [
+            "src/adapters/cloudflare.ts#cloudflare",
+            "src/adapters/python.ts#python",
+            "src/adapters/typescript.ts#typescript",
+            "src/atlas.ts#AtlasOpts",
+            "src/atlas.ts#atlas",
+            "src/boundary.ts#ClaimKey",
+            "src/calibration.ts#CalibrationAttribution",
+            "src/calibration.ts#CalibrationOutcome"
+          ],
+          "withheld": 163,
+          "total": 171
+        }
+      },
+      {
+        "key": "unvisited",
+        "label": "unvisited",
+        "what": "paths recent work keeps touching that the graph does not own — no closure can be computed for them, so every read-cost figure here excludes them",
+        "dark": 72,
+        "total": 165,
+        "unit": "paths touched in the concern band",
+        "worst": {
+          "shown": [
+            ".claude/settings.json",
+            ".coherence/decisions/3e2c9d10-82b3-4627-a861-555b53d9777d.jsonl",
+            ".coherence/decisions/a0822697df6f0b473.jsonl",
+            ".coherence/decisions/a0d10da06384ede58.jsonl",
+            ".coherence/decisions/a52046bd2cb7efc4e.jsonl",
+            ".coherence/decisions/a87bc84c1ac9f42ee.jsonl",
+            ".coherence/decisions/a8e360c3df216902a.jsonl",
+            ".coherence/decisions/a9721b7e8784fc332.jsonl"
+          ],
+          "withheld": 64,
+          "total": 72
+        }
+      }
+    ]
+  },
+  "journal": {
+    "blocked": {
+      "shown": [
+        {
+          "id": "d-ad96879b",
+          "kind": "blocked",
+          "at": "2026-08-01T03:49:48.584Z",
+          "agent": "gatefix",
+          "session": "a52046bd2cb7efc4e",
+          "commit": "b9c59de",
+          "chose": "mutation-check the cli.ts generator-guard line itself for the alias bypass",
+          "because": "no writing command currently declares an alias — resolve, the only one in the registry, writes nothing — so reverting cli.ts to `c.name === cmd` leaves the suite green no matter what oracle is written. Inventing an alias on a generator purely to make a witness would change the public command surface to test it. Answered by moving the flag read behind commandFor(), which IS mutation-checked (collapse it to a name-only match and the registry oracle reds), and by enumerating the generator-refusal oracle from dispatchTokens() so an alias inherits the demand the day one exists.",
+          "over": [],
+          "couldBe": [],
+          "discriminatedBy": "",
+          "news": false
+        },
+        {
+          "id": "d-60e651df",
+          "kind": "blocked",
+          "at": "2026-07-31T02:34:19.712Z",
+          "agent": "main",
+          "session": "s-e618ddf86bc7",
+          "commit": "4e05778",
+          "chose": "could not dogfood either new instrument on the coherence repo itself",
+          "because": "coherence carries no *.spec.md and no coherence.config.json of its own, so 'verify --fast' here reports 'claims: 0' (an empty cost vector, correctly below the floor and silent) and 'atlas' reports 'no atlas config — nothing to render'. Both features were instead exercised on a purpose-built vitest project with real git history, which is also what discriminated the duration conjecture: cost printed 3.2s over 5 claims with four 800ms report-sourced rows and one 2ms wall-sourced typecheck; atlas printed 'heat █ 75%' for two crossings defined in a file touched by 3 of 4 considered commits, and the panel drew 'energy  cost 3.2s · top 804ms Dogfood  |  heat ██ mintToken 75%'.",
+          "over": [],
+          "couldBe": [],
+          "discriminatedBy": "",
+          "news": false
+        },
+        {
+          "id": "d-c45911f0",
+          "kind": "blocked",
+          "at": "2026-07-30T05:47:15.995Z",
+          "agent": "main",
+          "session": "s-9e1494a6141b",
+          "commit": "b2f804b",
+          "chose": "batching node:test consumers — no derivable format shipped in v0.17.0, so node:test is RECOGNIZED and refused with instructions rather than guessed at",
+          "because": "measured on Node 25.2.1: node:test ships NO json reporter (node:test/reporters exports only default, dot, junit, lcov, spec, tap), so there is no report with a vitest-style concatenated fullName to read. Worse, its --test-name-pattern does NOT match a concatenated name — pattern 'outer group inner leaf' matched nothing while 'inner leaf' and 'outer group' each matched — so the vitest mirror (literal substring over fullName) would be WRONG for node:test, not merely unavailable. Parsing tap (nested sub-TAP) or junit (XML) is possible but the matching rule is a second semantic model, and shipping a mirror I have not verified is the one thing this feature is not allowed to do.",
+          "over": [],
+          "couldBe": [],
+          "discriminatedBy": "",
+          "news": false
+        },
+        {
+          "id": "d-18ddd84e",
+          "kind": "blocked",
+          "at": "2026-07-29T21:32:01.454Z",
+          "agent": "main",
+          "session": "s-ab82bc855f7f",
+          "commit": "e59302c",
+          "chose": "did not fix stopReport's 'in this repo' wording, which names the parent's cwd rather than the subagent's working repo",
+          "because": "it is a real defect (d-a50185c8/d-9ed648e4 has the evidence) but it is outside the task I was given — the command registry — and a hook-message change alters what every agent in every consuming project reads at stop time. That deserves its own pass, with a decision about whether the right fix is wording ('in <repo>' naming the resolved root) or scope (report on the cwd the agent actually worked in, which the hook cannot know). Reproduction: run any subagent whose cwd differs from its parent's; the stop report's counts describe the parent's journal.",
+          "over": [],
+          "couldBe": [],
+          "discriminatedBy": "",
+          "news": false
+        },
+        {
+          "id": "d-bca4d32b",
+          "kind": "blocked",
+          "at": "2026-07-29T18:26:47.795Z",
+          "agent": "conjecture-builder",
+          "session": "s-c859f19ae5dc",
+          "commit": "20cc889",
+          "chose": "verify that agents actually reach for `coherence conjecture` unprompted",
+          "because": "it needs a real multi-agent fan-out with the instruction line present vs absent, counted over conjecture writes per session. Everything shipped here is mechanism; whether the verb gets USED is a behavioural question this worktree cannot answer. Logged as the open conjecture d-04198572 with its discriminating test.",
+          "over": [],
+          "couldBe": [],
+          "discriminatedBy": "",
+          "news": false
+        },
+        {
+          "id": "d-5411dfc7",
+          "kind": "blocked",
+          "at": "2026-07-29T18:25:12.061Z",
+          "agent": "redundancy-detector",
+          "session": "s-e53dde0a9892",
+          "commit": "a01acf8",
+          "chose": "Scan JSON (package.json/lockfiles/config files) for duplicated domains",
+          "because": "A live instance sat in this very repo the whole time: package-lock.json said version 0.9.0 while package.json said 0.12.0 -- one fact, two spellings, disagreeing. The detector cannot see it because it reads TS and markdown only. Not built because JSON key sets are dominated by structural vocabulary (dependencies, scripts, name, version) and would need a different rarity model to avoid drowning the report; guessing at one late in the pass would have cost the precision number the whole command is judged on.",
+          "over": [],
+          "couldBe": [],
+          "discriminatedBy": "",
+          "news": false
+        },
+        {
+          "id": "d-27aef982",
+          "kind": "blocked",
+          "at": "2026-07-29T18:22:22.808Z",
+          "agent": "redundancy-detector",
+          "session": "s-e53dde0a9892",
+          "commit": "20cc889",
+          "chose": "A derivable-bound arm: checking a computed statistic against a bound the tool could derive (4,237 removed lines attributed to a 1,139-line file)",
+          "because": "That is a RUNTIME consistency check over numbers a tool produced, not a static property of source text. It needs an instrumented producer that declares its own bounds (a diff stat cannot exceed the file's line count) -- a different mechanism from anything in this module, closer to a contract on a computation than to duplicate-domain detection. Building a weak static approximation would have made the command mean two unrelated things. Named here so the next agent does not assume 'redundancy' already covers it.",
+          "over": [],
+          "couldBe": [],
+          "discriminatedBy": "",
+          "news": false
+        },
+        {
+          "id": "d-560b5059",
+          "kind": "blocked",
+          "at": "2026-07-28T21:23:02.144Z",
+          "agent": "integrator",
+          "session": "s-233d5f24ff9b",
+          "commit": "bb1a620",
+          "chose": "recover the rejected alternative for v0.10.1 and v0.11.1 from their commit messages",
+          "because": "MEASURED on my own six release commits from v0.10.1 to v0.12.0: only 2 of 6 carry a rejected alternative a stranger could recover — v0.11.0 (an earlier draft had seven event types; a CLI, NOT an MCP server) and v0.12.0 (a cap there would have stripped 16 of 23 citations). Both are commits where THE REJECTION WAS THE NEWS. The other four record what shipped and why it is right and say nothing about what was dropped — including v0.10.1, whose whole design turns on the project declaring its own kinds rather than the harness shipping a taxonomy. Four of the six backfilled entries are marked NOT IN THE COMMIT: I could write them only because I am the agent that made them, and that path expires with this session",
+          "over": [],
+          "couldBe": [],
+          "discriminatedBy": "",
+          "news": false
+        },
+        {
+          "id": "d-cb216323",
+          "kind": "blocked",
+          "at": "2026-07-28T21:22:14.561Z",
+          "agent": "integrator",
+          "session": "s-233d5f24ff9b",
+          "commit": "bb1a620",
+          "chose": "recover the  for v0.10.1 and v0.11.1 from their commit messages",
+          "because": "MEASURED on my own six release commits: only 2 of 6 carry a rejected alternative a stranger could recover — v0.11.0 ('an earlier draft had seven event types', 'a CLI, NOT an MCP server') and v0.12.0 ('a cap there would have stripped 16 of 23 citations'). Both are commits where THE REJECTION WAS THE NEWS. The other four record what shipped and why it is right, and say nothing about what was considered and dropped — including v0.10.1, whose whole design turns on the project declaring its own kinds rather than the harness shipping a taxonomy. Four of the six entries above are marked NOT IN THE COMMIT: I could write them only because I am the agent that made them, and that recovery path expires with this session",
+          "over": [],
+          "couldBe": [],
+          "discriminatedBy": "",
+          "news": false
+        }
+      ],
+      "withheld": 0,
+      "total": 9
+    },
+    "open": {
+      "shown": [
+        {
+          "id": "d-85b1bcd9",
+          "kind": "conjecture",
+          "at": "2026-07-31T23:45:42.765Z",
+          "agent": "general-purpose",
+          "session": "a87bc84c1ac9f42ee",
+          "commit": "9af0690",
+          "chose": "componentChurn in src/evolution.ts is now consumer-less in product code (scene was its only reader; atlas/verify use fileChurn/crossingHeat) yet its glue test keeps it green",
+          "because": "",
+          "over": [],
+          "couldBe": [
+            "the instrument is wrong — the thing that PRODUCED this number, not the thing it describes",
+            "it should be deleted with its test in a follow-up sweep",
+            "a future perceptual surface resurrecting the doctrine will want per-component heat again"
+          ],
+          "discriminatedBy": "grep componentChurn consumers after the review eviction settles; if still only the test, delete it",
+          "news": false
+        },
+        {
+          "id": "d-52f32b2d",
+          "kind": "conjecture",
+          "at": "2026-07-31T20:28:58.842Z",
+          "agent": "evisceration-sweep-b",
+          "session": "s-3b041943d406",
+          "commit": "81e78ab",
+          "chose": "gutting the docs --check comparer (doOverview check branch returning []) with AGENTS.md genuinely stale left npm test 627-pass, verify 27/27 and 'docs current' — the staleness GATE is itself ungated, same class as the deleted testMatch rule",
+          "because": "",
+          "over": [],
+          "couldBe": [
+            "the instrument is wrong — the thing that PRODUCED this number, not the thing it describes",
+            "acceptable: the comparer is cli.ts glue and the committed-artifact diff would surface in code review anyway",
+            "the docs gate needs its own boundary claim (a mutated comparer must red something), since CI trusts 'docs current' as evidence"
+          ],
+          "discriminatedBy": "write a guard test that stales AGENTS.md in a fixture and asserts docs --check exits 1; if that test is deemed not worth having, the first explanation was the real answer",
+          "news": false
+        },
+        {
+          "id": "d-6d6dba60",
+          "kind": "conjecture",
+          "at": "2026-07-31T20:28:58.551Z",
+          "agent": "evisceration-sweep-b",
+          "session": "s-3b041943d406",
+          "commit": "81e78ab",
+          "chose": "verify prints '✓ coherent' (exit 0) with 'claims: 0 · 0 green' when buildGraph returns an empty graph — the whole spec tree can vanish from derivation and the primary gate stays green; only docs --check goes red, and only because committed artifacts diverge",
+          "because": "",
+          "over": [],
+          "couldBe": [
+            "the instrument is wrong — the thing that PRODUCED this number, not the thing it describes",
+            "vacuous green is intentional: a claimless project must verify clean to onboard, and an empty DERIVATION is indistinguishable from an empty PROJECT by design",
+            "verify lacks a non-vacuity floor: it should refuse (or loudly mark) a run whose claim count dropped to zero while status.json remembers 27"
+          ],
+          "discriminatedBy": "check whether verify consults the previous status.json claim count; if a 27-to-0 collapse produces no signal anywhere in verify's own output, the floor is missing, not designed away",
+          "news": false
+        },
+        {
+          "id": "d-ff8664e0",
+          "kind": "conjecture",
+          "at": "2026-07-31T18:33:54.447Z",
+          "agent": "general-purpose",
+          "session": "a0d10da06384ede58",
+          "commit": "a45918d",
+          "chose": "RELEASE-NOTES.md and src/economy.ts hold near-verbatim copies of one sentence that no longer agree",
+          "because": "A at RELEASE-NOTES.md:139 reads \"A project whose specs are worth reading has a larger closure than one with no specs at all, and the second is not healt…\"; B at src/economy.ts:36 reads \"Closure is a COST, not a defect: a project whose specs are worth reading has a larger closure than one with no specs at…\" (similarity 0.73 over 6-word shingles). Each copy reads as authoritative on its own, so a reader of one cannot see that the other disagrees — that is rot only a diff can surface, and nothing runs that diff.",
+          "over": [],
+          "couldBe": [
+            "the instrument is wrong — the thing that PRODUCED this number, not the thing it describes",
+            "one side rotted — the argument was updated at one spelling and not at the other, and there was nothing there to notice",
+            "the difference is intended — one site deliberately summarizes or re-frames the other, and nobody wrote that down"
+          ],
+          "discriminatedBy": "put the two sentences side by side. If one is the stale copy, update or delete it and keep ONE authoritative spelling (derive or reference it — the command-index fix). If the difference is deliberate, dismiss this question saying so.",
+          "news": false
+        },
+        {
+          "id": "d-cf4da93b",
+          "kind": "conjecture",
+          "at": "2026-07-31T18:33:54.404Z",
+          "agent": "general-purpose",
+          "session": "a0d10da06384ede58",
+          "commit": "a45918d",
+          "chose": "README.md and src/why-lint.ts hold near-verbatim copies of one sentence that no longer agree",
+          "because": "A at README.md:1790 reads \"This applies pressure on the right axis (CONTENT, keyed to the invariant set) rather than the wrong one (character coun…\"; B at src/why-lint.ts:17 reads \"Together they apply pressure on the right axis (CONTENT, keyed to the invariant set) rather than the wrong one (charact…\" (similarity 0.86 over 6-word shingles). Each copy reads as authoritative on its own, so a reader of one cannot see that the other disagrees — that is rot only a diff can surface, and nothing runs that diff.",
+          "over": [],
+          "couldBe": [
+            "the instrument is wrong — the thing that PRODUCED this number, not the thing it describes",
+            "one side rotted — the argument was updated at one spelling and not at the other, and there was nothing there to notice",
+            "the difference is intended — one site deliberately summarizes or re-frames the other, and nobody wrote that down"
+          ],
+          "discriminatedBy": "put the two sentences side by side. If one is the stale copy, update or delete it and keep ONE authoritative spelling (derive or reference it — the command-index fix). If the difference is deliberate, dismiss this question saying so.",
+          "news": false
+        },
+        {
+          "id": "d-96482275",
+          "kind": "conjecture",
+          "at": "2026-07-31T18:33:54.359Z",
+          "agent": "general-purpose",
+          "session": "a0d10da06384ede58",
+          "commit": "a45918d",
+          "chose": "README.md and src/raise.ts hold near-verbatim copies of one sentence that no longer agree",
+          "because": "A at README.md:1112 reads \"The refutation advisory prints its per-invariant list only once a project has declared its first refutation, so on a pr…\"; B at src/raise.ts:54 reads \"The refutation advisory prints its per-invariant list only once a project has declared its first refutation, so on a pr…\" (similarity 0.96 over 6-word shingles). Each copy reads as authoritative on its own, so a reader of one cannot see that the other disagrees — that is rot only a diff can surface, and nothing runs that diff.",
+          "over": [],
+          "couldBe": [
+            "the instrument is wrong — the thing that PRODUCED this number, not the thing it describes",
+            "one side rotted — the argument was updated at one spelling and not at the other, and there was nothing there to notice",
+            "the difference is intended — one site deliberately summarizes or re-frames the other, and nobody wrote that down"
+          ],
+          "discriminatedBy": "put the two sentences side by side. If one is the stale copy, update or delete it and keep ONE authoritative spelling (derive or reference it — the command-index fix). If the difference is deliberate, dismiss this question saying so.",
+          "news": false
+        },
+        {
+          "id": "d-1852dbd8",
+          "kind": "conjecture",
+          "at": "2026-07-31T18:19:56.781Z",
+          "agent": "main",
+          "session": "s-adcd72be1a20",
+          "commit": "a45918d",
+          "chose": "prose caches rot at a measured 82%: of 80 near-duplicate sentence pairs across README, RELEASE-NOTES and module headers, only 14 are identical — 66 have already drifted apart",
+          "because": "",
+          "over": [],
+          "couldBe": [
+            "the instrument is wrong — the thing that PRODUCED this number, not the thing it describes",
+            "the rot is real but mostly COSMETIC (rewording between an essay and release notes), so the harm is smaller than the rate implies — samples show 'what was rejected is what stops...' vs 'over — what was rejected — is what stops...' alongside genuinely semantic splits like 'coherence observed wrote to the journal' vs 'coherence observed wrote conjectures'",
+            "the rate is the harm: a reader cannot tell a cosmetic divergence from a semantic one without diffing both copies, which is exactly the inference the cache existed to prevent"
+          ],
+          "discriminatedBy": "hand-classify the 66 divergent pairs into cosmetic vs semantic. If semantic pairs are a small minority, the fix is tier-0 editing (stop quoting between frozen release notes and the living README) and an advisory; if semantic drift is common, prose needs binding machinery (transclusion markers regenerated by docs and byte-checked) the way the command index already has",
+          "news": false
+        },
+        {
+          "id": "d-e45dbe0f",
+          "kind": "conjecture",
+          "at": "2026-07-31T14:50:52.405Z",
+          "agent": "main",
+          "session": "s-adcd72be1a20",
+          "commit": "fc709cf",
+          "chose": "PREMISE ROT: a journaled decision can state a premise that later work invalidates, and nothing in the harness detects it. Found live in hoist: app.spec.md filed the paths invariants at root because 'the feature has no single node — the store and the wire composition live in the Patient DO and worker.ts respectively'; the capability extraction moved the store, tools and declaration into shared/paths, dissolving that premise, and the decision now reads as current guidance with a false reason. The journal is append-only and self-correcting for RETRACTED decisions, but has no mechanism for decisions whose stated reason silently expired",
+          "because": "",
+          "over": [],
+          "couldBe": [
+            "the instrument is wrong — the thing that PRODUCED this number, not the thing it describes",
+            "a real and detectable advisory class: many premises name structural facts a graph already holds (a file path, 'lives in X', 'has no single node', 'confined to Y', a symbol name) — a scanner could extract path/symbol-shaped tokens from --because text and flag entries whose referents no longer exist or moved",
+            "undetectable in general: most premises are semantic, not structural, and a scanner that only catches path-shaped ones would give false confidence that the rest were checked"
+          ],
+          "discriminatedBy": "extract path/symbol tokens from every --because in hoist's 160-entry journal, resolve each against the current graph, and hand-classify the hits: if a meaningful fraction are genuinely rotted (not just moved-but-equivalent), the advisory is real; if it is mostly noise or only ever finds the one case we already know, it is not worth building",
+          "news": false
+        },
+        {
+          "id": "d-8bc76a8c",
+          "kind": "conjecture",
+          "at": "2026-07-31T14:40:31.175Z",
+          "agent": "main",
+          "session": "s-adcd72be1a20",
+          "commit": "cd9be5f",
+          "chose": "the genetics frame predicts two instruments coherence lacks: (1) LOCALIZED growth-without-anchoring — a component whose mass grows while its claim count stays flat is the software analogue of a tumor (local fitness, global lethality), which the existing repo-wide novelty-vs-anchor advisory cannot localize; (2) GERMLINE vs SOMATIC gate stratification — an edit to the harness propagates to every consumer while an edit to a consumer dies with it, so harness-side gates should be strictly stronger than consumer-side ones, and an unpinned consumer (the posthog/context-mill pattern: one release reshapes the whole fleet's field) is germline editing without a checkpoint",
+          "because": "",
+          "over": [],
+          "couldBe": [
+            "the instrument is wrong — the thing that PRODUCED this number, not the thing it describes",
+            "both are real and cheap: (1) is mass dims joined against per-component claim counts, already both in status.json; (2) is a policy plus a release-side check that no consumer resolves a floating ref",
+            "(1) is noise on a young repo where mass legitimately outruns claims during exploration, and would fire constantly on any greenfield component"
+          ],
+          "discriminatedBy": "compute mass-delta vs claim-delta per component over the last N commits on hoist and this repo; if the ratio flags components a human agrees are under-anchored (and stays quiet on ones they agree are fine), it is an instrument; if it flags everything young, it needs a maturity gate before it can ship",
+          "news": false
+        },
+        {
+          "id": "d-148435f9",
+          "kind": "conjecture",
+          "at": "2026-07-31T05:06:46.939Z",
+          "agent": "main",
+          "session": "s-adcd72be1a20",
+          "commit": "fafe386",
+          "chose": "verify ranks [doc] jobs by defining-file WRITE churn, but hoist's first field reading shows the two instruments disagree about the same file: shared/paths/schemas.ts carries 20 of 44 undocumented symbols and sits in 69% of read closures (economy's #3 hub, holding 42% even under a narrow 2-3-file band), yet ranks cold because its AUTHORS rarely touch it — write churn may be the wrong ranking key for debt that READERS pay",
+          "because": "",
+          "over": [],
+          "couldBe": [
+            "the instrument is wrong — the thing that PRODUCED this number, not the thing it describes",
+            "the ranking key should be closure membership (economy's fileAttribution) when an economy record exists, falling back to churn when it does not",
+            "both keys are needed: churn ranks debt for the next WRITER, closure membership ranks it for the next READER, and the jobs list should say which lens ranked it"
+          ],
+          "discriminatedBy": "join verify's docGaps against status.json's economy data on hoist and compare the two orderings against a human judgment of which symbols an arriving agent actually needs documented first; if closure-ranked wins, wire fileAttribution into rankDocGaps as the primary key for v0.21",
+          "news": false
+        }
+      ],
+      "withheld": 6,
+      "total": 16
+    },
+    "decisions": {
+      "shown": [
+        {
+          "id": "d-b3d1fd48",
+          "kind": "decision",
+          "at": "2026-08-01T21:07:07.787Z",
+          "agent": "index",
+          "session": "a873312c333faa81d",
+          "commit": "d9053b8",
+          "chose": "unvisited = paths in the recent concern band that the graph does not own — the complement of economy's closure, not a new churn statistic",
+          "because": "closureOf returns NULL for a commit touching nothing the graph owns, so a path outside the graph can never enter a closure by construction — the two candidate definitions denote the same set and the cheap one reuses fileChurn + the graph's file nodes with no second history read. It measures 173/274 on the consuming project and 72/165 here, which is the finding: most of what recent work touches is invisible to every read-cost figure the harness prints. Denominator is the distinct paths the 2..BULK band touched; with no git it is UNMEASURED, never 0.",
+          "over": [
+            "files with churn that appear in zero reading closures (identical set, computed the expensive way)",
+            "a churn-vs-coverage ratio per component"
+          ],
+          "couldBe": [],
+          "discriminatedBy": "",
+          "news": true
+        },
+        {
+          "id": "d-6a34f3ac",
+          "kind": "decision",
+          "at": "2026-08-01T21:07:06.550Z",
+          "agent": "index",
+          "session": "a873312c333faa81d",
+          "commit": "d9053b8",
+          "chose": "index CATCHES Unrunnable from the structural diff and files it as an unread source, instead of letting cli.ts's total handler abort the run",
+          "because": "cli.ts's total Unrunnable handler is the right answer for a command whose WHOLE JOB needs history (log, signal): it exits 2 with a sentence. The Index has three views and only one of them reads history, so aborting would cost the reader the map and the journal because git was unavailable — a shallow CI clone or a source export is an ordinary consumer, not an exotic state. A pre-check would be floor.ts's rejected shape (a second spelling of the requirement, one per caller). Catching the typed throw keeps the requirement stated once at the seam that discovers it, and the page then says WHICH source it lost and why — which is the same doctrine, applied at a page instead of at a process.",
+          "over": [
+            "letting the CLI's uncaughtException renderer take it, as log and signal do",
+            "pre-checking for a git repo before calling graphAtRef"
+          ],
+          "couldBe": [],
+          "discriminatedBy": "",
+          "news": true
+        },
+        {
+          "id": "d-dfd359f5",
+          "kind": "decision",
+          "at": "2026-08-01T21:07:05.296Z",
+          "agent": "index",
+          "session": "a873312c333faa81d",
+          "commit": "d9053b8",
+          "chose": "extracted the refutation key rule to walk.ts's refutedInvariants and derived all three existing spellings from it, BEHAVIOUR-PRESERVING",
+          "because": "QUERY: `grep -n 'split(\":\")\\[0\\]' src/*.ts` found it three times — render-claude.ts:43 (the invariant table's refuted column), verify.ts:522 (the refutation coverage line) and verify.ts:559 (the never-red decoration filter). The Index needs it a fourth time, which is exactly the redundancy finding this repo has killed four times. Homed with the parser that produced the strings. Mutation-checked: gutting refutedInvariants reds 4 tests across all three call sites plus the new one, so the extraction is defended rather than merely tidy. The colonless-line semantics are LEFT ALONE on purpose — an extraction that also changes what it computes cannot be reviewed as an extraction.",
+          "over": [
+            "adding a fourth spelling of `r.split(\":\")[0].trim()` inside index-model.ts",
+            "extracting it AND fixing the colonless-line case in the same change"
+          ],
+          "couldBe": [],
+          "discriminatedBy": "",
+          "news": true
+        },
+        {
+          "id": "d-91b82241",
+          "kind": "decision",
+          "at": "2026-08-01T21:00:00.084Z",
+          "agent": "index",
+          "session": "a873312c333faa81d",
+          "commit": "d9053b8",
+          "chose": "the gate collapse folds grade B (aging green) as well as A — measured: on the 14-component consuming project it fired 0 times out of 59 gates",
+          "because": "QUERY, re-runnable: `node src/cli.ts index` in hoist/app, then `jq '.map.grades, .map.gatesClean' docs/coherence/index.json`. It read {A:0,B:47,C:11,D:1,U:0} with gatesClean 0 — because the verify record was filed at another commit (the ordinary state of any tree with uncommitted work), so every machine-checked gate degraded to stale/B at once and the collapse never fired. 47 rows carrying one bit between them is render-contract.ts's alarm-flood finding arriving a second time. Staleness is a fact about the RECORD, not about a gate: it is stated once in the sources strip. After the change hoist lists 12 rows (11 C + 1 D) instead of 59.",
+          "over": [
+            "collapsing only fresh passing A gates, as first written",
+            "collapsing nothing and listing all 59 gates"
+          ],
+          "couldBe": [],
+          "discriminatedBy": "",
+          "news": true
+        },
+        {
+          "id": "d-faa17811",
+          "kind": "decision",
+          "at": "2026-08-01T20:49:42.104Z",
+          "agent": "index",
+          "session": "a873312c333faa81d",
+          "commit": "d9053b8",
+          "chose": "the default frame is the STORED CURSOR (the prior index.json's head), with the last tag only as a fallback — measured: 'since the last tag' resolves in neither dogfood target",
+          "because": "QUERY, re-runnable: `git describe --tags --abbrev=0` + `git rev-list --count <tag>..HEAD`. In coherence the last tag IS HEAD (v0.24.1 at d9053b8, 0 commits since) so the tag frame is EMPTY; in hoist/app `git tag | wc -l` is 0 so it does not resolve at all. A default that degenerates in 2 of 2 measured projects is not a default. The cursor is what 'since I last looked' actually means, and it works with no tags and no releases. Order: --since > stored cursor > last tag (only if it is not HEAD) > FIRST LOOK, which is stated as having no news by definition rather than dumping history.",
+          "over": [
+            "since the last tag as the primary default, as briefed",
+            "always-all-history, with no frame at all"
+          ],
+          "couldBe": [],
+          "discriminatedBy": "",
+          "news": true
+        },
+        {
+          "id": "d-2ff4b51b",
+          "kind": "decision",
+          "at": "2026-08-01T20:49:17.879Z",
+          "agent": "index",
+          "session": "a873312c333faa81d",
+          "commit": "d9053b8",
+          "chose": "index reads the RECORDED drift/atlas sections rather than re-running drift() or atlas()",
+          "because": "panel.ts's governing rule — any number shown must be recorded first. drift's analyze() is private and atlas() writes atlas.md and prints a full report; both would be a SECOND SPELLING of a domain this repo has killed four times. The cost is honest: when a section is absent or from another commit the Index says so by name (\"drift: no reading recorded — run coherence drift\") instead of showing a blank that reads as health.",
+          "over": [
+            "calling drift() and atlas() in-process to get fresh numbers",
+            "re-implementing drift's locality/spread windows inside index-model.ts"
+          ],
+          "couldBe": [],
+          "discriminatedBy": "",
+          "news": true
+        },
+        {
+          "id": "d-d405e24e",
+          "kind": "decision",
+          "at": "2026-08-01T03:44:19.515Z",
+          "agent": "gatefix",
+          "session": "a52046bd2cb7efc4e",
+          "commit": "5f91529",
+          "chose": "correct the floor's partial-collapse premise in all four places it is spelled, and name the mass measures pin as the mitigation — WITHOUT adding a gate",
+          "because": "reproduced the reviewer's shape: 2 remembered claims, one component dropped from the WALK, run printed 'claims: 1 · 1 green · ✓ coherent' exit 0 and laundered the record to 1 in the same run, so a gradual N→1 collapse never meets the floor. The premise 'coverage reds any component whose claims ALL vanished' is only true for a component whose NODE survives with zero claims — coverage iterates the derived graph and cannot see a node the walk dropped. But a gate here would be wrong: deleting a component's spec is legitimate pruning and is observationally identical (this repo evicted two components this release). A documented hole with a named mitigation beats a gate that punishes deletion.",
+          "over": [
+            "gating the node-vanishing collapse (refusing when a component the record remembers is absent from the derived graph)",
+            "leaving the comment and fixing only the release notes"
+          ],
+          "couldBe": [],
+          "discriminatedBy": "",
+          "news": false
+        },
+        {
+          "id": "d-3add85b9",
+          "kind": "decision",
+          "at": "2026-08-01T03:34:06.916Z",
+          "agent": "gatefix",
+          "session": "a52046bd2cb7efc4e",
+          "commit": "3aae3ea",
+          "chose": "ownerOf returns string|null — an unowned path has NO owner, and every caller states what it does with that",
+          "because": "the \".\" fallback is unrepresentable-vs-real confusion at the type: it returns the SAME value for \"the root component owns this\" and \"nothing owns this\", so no caller could tell them apart and affectedComponents fed a phantom component into the scope set — verify then announced it had examined component \".\" that does not exist, graded zero claims, and printed coherent. Refusing would be wrong: an unowned root-level file is ordinary (a config, a script), and the codebase already has the right sentence for it — nothing to check.",
+          "over": [
+            "keeping the unconditional \".\" fallback and filtering the fabricated component out at the scoping seam only",
+            "refusing the run when a changed file is unowned"
+          ],
+          "couldBe": [],
+          "discriminatedBy": "",
+          "news": false
+        },
+        {
+          "id": "d-3b7c4936",
+          "kind": "decision",
+          "at": "2026-08-01T03:27:12.214Z",
+          "agent": "gatefix",
+          "session": "a52046bd2cb7efc4e",
+          "commit": "275e5c2",
+          "chose": "one shared readJsonOrRefuse seam in floor.ts, throwing the existing Unrunnable, for all three persistent readers (status.json, the ratchet baselines, coherence.config.json)",
+          "because": "three copies of catch-return-default is exactly how green-by-absence got into all three files at once; the repo's redundancy doctrine is derive one spelling from the other. floor.ts already owns this doctrine and already exports Unrunnable, whose CLI renderer is total over every command by construction — so a fourth persistent reader added next month inherits the refusal instead of re-forgetting it.",
+          "over": [
+            "three hand-rolled absent-vs-unreadable checks, one per reader",
+            "a new module for the seam"
+          ],
+          "couldBe": [],
+          "discriminatedBy": "",
+          "news": false
+        },
+        {
+          "id": "d-bab08665",
+          "kind": "decision",
+          "at": "2026-08-01T03:16:58.709Z",
+          "agent": "main",
+          "session": "3e2c9d10-82b3-4627-a861-555b53d9777d",
+          "commit": "25c543e",
+          "chose": "Fix all three adversarial-review findings rather than accepting any as known limitations, and record in each test's header WHY the gap existed",
+          "because": "Two fable reviewers found three real defects by mutation, each reproduced in both directions. (1) test/vacuity.test.ts was ITSELF vacuous: both its assertions are universal quantifiers over command output with no check that any command ran, so inserting process.exit(2) after cli.ts's cmd read made both tests pass green — in the one file whose entire subject is instruments that cannot distinguish finding nothing from not looking. The idiom was already in this suite twice (commands.test.ts live.length>=20, and observed.length>=3 in both totality oracles) and simply was not copied. Writing the rule down is not obeying it. (2) claimedFilePaths lost its only witness when scene.test.ts was evicted: mutating it to bless every ambiguous candidate — the exact over-report it exists to prevent — passes 593/593 with verify ✓ coherent, because no spec anchor names it. The asymmetry is the lesson: the UNDER-report direction reds a promise.test.ts assertion, so only the direction that silently inflates a coverage number went dark. (3) artifactSnapshot watched AGENTS.md/CLAUDE.md/public but not README.md, which docs also writes, so a future root-markdown-only generator would evade the writesArtifacts oracle. THE GENERAL LESSON, which the eviction audit missed: auditing an eviction by TEST COUNT answers arithmetic, not 'was any surviving guarantee ONLY witnessed there'. The second question is the one that bites",
+          "over": [
+            "Deferring the README blind spot because no current generator writes only there",
+            "Treating the vacuity oracle's missing instrument check as theoretical, since it only opens when the CLI front door breaks"
+          ],
+          "couldBe": [],
+          "discriminatedBy": "",
+          "news": false
+        }
+      ],
+      "withheld": 152,
+      "total": 162
+    },
+    "settled": {
+      "resolved": 19,
+      "dismissed": 1,
+      "retracted": 1,
+      "inFrame": 1
+    },
+    "totals": {
+      "blocked": 9,
+      "open": 16,
+      "decisions": 162,
+      "records": 230,
+      "sessions": 40,
+      "unreadable": 0
+    },
+    "news": {
+      "blocked": 0,
+      "open": 0,
+      "decisions": 6
+    }
+  },
+  "trajectory": {
+    "structural": {
+      "componentsAdded": {
+        "shown": [],
+        "withheld": 0,
+        "total": 0
+      },
+      "componentsRemoved": {
+        "shown": [],
+        "withheld": 0,
+        "total": 0
+      },
+      "invAdded": {
+        "shown": [],
+        "withheld": 0,
+        "total": 0
+      },
+      "invRemoved": {
+        "shown": [],
+        "withheld": 0,
+        "total": 0
+      },
+      "boundaryAdded": {
+        "shown": [],
+        "withheld": 0,
+        "total": 0
+      },
+      "boundaryRemoved": {
+        "shown": [],
+        "withheld": 0,
+        "total": 0
+      },
+      "boundaryRewired": {
+        "shown": [],
+        "withheld": 0,
+        "total": 0
+      },
+      "claimDelta": [],
+      "changes": 0,
+      "losses": 0
+    },
+    "structuralWhy": null,
+    "loc": {
+      "added": 1821,
+      "deleted": 4
+    },
+    "mass": {
+      "at": "2026-07-31T17:56:23.525Z",
+      "stale": true,
+      "series": [
+        2317,
+        1947,
+        2669,
+        9123,
+        4496,
+        3468,
+        2267,
+        11208
+      ]
+    },
+    "drift": {
+      "at": "2026-07-31T17:59:22.182Z",
+      "stale": true,
+      "locality": [
+        0.8043478260869565,
+        0.8787878787878788,
+        0.26666666666666666,
+        0.5145631067961165,
+        0.5533980582524272,
+        0.47368421052631576,
+        0.5944055944055944,
+        0.4957983193277311
+      ],
+      "spread": [
+        1.1428571428571428,
+        1.2857142857142858,
+        1.8571428571428572,
+        2,
+        1.7142857142857142,
+        2,
+        1.7142857142857142,
+        2
+      ],
+      "verdict": "LOCALITY decohering, SPREAD widening — driving toward wider SPREAD, but recent gestures are mostly converge/couple — likely cross-cutting or one-off work, not a smearing trend; read the seam, not the slope",
+      "localityArrow": "▼",
+      "spreadArrow": "▲"
+    }
+  },
+  "empty": false
+}

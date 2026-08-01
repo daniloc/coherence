@@ -1374,7 +1374,7 @@ both is exactly what drifted.
      edit by hand — add the command to the registry and re-run. Everything OUTSIDE these
      markers is authored prose. -->
 
-_35 commands. This index is derived from the registry the dispatch is checked
+_36 commands. This index is derived from the registry the dispatch is checked
 against (`test/commands.test.ts` enumerates the live `cmd === …` chain and asserts the two
 sets are equal), so it cannot fall behind the CLI. The reasoning for the commands that have
 any is in **In detail** below — that half is authored, and does not cover all of them._
@@ -1405,6 +1405,7 @@ any is in **In detail** below — that half is authored, and does not cover all 
 
 **Perceive the project**
 
+- `coherence index [--since <ref>]` — the returning human's page — MAP · JOURNAL · TRAJECTORY, framed against what you last saw (`_index.html` + `index.json`)
 - `coherence panel [--no-watch | --once]` — live TUI over the graph + the status record
 - `coherence contract` — the promise graph — graded gates + the reliance ledger (`_contract.html`)
 - `coherence context [<file>...] [--symbol <name>] [--changed|--staged]` — emit the smallest graph-addressed context packet for a file, symbol, or current change
@@ -1470,6 +1471,36 @@ any is in **In detail** below — that half is authored, and does not cover all 
   as `verify.cost` (the total, plus the five most expensive claims with their clock),
   **run-level and rewritten whole** rather than per claim: a verdict is a verdict, a timing
   is provenance about the instrument, like `commit` and `dirty`.
+- `coherence index [--since <ref>]` — the **returning human's page** (`<outputDir>/_index.html`,
+  plus `index.json`, the model it is a pure function of). Every other browser artifact here is
+  a complete dump of one moment — `_graph.html` runs to 364KB on this repo — and a complete
+  picture has no attention budget in it and no delta, which is why they go unread. The premise
+  of this one is that **code-level diffs are not useful in LLM development**: thousands of
+  lines move in an afternoon and reading them is not how anyone learns what happened. What you
+  want is the diff of a higher abstraction. So: **three views, no more.**
+  **MAP** — components, zones, gates (invariant → chokepoint → grade), crossings, and a TRUST
+  reading. **JOURNAL** — `blocked` entries first, because an agent recording that it could not
+  do something is the highest-value line a human can read and no gate will ever report it;
+  then open conjectures, then decisions; settled work collapses to counts.
+  **TRAJECTORY** — what this frame did to the **invariant/boundary set** (`coherence log`'s
+  ledger), the frame's LOC delta as context, and the recorded mass and drift trends behind it.
+  The trust reading names **four darknesses and never merges them**, because one "dark region"
+  number averages four problems with four different repairs: *unwitnessed* (invariants with no
+  `## refutations` entry — the one that separates a green claim from an unfalsifiable one, so
+  it leads), *unclaimed* (files no claim names), *undocumented* (symbols with no docblock), and
+  *unvisited* (paths recent work keeps touching that the graph does not own, so no reading
+  closure can be computed for them and every cost figure silently excludes them).
+  **Novelty gates every list and severity only orders what survives**: an anomaly is NEWS, not
+  merely a bad thing, and a three-day-old impasse you have seen on every visit is not news. The
+  frame defaults to the **cursor** — the HEAD the last index run recorded, read back out of
+  `index.json` — falling back to the last tag only when it is not HEAD itself, and otherwise
+  saying FIRST LOOK rather than dumping history as if it were new. (The last tag was the
+  obvious default and it degenerates in practice: measured across two projects, one had its
+  last tag *at* HEAD and the other had no tags at all.) It **derives nothing**: every figure is
+  a reading the graph, the promise model, `.coherence/status.json` or the journals already
+  took, each source named at the top of the page with whether it was read, STALE, or UNREAD —
+  a blank section must never read as health. Lists are capped and **the withheld tail is
+  always stated**. It grades nothing and gates nothing; there is no ✓ anywhere in it.
 - `coherence panel [--no-watch | --once]` — the **operator's instrument panel**: a
   zero-dependency TUI over the graph + the status record (see "The status record and
   the panel" below). Masthead (identity, enforcement-ladder tier bar, claim lights,
@@ -2060,6 +2091,7 @@ ratchets the project has adopted (`conventions --check`, `lint-sinks --check`,
 | --- | --- | --- | --- |
 | `<outputDir>/graph.json`, `_graph.html` | fully owned | `coherence graph` (or `docs`) | `graph --check` / `docs --check` |
 | `<outputDir>/_overview.html`, `AGENTS.md` | fully owned | `coherence overview` (or `docs`) | `overview --check` / `docs --check` |
+| `<outputDir>/_index.html`, `index.json` | fully owned | `coherence index` | none — it embeds a live frame and a cursor |
 | `CLAUDE.md` | **two-zone** — one owned fenced block; everything outside stays authored | `coherence claude` | `claude --check` |
 | `README.md` | **two-zone** — one owned fenced block holding the derived command index (opt-in) | `coherence docs` | `docs --check` |
 

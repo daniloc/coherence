@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-01 18:27Z",
+  "generatedAt": "2026-08-01 21:08Z",
   "root": "coherence",
   "absRoot": "/Users/daniloc/Documents/Development/coherence",
   "nodes": [
@@ -501,7 +501,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/commands.ts",
-      "line": 236,
+      "line": 245,
       "prose": "Every command name, in registry order. The `<a|b|c>` list — aliases excluded."
     },
     {
@@ -511,7 +511,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/commands.ts",
-      "line": 240,
+      "line": 249,
       "prose": "Every token the dispatch must accept: names AND aliases. The totality oracle compares\n THIS against the `cmd === \"…\"` literals it reads out of cli.ts."
     },
     {
@@ -521,7 +521,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/commands.ts",
-      "line": 253,
+      "line": 262,
       "prose": "The registry entry a typed token names — BY NAME OR BY ALIAS. The one lookup any guard\nkeyed on a flag (`writesArtifacts`, `writesBaseline`) may use.\n\nThe floor guarding the generators matched `c.name === cmd` and nothing else, which is a\nlatent bypass with no current victim: the only alias in the registry, `resolve`, writes\nnothing. But `aliases` exists precisely so a writing command can acquire a second\nspelling, and the day one does, the guard would silently exempt it — a gate that fails\nopen on a rename is the class of defect this whole file exists to end. Closed here\nrather than at the call site, because the call site is where it was forgotten once."
     },
     {
@@ -531,7 +531,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/commands.ts",
-      "line": 281,
+      "line": 290,
       "prose": "SPELLING ONE — the usage banner, printed to stderr when the verb is unknown or absent.\nDerived in full: there is no command-name string literal left in cli.ts's help text, so\nthe banner cannot be 29 while the dispatch is 30, and two branches editing different\ncommands can no longer conflict on one line."
     },
     {
@@ -541,7 +541,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/commands.ts",
-      "line": 314,
+      "line": 323,
       "prose": "SPELLING TWO — the README's command index, markers inclusive, ready for `spliceBlock`.\n\nA BULLET LIST, not a markdown table, and that is a real constraint rather than taste:\n`redundancy` reads the first column of every markdown table as an enumerated domain, so\na generated table would hand it a fresh README↔dispatch pair to report — trading the\nfinding this change exists to remove for an identical one. A generated block that the\nproject's own detector still flags has not fixed anything.\n\nThe block is an INDEX and nothing more: name, arg shape, one line. The authored\nper-command reasoning lives OUTSIDE the markers, below the block, and is not expected to\ncover every command — completeness is what the derivation owes, depth is what the prose\nowes, and confusing the two is how the reference got twelve commands behind."
     },
     {
@@ -551,7 +551,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/commands.ts",
-      "line": 352,
+      "line": 361,
       "prose": "The README's claim-form index, markers inclusive, ready for `spliceBlock` — the same\ntreatment the command index got, for the same defect: the hand-kept table listed 8 forms\nwhile the registry carried 9 (`lives in` was missing entirely) and its boundary grammar\nhad lost the `[crossing <zone> -> <zone>]` clause. The README even predicted the drift\n(\"nothing compares it against the registry, so it *can* drift\"). Now something does.\n\nA BULLET LIST, not a markdown table, for the reason renderCommandsBlock records:\n`redundancy` reads the first column of every markdown table as an enumerated domain, so\na generated table would hand it a fresh README↔registry pair to report.\n\nThe block is the GRAMMAR and nothing more: name, tier, grammar, example — the fields the\nregistry actually carries. The authored per-form reasoning (tier behavior under `--fast`,\nthe meta-oracle, skip-vs-fail semantics) lives OUTSIDE the markers, below the block."
     },
     {
@@ -1583,6 +1583,275 @@
       "path": "src/hooks.ts",
       "line": 275,
       "prose": "`coherence hooks` — print the block to paste into .claude/settings.json, plus the\n instruction text so a reader can see what agents will actually be told."
+    },
+    {
+      "id": "f:src/index-model.ts",
+      "parent": "c:src",
+      "label": "index-model.ts",
+      "kind": "file",
+      "sub": "src/index-model.ts",
+      "path": "src/index-model.ts",
+      "prose": "index-model.ts — THE INDEX: what a human needs after the agents have been working.\n\nWHY THIS EXISTS. Every other browser artifact this harness emits is a DUMP OF EVERYTHING\nAT ONE MOMENT: `_graph.html` is 364KB of outline, `_overview.html` is every component's\nprose, `_contract.html` is the whole promise network. They are complete, they are\ncorrect, and they go unread — because a complete picture has no attention budget in it\nand no delta, so a returning human cannot tell what is NEW from what has been true for\nthree weeks. The tooling has served the AGENT exhaustively and the HUMAN barely.\n\nTHE THESIS: code-level diffs are not useful in LLM development. Thousands of lines move\nin an afternoon and reading them is not how anyone learns what happened. What you want\nis the diff of a HIGHER ABSTRACTION — the architecture and the system's design — plus\nthe record of what the agents DECIDED and where they got STUCK. So: three views, no more.\n\n  MAP         the structures as they stand — components, zones, gates, crossings, and a\n              TRUST reading. Rows and tables; there is no picture here.\n  JOURNAL     what the agents decided. `blocked` FIRST: an agent saying it could not do\n              something is the highest-value line a human can read, and no gate will\n              ever report it.\n  TRAJECTORY  movement, AT THE LEVEL OF THE ABSTRACTION — what changed in the\n              invariant/boundary set, not which files moved.\n\n── THE RULES THIS FILE OBEYS, EACH LEARNED EXPENSIVELY ELSEWHERE IN THIS REPO ────────\n\n1. DERIVE NOTHING NEW. Every number here comes from a derivation that already exists:\n   the graph (derive.ts), the promise model (promise.ts), the run record\n   (.coherence/status.json), the journals (decisions.ts), and evolution.ts's history\n   reads. Where a reading is OWNED by a command that writes artifacts — `drift`'s\n   trajectory windows, `atlas`'s tier grades — this reads the RECORD that command filed\n   and never re-computes it. A second spelling of a domain drifts; this repo has killed\n   that four times, and the newest instrument is the worst place to reintroduce it.\n\n2. EVERY NUMBER CARRIES ITS DENOMINATOR, and an unread source is SAID OUT LOUD. A blank\n   section must never read as health — that is green-by-absence (floor.ts), the defect\n   this project spent a day eliminating. So the model carries `sources`, and a reading\n   that could not be taken is `total: null` (UNMEASURABLE) rather than `0`.\n\n3. NOVELTY GATES THE LIST; SEVERITY ONLY ORDERS WHAT SURVIVES. An anomaly is NEWS, not\n   merely a bad thing. A three-day-old impasse the reader has seen on every visit is not\n   news, however severe. Hence the FRAME (see `resolveFrame`) and the `news` flag on\n   every journal entry.\n\n4. THE WITHHELD TAIL IS STATED, NEVER SILENTLY TRUNCATED — raise.ts's cap/withheld\n   idiom, applied to a render. `capList` is the only place a list is shortened, and it\n   returns the withheld count so no caller can drop it by forgetting."
+    },
+    {
+      "id": "s:src/index-model.ts#INDEX_JSON",
+      "parent": "f:src/index-model.ts",
+      "label": "INDEX_JSON",
+      "kind": "symbol",
+      "sub": "const",
+      "path": "src/index-model.ts",
+      "line": 65,
+      "prose": "The artifact pair this command owns, under `outputDir`. `index.json` is the MODEL and\n `_index.html` is a pure function of it — so anything the page says can be checked\n against a file a `jq` one-liner can read, and the render is never the only witness."
+    },
+    {
+      "id": "s:src/index-model.ts#INDEX_HTML",
+      "parent": "f:src/index-model.ts",
+      "label": "INDEX_HTML",
+      "kind": "symbol",
+      "sub": "const",
+      "path": "src/index-model.ts",
+      "line": 68,
+      "prose": "The page itself. Underscore-prefixed like every other generated HTML render, so the\n walk skips it and the artifact never becomes a node in the graph it describes."
+    },
+    {
+      "id": "s:src/index-model.ts#Capped",
+      "parent": "f:src/index-model.ts",
+      "label": "Capped",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/index-model.ts",
+      "line": 74,
+      "prose": "A list that was shortened, WITH the count it withheld. There is no way to consume this\n and quietly drop the tail: the field is not optional."
+    },
+    {
+      "id": "s:src/index-model.ts#capList",
+      "parent": "f:src/index-model.ts",
+      "label": "capList",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/index-model.ts",
+      "line": 78,
+      "prose": "Shorten a list and SAY what was held back. The only truncation in this module.\n A cap of 0 means \"count only\" — a section that collapses to a number by design."
+    },
+    {
+      "id": "s:src/index-model.ts#CAPS",
+      "parent": "f:src/index-model.ts",
+      "label": "CAPS",
+      "kind": "symbol",
+      "sub": "const",
+      "path": "src/index-model.ts",
+      "line": 89,
+      "prose": "THE CAPS, per section, each a claim about a reader's attention rather than about the\ndata. They are here together so the page's total length is one visible decision instead\nof eight scattered ones — the page is for someone who has ten minutes, and a page that\ngrows without bound with the project is the artifact this one replaces."
+    },
+    {
+      "id": "s:src/index-model.ts#SourceRead",
+      "parent": "f:src/index-model.ts",
+      "label": "SourceRead",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/index-model.ts",
+      "line": 113,
+      "prose": "ONE SOURCE THIS PAGE TRIED TO READ. `ok: false` is the load-bearing case: a section\nrendered from an unread source must say so, or its emptiness reads as health. `stale`\nis the third state between them — a record that WAS read, honestly, but at a different\ncommit (status.ts's doctrine: the record is the last known truth, honestly dated)."
+    },
+    {
+      "id": "s:src/index-model.ts#FrameKind",
+      "parent": "f:src/index-model.ts",
+      "label": "FrameKind",
+      "kind": "symbol",
+      "sub": "type",
+      "path": "src/index-model.ts",
+      "line": 144,
+      "prose": "HOW \"SINCE I LAST LOOKED\" WAS DECIDED. Novelty gates every list on this page, so the\nframe is the page's most consequential number and it is stated at the top rather than\nassumed.\n\n  since   — an explicit `--since <ref>`. Always wins.\n  cursor  — the HEAD the PREVIOUS index run recorded, read back out of `index.json`.\n            This is what \"since I last looked\" actually means.\n  tag     — the last tag, and only when it is not HEAD itself.\n  first   — nothing to compare against. A FIRST LOOK HAS NO NEWS BY DEFINITION, and the\n            page says that instead of dumping the project's whole history as if it were.\n\nTHE ORDER WAS MEASURED, not assumed. \"Since the last tag\" was the briefed default and it\ndegenerates in both projects this was built against: in coherence the last tag IS HEAD\n(v0.24.1 at d9053b8, `git rev-list --count v0.24.1..HEAD` = 0), so the frame is empty; in\nthe consuming project `git tag` is empty, so it does not resolve at all. A default that\nfails in two of two measured projects is not a default — the cursor is, because it needs\nno releases and no tags."
+    },
+    {
+      "id": "s:src/index-model.ts#Frame",
+      "parent": "f:src/index-model.ts",
+      "label": "Frame",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/index-model.ts",
+      "line": 147,
+      "prose": "The resolved frame — which earlier state this page calls \"then\"."
+    },
+    {
+      "id": "s:src/index-model.ts#IndexComponent",
+      "parent": "f:src/index-model.ts",
+      "label": "IndexComponent",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/index-model.ts",
+      "line": 167,
+      "prose": "One component's row. Every count here is paired with the denominator it is a count OF —\n `anchored` is meaningless beside `invariants` alone, and `accountedFiles` beside\n `files` is the trial balance the contract already prints."
+    },
+    {
+      "id": "s:src/index-model.ts#IndexGate",
+      "parent": "f:src/index-model.ts",
+      "label": "IndexGate",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/index-model.ts",
+      "line": 191,
+      "prose": "One gate, listed because it is NOT a fresh passing A."
+    },
+    {
+      "id": "s:src/index-model.ts#IndexCrossing",
+      "parent": "f:src/index-model.ts",
+      "label": "IndexCrossing",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/index-model.ts",
+      "line": 205,
+      "prose": "One atlas crossing, straight from the RECORD the atlas filed."
+    },
+    {
+      "id": "s:src/index-model.ts#Darkness",
+      "parent": "f:src/index-model.ts",
+      "label": "Darkness",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/index-model.ts",
+      "line": 220,
+      "prose": "ONE OF THE FOUR DARKNESSES. They are named separately and NEVER merged, because a single\n\"dark region\" number is a lie: an undocumented symbol, a file no claim names, an\ninvariant nobody has watched fail, and a file being edited that the graph does not own\nare four different problems with four different repairs.\n\n`total: null` means UNMEASURABLE — the reading could not be taken — and is rendered as\nsuch. It is never rendered as a zero denominator, because 0/0 and 0/500 must not look\nalike (floor.ts, in the harness's own words)."
+    },
+    {
+      "id": "s:src/index-model.ts#MapView",
+      "parent": "f:src/index-model.ts",
+      "label": "MapView",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/index-model.ts",
+      "line": 236,
+      "prose": "VIEW ONE: the structures as they stand. Components and their zones, the gates that are\n not quiet greens, the crossings where trust changes hands, and the trust reading."
+    },
+    {
+      "id": "s:src/index-model.ts#IndexEntry",
+      "parent": "f:src/index-model.ts",
+      "label": "IndexEntry",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/index-model.ts",
+      "line": 254,
+      "prose": "One journal entry, flattened for rendering. `news` is the novelty gate: true when the\n entry was written inside the frame."
+    },
+    {
+      "id": "s:src/index-model.ts#JournalView",
+      "parent": "f:src/index-model.ts",
+      "label": "JournalView",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/index-model.ts",
+      "line": 270,
+      "prose": "VIEW TWO: what the agents decided, ordered by NEWS and led by impasses."
+    },
+    {
+      "id": "s:src/index-model.ts#StructuralView",
+      "parent": "f:src/index-model.ts",
+      "label": "StructuralView",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/index-model.ts",
+      "line": 286,
+      "prose": "The invariant/boundary movement across the frame — `coherence log`'s ledger, as data."
+    },
+    {
+      "id": "s:src/index-model.ts#TrajectoryView",
+      "parent": "f:src/index-model.ts",
+      "label": "TrajectoryView",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/index-model.ts",
+      "line": 302,
+      "prose": "VIEW THREE: movement at the level of the abstraction. Every field is nullable and each\n null carries its own reason, because \"nothing moved\" and \"nothing was read\" are\n different facts and a trajectory that confused them would be the worst lie on the page."
+    },
+    {
+      "id": "s:src/index-model.ts#IndexModel",
+      "parent": "f:src/index-model.ts",
+      "label": "IndexModel",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/index-model.ts",
+      "line": 319,
+      "prose": "THE MODEL. Written to `index.json` beside the page, so every figure rendered is\n checkable against a file, and so the next run has a cursor to frame against."
+    },
+    {
+      "id": "s:src/index-model.ts#readCursor",
+      "parent": "f:src/index-model.ts",
+      "label": "readCursor",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/index-model.ts",
+      "line": 353,
+      "prose": "The prior run's HEAD, read back out of `index.json` — the CURSOR.\n\n Through `readJsonOrRefuse` and not a `catch → null`, because this file is a MEMORY in\n exactly floor.ts's sense: an unreadable one is not an absent one. Defaulting past a\n corrupt index.json would silently retitle the page \"FIRST LOOK — no prior index\" for a\n project that has one, which is the page lying about its own frame."
+    },
+    {
+      "id": "s:src/index-model.ts#resolveFrame",
+      "parent": "f:src/index-model.ts",
+      "label": "resolveFrame",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/index-model.ts",
+      "line": 378,
+      "prose": "Pick the frame. See the `Frame` doctrine above for why the order is what it is."
+    },
+    {
+      "id": "s:src/index-model.ts#darknesses",
+      "parent": "f:src/index-model.ts",
+      "label": "darknesses",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/index-model.ts",
+      "line": 432,
+      "prose": "THE FOUR DARKNESSES, each with its own denominator and its own repair.\n\n`unvisited` is the one that needs history, and it is therefore the one that can be\nUNMEASURABLE. It is the complement of economy's closure: a path recent concern commits\nkeep touching that the graph does not own is a path no closure can ever be computed for,\nso every read-side cost this harness reports silently excludes it. That is why it is a\ndarkness and not merely a statistic."
+    },
+    {
+      "id": "s:src/index-model.ts#buildMap",
+      "parent": "f:src/index-model.ts",
+      "label": "buildMap",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/index-model.ts",
+      "line": 516,
+      "prose": "The MAP, assembled from the promise model (components, zones, gates, grades), the graph\n (the darknesses) and the atlas RECORD (the crossings)."
+    },
+    {
+      "id": "s:src/index-model.ts#buildJournal",
+      "parent": "f:src/index-model.ts",
+      "label": "buildJournal",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/index-model.ts",
+      "line": 641,
+      "prose": "THE JOURNAL VIEW — `blocked` first, then open conjectures, then decisions; settled work\ncollapses to counts.\n\nNEWS FIRST WITHIN EACH SECTION, and this is the whole behavioural point: a three-day-old\nimpasse the reader has already seen is not news however severe it is, so it sinks below\nthe entries written inside the frame rather than being dropped (it is still standing, and\na standing impasse that vanished from the page would be worse than one that scrolled)."
+    },
+    {
+      "id": "s:src/index-model.ts#structuralView",
+      "parent": "f:src/index-model.ts",
+      "label": "structuralView",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/index-model.ts",
+      "line": 674,
+      "prose": "`coherence log`'s structural ledger, as data rather than as printed lines."
+    },
+    {
+      "id": "s:src/index-model.ts#IndexOpts",
+      "parent": "f:src/index-model.ts",
+      "label": "IndexOpts",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/index-model.ts",
+      "line": 695,
+      "prose": "What the CLI hands the model builder: the reader's frame override, and the run stamp\n (so the model owns no clock of its own and the render is a pure function of it)."
+    },
+    {
+      "id": "s:src/index-model.ts#buildIndexModel",
+      "parent": "f:src/index-model.ts",
+      "label": "buildIndexModel",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/index-model.ts",
+      "line": 710,
+      "prose": "BUILD THE MODEL. Every history read is INDIVIDUALLY guarded and individually reported:\na project with no git is a perfectly ordinary consumer (a shallow CI clone, a source\nexport), and one unreadable source must cost that source's section, never the page. An\n`Unrunnable` thrown by the structural diff is caught HERE rather than at the CLI's total\nhandler for exactly that reason — the CLI's handler is the right answer for a command\nwhose whole job needs history, and the wrong one for a page with three views."
     },
     {
       "id": "f:src/lint-sinks.ts",
@@ -3432,7 +3701,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/render-claude.ts",
-      "line": 29
+      "line": 30
     },
     {
       "id": "s:src/render-claude.ts#CLAUDE_END",
@@ -3441,7 +3710,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/render-claude.ts",
-      "line": 30
+      "line": 31
     },
     {
       "id": "s:src/render-claude.ts#renderClaude",
@@ -3450,7 +3719,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/render-claude.ts",
-      "line": 32
+      "line": 33
     },
     {
       "id": "s:src/render-claude.ts#Fence",
@@ -3459,7 +3728,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/render-claude.ts",
-      "line": 128,
+      "line": 129,
       "prose": "The fence pair an owned block is delimited by. Defaulted to CLAUDE.md's, so every\n existing call site keeps its meaning; README.md's command index passes its own\n (src/commands.ts) rather than growing a second copy of the splice."
     },
     {
@@ -3469,7 +3738,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/render-claude.ts",
-      "line": 136,
+      "line": 137,
       "prose": "Splice a freshly-generated block into existing markdown between the fence markers,\npreserving everything outside them. Returns null if the markers are absent (the caller\nmust NOT clobber a file that hasn't opted in)."
     },
     {
@@ -3479,7 +3748,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/render-claude.ts",
-      "line": 144,
+      "line": 145,
       "prose": "Extract the current fenced block (markers inclusive) from an owned file, or null."
     },
     {
@@ -3489,7 +3758,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/render-claude.ts",
-      "line": 156,
+      "line": 157,
       "prose": "Resolve the CLAUDE.md path the splicer writes to. `cfg.claudeMdPath` defaults\n to `CLAUDE.md` (sibling of the specs); a `../`-relative path escapes cfg.root,\n for the case where the authored CLAUDE.md lives at a repo root above a\n sub-package whose coherence config is nested. Coherence still operates on\n cfg.root; only the splice target moves."
     },
     {
@@ -3509,6 +3778,35 @@
       "sub": "const",
       "path": "src/render-contract.ts",
       "line": 87
+    },
+    {
+      "id": "f:src/render-index.ts",
+      "parent": "c:src",
+      "label": "render-index.ts",
+      "kind": "file",
+      "sub": "src/render-index.ts",
+      "path": "src/render-index.ts",
+      "prose": "render-index.ts — IndexModel → one self-contained `_index.html`.\n\nA PURE FUNCTION OF THE MODEL. `index.json` is written beside this page, so every figure\nrendered here is checkable against a file a `jq` one-liner can read; the render invents\nnothing, reads no clock (the stamp arrives in the model) and touches no disk.\n\n── THE FORM, AND WHY IT IS THIS AUSTERE ──────────────────────────────────────────────\n\nThe reference points are a SPEC SHEET, `git log --graph`, and an instrument readout —\nnot a dashboard and not a marketing page. Concretely, and each of these is a constraint\nrather than a taste:\n\n  · MONOSPACE THROUGHOUT, system stack. Everything on this page is tabular — counts\n    against denominators, grades, tiers, commit ids — and a proportional face breaks the\n    column alignment that makes a table readable at a glance.\n  · HAIRLINE RULES AND WHITESPACE do the separating. No cards, no rounding, no shadows,\n    no gradients, no animation. A border-radius is an invitation to add a second one.\n  · COLOUR IS DATA ENCODING ONLY, NEVER DECORATION, and the palette is four values:\n    foreground, dim, warn, alarm. Nothing else may use them.\n  · IT MUST READ PRINTED IN GREYSCALE. That is the actual test of the previous rule: if\n    a distinction disappears without colour, it was never encoded. So every coloured\n    thing ALSO carries its distinction as text — the grade letter, the tier number, the\n    word `FAIL`, and a leading MARK column (`!` attention, `!!` alarm) that survives any\n    desaturation. Colour reinforces; it never carries.\n  · LIGHT AND DARK ARE BOTH FIRST-CLASS via `prefers-color-scheme`. Neither is the\n    \"real\" one with the other bolted on."
+    },
+    {
+      "id": "s:src/render-index.ts#formatIndexSummary",
+      "parent": "f:src/render-index.ts",
+      "label": "formatIndexSummary",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/render-index.ts",
+      "line": 327,
+      "prose": "THE SAME MODEL AT THE TERMINAL — what `coherence index` prints after writing the page.\n\nIt lives beside the HTML render because it is the SECOND rendering of ONE model, and\nkeeping them apart is how the two start disagreeing about a number. It is deliberately\na pointer, not a summary of the report: the page is the artifact, and a terminal digest\ncomplete enough to substitute for it would be a third view nobody asked for.\n\nNO HEALTH GLYPH IS REACHABLE FROM HERE, ever — not on a rich project and not on an empty\none. The Index states readings and grades nothing, so a ✓ would be an assertion this\ncommand has no standing to make (test/vacuity.test.ts enumerates every command against a\nproject where nothing can honestly be pronounced healthy)."
+    },
+    {
+      "id": "s:src/render-index.ts#renderIndex",
+      "parent": "f:src/render-index.ts",
+      "label": "renderIndex",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/render-index.ts",
+      "line": 359,
+      "prose": "THE PAGE. One self-contained document, a pure function of the model: no clock, no\n disk, no network, and nothing on it that `index.json` does not already hold."
     },
     {
       "id": "f:src/render-outline.ts",
@@ -4536,13 +4834,23 @@
       "line": 22
     },
     {
+      "id": "s:src/walk.ts#refutedInvariants",
+      "parent": "f:src/walk.ts",
+      "label": "refutedInvariants",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/walk.ts",
+      "line": 100,
+      "prose": "WHICH INVARIANTS A `## refutations` LIST WITNESSES — the ONE spelling of the key rule.\n\nA refutation line is `<invariant>: <what was broken> -> <what was seen>`, so the invariant\nname is the text before the FIRST colon. That one-line rule was spelled three times —\nrender-claude.ts's invariant table, verify's refutation coverage line, and verify's\nnever-red decoration filter — which is `redundancy`'s own finding about other people's\ncode: one enumerated domain, several spellings, tied together by nothing. Homed here\nbecause this is the parser that produced the strings; every consumer now derives from it.\n\nBEHAVIOUR-PRESERVING, deliberately. A line with no colon still keys on the whole line,\nexactly as all three call sites did — an extraction that also changes what it computes\ncannot be reviewed as an extraction, and a project whose refutation count moved would\nhave no way to tell which half did it. Whether a colonless line should witness anything\nis a real and separate question; it is not settled here."
+    },
+    {
       "id": "s:src/walk.ts#ParsedZone",
       "parent": "f:src/walk.ts",
       "label": "ParsedZone",
       "kind": "symbol",
       "sub": "interface",
       "path": "src/walk.ts",
-      "line": 88,
+      "line": 110,
       "prose": "One declared trust zone from a `## zones` section (PROMISE GRAPH topology). Parsed here\n because walk.ts is the single home of spec-section parsing; the promise layer is the only\n consumer, so zones ride as their own standalone parse rather than through ParsedSpec/the\n graph (nothing else needs them, and the graph stays untouched)."
     },
     {
@@ -4552,7 +4860,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/walk.ts",
-      "line": 97,
+      "line": 119,
       "prose": "Parse a `## zones` section — same shape as `## invariants`: a bullet list, and the\n DECLARED ORDER is the canonical trust order (most-trusted first). Each line is either\n `- <name>: <intent>` or `- <name> inside <parent>: <intent>` (the `: <intent>` is\n optional — a bare `- <name>` or `- <name> inside <parent>` is a zone with \"\" intent).\n Single-home doctrine: only the ENTRY component's zones are authoritative, so this is run\n against the entry spec alone — a `## zones` in a non-entry spec is simply never read\n (ignored, not an error). Returns [] when the spec has no zones section."
     },
     {
@@ -4562,7 +4870,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/walk.ts",
-      "line": 117
+      "line": 139
     },
     {
       "id": "s:src/walk.ts#nodeDirs",
@@ -4571,7 +4879,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/walk.ts",
-      "line": 124,
+      "line": 146,
       "prose": "Folders that contain a *.spec.md, relative to root (root = \".\")."
     },
     {
@@ -4581,7 +4889,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/walk.ts",
-      "line": 136
+      "line": 158
     },
     {
       "id": "s:src/walk.ts#ownerOf",
@@ -4590,7 +4898,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/walk.ts",
-      "line": 168,
+      "line": 190,
       "prose": "The deepest node dir that is a prefix of the file's dir — or NULL when no node dir owns\nit at all.\n\nTHE NULL IS THE POINT. This used to return `\".\"` unconditionally on a miss, which is\nthe same value it returns when a root `*.spec.md` genuinely owns the file, so no caller\ncould tell \"the root component owns this\" from \"nothing owns this\". On a project with\nno root component that fabricated a component out of a miss, and\n`affectedComponents` fed it straight into verify's scope set: measured 2026-07-31 on a\nhealthy two-component tree whose only change was an unowned root-level file, `verify\n--staged` printed `scoped to 1 changed component(s): .`, graded `claims: 0 · 0 green`,\nand pronounced `✓ coherent` — a LIVE vacuous green needing no mutation to reach.\n\nAn unowned file is ordinary, not an error: a root config, a build script, a stray\nmodule in a tree that is still being decomposed. So the miss is REPRESENTED rather than\nrefused, and each of the three callers says what it does with one (derive: an unparented\nfile node; verify and structural: out of every component's scope)."
     },
     {
@@ -4857,6 +5165,15 @@
       "sub": "test/floor.test.ts",
       "path": "test/floor.test.ts",
       "prose": "floor.test.ts — the NON-VACUITY FLOOR and the adoption on-ramp (src/floor.ts).\n\nThe defect the floor closes, reproduced by hand twice before it existed (2026-07-31):\ngut `buildGraph` to return an empty graph and verify printed `claims: 0 · 0 green ·\n0 red · 0 skipped` and `✓ coherent`, exit 0 — the entire verification surface vanished\nfrom derivation and the gate reported success. Every claim-defended verdict rests on\nthe graph deriving non-empty, so that premise is now checked FIRST (the same\ninstrument-check-first idiom commands.test.ts applies to its AST scanner).\n\nThe same observation — zero components, zero claims — is also what a repo that never\nadopted the harness looks like. What separates them is the record's memory, so the\nsecond half of this file pins the other answer: the adoption ladder, one rung per run."
+    },
+    {
+      "id": "f:test/index.test.ts",
+      "parent": "c:test",
+      "label": "index.test.ts",
+      "kind": "file",
+      "sub": "test/index.test.ts",
+      "path": "test/index.test.ts",
+      "prose": "index.test.ts — THE INDEX: the returning human's page.\n\nTwo layers, following the pattern decompose.test.ts's header sets out:\n  · the PURE derivations (the cap idiom, the four darknesses, the journal's novelty\n    gate, the gate collapse) driven from hand-built graphs and records — deterministic,\n    no git, no filesystem.\n  · the GLUE (frame resolution, the cursor round-trip, the refusal on a corrupt cursor)\n    driven through a REAL throwaway git repo and the real CLI, because every one of\n    those is a statement about git and about files, and an injected fake would be\n    asserting my own mock.\n\nWHAT IS ACTUALLY AT RISK HERE, which is what these test. The Index shows nothing it\nderived itself, so the classic bugs are not arithmetic — they are HONESTY bugs:\n  · a source that could not be read rendering as an empty section (green-by-absence);\n  · a list silently truncated so the page looks complete;\n  · a denominator of 0 rendering identically to a denominator of 500;\n  · a frame that quietly resolves to nothing, so \"no change\" means \"no comparison\";\n  · a corrupt cursor read as an absent one, so the page calls itself a FIRST LOOK for a\n    project that has an index — and re-reports every old impasse as news.\nEach of those is a test below, and each of them has a matching prohibition in\nsrc/index-model.ts's header."
     },
     {
       "id": "f:test/kinds.test.ts",
@@ -5479,6 +5796,18 @@
       "kind": "imports"
     },
     {
+      "id": "f:src/cli.ts->f:src/index-model.ts:imports",
+      "source": "f:src/cli.ts",
+      "target": "f:src/index-model.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/cli.ts->f:src/render-index.ts:imports",
+      "source": "f:src/cli.ts",
+      "target": "f:src/render-index.ts",
+      "kind": "imports"
+    },
+    {
       "id": "f:src/commands.ts->f:src/phrasebook.ts:imports",
       "source": "f:src/commands.ts",
       "target": "f:src/phrasebook.ts",
@@ -5860,6 +6189,96 @@
       "id": "f:src/hooks.ts->f:src/types.ts:imports",
       "source": "f:src/hooks.ts",
       "target": "f:src/types.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/index-model.ts->x:node:child_process:imports",
+      "source": "f:src/index-model.ts",
+      "target": "x:node:child_process",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/index-model.ts->x:node:path:imports",
+      "source": "f:src/index-model.ts",
+      "target": "x:node:path",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/index-model.ts->f:src/types.ts:imports",
+      "source": "f:src/index-model.ts",
+      "target": "f:src/types.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/index-model.ts->f:src/promise-model.ts:imports",
+      "source": "f:src/index-model.ts",
+      "target": "f:src/promise-model.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/index-model.ts->f:src/promise.ts:imports",
+      "source": "f:src/index-model.ts",
+      "target": "f:src/promise.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/index-model.ts->f:src/derive.ts:imports",
+      "source": "f:src/index-model.ts",
+      "target": "f:src/derive.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/index-model.ts->f:src/tree.ts:imports",
+      "source": "f:src/index-model.ts",
+      "target": "f:src/tree.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/index-model.ts->f:src/walk.ts:imports",
+      "source": "f:src/index-model.ts",
+      "target": "f:src/walk.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/index-model.ts->f:src/boundary.ts:imports",
+      "source": "f:src/index-model.ts",
+      "target": "f:src/boundary.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/index-model.ts->f:src/status.ts:imports",
+      "source": "f:src/index-model.ts",
+      "target": "f:src/status.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/index-model.ts->f:src/decisions.ts:imports",
+      "source": "f:src/index-model.ts",
+      "target": "f:src/decisions.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/index-model.ts->f:src/evolution.ts:imports",
+      "source": "f:src/index-model.ts",
+      "target": "f:src/evolution.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/index-model.ts->f:src/structural.ts:imports",
+      "source": "f:src/index-model.ts",
+      "target": "f:src/structural.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/index-model.ts->f:src/drift.ts:imports",
+      "source": "f:src/index-model.ts",
+      "target": "f:src/drift.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/index-model.ts->f:src/floor.ts:imports",
+      "source": "f:src/index-model.ts",
+      "target": "f:src/floor.ts",
       "kind": "imports"
     },
     {
@@ -6361,9 +6780,21 @@
       "kind": "imports"
     },
     {
+      "id": "f:src/render-claude.ts->f:src/walk.ts:imports",
+      "source": "f:src/render-claude.ts",
+      "target": "f:src/walk.ts",
+      "kind": "imports"
+    },
+    {
       "id": "f:src/render-contract.ts->f:src/promise-model.ts:imports",
       "source": "f:src/render-contract.ts",
       "target": "f:src/promise-model.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/render-index.ts->f:src/index-model.ts:imports",
+      "source": "f:src/render-index.ts",
+      "target": "f:src/index-model.ts",
       "kind": "imports"
     },
     {
@@ -7509,6 +7940,102 @@
     {
       "id": "f:test/floor.test.ts->f:test/_helpers.ts:imports",
       "source": "f:test/floor.test.ts",
+      "target": "f:test/_helpers.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/index.test.ts->x:node:test:imports",
+      "source": "f:test/index.test.ts",
+      "target": "x:node:test",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/index.test.ts->x:node:assert/strict:imports",
+      "source": "f:test/index.test.ts",
+      "target": "x:node:assert/strict",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/index.test.ts->x:node:child_process:imports",
+      "source": "f:test/index.test.ts",
+      "target": "x:node:child_process",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/index.test.ts->x:node:fs/promises:imports",
+      "source": "f:test/index.test.ts",
+      "target": "x:node:fs/promises",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/index.test.ts->x:node:os:imports",
+      "source": "f:test/index.test.ts",
+      "target": "x:node:os",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/index.test.ts->x:node:path:imports",
+      "source": "f:test/index.test.ts",
+      "target": "x:node:path",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/index.test.ts->x:node:url:imports",
+      "source": "f:test/index.test.ts",
+      "target": "x:node:url",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/index.test.ts->x:node:util:imports",
+      "source": "f:test/index.test.ts",
+      "target": "x:node:util",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/index.test.ts->f:src/index-model.ts:imports",
+      "source": "f:test/index.test.ts",
+      "target": "f:src/index-model.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/index.test.ts->f:src/render-index.ts:imports",
+      "source": "f:test/index.test.ts",
+      "target": "f:src/render-index.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/index.test.ts->f:src/promise.ts:imports",
+      "source": "f:test/index.test.ts",
+      "target": "f:src/promise.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/index.test.ts->f:src/structural.ts:imports",
+      "source": "f:test/index.test.ts",
+      "target": "f:src/structural.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/index.test.ts->f:src/evolution.ts:imports",
+      "source": "f:test/index.test.ts",
+      "target": "f:src/evolution.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/index.test.ts->f:src/decisions.ts:imports",
+      "source": "f:test/index.test.ts",
+      "target": "f:src/decisions.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/index.test.ts->f:src/status.ts:imports",
+      "source": "f:test/index.test.ts",
+      "target": "f:src/status.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/index.test.ts->f:test/_helpers.ts:imports",
+      "source": "f:test/index.test.ts",
       "target": "f:test/_helpers.ts",
       "kind": "imports"
     },
