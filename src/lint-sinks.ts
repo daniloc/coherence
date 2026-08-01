@@ -9,8 +9,10 @@
 // premise rot one layer down: keying a site by its file path meant a refactor
 // manufactured false alarms in proportion to how much code it moved. `reconcile` below
 // re-addresses moved sites without letting a copied one through.
+import { join } from "node:path";
 import type { Config } from "./types.ts";
 import { scanSources, readBaseline, writeBaseline } from "./sidecar.ts";
+import { ratchetVacuityRefusal, type RatchetReading } from "./floor.ts";
 
 // Defaults: a value routed through quoteIdent()/an ALL_CAPS constant (SQL), or
 // escapeXml/escapeAttr/.toFixed/a numeric/styling constant (HTML), is inert.
@@ -83,6 +85,21 @@ export function reconcile(baseline: string[], current: Iterable<Finding>): Recon
   return { moved, novel };
 }
 
+/** THIS RATCHET'S OWN DENOMINATOR — the SOURCE FILES it scanned, and nothing about a
+ *  graph. `lintSinks(cfg, mode)` never receives one: it reads `scanSources(cfg)` directly,
+ *  so the verify floor's "the graph carries no claims" predicate would guard `mass` and
+ *  silently exempt this. Each ratchet supplies its own reading; floor.ts owns the rule.
+ *
+ *  The pinned side is the reviewed SITES, a different unit on purpose. It answers only the
+ *  weaker question the rule asks — was the population ever non-empty — and a pinned site
+ *  is proof of a file it was found in, which is all the lower bound needs to be. */
+const sinkReading = (cfg: Config, files: number, pinnedSites: number): RatchetReading => ({
+  ratchet: "lint-sinks",
+  baseline: join(cfg.outputDir, BASELINE),
+  live: files, unit: "source file(s) scanned",
+  pinned: pinnedSites, pinnedUnit: "reviewed interpolation site(s)",
+});
+
 export async function lintSinks(cfg: Config, mode: "report" | "check" | "update"): Promise<number> {
   const safeSql = new RegExp(cfg.sinks?.safeSql ?? DEFAULT_SAFE_SQL);
   const safeHtml = new RegExp(cfg.sinks?.safeHtml ?? DEFAULT_SAFE_HTML);
@@ -113,6 +130,11 @@ export async function lintSinks(cfg: Config, mode: "report" | "check" | "update"
   for (const x of findings) if (!current.has(keyOf(x))) current.set(keyOf(x), x);
 
   if (mode === "update") {
+    // The pin is the seam that outlives the run — refuse to write an empty reading over a
+    // baseline that remembers a non-empty one (floor.ts states the rule and why).
+    const prior = await readBaseline<string[]>(cfg, BASELINE);
+    const refusal = prior ? ratchetVacuityRefusal(sinkReading(cfg, src.length, prior.length), "update") : null;
+    if (refusal) { for (const l of refusal) console.error(l); console.error(""); return 1; }
     const base = [...current.keys()].sort();
     const p = await writeBaseline(cfg, BASELINE, base);
     console.log(`Pinned ${base.length} reviewed interpolation site(s) to ${p}`);
@@ -123,11 +145,17 @@ export async function lintSinks(cfg: Config, mode: "report" | "check" | "update"
   const byHtml = [...current.values()].filter((x) => x.context === "html-value").length;
   console.log("\n  INJECTION-SURFACE LINT — raw interpolation into SQL-identifier / HTML contexts\n");
   console.log(`  SQL identifier ("\${expr}"): ${bySql}    HTML value (\${expr} in markup): ${byHtml}    total reviewed surface: ${current.size}`);
+  console.log(`  across ${src.length} source file(s) scanned — the population this surface was read over.`);
   console.log("  Each must be a validated identifier / escapeXml'd value; --check fails on a NEW site.\n");
 
   if (mode !== "check") return 0;
   const base = await readBaseline<string[]>(cfg, BASELINE);
   if (!base) { console.error("  --check: no baseline. Run with --update-baseline first."); return 2; }
+
+  // BEFORE ANY VERDICT: zero files scanned yields zero novel sites, so every branch below
+  // would report the ratchet holding over a scan that never happened.
+  const refusal = ratchetVacuityRefusal(sinkReading(cfg, src.length, base.length), "check");
+  if (refusal) { for (const l of refusal) console.error(l); console.error(""); return 1; }
   const { moved, novel } = reconcile(base, current.values());
   if (novel.length) {
     console.error(`  ✗ injection ratchet FAILED — ${novel.length} new raw interpolation site(s):`);
@@ -136,7 +164,7 @@ export async function lintSinks(cfg: Config, mode: "report" | "check" | "update"
     if (moved.length) console.error(`  (${moved.length} further site(s) only MOVED — see the report above; they are not counted as new.)`);
     return 1;
   }
-  console.log("  ✓ injection ratchet held — no new raw interpolation sites.");
+  console.log(`  ✓ injection ratchet held — no new raw interpolation sites (${current.size} live site(s) across ${src.length} source file(s) examined).`);
   if (moved.length) {
     console.log(`\n  ${moved.length} baselined site(s) MOVED — same sink, new address, not new risk:`);
     for (const m of moved) console.log(`    ~ [${m.to.context}] ${m.from} → ${m.to.file}:${m.to.line}  \${${m.to.expr}}`);

@@ -35,6 +35,18 @@
 //   a broken bundle probe read as a heroic size reduction, which is the single most
 //   dangerous thing a growth ratchet can say.
 //
+//   AN EMPTY READING IS NOT A SHRINKAGE. Measured 2026-07-31: with `buildGraph` gutted to
+//   return an empty graph, `--check` printed "✓ mass ratchet held", exit 0, and then
+//   prescribed the poisoning in its own words — "4 dimension(s) SHRANK since the pin
+//   (never a failure) — re-pin to bank it". The pin that followed wrote files|total=0,
+//   lines|total=0, symbols|total=0, undocumented|symbols=0 and silently dropped lines|app.
+//   Restoring the deriver did NOT self-heal: `--check` then failed reporting the project's
+//   own pre-existing mass as GROWTH (`files|total grew 0→2`) and demanded a `coherence
+//   decide` justifying mass that was always there. The poisoning INVERTS rather than
+//   washing out, which is what makes it worth a floor rather than a warning. See
+//   floor.ts's `ratchetVacuityRefusal`; the discriminator is TOTAL COLLAPSE, never
+//   shrinkage, because deletion is real work and stays free.
+//
 //   A RENAME IS NOT GROWTH. A dimension's key embeds a NAME someone chose (a component's
 //   spec H1, a measure's config key), so renaming the thing re-addresses its pin — and
 //   before `reconcileMass`, a one-line H1 edit printed "the movement gained parts nobody
@@ -51,6 +63,7 @@ import { join } from "node:path";
 import { spawnSync } from "node:child_process";
 import type { Config, Graph, GraphNode } from "./types.ts";
 import { readBaseline, writeBaseline } from "./sidecar.ts";
+import { ratchetVacuityRefusal, type RatchetReading } from "./floor.ts";
 import { fileStats } from "./tree.ts";
 import { isDocumented } from "./derive.ts";
 import { spark } from "./drift.ts";
@@ -282,6 +295,31 @@ export function massFindings(exc: MassExcursion[]): Finding[] {
   }));
 }
 
+// ── the denominator ───────────────────────────────────────────────────────────────────
+
+/** THE POPULATION THE STRUCTURAL DIMENSIONS ARE READ OVER: the graph's file and symbol
+ *  nodes. Not the dimension COUNT — a collapsed reading still produces `lines|total`,
+ *  `files|total`, `symbols|total` and `undocumented|symbols`, all sitting at zero, so
+ *  counting dimensions would report four and see nothing wrong. It is the thing they were
+ *  measured over that vanishes. */
+export const structuralPopulation = (graph: Graph): number =>
+  graph.nodes.filter((n) => n.kind === "file" || n.kind === "symbol").length;
+
+/** THE SAME POPULATION AS THE BASELINE REMEMBERS IT, read straight off the pins it
+ *  already carries. No baseline format changes and nothing needs migrating: every mass
+ *  baseline ever written already records its own denominator, because `files|total` and
+ *  `symbols|total` ARE it. (`readSurface`'s memory is status.json; here the baseline is
+ *  its own memory — the same shape, one file over.) */
+export const pinnedPopulation = (base: MassDim[]): number =>
+  ["files|total", "symbols|total"].reduce((n, k) => n + (base.find((b) => b.key === k)?.value ?? 0), 0);
+
+const massReading = (cfg: Config, live: number, pinned: number): RatchetReading => ({
+  ratchet: "mass",
+  baseline: join(cfg.outputDir, BASELINE),
+  live, unit: "graph file(s) + symbol(s)",
+  pinned, pinnedUnit: "file(s) + symbol(s)",
+});
+
 // ── the command ───────────────────────────────────────────────────────────────────────
 
 export interface MassOpts { raise?: boolean; raiseCap?: number; session?: string; agent?: string }
@@ -297,8 +335,16 @@ export async function mass(cfg: Config, graph: Graph, mode: "report" | "check" |
   dims.push(...mDims);
 
   const sorted = [...dims].sort((a, b) => a.key.localeCompare(b.key));
+  const live = structuralPopulation(graph);
 
   if (mode === "update") {
+    // THE PIN IS THE DANGEROUS SEAM, not the check: a `--check` that wrongly holds costs
+    // one green run, while a pin that banks an empty reading writes the break into the
+    // file every later run is graded against. So `update` reads the existing baseline for
+    // the only question it needs to ask — was there ever anything here — before writing.
+    const prior = await readBaseline<MassDim[]>(cfg, BASELINE);
+    const refusal = prior ? ratchetVacuityRefusal(massReading(cfg, live, pinnedPopulation(prior)), "update") : null;
+    if (refusal) { for (const l of refusal) console.error(l); console.error(""); return 1; }
     // An unmeasurable probe must not be pinned away by silence: `update` still says it,
     // because a baseline written while a measure was broken is a baseline missing a key.
     for (const u of unmeasurable) console.error(`  UNMEASURABLE ${u.key} — ${u.why}  [${u.cmd.join(" ")}]  (not pinned)`);
@@ -375,6 +421,12 @@ export async function mass(cfg: Config, graph: Graph, mode: "report" | "check" |
 
   if (!base) { console.error("\n  --check: no baseline. Run with --update-baseline first."); return 2; }
 
+  // BEFORE ANY VERDICT. An empty reading against a non-empty pin produces no excursions
+  // (nothing can grow past a tolerance when nothing was measured), so every branch below
+  // would fall through to "✓ held" and then invite the re-pin that banks it.
+  const refusal = ratchetVacuityRefusal(massReading(cfg, live, pinnedPopulation(base)), "check");
+  if (refusal) { console.error(""); for (const l of refusal) console.error(l); console.error(""); return 1; }
+
   if (unmeasurable.length) {
     console.error(`\n  ✗ mass ratchet FAILED — ${unmeasurable.length} measure(s) could not be read, and an unreadable probe is not a zero.`);
     console.error("");
@@ -403,7 +455,7 @@ export async function mass(cfg: Config, graph: Graph, mode: "report" | "check" |
     return 1;
   }
 
-  console.log("\n  ✓ mass ratchet held — nothing grew past its tolerance.");
+  console.log(`\n  ✓ mass ratchet held — nothing grew past its tolerance (${dims.length} dimension(s) over ${live} graph file(s) + symbol(s)).`);
   const shrunk = dims.filter((d) => baseBy.has(d.key) && d.value < baseBy.get(d.key)!);
   if (shrunk.length) console.log(`  ${shrunk.length} dimension(s) SHRANK since the pin (never a failure) — re-pin to bank it.`);
   const gone = (base ?? []).filter((b) => !dims.some((d) => d.key === b.key));

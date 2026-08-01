@@ -18,7 +18,7 @@ import { fileURLToPath } from "node:url";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { runVerify } from "../src/verify.ts";
-import { readSurface, vacuityRefusal, adoptionLadder } from "../src/floor.ts";
+import { readSurface, vacuityRefusal, ratchetVacuityRefusal, adoptionLadder } from "../src/floor.ts";
 import type { StatusRecord } from "../src/status.ts";
 import { tmpProject, cleanup, runCaptured, cfg, comp, sym, graph } from "./_helpers.ts";
 
@@ -222,5 +222,74 @@ test("FLOOR — a generator REFUSES to overwrite a good map with a blank one", a
     // 4. And nothing was overwritten. This is the whole point.
     assert.equal(await readFile(join(dir, "public", "graph.json"), "utf8"), good, "the refusal must leave the good map intact");
     assert.equal(await readFile(join(dir, "public", "promise.json"), "utf8"), goodContract, "the refusal must leave the good contract intact");
+  } finally { await cleanup(dir); }
+});
+
+// ── the RATCHET floor: the same reading, one file over ─────────────────────────────────
+//
+// `verify` holds its memory in .coherence/status.json; a baselined ratchet holds its own,
+// in the file it pins. The defect is identical and was measured on `mass` (2026-07-31): a
+// gutted `buildGraph` made `--check` print "✓ mass ratchet held" and then prescribe
+// "4 dimension(s) SHRANK — re-pin to bank it", and the pin that followed zeroed four
+// dimensions and dropped a fifth. It did not wash out when derivation was restored — it
+// INVERTED, and the project's own untouched mass then failed the ratchet as GROWTH.
+//
+// The end-to-end enforcement is in commands.test.ts, which demands the refusal from every
+// command declaring `writesBaseline`. What is pinned HERE is the rule's own boundary: it
+// must fire on total collapse and it must never fire on ordinary deletion.
+
+const reading = (live: number, pinned: number) => ({
+  ratchet: "mass", baseline: "public/mass-baseline.json",
+  live, unit: "graph file(s) + symbol(s)",
+  pinned, pinnedUnit: "file(s) + symbol(s)",
+});
+
+test("ratchet floor — a TOTAL collapse over a live baseline refuses at BOTH seams, in the seam's own words", () => {
+  const check = ratchetVacuityRefusal(reading(0, 12), "check");
+  const update = ratchetVacuityRefusal(reading(0, 12), "update");
+  assert.ok(check && update);
+  for (const r of [check!, update!]) {
+    assert.match(r[0], /\[floor\] mass examined NOTHING this run — 0 graph file\(s\) \+ symbol\(s\)/);
+    assert.match(r.join("\n"), /public\/mass-baseline\.json/, "the refusal names the file a reader has to open");
+  }
+  // The two seams fail for DIFFERENT reasons and say so: grading nothing reports success
+  // over nothing; pinning nothing writes the break into the floor every later run is
+  // graded against. A shared sentence would lose the half that tells you what you nearly did.
+  assert.match(check!.join("\n"), /Refusing to grade this run/);
+  assert.match(update!.join("\n"), /Refusing to pin this run/);
+  assert.match(update!.join("\n"), /reads the project's own mass as GROWTH/);
+});
+
+test("ratchet floor — deletion stays FREE: partial shrinkage never refuses, and neither does a first pin", () => {
+  // The discriminator is TOTAL COLLAPSE, exactly as for the graph floor above. A ratchet
+  // that punished removal would teach people to stop removing, so a project that deleted
+  // 99% of itself still passes this rule and faces only the ordinary ratchet.
+  assert.equal(ratchetVacuityRefusal(reading(1, 5000), "check"), null, "one surviving file is a denominator");
+  assert.equal(ratchetVacuityRefusal(reading(4999, 5000), "check"), null);
+  // Nothing pinned, nothing to betray: an empty reading on a project that never had a
+  // non-empty one is the on-ramp, not a refusal — the same call the graph floor makes for
+  // a record that remembers zero.
+  assert.equal(ratchetVacuityRefusal(reading(0, 0), "check"), null);
+  assert.equal(ratchetVacuityRefusal(reading(0, 0), "update"), null);
+});
+
+test("an instrument that cannot run REPORTS — `log` outside a git repo names the requirement, exit 2", async () => {
+  // The opposite face of green-by-absence: this used to reach the operator as a raw throw
+  // out of withTreeAt, complete with a stack and a `Node.js vX` banner. A crash is a report
+  // that failed to say what was and was not measured. The state is ordinary, not exotic —
+  // a shallow CI clone, a source export, a worktree that lost its .git.
+  const dir = await tmpProject({
+    "coherence.config.json": JSON.stringify({ outputDir: "public", entryDir: "app" }),
+    "app/app.spec.md": "# app\n\nThe component.\n\n## works when\n\n- app.ts exists at this node\n",
+  });
+  try {
+    const r = await run(process.execPath, [CLI_PATH, "log"], { cwd: dir })
+      .then(() => ({ code: 0, stdout: "", stderr: "" }), (e: { code: number; stdout: string; stderr: string }) => e);
+    assert.equal(r.code, 2, "2 is this CLI's `could not run`, as distinct from 1, `ran and failed`");
+    const out = `${r.stdout}${r.stderr}`;
+    assert.match(out, /reads git HISTORY, and .* is not inside a git repository/);
+    assert.match(out, /Nothing was measured/, "the report has to say the population was empty, not merely that it failed");
+    assert.doesNotMatch(out, /^\s+at .*\(?file:\/\//m, "a stack trace is not a report");
+    assert.doesNotMatch(out, /\bNode\.js v\d/);
   } finally { await cleanup(dir); }
 });

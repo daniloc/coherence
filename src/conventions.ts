@@ -5,15 +5,30 @@
 // totality-named test. This surfaces guards (a verb lexicon + a project seed), counts
 // fan-out, classifies against the contracts the harness ALREADY parsed (boundary claims
 // from the graph; totality tests in the test dir), and ratchets the unguarded set.
+import { join } from "node:path";
 import type { Config, Graph } from "./types.ts";
 import { scanSources, readBaseline, writeBaseline } from "./sidecar.ts";
 import { allBoundaries } from "./structural.ts";
+import { ratchetVacuityRefusal, type RatchetReading } from "./floor.ts";
 
 const DEFAULT_GUARD_VERB =
   "^(is|has|can|should|assert|verify|check|validate|ensure|require|deny|refuse|reject|gate|seal|sanitiz|escape|guard|enforce|redact|mint|scope)";
 const DECL =
   /(?:export\s+)?(?:async\s+)?function\s+([a-zA-Z_]\w*)\s*\(|(?:export\s+)?const\s+([a-zA-Z_]\w*)\s*=\s*(?:async\s*)?\(/g;
 const BASELINE = "conventions-baseline.json";
+
+/** THIS RATCHET'S OWN DENOMINATOR — the source files the guard scan read. It takes a graph,
+ *  but only to learn which chokepoints are ANCHORED; the guards themselves come from
+ *  `scanSources`, so an empty graph makes this ratchet stricter (fewer contracts, more
+ *  flagged conventions) while an empty SCAN makes it vacuous. The population that can
+ *  vanish is therefore the files, not the graph — which is why the rule takes a reading
+ *  from each ratchet instead of applying one predicate to all three. */
+const conventionReading = (cfg: Config, files: number, pinned: number): RatchetReading => ({
+  ratchet: "conventions",
+  baseline: join(cfg.outputDir, BASELINE),
+  live: files, unit: "source file(s) scanned",
+  pinned, pinnedUnit: "convention(s)",
+});
 
 export async function conventions(cfg: Config, graph: Graph, mode: "report" | "check" | "update"): Promise<number> {
   const guardVerb = new RegExp(cfg.conventions?.guardVerb ?? DEFAULT_GUARD_VERB);
@@ -62,6 +77,11 @@ export async function conventions(cfg: Config, graph: Graph, mode: "report" | "c
   const flagged = rows.filter((r) => r.status === "CONVENTION");
 
   if (mode === "update") {
+    // The pin outlives the run: refuse to write an empty scan over a baseline that
+    // remembers a non-empty one (floor.ts states the rule and why).
+    const prior = await readBaseline<{ name: string; sites: number }[]>(cfg, BASELINE);
+    const refusal = prior ? ratchetVacuityRefusal(conventionReading(cfg, src.length, prior.length), "update") : null;
+    if (refusal) { for (const l of refusal) console.error(l); console.error(""); return 1; }
     const base = flagged.map((c) => ({ name: c.name, sites: c.sites })).sort((a, b) => a.name.localeCompare(b.name));
     const p = await writeBaseline(cfg, BASELINE, base);
     console.log(`Pinned ${base.length} known convention(s) to ${p}`);
@@ -80,10 +100,15 @@ export async function conventions(cfg: Config, graph: Graph, mode: "report" | "c
     console.log(`  ${pad(r.name, 26)} ${pad(r.sites, 11)} ${pad(r.status, 12)}${flag}`);
   }
   console.log(`\n  ${flagged.length} candidate convention(s) — guards with fan-out and no contract.  (anchored boundaries: ${anchored.size})`);
+  console.log(`  read over ${src.length} source file(s), ${guards.size} candidate guard(s), ${rows.length} of them called at least once.`);
 
   if (mode !== "check") return 0;
   const base = await readBaseline<{ name: string; sites: number }[]>(cfg, BASELINE);
   if (!base) { console.error("\n  --check: no baseline. Run with --update-baseline first."); return 2; }
+
+  // BEFORE ANY VERDICT: an empty scan finds no guards, hence no regressions, hence "held".
+  const refusal = ratchetVacuityRefusal(conventionReading(cfg, src.length, base.length), "check");
+  if (refusal) { console.error(""); for (const l of refusal) console.error(l); console.error(""); return 1; }
   const baseMap = new Map(base.map((b) => [b.name, b.sites]));
   const regressions: string[] = [];
   for (const c of flagged) {
@@ -95,7 +120,7 @@ export async function conventions(cfg: Config, graph: Graph, mode: "report" | "c
     console.error("  Convert it to a contract, or (if intentional) re-pin with --update-baseline.\n");
     return 1;
   }
-  console.log("\n  ✓ convention ratchet held — no new conventions.");
+  console.log(`\n  ✓ convention ratchet held — no new conventions (${flagged.length} live candidate(s) across ${src.length} source file(s) examined).`);
   if (base.length) {
     console.log(`\n  Baselined debt: ${base.length} convention(s) tolerated (toward zero):`);
     for (const b of [...base].sort((a, z) => z.sites - a.sites)) {
