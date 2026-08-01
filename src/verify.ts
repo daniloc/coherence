@@ -108,6 +108,45 @@ function listCapped<T>(items: T[], line: (t: T) => string): void {
  *  is worth much alone — a claim that has never been red may simply be a good invariant,
  *  and one with no refutation may simply be young — but together they are the honest
  *  suspect list, which is exactly the shape of a conjecture. */
+/** How much a missing refutation should WORRY you, by the shape of the claim's evidence.
+ *
+ *  MEASURED, NOT REASONED. The first real `verify --raise` ever run against hoist spent its
+ *  three-question budget like this: one genuinely valuable question (the `served responses
+ *  are shaped` boundary, never watched fail), one marginal, and one on
+ *  `README.md exists at root — 146 run(s), never observed failing`. The list was emitted in
+ *  DERIVATION order, so the cap — which exists precisely because attention is the scarce
+ *  resource — was spent on the least informative finding in an 81-item list.
+ *
+ *  THE RANKING IS BY WHETHER A REFUTATION WOULD TEACH ANYTHING, and the three tiers fall
+ *  out of what the claim's evidence actually is:
+ *
+ *    ORACLE-BACKED (`via test`, `via guard`, `passes test`, `conforms to`) ranks highest,
+ *    because this is where VACUOUS GREEN lives. An oracle can stop testing what it names
+ *    and nothing says so — this project has found that exact defect repeatedly, including
+ *    one oracle satisfied by a different error thrown earlier than the one under test, and
+ *    a `.rejects.toThrow()` passing on a why-gate rather than the seal it claimed to guard.
+ *    An unrefuted oracle is a claim whose instrument has never been checked.
+ *
+ *    BOUNDARY-ONLY (a crossing with no executable oracle) ranks next: it names a real
+ *    chokepoint, so the property matters, but the evidence is anchoring rather than
+ *    execution and its failure mode is narrower.
+ *
+ *    STRUCTURAL (`X exists at …`, `X imports …`) ranks LAST, and this is the tier the
+ *    incident was about. Such a claim can be broken — delete the file — but doing so
+ *    demonstrates nothing except that `stat` works. Its greenness was never in doubt and a
+ *    refutation would be theatre. Note the run count argues the same way and is deliberately
+ *    NOT used: 146 runs green says the claim is stable, not that it is informative, and
+ *    ranking on it would put the oldest trivia first.
+ *
+ *  This orders the printed list too, not just the raise queue — the reader of a capped list
+ *  deserves the same triage as the queue that spends the budget. */
+export function neverRedRank(claim: string): number {
+  if (/\svia\s+(test|guard)\s+"|^passes test\s+"|^conforms to\s+/.test(claim)) return 3;
+  if (/^boundary\s+"/.test(claim)) return 2;
+  if (/^\S+\s+(exists at|imports)\b/.test(claim)) return 0;
+  return 1;
+}
+
 export function neverRedFinding(node: string, claim: string, runs: number): Finding {
   return {
     advisory: "never-red",
@@ -520,6 +559,7 @@ export async function runVerify(cfg: Config, graph: Graph, opts: VerifyOpts): Pr
       for (const c of comps) for (const r of (c as any).refutations || []) refs.add(r.split(":")[0].trim());
       const bare = seasoned.filter((sg) => { const m = /^boundary\s+"([^"]+)"/.exec(sg.claim); return !m || !refs.has(m[1]); });
       if (bare.length) {
+        bare.sort((a, b) => neverRedRank(b.claim) - neverRedRank(a.claim));
         console.log(`never red: ${bare.length} claim(s) green every run so far, with no recorded refutation`);
         listCapped(bare, (sg) => {
           const h = hist.get(claimKey(sg.node, sg.claim))!;

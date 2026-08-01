@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-01 03:49Z",
+  "generatedAt": "2026-08-01 16:36Z",
   "root": "coherence",
   "absRoot": "/Users/daniloc/Documents/Development/coherence",
   "nodes": [
@@ -4430,14 +4430,23 @@
       "prose": "Rank doc gaps HOTTEST-FIRST by the churn share of the file that defines them — the same\n`fileChurn` reading `atlas` grades crossings' heat against.\n\nWHY THE JOB LIST HAS AN ORDER AT ALL. Undocumented symbols come out of the graph in walk\norder, which is alphabetical by path and says nothing about anything. A list of ninety\n`[doc]` jobs in that order is a list nobody works from the top of; the first one worth\nwriting is the symbol in the file half the recent history touched, because that is the\none somebody is about to read.\n\nZERO-CHURN GAPS KEEP THEIR SOURCE ORDER: `Array.prototype.sort` is required to be stable\n(ECMA-262), so a project with no git history — every share 0 — gets exactly the list it\ngot before this ranking existed, rather than a set that reshuffles between runs."
     },
     {
+      "id": "s:src/verify.ts#neverRedRank",
+      "parent": "f:src/verify.ts",
+      "label": "neverRedRank",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/verify.ts",
+      "line": 143,
+      "prose": "How much a missing refutation should WORRY you, by the shape of the claim's evidence.\n\n MEASURED, NOT REASONED. The first real `verify --raise` ever run against hoist spent its\n three-question budget like this: one genuinely valuable question (the `served responses\n are shaped` boundary, never watched fail), one marginal, and one on\n `README.md exists at root — 146 run(s), never observed failing`. The list was emitted in\n DERIVATION order, so the cap — which exists precisely because attention is the scarce\n resource — was spent on the least informative finding in an 81-item list.\n\n THE RANKING IS BY WHETHER A REFUTATION WOULD TEACH ANYTHING, and the three tiers fall\n out of what the claim's evidence actually is:\n\n   ORACLE-BACKED (`via test`, `via guard`, `passes test`, `conforms to`) ranks highest,\n   because this is where VACUOUS GREEN lives. An oracle can stop testing what it names\n   and nothing says so — this project has found that exact defect repeatedly, including\n   one oracle satisfied by a different error thrown earlier than the one under test, and\n   a `.rejects.toThrow()` passing on a why-gate rather than the seal it claimed to guard.\n   An unrefuted oracle is a claim whose instrument has never been checked.\n\n   BOUNDARY-ONLY (a crossing with no executable oracle) ranks next: it names a real\n   chokepoint, so the property matters, but the evidence is anchoring rather than\n   execution and its failure mode is narrower.\n\n   STRUCTURAL (`X exists at …`, `X imports …`) ranks LAST, and this is the tier the\n   incident was about. Such a claim can be broken — delete the file — but doing so\n   demonstrates nothing except that `stat` works. Its greenness was never in doubt and a\n   refutation would be theatre. Note the run count argues the same way and is deliberately\n   NOT used: 146 runs green says the claim is stable, not that it is informative, and\n   ranking on it would put the oldest trivia first.\n\n This orders the printed list too, not just the raise queue — the reader of a capped list\n deserves the same triage as the queue that spends the budget."
+    },
+    {
       "id": "s:src/verify.ts#neverRedFinding",
       "parent": "f:src/verify.ts",
       "label": "neverRedFinding",
       "kind": "symbol",
       "sub": "function",
       "path": "src/verify.ts",
-      "line": 111,
-      "prose": "A claim that is green every run and that nobody has ever watched fail. Neither signal\n is worth much alone — a claim that has never been red may simply be a good invariant,\n and one with no refutation may simply be young — but together they are the honest\n suspect list, which is exactly the shape of a conjecture."
+      "line": 150
     },
     {
       "id": "s:src/verify.ts#costFinding",
@@ -4446,7 +4455,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/verify.ts",
-      "line": 150,
+      "line": 189,
       "prose": "A claim that is expensive to KEEP TRUE. Every claim is a standing bill: the oracle behind\n it runs on every verify, forever, and one claim taking a quarter of the whole tier is a\n fact about the design of that oracle, not about the code it guards. This is the WEAKEST\n finding the harness raises — an expensive claim can be entirely correct, and often the\n honest answer is \"the domain really is that big\" — so it never displaces a correctness\n question (see the raise order below).\n\n IDENTITY IS THE CLAIM AND ITS NODE, WITH NO NUMBER IN IT. The millisecond reading is the\n most volatile thing here — it moves with machine load, cache state and the pool's mood —\n so it lives in the sentence, exactly like never-red's run count."
     },
     {
@@ -4456,7 +4465,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/verify.ts",
-      "line": 180,
+      "line": 219,
       "prose": "A named invariant with no observed negative control. Broader and weaker than never-red\n — it says nothing about how the claim has behaved — so it is raised LAST and only for\n invariants never-red did not already name."
     },
     {
@@ -4466,7 +4475,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/verify.ts",
-      "line": 203,
+      "line": 242,
       "prose": "A claim on a kind the project flagged. The project decided this category is one it\n distrusts; the advisory prints it every run and then forgets it."
     },
     {
@@ -4476,7 +4485,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/verify.ts",
-      "line": 230
+      "line": 269
     },
     {
       "id": "s:src/verify.ts#runVerify",
@@ -4485,7 +4494,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/verify.ts",
-      "line": 242
+      "line": 281
     },
     {
       "id": "f:src/walk.ts",

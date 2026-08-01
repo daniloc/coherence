@@ -17,7 +17,7 @@ import { readFile, writeFile, mkdir, rm } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import { runVerify } from "../src/verify.ts";
+import { runVerify, neverRedRank } from "../src/verify.ts";
 import { readSurface, vacuityRefusal, ratchetVacuityRefusal, adoptionLadder, readJsonOrRefuse, Unrunnable } from "../src/floor.ts";
 import type { StatusRecord } from "../src/status.ts";
 import { commandFor, dispatchTokens } from "../src/commands.ts";
@@ -545,4 +545,29 @@ test("MEMORY — the seam itself: absent is null, unreadable throws Unrunnable n
       },
     );
   } finally { await cleanup(dir); }
+});
+
+// ── never-red ranking: the cap must not spend attention on trivia ─────────────────────
+
+test("never-red ranks by whether a refutation would TEACH anything, not by derivation order", () => {
+  // THE INCIDENT: the first real `verify --raise` against hoist spent its 3-question budget
+  // with one slot on `README.md exists at root — 146 run(s), never observed failing`, out of
+  // an 81-item list containing 58 boundary claims. The cap exists because attention is
+  // scarce; unranked, it spends that attention on the least informative finding available.
+  const oracle = 'boundary "api auth gating" at ROUTES via test "api auth-gating totality"';
+  const guard = 'boundary "user data access gated" at OwnedScope via guard "user data access is gated"';
+  const bare = 'boundary "patient fold" at Patient';
+  const structural = "README.md exists at root";
+  const imports = "cli.ts imports ./config.ts";
+
+  assert.ok(neverRedRank(oracle) > neverRedRank(bare), "an ORACLE-backed claim is where vacuous green lives — it must outrank a bare boundary");
+  assert.ok(neverRedRank(guard) > neverRedRank(bare), "a via-guard claim is oracle-backed too");
+  assert.ok(neverRedRank(bare) > neverRedRank(structural), "a chokepoint outranks a file-exists claim");
+  assert.equal(neverRedRank(structural), 0, "breaking `exists at root` demonstrates only that stat works");
+  assert.equal(neverRedRank(imports), 0);
+
+  // And the property that actually matters: sorting an unlucky list puts the trivia last.
+  const ranked = [structural, oracle, imports, bare].sort((a, b) => neverRedRank(b) - neverRedRank(a));
+  assert.equal(ranked[0], oracle, "the oracle-backed claim must be first in line for the cap");
+  assert.equal(ranked[ranked.length - 1], imports);
 });
