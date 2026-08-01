@@ -25,6 +25,7 @@ import type { Config } from "./types.ts";
 //   - all the WHY: design-principle essays, conventions, vocabulary, tech-stack notes.
 import type { Graph } from "./types.ts";
 import { parseBoundary } from "./boundary.ts";
+import { refutedInvariants } from "./walk.ts";
 
 export const CLAUDE_BEGIN = "<!-- coherence:begin -->";
 export const CLAUDE_END = "<!-- coherence:end -->";
@@ -40,7 +41,7 @@ export function renderClaude(graph: Graph, stamp: string): string {
   let anyKind = false, anyRefutation = false;
   for (const c of comps) {
     // `## refutations` lines are keyed `<invariant>: <what was broken> -> <what was seen>`.
-    const refuted = new Set((c.refutations ?? []).map((r) => r.split(":")[0].trim()));
+    const refuted = refutedInvariants(c.refutations);
     if (refuted.size) anyRefutation = true;
     for (const claim of c.claims ?? []) {
       const b = parseBoundary(claim);

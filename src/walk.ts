@@ -81,6 +81,28 @@ export function parseSpec(text: string): ParsedSpec {
   return { name, intent, claims, claimKinds, prose: prose.join("\n").trim(), why, invariants, refutations };
 }
 
+/**
+ * WHICH INVARIANTS A `## refutations` LIST WITNESSES — the ONE spelling of the key rule.
+ *
+ * A refutation line is `<invariant>: <what was broken> -> <what was seen>`, so the invariant
+ * name is the text before the FIRST colon. That one-line rule was spelled three times —
+ * render-claude.ts's invariant table, verify's refutation coverage line, and verify's
+ * never-red decoration filter — which is `redundancy`'s own finding about other people's
+ * code: one enumerated domain, several spellings, tied together by nothing. Homed here
+ * because this is the parser that produced the strings; every consumer now derives from it.
+ *
+ * BEHAVIOUR-PRESERVING, deliberately. A line with no colon still keys on the whole line,
+ * exactly as all three call sites did — an extraction that also changes what it computes
+ * cannot be reviewed as an extraction, and a project whose refutation count moved would
+ * have no way to tell which half did it. Whether a colonless line should witness anything
+ * is a real and separate question; it is not settled here.
+ */
+export function refutedInvariants(refutations: readonly string[] | undefined): Set<string> {
+  const out = new Set<string>();
+  for (const r of refutations ?? []) out.add(r.split(":")[0].trim());
+  return out;
+}
+
 /** One declared trust zone from a `## zones` section (PROMISE GRAPH topology). Parsed here
  *  because walk.ts is the single home of spec-section parsing; the promise layer is the only
  *  consumer, so zones ride as their own standalone parse rather than through ParsedSpec/the

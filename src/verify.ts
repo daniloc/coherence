@@ -7,7 +7,7 @@ import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import type { Config, Graph } from "./types.ts";
 import { CLAIM_FORMS, proveSerialRunnerCanFail, type ClaimCtx } from "./phrasebook.ts";
-import { ownerOf } from "./walk.ts";
+import { ownerOf, refutedInvariants } from "./walk.ts";
 import { claimKey } from "./boundary.ts";
 import { recordVerify, readStatus, indexClaimRecords } from "./status.ts";
 import { readJournal } from "./decisions.ts";
@@ -519,7 +519,7 @@ export async function runVerify(cfg: Config, graph: Graph, opts: VerifyOpts): Pr
     const invs: string[] = [], refs: string[] = [];
     for (const c of comps) { for (const i of (c as any).invariants || []) invs.push(i); for (const r of (c as any).refutations || []) refs.push(r); }
     if (invs.length) {
-      const refuted = new Set(refs.map((r) => r.split(":")[0].trim()));
+      const refuted = refutedInvariants(refs);
       const missing = invs.filter((i) => !refuted.has(i));
       console.log(`refutations: ${invs.length - missing.length}/${invs.length} invariants carry an observed negative control`
         + (refs.length ? "" : " — none declared; see README `## refutations`"));
@@ -556,7 +556,7 @@ export async function runVerify(cfg: Config, graph: Graph, opts: VerifyOpts): Pr
     });
     if (seasoned.length) {
       const refs = new Set<string>();
-      for (const c of comps) for (const r of (c as any).refutations || []) refs.add(r.split(":")[0].trim());
+      for (const c of comps) for (const i of refutedInvariants((c as any).refutations)) refs.add(i);
       const bare = seasoned.filter((sg) => { const m = /^boundary\s+"([^"]+)"/.exec(sg.claim); return !m || !refs.has(m[1]); });
       if (bare.length) {
         bare.sort((a, b) => neverRedRank(b.claim) - neverRedRank(a.claim));
