@@ -18,7 +18,7 @@ import { fileURLToPath } from "node:url";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { runVerify } from "../src/verify.ts";
-import { readSurface, vacuityRefusal, ratchetVacuityRefusal, adoptionLadder } from "../src/floor.ts";
+import { readSurface, vacuityRefusal, ratchetVacuityRefusal, adoptionLadder, readJsonOrRefuse, Unrunnable } from "../src/floor.ts";
 import type { StatusRecord } from "../src/status.ts";
 import { tmpProject, cleanup, runCaptured, cfg, comp, sym, graph } from "./_helpers.ts";
 
@@ -291,5 +291,174 @@ test("an instrument that cannot run REPORTS — `log` outside a git repo names t
     assert.match(out, /Nothing was measured/, "the report has to say the population was empty, not merely that it failed");
     assert.doesNotMatch(out, /^\s+at .*\(?file:\/\//m, "a stack trace is not a report");
     assert.doesNotMatch(out, /\bNode\.js v\d/);
+  } finally { await cleanup(dir); }
+});
+
+// ── the MEMORY every floor above reads ────────────────────────────────────────────────
+//
+// Every gate on this page compares a live reading against a REMEMBERED one, and each
+// remembered one lives in a JSON file that was loaded by `catch → return default`. That
+// catch cannot tell "the file is not there" from "the file is there and I could not read
+// it" — so one unparseable byte in any of the three turned the floor above it off. The
+// status.json case was the worst of them because the run then FILED A FRESH RECORD over
+// the corpse: the disarm was permanent, and where `.coherence/` is untracked there was
+// not even a diff. Absent must keep meaning exactly what it meant; unreadable must refuse.
+
+/** A small healthy project: two components, real claims, a real config. */
+const healthy = (): Record<string, string> => ({
+  "coherence.config.json": JSON.stringify({ outputDir: "public", entryDir: ".", typecheck: ["true"] }),
+  "a/a.spec.md": "# A\n\nThe A component.\n\n## works when\n\n- x.ts exists at this node\n",
+  "a/x.ts": "/** what. why: r */\nexport const x = 1;\n",
+  "b/b.spec.md": "# B\n\nThe B component.\n\n## works when\n\n- y.ts exists at this node\n",
+  "b/y.ts": "/** what. why: r */\nexport const y = 1;\n",
+});
+
+const cli = (args: string[], cwd: string) =>
+  run(process.execPath, [CLI_PATH, ...args], { cwd })
+    .then((ok) => ({ code: 0, out: `${ok.stdout}${ok.stderr}` }))
+    .catch((e: { code?: number; stdout?: string; stderr?: string }) => ({ code: e.code ?? -1, out: `${e.stdout ?? ""}${e.stderr ?? ""}` }));
+
+test("MEMORY — an unreadable .coherence/status.json REFUSES, and does not overwrite itself with a fresh one", async () => {
+  // THE MEASURED DEFECT (2026-07-31, an adversarial review): truncate status.json — a
+  // crashed write is enough — with derivation ALSO broken, and `verify` went from
+  // `✗ [floor]` exit 1 to the adoption ladder, exit 0. The run then filed an empty record,
+  // so every later run, verify and all six guarded generators, passed forever. The last
+  // assertion is the one that matters: the corrupt file survives the refusal untouched.
+  const dir = await tmpProject(healthy());
+  try {
+    await cli(["verify"], dir);                                   // file a real record
+    const before = await readFile(join(dir, ".coherence", "status.json"), "utf8");
+    assert.ok(JSON.parse(before).verify.claims.length >= 2, "the fixture must remember a surface, or this proves nothing");
+
+    const truncated = before.slice(0, 40);                        // exactly what a crashed write leaves
+    await writeFile(join(dir, ".coherence", "status.json"), truncated);
+
+    for (const pass of ["first", "second"]) {
+      const r = await cli(["verify"], dir);
+      assert.equal(r.code, 2, `the ${pass} run must refuse (2 = could not run), not grade`);
+      assert.match(r.out, /\[floor\] \.coherence\/status\.json EXISTS and DOES NOT PARSE/);
+      assert.doesNotMatch(r.out, /✓ coherent/);
+      assert.doesNotMatch(r.out, /○ adoption/, "an unreadable record must never read as a project that never adopted");
+      assert.doesNotMatch(r.out, /^\s+at .*file:\/\//m, "a stack trace is not a report");
+      // THE PERMANENCE IS THE DEFECT. A refusal that rewrote the file it refused against
+      // would refuse exactly once and wave every run after it through — which is why the
+      // SECOND pass is asserted at all.
+      assert.equal(await readFile(join(dir, ".coherence", "status.json"), "utf8"), truncated,
+        `the ${pass} refusal must leave the unreadable record byte-for-byte as it was`);
+    }
+  } finally { await cleanup(dir); }
+});
+
+test("MEMORY — the generators refuse an unreadable record too, and leave the good artifacts alone", async () => {
+  // The floor guards the generators because they are a second door onto the same failure
+  // (`FLOOR — a generator REFUSES to overwrite a good map with a blank one`, above). That
+  // guard reads the record, so an unreadable record walked straight past it: `docs` wrote
+  // `graph.json` with `"nodes": []`, blanking a good artifact.
+  const dir = await tmpProject(healthy());
+  try {
+    await cli(["verify"], dir);
+    await cli(["docs"], dir);
+    const good = await readFile(join(dir, "public", "graph.json"), "utf8");
+    assert.ok(good.includes("x.ts"), "the fixture must produce a non-empty map, or this proves nothing");
+    await writeFile(join(dir, ".coherence", "status.json"), "{\"version\":1,\"veri");
+
+    for (const args of [["docs"], ["graph"], ["contract"], ["docs", "--check"]]) {
+      const r = await cli(args, dir);
+      assert.equal(r.code, 2, `\`coherence ${args.join(" ")}\` must refuse an unreadable record`);
+      assert.match(r.out, /\[floor\] \.coherence\/status\.json/, `\`coherence ${args.join(" ")}\` must say WHY`);
+    }
+    assert.equal(await readFile(join(dir, "public", "graph.json"), "utf8"), good, "the refusal must leave the good map intact");
+  } finally { await cleanup(dir); }
+});
+
+test("MEMORY — an unreadable ratchet baseline REFUSES the PIN, rather than pinning zeroes over it", async () => {
+  // The inversion incident mass.ts's own header documents, reachable through one byte:
+  // truncate mass-baseline.json over a real population and `--update-baseline` printed
+  // "Pinned 4 mass dimension(s)", exit 0, with every dimension at zero — because a null
+  // baseline reads as "never pinned", and `update` skips the ratchet floor when nothing
+  // is pinned. The check seam is asserted alongside it: a `held` over a baseline nobody
+  // could read is the same green-by-absence one command over.
+  const dir = await tmpProject(healthy());
+  try {
+    const pin = await cli(["mass", "--update-baseline"], dir);
+    assert.equal(pin.code, 0, pin.out);
+    const before = await readFile(join(dir, "public", "mass-baseline.json"), "utf8");
+    assert.ok(JSON.parse(before).length > 0, "the fixture must pin a live population, or this proves nothing");
+
+    const truncated = before.slice(0, 30);
+    await writeFile(join(dir, "public", "mass-baseline.json"), truncated);
+    for (const args of [["mass", "--update-baseline"], ["mass", "--check"]]) {
+      const r = await cli(args, dir);
+      assert.equal(r.code, 2, `\`coherence ${args.join(" ")}\` must refuse an unreadable baseline`);
+      assert.match(r.out, /\[floor\] public\/mass-baseline\.json EXISTS and DOES NOT PARSE/);
+      assert.doesNotMatch(r.out, /Pinned \d+ mass dimension/, "a refusal that still pinned would bank the break as the new floor");
+      assert.doesNotMatch(r.out, /ratchet held/);
+    }
+    assert.equal(await readFile(join(dir, "public", "mass-baseline.json"), "utf8"), truncated, "the refusal must not rewrite the pin");
+  } finally { await cleanup(dir); }
+});
+
+test("MEMORY — an unreadable coherence.config.json REFUSES, instead of degrading to the defaults", async () => {
+  // Silently defaulting is not a milder version of the same thing: it is the harness
+  // reading a DIFFERENT TREE than the one it was configured to read, and reporting on it
+  // with full confidence. `ignore`, `codeExt` and `sources` all revert (the walk changes
+  // shape), and `name` reverts to absent — which resurrects the cross-checkout
+  // `docs --check` false positive b32965d shipped to kill.
+  const dir = await tmpProject(healthy());
+  try {
+    await writeFile(join(dir, "coherence.config.json"), '{ "outputDir": "public",\n');
+    const r = await cli(["verify"], dir);
+    assert.equal(r.code, 2);
+    assert.match(r.out, /\[floor\] coherence\.config\.json EXISTS and DOES NOT PARSE/);
+    assert.match(r.out, /walking a DIFFERENT TREE than you configured/);
+    assert.doesNotMatch(r.out, /✓ coherent/);
+    assert.doesNotMatch(r.out, /^\s+at .*file:\/\//m, "a stack trace is not a report");
+  } finally { await cleanup(dir); }
+});
+
+test("MEMORY — ABSENT keeps meaning exactly what it always meant: adoption, defaults, a first pin", async () => {
+  // THE HALF THAT MUST NOT MOVE. The three readers exist to serve legitimately-empty
+  // states — a first run, a project mid-adoption, an unpinned ratchet — and a fix that
+  // refused those would be a worse instrument than the one it replaced. Asserted through
+  // the CLI, on a project carrying NONE of the three files.
+  const dir = await tmpProject({
+    "a/a.spec.md": "# A\n\nThe A component.\n\n## why\n\nBecause the fixture needs one.\n",
+    "a/x.ts": "/** what. why: r */\nexport const x = 1;\n",
+  });
+  try {
+    const v = await cli(["verify"], dir);          // no config, no record
+    assert.equal(v.code, 0, v.out);
+    assert.doesNotMatch(v.out, /\[floor\]/, "an absent config and an absent record are the on-ramp, never a refusal");
+    assert.match(v.out, /○ adoption — step 1/, "no coherence.config.json is rung 1, exactly as before");
+
+    const m = await cli(["mass", "--update-baseline"], dir);   // no baseline
+    assert.equal(m.code, 0, m.out);
+    assert.match(m.out, /Pinned \d+ mass dimension/, "a first pin over an absent baseline stays free");
+  } finally { await cleanup(dir); }
+});
+
+test("MEMORY — the seam itself: absent is null, unreadable throws Unrunnable naming the file", async () => {
+  // The rule is ONE seam (`readJsonOrRefuse`) and not three catch blocks, because three
+  // hand-rolled copies of it is how all three readers came to have the same defect. Pinned
+  // directly so the next persistent reader inherits a rule with a witness, and so a
+  // regression names the seam rather than one of its callers.
+  const dir = await tmpProject({ "there.json": "{ oh no", "afile": "not a directory" });
+  const memory = { label: "there.json", what: "a memory", absentMeans: "nothing was recorded", consequence: ["a floor goes quiet."] };
+  try {
+    assert.equal(await readJsonOrRefuse(join(dir, "not-there.json"), memory), null,
+      "ABSENT is legitimate — the state adoption, a first run and an unpinned ratchet all share");
+    assert.equal(await readJsonOrRefuse(join(dir, "afile", "under.json"), { ...memory, label: "afile/under.json" }), null,
+      "ENOTDIR — absence one directory up — is still absence, not a corrupt file");
+    await assert.rejects(
+      () => readJsonOrRefuse(join(dir, "there.json"), memory),
+      (e: unknown) => {
+        assert.ok(e instanceof Unrunnable, "the refusal must be the type the CLI renderer is total over, not a raw SyntaxError");
+        const out = e.report.join("\n");
+        assert.match(out, /there\.json EXISTS and DOES NOT PARSE AS JSON/);
+        assert.match(out, /NOTHING has been written/, "the report must say what it did NOT do — the permanence is the defect");
+        assert.match(out, /nothing was recorded/, "the report must say what an absent one would have meant");
+        return true;
+      },
+    );
   } finally { await cleanup(dir); }
 });

@@ -8,11 +8,12 @@
 // because staleness IS health information: a green from ten commits ago is an amber
 // fact, and the fast/full tiers age independently. The record is the last known
 // truth, honestly dated — never a claim about the present.
-import { readFile, writeFile, mkdir } from "node:fs/promises";
+import { writeFile, mkdir } from "node:fs/promises";
 import { join } from "node:path";
 import { spawnSync } from "node:child_process";
 import type { Config } from "./types.ts";
 import { claimKey, type ClaimKey } from "./boundary.ts";
+import { readJsonOrRefuse } from "./floor.ts";
 
 export interface ClaimRecord {
   node: string;            // declaring component's label
@@ -129,8 +130,28 @@ export interface StatusRecord { version: 1; verify?: VerifySection; atlas?: Atla
 
 export const statusPath = (cfg: Config) => join(cfg.root, ".coherence", "status.json");
 
+/**
+ * THE RECORD, or a fresh one — and a REFUSAL when there is a record here that cannot be
+ * read (floor.ts's `readJsonOrRefuse`). This was `catch → return { version: 1 }`, which
+ * could not tell a project that has never filed a report from one whose report is
+ * corrupt, and the second reading is what every floor in the harness is measured
+ * against. Truncating this file (a crashed write; the file is untracked in most
+ * projects, so there is no diff either) turned `verify`'s `✗ [floor]` refusal into the
+ * adoption ladder and exit 0 — and the run then filed a fresh empty record over the
+ * remains, so verify and all six guarded generators passed forever after.
+ */
 export async function readStatus(cfg: Config): Promise<StatusRecord> {
-  try { return JSON.parse(await readFile(statusPath(cfg), "utf8")) as StatusRecord; } catch { return { version: 1 }; }
+  const rec = await readJsonOrRefuse<StatusRecord>(statusPath(cfg), {
+    label: ".coherence/status.json",
+    what: "the run record — how large a verification surface the last run actually graded",
+    absentMeans: "a project that never filed a report reads as adoption from zero",
+    consequence: [
+      `reporting ADOPTION over a project that already has claims, and then filing a`,
+      `fresh empty record on top of the unreadable one. That disarms the non-vacuity`,
+      `floor and every generator it guards — permanently, and with no diff to notice.`,
+    ],
+  });
+  return rec ?? { version: 1 };
 }
 
 async function writeStatus(cfg: Config, rec: StatusRecord): Promise<void> {

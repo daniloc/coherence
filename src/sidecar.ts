@@ -6,6 +6,7 @@
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { join } from "node:path";
 import { codeFiles } from "./walk.ts";
+import { readJsonOrRefuse } from "./floor.ts";
 import type { Config } from "./types.ts";
 
 export interface SrcFile { rel: string; text: string }
@@ -35,8 +36,27 @@ export async function scanSources(cfg: Config): Promise<{ src: SrcFile[]; test: 
 
 const baselinePath = (cfg: Config, name: string) => join(cfg.root, cfg.outputDir, name);
 
+/**
+ * THE PIN, or null when nothing is pinned — and a REFUSAL when a baseline is there and
+ * cannot be read (floor.ts's `readJsonOrRefuse`). Null means "never pinned", which every
+ * ratchet handles as its first run; it must NOT also mean "the pin is corrupt", because
+ * the ratchet floor's whole discriminator is whether the baseline remembers a non-empty
+ * population. Truncating `mass-baseline.json` over a real project made
+ * `mass --update-baseline` print "Pinned 4 mass dimension(s)" and exit 0 with every
+ * dimension at zero — the exact inversion incident mass.ts's own header describes,
+ * reachable again through one unparseable byte.
+ */
 export async function readBaseline<T>(cfg: Config, name: string): Promise<T | null> {
-  try { return JSON.parse(await readFile(baselinePath(cfg, name), "utf8")) as T; } catch { return null; }
+  return readJsonOrRefuse<T>(baselinePath(cfg, name), {
+    label: join(cfg.outputDir, name),
+    what: "a ratchet's baseline — the pinned reading every later run is graded against",
+    absentMeans: "a ratchet that was never pinned reads as a first pin, from zero",
+    consequence: [
+      `grading this run against NOTHING, and letting \`--update-baseline\` pin zero over`,
+      `a live baseline. That banks the break as the new floor, and every later run then`,
+      `reads the project's own mass as GROWTH.`,
+    ],
+  });
 }
 
 export async function writeBaseline(cfg: Config, name: string, data: unknown): Promise<string> {

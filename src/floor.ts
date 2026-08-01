@@ -44,7 +44,13 @@
 //   · `Unrunnable` — green-by-absence wearing the opposite face. An instrument that cannot
 //     run must say WHY in a sentence; a stack trace is a report that failed to say what was
 //     and was not measured, which is the same defect with the sign flipped.
-import { stat } from "node:fs/promises";
+//   · `readJsonOrRefuse` — the same defect ONE LAYER DOWN, in the memory every floor above
+//     reads. Every one of these gates is a comparison between a live reading and a
+//     REMEMBERED one, and each remembered one lives in a JSON file that was loaded by
+//     `catch → return default`. That catch cannot tell "the file is not there" from "the
+//     file is there and I could not read it", so a single unparseable byte turned every
+//     floor on this page off.
+import { stat, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { Config, Graph } from "./types.ts";
 import type { StatusRecord } from "./status.ts";
@@ -188,6 +194,87 @@ export class Unrunnable extends Error {
     this.report = report;
   }
 }
+
+// ── the memory the floors read ────────────────────────────────────────────────────────
+
+/**
+ * WHAT A PERSISTENT READER MUST BE ABLE TO SAY ABOUT ITS OWN FILE. Absence and
+ * unreadability are DIFFERENT FACTS and the caller is the only place that knows what each
+ * one means for it, so each supplies its own sentences — the same argument
+ * `RatchetReading` makes for the ratchets: the rule is shared, the reading is not.
+ */
+export interface JsonMemory {
+  /** the file as a reader types it — a path, relative to the project root. */
+  label: string;
+  /** what the file IS, one clause: "the run record every non-vacuity floor reads". */
+  what: string;
+  /** what its ABSENCE legitimately means. This is the state the reader must keep
+   *  supporting unchanged: first run, adoption, no baseline pinned yet. */
+  absentMeans: string;
+  /** what silently degrading it to the default would COST — the specific gate that goes
+   *  quiet — LINE BY LINE, because this is rendered into a terminal report and a
+   *  paragraph handed to a wrapper is a paragraph nobody reads. Written as the
+   *  consequence, not as the mechanism: an operator needs to know what stopped being
+   *  checked, not which catch block swallowed it. */
+  consequence: string[];
+}
+
+/**
+ * READ A JSON FILE THAT MAY LEGITIMATELY BE ABSENT AND MAY NEVER LEGITIMATELY BE GARBAGE.
+ *
+ * ABSENT → null, and the caller does exactly what it did before: defaults, no baseline,
+ * a fresh record. That state is ordinary and every floor here depends on it staying
+ * ordinary — it is what adoption, a first run and an unpinned ratchet all look like.
+ *
+ * PRESENT AND UNPARSEABLE → `Unrunnable`. There is no reading of an unparseable file that
+ * makes it an empty one. A crashed write, a merge conflict left in place, a truncated
+ * checkout: all of them are defects, and all of them used to be answered with the same
+ * silence as absence — which is how ONE unparseable byte in `.coherence/status.json`
+ * disarmed the vacuity floor, the six guarded generators and the ratchets at once, and
+ * then, because the run went on to FILE A FRESH RECORD over the corpse, kept them
+ * disarmed for every run after it. Where `.coherence/` is untracked there was not even a
+ * diff to notice.
+ *
+ * IT REFUSES BEFORE ANYTHING IS WRITTEN, and that ordering is the whole fix rather than a
+ * detail of it. A reader that repaired the file by overwriting it would convert a
+ * one-run failure into a permanent one, silently — the same reason `vacuityRefusal`
+ * files no record and the ratchet floor refuses the pin as well as the check.
+ */
+export async function readJsonOrRefuse<T>(path: string, m: JsonMemory): Promise<T | null> {
+  let text: string;
+  try {
+    text = await readFile(path, "utf8");
+  } catch (e) {
+    // ENOENT (and ENOTDIR, the same absence one directory up) is the ONLY absence. A
+    // permission error or a directory in the file's place is a file that EXISTS and could
+    // not be read — unreadable, not missing, and it takes the refusal below.
+    const code = (e as NodeJS.ErrnoException).code;
+    if (code === "ENOENT" || code === "ENOTDIR") return null;
+    throw new Unrunnable(unreadable(m, "CANNOT BE READ", code ?? (e as Error).message));
+  }
+  try {
+    return JSON.parse(text) as T;
+  } catch (e) {
+    throw new Unrunnable(unreadable(m, "DOES NOT PARSE AS JSON", (e as Error).message));
+  }
+}
+
+const unreadable = (m: JsonMemory, fault: string, detail: string): string[] => [
+  `✗ [floor] ${m.label} EXISTS and ${fault}:`,
+  `      ${detail}`,
+  `  It is ${m.what}.`,
+  `  AN UNREADABLE MEMORY IS NOT AN EMPTY ONE. Reading it as absent would mean:`,
+  ...m.consequence.map((l) => `    ${l}`),
+  `  Refusing to run. NOTHING has been written — the file is byte-for-byte as it was.`,
+  `  A run that "repaired" it by overwriting it would turn one broken run into every`,
+  `  run after it, silently, and leave no diff where the file is untracked.`,
+  `  · a crashed write, a truncated checkout, a merge conflict left in the file?`,
+  `    restore it — \`git checkout -- ${m.label}\` where it is tracked — or fix`,
+  `    the syntax by hand. Neither is something a run may do on your behalf.`,
+  `  · genuinely starting over?  DELETE ${m.label}. An ABSENT one is legitimate`,
+  `    (${m.absentMeans}); an unparseable one never is. Deleting it is`,
+  `    one deliberate act that leaves a trace — which defaulting past it was not.`,
+];
 
 // A claim an oracle can red: the executable forms, plus `conforms to` (a word is a
 // contract whose commitments may carry oracles — the benefit of the doubt goes to the
