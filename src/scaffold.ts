@@ -79,13 +79,21 @@ ${why}
 }
 
 function componentSpec(cap: string): string {
+  // `## works when` ships EMPTY, deliberately. The template used to pre-fill it with
+  // `main.ts exists at this node` / `main.ts imports ./dependency` — placeholder claims of
+  // the exact triviality class this repo pruned from its own spec ("a spec full of green
+  // trivialities is coherent and worthless"). Two green trivialities are WORSE than no
+  // claims: they make the adoption ladder look climbed. An empty section is honest — the
+  // coverage gate will name it, and verify's adoption ladder says what to do about it.
   return `# ${cap}
 
 One-line intent: what this component IS — a noun, the single concern it owns.
 
 ## works when
-- main.ts exists at this node
-- main.ts imports ./dependency
+<!-- Deliberately EMPTY: the first claim should be born from the first INCIDENT, not
+     conjectured — pin what actually broke (\`coherence scaffold invariant <name>\`).
+     Do not seed this with trivialities (\`typechecks\`, \`<entry> exists at root\`):
+     green lines that defend nothing make the spec look verified while it isn't. -->
 
 ## why
 
@@ -145,9 +153,10 @@ export async function scaffold(cfg: Config, kind: string, name: string): Promise
     const path = join(cfg.root, `${name}.spec.md.draft`);
     await writeFile(path, componentSpec(cap));
     console.log(`scaffolded component "${name}" → ${name}.spec.md.draft`);
-    console.log(`Place it as <component-dir>/${name}.spec.md and replace the placeholder`);
-    console.log(`works-when claims with real ones (exists / imports). \`coherence verify\``);
-    console.log(`then gates that the component carries claims AND a why.`);
+    console.log(`Place it as <component-dir>/${name}.spec.md and author the intent + why.`);
+    console.log(`\`## works when\` ships EMPTY on purpose: the first claim should be born`);
+    console.log(`from the first incident (\`coherence scaffold invariant <name>\`), never`);
+    console.log(`seeded with green trivialities that make the spec look verified.`);
     return 0;
   }
 

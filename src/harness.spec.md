@@ -21,6 +21,7 @@ rendering, and journaling remain independently addressable modules beneath this 
 - a via-test oracle that iterates no live domain fails its claim
 - a skipped run never clobbers an oracle's recorded verdict
 - a named oracle that no test runs cannot pass
+- an empty derivation against a remembered surface refuses, never passes
 
 ## refutations
 
@@ -35,6 +36,7 @@ rendering, and journaling remain independently addressable modules beneath this 
 - a via-test oracle that iterates no live domain fails its claim: flipped the self-literal domain branch to report `live` -> `claims: 26 · 25 green · 1 red`, this claim red by name. Restored, 26/26.
 - a skipped run never clobbers an oracle's recorded verdict: made the merge take the fresh skip unconditionally -> `claims: 26 · 25 green · 1 red`, this claim red by name. Restored, 26/26.
 - a named oracle that no test runs cannot pass: made the no-owning-file branch exit 0 -> `claims: 26 · 25 green · 1 red`, this claim red by name (the guard test, run by the mutated runner itself, observed the quiet pass). Restored, 26/26.
+- an empty derivation against a remembered surface refuses, never passes: mutated BOTH ends (2026-07-31). (a) gutted `buildGraph` to return an empty graph — the original defect, which before the floor printed `claims: 0 · 0 green · 0 red · 0 skipped` and `✓ coherent`, exit 0: now full verify refuses before grading (`✗ [floor] the derived graph is EMPTY of claims — 0 component(s), 0 claims — but the record remembers 27 claim(s)`), exit 1, on the scoped path too, and the record is left un-clobbered so the refusal repeats. (b) made `vacuityRefusal` return null unconditionally — the floor itself deleted: full verify red BY NAME, `claims: 28 · 27 green · 1 red`, this claim failing through its guard. Restored, 28/28. (b) is the direction that matters: a floor that cannot fail is the vacuity it exists to catch.
 
 ## works when
 
@@ -56,6 +58,7 @@ rendering, and journaling remain independently addressable modules beneath this 
 - boundary "a via-test oracle that iterates no live domain fails its claim" at analyzeOracle via guard "META-ORACLE — a `via test` boundary whose oracle loops a LITERAL fails"
 - boundary "a skipped run never clobbers an oracle's recorded verdict" at recordVerify via guard "merge — a skip never clobbers a real verdict; the old verdict rides through with its own stamp"
 - boundary "a named oracle that no test runs cannot pass" at runNamedTest via guard "runner contract — a name that exists nowhere exits nonzero (the vanished oracle cannot pass)"
+- boundary "an empty derivation against a remembered surface refuses, never passes" at vacuityRefusal via guard "FLOOR — an empty derivation against a remembered surface REFUSES, never reports coherent"
 
 ## why
 
@@ -129,6 +132,17 @@ executable tier leans its trust on, and it was outside the evidence perimeter �
 untested, and (measured) willing to exit clean when the cited title survived only as a
 string in a file. The runner itself must refuse a name it cannot show ran, because every
 green above it inherits that refusal.
+
+**an empty derivation against a remembered surface refuses, never passes.** Every verdict
+in this file rests on the graph deriving non-empty, and nothing checked that premise:
+gutting `buildGraph` left the gate printing "claims: 0" and "✓ coherent", exit 0 —
+deeper than a vanished oracle, because it empties every check at once while announcing
+they all passed. The record remembers how many claims the last run graded, so a run that
+suddenly sees zero must refuse rather than report success over nothing; the only
+legitimate zero (a project adopting from nothing) is exactly the one with no memory, and
+it gets the adoption ladder instead. The floor deliberately stops at zero: a partial
+collapse where every component keeps a claim is observationally identical to deliberate
+pruning, and coverage already reds any component whose claims all vanished.
 
 (The import claims above separately prove that the composition root still reaches the
 configuration loader, graph derivation, verifier, spec walker, and journal.)

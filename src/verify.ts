@@ -13,6 +13,7 @@ import { recordVerify, readStatus, indexClaimRecords } from "./status.ts";
 import { readJournal } from "./decisions.ts";
 import { raiseFindings, formatRaise, type Finding } from "./raise.ts";
 import { isDocumented } from "./derive.ts";
+import { readSurface, vacuityRefusal, adoptionLadder } from "./floor.ts";
 // The SAME history read `atlas` heat uses — and the same one, not a second one: the
 // evolution memo is keyed `<root>|<limit>`, so a run that already measured heat pays
 // nothing here, and a change to the window or the concern band lands in both at once.
@@ -240,6 +241,16 @@ export interface VerifyOpts {
 
 export async function runVerify(cfg: Config, graph: Graph, opts: VerifyOpts): Promise<number> {
   const root = cfg.root;
+  // THE NON-VACUITY FLOOR, checked before anything is graded — the instrument-check-first
+  // idiom (test/commands.test.ts proves its AST scanner reads a plausible dispatch BEFORE
+  // trusting any set comparison) applied to verify itself: a graph that derived EMPTY of
+  // claims against a record that remembers a surface is a broken instrument, not a clean
+  // bill. Refuse WITHOUT filing a record — a refusal that overwrote the memory it refused
+  // against would refuse exactly once. Scoped runs cannot trip this: the graph is always
+  // derived full-tree, so `--staged`/`--since` narrowing changes nothing the floor reads.
+  const surface = readSurface(graph, await readStatus(cfg));
+  const refusal = vacuityRefusal(surface);
+  if (refusal) { for (const l of refusal) console.log(l); return 1; }
   // A MISCONFIGURED BATCH FORMAT FAILS THE RUN — it does not fall back. Reverting to the
   // per-claim path here would produce a correct-looking green that took thirty minutes,
   // and nobody diagnoses a typo they were never told about. Checked before any work so the
@@ -635,7 +646,21 @@ export async function runVerify(cfg: Config, graph: Graph, opts: VerifyOpts): Pr
   // run merely SKIPPED, so without this the run would exit 0 having verified nothing
   // executable — a silent pass, which is the exact shape of failure this release removes.
   const failures = red + broken + covGaps + (refused ? 1 : 0);
-  console.log(failures === 0 ? (verifyJobs.length ? `\n• ${verifyJobs.length} verification job(s) pending` : "\n✓ coherent") : `\n✗ ${failures} coherence failure(s) — ${red} claim · ${broken} broken · ${covGaps} coverage${refused ? " · 1 executable tier refused (see [oracles] above)" : ""}`);
+  // THE ADOPTION LADDER — the floor's other face (src/floor.ts). Zero claims with nothing
+  // remembered is the ON-RAMP, not an error and not "✓ coherent": name the state, print
+  // THE ONE NEXT ACTION, exit 0 — a bare repo must be able to adopt without fighting the
+  // gate, and its coverage gaps ARE the on-ramp state rather than failures. Rungs 4–5
+  // (claims that cannot fail / never observed failing) ride along AFTER the normal
+  // verdict: there they are the next action, never a verdict override.
+  const ladder = await adoptionLadder(cfg, graph);
+  const onramp = !!ladder && ladder.onramp && red === 0 && broken === 0 && !refused;
+  if (onramp) {
+    console.log("");
+    for (const l of ladder!.lines) console.log(l);
+  } else {
+    console.log(failures === 0 ? (verifyJobs.length ? `\n• ${verifyJobs.length} verification job(s) pending` : "\n✓ coherent") : `\n✗ ${failures} coherence failure(s) — ${red} claim · ${broken} broken · ${covGaps} coverage${refused ? " · 1 executable tier refused (see [oracles] above)" : ""}`);
+    if (ladder) { console.log(""); for (const l of ladder.lines) console.log(l); }
+  }
 
   // File the report (`.coherence/status.json`) — the run record the panel (and any
   // other consumer) reads. Coverage + invariant TOTALS are static full-tree graph
@@ -663,7 +688,10 @@ export async function runVerify(cfg: Config, graph: Graph, opts: VerifyOpts): Pr
         ? { statements: narr.statements.length, unchanged: narr.statements.filter((s: any) => s.status === "ok").length, pending: narr.statements.filter((s: any) => s.status === "pending").length, broken }
         : null,
       jobs: jobs.length,
-      failures,
+      // The on-ramp files failures: 0 — its coverage gaps are the adoption state the
+      // ladder just named, and a record that said "failed" beside an exit-0 run would
+      // hand the panel two verdicts for one run.
+      failures: onramp ? 0 : failures,
       // The HOLDING-COST vector, top-N rather than every claim: the record is read by the
       // panel, which shows the head of it, and a per-claim timing dump would double the size
       // of status.json to carry a tail nobody displays. `source` rides along per row because
@@ -671,5 +699,5 @@ export async function runVerify(cfg: Config, graph: Graph, opts: VerifyOpts): Pr
       cost: { totalMs, claims: timed.slice(0, COST_RECORD_CAP).map((s) => ({ node: s.node, claim: s.claim, ms: s.ms as number, source: s.msSource ?? "wall" })) },
     });
   } catch { /* the record is best-effort; the console report already happened */ }
-  return failures === 0 ? 0 : 1;
+  return onramp || failures === 0 ? 0 : 1;
 }

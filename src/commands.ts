@@ -169,7 +169,14 @@ export const COMMANDS: Command[] = [
   },
 
   // ── bootstrap ────────────────────────────────────────────────────────────────────────
-  { name: "onboard", group: "bootstrap", summary: "bootstrap a repo with no specs — output is proposals to review, not writes" },
+  // `onboard` lived here until 2026-07-31. Evicted, and `verify`'s adoption ladder is the
+  // replacement: onboard had zero tests and was UNDEFENDED (gutting its significance
+  // filter changed nothing observable); its "candidate components" were a platform
+  // heuristic, not a boundary analysis; it emitted one job per significant file and piles
+  // do not get worked (measured: 42 doc jobs in a consuming repo, zero dispatched in 19
+  // commits); and its draft spec shipped `- typechecks` + `- <entry> exists at root` —
+  // the exact green trivialities this repo pruned from its own spec under its own line
+  // "a spec full of green trivialities is coherent and worthless".
   {
     // `<kind>`, not `<boundary|component|invariant|parity>`, and the reason is this file's
     // whole subject. Spelling the four kinds here would put a FOURTH copy of that domain in

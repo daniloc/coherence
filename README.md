@@ -1374,7 +1374,7 @@ both is exactly what drifted.
      edit by hand — add the command to the registry and re-run. Everything OUTSIDE these
      markers is authored prose. -->
 
-_36 commands. This index is derived from the registry the dispatch is checked
+_35 commands. This index is derived from the registry the dispatch is checked
 against (`test/commands.test.ts` enumerates the live `cmd === …` chain and asserts the two
 sets are equal), so it cannot fall behind the CLI. The reasoning for the commands that have
 any is in **In detail** below — that half is authored, and does not cover all of them._
@@ -1430,7 +1430,6 @@ any is in **In detail** below — that half is authored, and does not cover all 
 
 **Bootstrap and scaffold**
 
-- `coherence onboard` — bootstrap a repo with no specs — output is proposals to review, not writes
 - `coherence scaffold <kind> <name>` — the gradient-flip generator — make the complete shape the cheapest thing to ship
 
 **Reference and plumbing**
@@ -1590,8 +1589,17 @@ any is in **In detail** below — that half is authored, and does not cover all 
   - `parity` — the same paste-in kit for a **parity** invariant, plus a domain-loop
     oracle skeleton (enumerate the SSOT, assert `projectionA ≡ projectionB` per member)
     that the parity meta-oracle will accept once the placeholders are real symbols.
-- `coherence onboard` — bootstrap a repo with no specs: derive structure, suggest a
-  decomposition, and emit why-from-history jobs. Output is proposals to review.
+- Adoption (there is no `onboard` command — evicted 2026-07-31): `coherence verify` on a
+  repo with no record and no claims does not say "✓ coherent"; it names the adoption
+  state and prints THE ONE NEXT ACTION, re-runnable, one rung per run — write a config;
+  name ONE boundary (measured by `decompose`/`economy`/`redundancy`, which work on a repo
+  with zero claims); leave `## works when` empty until the first incident supplies the
+  first claim; give one invariant an oracle; prove one breaker trips (`## refutations`).
+  `onboard` was removed because it was undefended (zero tests; gutting its significance
+  filter changed nothing observable), its component candidates were a platform heuristic
+  rather than a boundary analysis, it emitted job piles that measured zero uptake, and
+  its draft spec shipped the exact green trivialities (`typechecks`, `<entry> exists at
+  root`) this repo prunes from its own spec.
 - `coherence lint-sinks [--check | --update-baseline]` — interpolation-surface
   ratchet (raw SQL-identifier / HTML sinks). Mechanism in the harness; SAFE patterns
   + scoped `sources` in config; baseline in `<outputDir>/sinks-baseline.json`. The
@@ -1778,6 +1786,18 @@ any is in **In detail** below — that half is authored, and does not cover all 
 
 ## The verify loop + verdict flow
 
+**The non-vacuity floor runs before anything is graded.** Every verdict below rests on the
+graph deriving non-empty, and that premise is checked first (the instrument-check-first
+idiom): a run that derives ZERO claims while `.coherence/status.json` remembers a graded
+surface **refuses** — exit 1, a legible `✗ [floor]` message, and no record filed (a refusal
+that overwrote the memory it refused against would refuse exactly once). Scoped runs cannot
+trip it: the floor reads the always-full-tree graph, above the `--staged`/`--since` seam. It
+deliberately stops at zero — a partial collapse where every component keeps a claim is
+observationally identical to deliberate pruning, and coverage already reds any component
+whose claims all vanished. The only legitimate zero is a project with no memory, and that
+gets the **adoption ladder** (see `onboard`'s eviction note in the command detail) instead
+of a green: the same empty observation, told apart by the record.
+
 `coherence verify` runs in two tiers:
 
 - **`--fast` (the deterministic tier)** — structural claims (`exists`, `imports`),
@@ -1794,8 +1814,11 @@ any is in **In detail** below — that half is authored, and does not cover all 
 
 **The deployment tiers, honestly.** `--fast` is the inner loop — seconds, no runner, run it
 on every save. A **scoped** full run (`--staged` / `--since`) is what you run when a feature
-is finished. A **whole-tree** full run is the pre-deploy gate. That last tier used to be
-unaffordable, and the reason was arithmetic, not test count.
+is finished. A **whole-tree** full run **plus `npm test`** is the pre-deploy gate — the pair,
+never `verify` alone: verify cannot catch its own evisceration (measured 2026-07-31 —
+corrupting `evalClaim`'s verdict adaptation, `fail` → `pass`, left 20 guard oracles failing
+in the suite while verify still printed "✓ coherent, 27 green"; only the suite reds there).
+That last tier used to be unaffordable, and the reason was arithmetic, not test count.
 
 Before v0.17.0 the executable tier shelled `config.test` **once per claim**
 (`vitest run -t "<name>"`), booting the project's entire test pool to execute milliseconds
@@ -2098,8 +2121,8 @@ meant.
   scenario their test body exercises.
 - **Coherence checks DECLARED invariants.** Nothing enforces `exists ⇒ declared`: an
   invariant your code depends on but no spec names is invisible to every gate here.
-  Declaring the right invariants is your discipline; `conventions` and `onboard`
-  help surface candidates, but the declaration is on you.
+  Declaring the right invariants is your discipline; `conventions`, `decompose` and
+  `redundancy` help surface candidates, but the declaration is on you.
 - **It verifies claims PASS, not that they're the RIGHT claims.** A spec full of
   green trivialities is coherent and worthless. Human attestation of the claim set —
   judge ≠ notary — is axiom #5, and it is not automatable.
@@ -2133,8 +2156,8 @@ meant.
 
 - **what** (docblock body / `## ` prose) — derivable from code, regenerated freely.
 - **why** (`@why` in a docblock, `## why` in a spec) — rationale/intent, NOT derivable;
-  authored and protected (verify won't auto-generate it; it can be bootstrapped from
-  git history via `onboard`, then human-attested).
+  authored and protected (verify won't auto-generate it — ground it in the git history
+  of the decisions it explains, then human-attest it).
 
 ## Develop the harness itself
 

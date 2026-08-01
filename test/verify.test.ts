@@ -174,7 +174,13 @@ test("CANARY — a runner that reds unknown names is proven once and the run pro
 
 test("coverage — a component with no claims, or no why, fails loudly", async () => {
   await withProject({ "present.txt": "" }, async (root) => {
-    const noClaims = graph([comp(".", { claims: [], why: "r" })]);
+    // The claimless component sits BESIDE a claimed one: a project carrying any claim is
+    // past the adoption on-ramp, so the gap is a failure. (A project with ZERO claims and
+    // no record is rung 3 of the adoption ladder instead — pinned in test/floor.test.ts.)
+    const noClaims = graph([
+      comp(".", { claims: [], why: "r" }),
+      comp("lib", { label: "Lib", claims: ["present.txt exists at root"], why: "r" }),
+    ]);
     const a = await runCaptured(() => runVerify(cfg(root), noClaims, {}));
     assert.equal(a.code, 1);
     assert.match(a.out, /has no claims/);

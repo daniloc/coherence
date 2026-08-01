@@ -17,7 +17,6 @@ import { renderOverview } from "./render-overview.ts";
 import { renderClaude, spliceBlock, extractBlock, resolveClaudeMdPath, CLAUDE_BEGIN, CLAUDE_END } from "./render-claude.ts";
 import { renderCommandsBlock, renderPhrasebookBlock, usageBanner, COMMANDS_BEGIN, COMMANDS_END, PHRASEBOOK_BEGIN, PHRASEBOOK_END } from "./commands.ts";
 import { runVerify, applyVerdicts } from "./verify.ts";
-import { onboard } from "./onboard.ts";
 import { decompose } from "./decompose.ts";
 import { drift } from "./drift.ts";
 import { scaffold } from "./scaffold.ts";
@@ -32,6 +31,7 @@ import { runPanel } from "./panel.ts";
 import { buildPromiseModel } from "./promise.ts";
 import { renderContract } from "./render-contract.ts";
 import { readStatus } from "./status.ts";
+import { readSurface, vacuityRefusal } from "./floor.ts";
 import { CLAIM_FORMS, loadDictionary } from "./phrasebook.ts";
 import { appendDecision, renderJournal, readJournal, resolvableConjecture, compactJournal } from "./decisions.ts";
 import { recordObservation, formatObserved } from "./observed.ts";
@@ -256,7 +256,14 @@ if (cmd === "graph") {
   let only: Set<string> | undefined;
   if (argv.includes("--staged") || since) {
     only = await affectedComponents(cfg, graph, changedFiles(cfg, since));
-    if (!only.size) { console.log(`verify (scoped): no changed files map to a component — nothing to check.`); await exit(0); }
+    if (!only.size) {
+      // THE FLOOR APPLIES HERE TOO: a gutted deriver leaves a graph with no components,
+      // which maps NO changed file to a component — and this early exit would then grade
+      // the evisceration "nothing to check", exit 0. Same reading, same refusal.
+      const refusal = vacuityRefusal(readSurface(graph, await readStatus(cfg)));
+      if (refusal) { for (const l of refusal) console.log(l); await exit(1); }
+      console.log(`verify (scoped): no changed files map to a component — nothing to check.`); await exit(0);
+    }
     console.log(`verify (scoped to ${only.size} changed component(s)): ${[...only].join(", ")}`);
   }
   await exit(await runVerify(cfg, graph, {
@@ -471,8 +478,6 @@ if (cmd === "graph") {
 } else if (cmd === "hook") {
   // The hook BODY, so nothing has to be written to disk or kept in sync with a script.
   await exit(await runHook(cfg, positional[0] ?? ""));
-} else if (cmd === "onboard") {
-  await onboard(cfg, await buildGraph(cfg));
 } else if (cmd === "decompose") {
   await exit(await decompose(cfg, await buildGraph(cfg)));
 } else if (cmd === "drift") {
