@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-01 16:36Z",
+  "generatedAt": "2026-08-01 18:17Z",
   "root": "coherence",
   "absRoot": "/Users/daniloc/Documents/Development/coherence",
   "nodes": [
@@ -1540,7 +1540,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 82,
+      "line": 90,
       "prose": "A Stop feedback turn stops again. Hosts mark that second pass so a non-blocking nudge\ncan be emitted exactly once instead of accidentally becoming an eight-turn gate."
     },
     {
@@ -1550,7 +1550,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 91,
+      "line": 99,
       "prose": "`coherence hook <event>` — the hook body itself, so nothing has to be written to\n disk or kept in sync with a script file. Reads the event payload on stdin (unused\n today, but hooks are fed JSON and ignoring it silently would be rude to the next\n person who needs a field from it) and prints the documented output shape."
     },
     {
@@ -1560,7 +1560,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 147,
+      "line": 155,
       "prose": "What an agent is told as it finishes. Split out of `runHook` so it is reachable\n without a stdin pipe — the hook body drains stdin, and a report you can only observe\n by feeding a process is a report nobody tests."
     },
     {
@@ -1570,7 +1570,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 218,
+      "line": 226,
       "prose": "`coherence hooks --check` — IS THE HOOK ACTUALLY FIRING?\n\n This exists because the first real test of the hook path failed SILENTLY: the\n settings block was present and well-formed, `coherence hook SubagentStart` emitted\n correct JSON when run by hand, and the subagent received nothing at all. No error,\n no warning — the mechanism looked installed and did nothing, which is the exact\n defect this project's doctrine names (\"the readFidelity guard reported green for\n hours while gating nothing\").\n\n The tell is structural: a hook-opened session writes a `session` header record. If\n the journal has decisions but ZERO hook-opened sessions, every entry was logged by\n an agent that was told to by hand, and the hook is not running."
     },
     {
@@ -1580,7 +1580,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 267,
+      "line": 275,
       "prose": "`coherence hooks` — print the block to paste into .claude/settings.json, plus the\n instruction text so a reader can see what agents will actually be told."
     },
     {
