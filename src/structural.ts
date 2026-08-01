@@ -84,7 +84,11 @@ export async function affectedComponents(cfg: Config, graph: Graph, files: Set<s
   for (const f of files) {
     const w = wordOfPath(f, dictDir);
     if (w) changedWords.add(w);
-    else hit.add(ownerOf(f, dirs));
+    // A file no component dir owns maps to NO component — it does not map to a fabricated
+    // one. `ownerOf` used to answer `"."` here whether or not a root component existed, and
+    // this line put that phantom into the scope set; verify then announced it had examined
+    // a component that is not in the graph and graded zero claims under it.
+    else { const o = ownerOf(f, dirs); if (o !== null) hit.add(o); }
   }
   if (changedWords.size) {
     const words = await affectedWords(cfg, changedWords);

@@ -147,13 +147,30 @@ export async function codeFiles(root: string, ignore: Set<string>, extRe: RegExp
   return out;
 }
 
-/** the deepest node dir that is a prefix of file's dir */
-export function ownerOf(fileRel: string, dirs: string[]): string {
+/**
+ * The deepest node dir that is a prefix of the file's dir — or NULL when no node dir owns
+ * it at all.
+ *
+ * THE NULL IS THE POINT. This used to return `"."` unconditionally on a miss, which is
+ * the same value it returns when a root `*.spec.md` genuinely owns the file, so no caller
+ * could tell "the root component owns this" from "nothing owns this". On a project with
+ * no root component that fabricated a component out of a miss, and
+ * `affectedComponents` fed it straight into verify's scope set: measured 2026-07-31 on a
+ * healthy two-component tree whose only change was an unowned root-level file, `verify
+ * --staged` printed `scoped to 1 changed component(s): .`, graded `claims: 0 · 0 green`,
+ * and pronounced `✓ coherent` — a LIVE vacuous green needing no mutation to reach.
+ *
+ * An unowned file is ordinary, not an error: a root config, a build script, a stray
+ * module in a tree that is still being decomposed. So the miss is REPRESENTED rather than
+ * refused, and each of the three callers says what it does with one (derive: an unparented
+ * file node; verify and structural: out of every component's scope).
+ */
+export function ownerOf(fileRel: string, dirs: string[]): string | null {
   const d = dirname(fileRel) === "." ? "" : dirname(fileRel);
-  let best = ".";
+  let best: string | null = null;
   for (const nd of dirs) {
     const ndp = nd === "." ? "" : nd;
-    if (ndp === "" || d === ndp || d.startsWith(ndp + "/")) if (ndp.length >= (best === "." ? 0 : best.length)) best = nd;
+    if (ndp === "" || d === ndp || d.startsWith(ndp + "/")) if (ndp.length >= (best === null || best === "." ? 0 : best.length)) best = nd;
   }
   return best;
 }

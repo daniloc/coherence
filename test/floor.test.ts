@@ -89,6 +89,27 @@ test("floor — scope-blind by construction: a scoped run over a healthy graph n
   });
 });
 
+test("VACUITY — a scoped run that evaluates ZERO claims says `nothing to check`, never `✓ coherent`", async () => {
+  // A verdict has two halves: the POPULATION examined and what was found there. Drop the
+  // population and `0 of 0` renders exactly like `0 of 500` — "I looked and found nothing
+  // wrong" becomes indistinguishable from "I did not look". Reproduced live 2026-07-31,
+  // needing no mutation: a healthy two-component tree, one unowned root-level file
+  // changed, and `verify --staged` printed `scoped to 1 changed component(s): .` over a
+  // component that does not exist, then `claims: 0 · 0 green`, then `✓ coherent`, exit 0.
+  //
+  // `ownerOf` returning null is what stops that scope set being minted at all; this is the
+  // second door on the same failure, at the seam that owns the WORD "coherent". Exit 0,
+  // because an empty scope is ordinary — it is a green claim over nothing that is not.
+  await withProject({ ".coherence/status.json": remembered(4), "a/x.txt": "" }, async (root) => {
+    const g = graph([comp("a", { label: "A", claims: ["x.txt exists at this node"], why: "r" })]);
+    const r = await runCaptured(() => runVerify(cfg(root), g, { only: new Set(["nosuchdir"]) }));
+    assert.equal(r.code, 0, r.out);
+    assert.doesNotMatch(r.out, /✓ coherent/, "health was pronounced over nothing");
+    assert.doesNotMatch(r.out, /claims: 0/, "a `0 of 0` tally with no population is the defect, not the report of it");
+    assert.match(r.out, /nothing to check/);
+  });
+});
+
 test("floor — a PARTIAL collapse is deliberately NOT refused: pruning and breakage are indistinguishable there", async () => {
   // 4 remembered → 1 derived, every surviving component still carrying a claim. That is
   // the exact shape of deliberate spec pruning (this repo pruned its own trivialities the

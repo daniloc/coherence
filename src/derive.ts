@@ -71,7 +71,12 @@ export async function buildGraph(cfg: Config): Promise<Graph> {
     const lines = src.split("\n");
     let fwhat: string | undefined, fwhy: string | undefined;
     if (isCode) { const r = splitWhy(lang.fileDoc(lines)); fwhat = r.what || undefined; fwhy = r.why || undefined; }
-    add({ id: fileIds.get(f)!, parent: compId(owner), label: basename(f), kind: "file", sub: f, path: f, prose: fwhat, why: fwhy });
+    // An UNOWNED file (no *.spec.md above it — a root config, a build script, a module in
+    // a tree still being decomposed) gets NO parent, rather than a parent pointing at a
+    // `c:.` node that may not exist. mass.ts has always had the "(unowned)" branch for
+    // this; until `ownerOf` could say null, that branch was unreachable and the dangling
+    // parent was silent instead.
+    add({ id: fileIds.get(f)!, parent: owner === null ? undefined : compId(owner), label: basename(f), kind: "file", sub: f, path: f, prose: fwhat, why: fwhy });
     if (!isCode) continue;
 
     for (const s of lang.symbols(src)) {

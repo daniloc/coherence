@@ -402,7 +402,28 @@ export async function runVerify(cfg: Config, graph: Graph, opts: VerifyOpts): Pr
   const compDirs = graph.nodes.filter((n) => n.kind === "component").map((n) => n.id.slice(2));
   // Scope the (advisory) symbol-doc coverage to the touched components too, so a
   // staged run doesn't dump every undocumented symbol in the repo as a job.
-  const symbols = graph.nodes.filter((n) => n.kind === "symbol" && (!opts.only || (n.path != null && opts.only.has(ownerOf(n.path, compDirs)))));
+  const symbols = graph.nodes.filter((n) => {
+    if (n.kind !== "symbol") return false;
+    if (!opts.only) return true;
+    const owner = n.path == null ? null : ownerOf(n.path, compDirs);
+    return owner !== null && opts.only.has(owner);   // an unowned symbol is in no scope
+  });
+  // A SCOPED RUN THAT EVALUATES NOTHING SAYS SO, and never says "✓ coherent". A verdict
+  // has two halves — the population examined and what was found there — and dropping the
+  // population makes `0 of 0` render exactly like `0 of 500`. Reached when the scope set
+  // names no component the graph carries, which is what a fabricated scope entry looked
+  // like before `ownerOf` could return null (a healthy tree, one unowned root-level file
+  // changed, `verify --staged` → `scoped to 1 changed component(s): .` over a component
+  // that does not exist, `claims: 0`, `✓ coherent`, exit 0).
+  //
+  // NOT A REFUSAL. An empty scope is ordinary — the caller may legitimately hand us one —
+  // so this is the sentence cli.ts already prints for "no changed file maps to a
+  // component", exit 0. The floor above still guards the case that is NOT ordinary: a
+  // derived graph gone empty against a record that remembers a surface.
+  if (opts.only && comps.length === 0) {
+    console.log(`verify (scoped): the scope names no component in the derived graph — nothing to check.`);
+    return 0;
+  }
   const sigs: Sig[] = [];
   // THE CLOCK RUNS AROUND EVERY CLAIM, and the form's own reading OUTRANKS it when there is
   // one. Wall time here is the honest cost of a typecheck, a fetch or a serial runner boot;

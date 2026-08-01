@@ -89,6 +89,41 @@ test("affectedComponents — a non-dictionary change still scopes by owning comp
   });
 });
 
+test("affectedComponents — an UNOWNED path scopes to NOTHING, rather than fabricating component `.`", async () => {
+  // A LIVE VACUOUS GREEN, no mutation required, reproduced 2026-07-31 on a healthy
+  // two-component tree with no root component whose only change was an unowned root-level
+  // `stray.ts`:
+  //     verify (scoped to 1 changed component(s)): .      ← component "." does not exist
+  //     claims: 0 · 0 green · 0 red · 0 skipped
+  //     ✓ coherent                                        ← exit 0, zero claims examined
+  // `ownerOf` answered "." on a miss — the SAME value it answers when a root *.spec.md
+  // genuinely owns the file — so this line could not tell the two apart and put a phantom
+  // into the scope set. verify then asserted it had examined a component that is not in
+  // the graph, and pronounced health over nothing.
+  await withProject({}, async (root) => {
+    const g = graph([
+      comp("a", { label: "A", claims: ["typechecks"], why: "r" }),
+      comp("b", { label: "B", claims: ["typechecks"], why: "r" }),
+    ]);
+    assert.deepEqual([...await affectedComponents(cfg(root), g, new Set(["stray.ts"]))], [],
+      "no component dir is above stray.ts, so no component is affected by it");
+    // And the owned direction is untouched: this is a miss becoming representable, not
+    // ownership getting stricter.
+    assert.deepEqual([...await affectedComponents(cfg(root), g, new Set(["a/x.ts", "stray.ts"]))], ["a"]);
+  });
+});
+
+test("affectedComponents — a ROOT component still owns root-level files (the miss is the null, not the dot)", async () => {
+  // The other half of the same discrimination. `.` is a legitimate answer whenever a root
+  // *.spec.md exists, and a fix that stopped root-owned files from scoping to it would
+  // have traded one wrong answer for another.
+  await withProject({}, async (root) => {
+    const g = graph([comp(".", { label: "Root", claims: ["typechecks"], why: "r" }), comp("a", { label: "A", claims: ["typechecks"], why: "r" })]);
+    assert.deepEqual([...await affectedComponents(cfg(root), g, new Set(["stray.ts"]))], ["."]);
+    assert.deepEqual([...await affectedComponents(cfg(root), g, new Set(["a/x.ts"]))], ["a"], "the deepest owner still wins");
+  });
+});
+
 test("affectedComponents — a word edit propagates TRANSITIVELY through a nested `conforms to`", async () => {
   await withProject(
     {

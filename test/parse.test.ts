@@ -85,3 +85,16 @@ test("ownerOf — a file resolves to its deepest spec'd ancestor", () => {
   assert.equal(ownerOf("shared/Auth/passkey.ts", dirs), "shared/Auth");
   assert.equal(ownerOf("src/top.ts", dirs), "."); // no nested owner → root
 });
+
+test("ownerOf — with NO root component, an unowned file has no owner: null, never a fabricated `.`", () => {
+  // `.` and null are different facts and this used to return `.` for both, so no caller
+  // could tell "the root component owns this" from "nothing owns this". The consequence
+  // was a live vacuous green (see structural.test.ts): a phantom component `.` entered
+  // verify's scope set, and a scoped run pronounced `✓ coherent` over zero claims.
+  const dirs = ["entities/Hive", "shared/Auth"];
+  assert.equal(ownerOf("stray.ts", dirs), null, "a root-level file in a tree with no root spec is owned by nobody");
+  assert.equal(ownerOf("src/top.ts", dirs), null, "and so is a file under an unspec'd directory");
+  assert.equal(ownerOf("entities/Hive/data.ts", dirs), "entities/Hive", "ownership itself is unchanged");
+  // The deepest-ancestor rule still holds when the root IS spec'd — nested wins over root.
+  assert.equal(ownerOf("entities/Hive/data.ts", [".", "entities", "entities/Hive"]), "entities/Hive");
+});
