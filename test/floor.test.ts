@@ -89,6 +89,59 @@ test("floor — scope-blind by construction: a scoped run over a healthy graph n
   });
 });
 
+test("FLOOR — the SCOPED path refuses an empty derivation too, instead of grading it `nothing to check`", async () => {
+  // THE POSITIVE DIRECTION OF THE TEST ABOVE, and it did not exist. `verify --staged`
+  // takes an early exit when no changed file maps to a component, and a gutted deriver
+  // reaches that exit for exactly the wrong reason: with no components in the graph,
+  // NOTHING maps, so the evisceration would be graded "nothing to check", exit 0. cli.ts
+  // guards it — but deleting those two lines left the whole suite green, which makes the
+  // guard a claim nothing defends. Only the negative direction ("a scoped run over a
+  // healthy graph never trips the floor") was pinned, and a gate tested in one direction
+  // is half a gate.
+  //
+  // Driven through the CLI on purpose: the branch lives in the dispatch, above runVerify,
+  // and a unit test of the engine cannot reach it.
+  const dir = await tmpProject({
+    "coherence.config.json": JSON.stringify({ outputDir: "public", entryDir: ".", typecheck: ["true"] }),
+    "a/a.spec.md": "# A\n\nThe A component.\n\n## works when\n\n- x.ts exists at this node\n\n## why\n\nThe fixture needs a rationale like any other component.\n",
+    "a/x.ts": "/** what. why: r */\nexport const x = 1;\n",
+    "b/b.spec.md": "# B\n\nThe B component.\n\n## works when\n\n- y.ts exists at this node\n\n## why\n\nThe fixture needs a rationale like any other component.\n",
+    "b/y.ts": "/** what. why: r */\nexport const y = 1;\n",
+  });
+  try {
+    for (const args of [["init", "-q"], ["add", "-A"], ["-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "seed"]]) {
+      await run("git", args, { cwd: dir });
+    }
+    // 1. A full run files the memory (both components), and a healthy SCOPED run over a
+    //    real change grades normally against it.
+    const seed = await cli(["verify"], dir);
+    assert.equal(seed.code, 0, seed.out);
+    await writeFile(join(dir, "a", "x.ts"), "/** what. why: r */\nexport const x = 2;\n");
+    const healthyRun = await cli(["verify", "--staged"], dir);
+    assert.equal(healthyRun.code, 0, healthyRun.out);
+    assert.match(healthyRun.out, /^verify \(scoped to 1 changed component\(s\)\): a$/m, "the fixture must really scope, or this proves nothing");
+    assert.ok(JSON.parse(await readFile(join(dir, ".coherence", "status.json"), "utf8")).verify.claims.length >= 2);
+
+    // 2. Derivation breaks — the spec files the graph is derived FROM go away, which is
+    //    what a gutted `buildGraph` looks like from here: zero components, zero claims.
+    //    With no components, NO changed file can map to one, so the scoped early exit is
+    //    reached for precisely the wrong reason.
+    await rm(join(dir, "a", "a.spec.md"));
+    await rm(join(dir, "b", "b.spec.md"));
+
+    const r = await cli(["verify", "--staged"], dir);
+    assert.equal(r.code, 1, "an eviscerated graph must refuse on the scoped path, not exit 0");
+    assert.match(r.out, /\[floor\]/);
+    assert.match(r.out, /0 component\(s\), 0 claims/);
+    assert.doesNotMatch(r.out, /nothing to check/, "`nothing to check` over a remembered surface is the failure, not the report of it");
+    assert.doesNotMatch(r.out, /✓ coherent/);
+    // The refusal files no record — otherwise it refuses once and waves every run after
+    // it through, which is the same permanence defect as an unreadable record.
+    assert.ok(JSON.parse(await readFile(join(dir, ".coherence", "status.json"), "utf8")).verify.claims.length >= 2,
+      "the scoped refusal must leave the remembered surface intact");
+  } finally { await cleanup(dir); }
+});
+
 test("VACUITY — a scoped run that evaluates ZERO claims says `nothing to check`, never `✓ coherent`", async () => {
   // A verdict has two halves: the POPULATION examined and what was found there. Drop the
   // population and `0 of 0` renders exactly like `0 of 500` — "I looked and found nothing
