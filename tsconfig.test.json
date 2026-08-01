@@ -1,0 +1,16 @@
+{
+  // TYPECHECK-ONLY CONFIG — the base tsconfig is an EMIT config (`rootDir: "src"`,
+  // `outDir: "dist"`), so it structurally cannot include `test/`: every test file
+  // reports TS6059 "not under rootDir". That is why 612 tests' worth of code went
+  // unchecked, and why `tsc --noEmit` once reported clean while a test file
+  // referenced a completely undefined identifier.
+  //
+  // It mattered. The three errors this surfaced were all `Map<string, ClaimRecord>`
+  // passed where `Map<ClaimKey, ClaimRecord>` is required — the branded key that
+  // exists so an un-normalized map is a COMPILE error, enforced across `src` and
+  // unenforced across `test`. The evidence layer could construct exactly the illegal
+  // state the brand forbids, and it is the layer asserting the behaviour is correct.
+  "extends": "./tsconfig.json",
+  "compilerOptions": { "noEmit": true, "rootDir": "." },
+  "include": ["src/**/*.ts", "test/**/*.ts"]
+}

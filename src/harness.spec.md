@@ -40,6 +40,7 @@ rendering, and journaling remain independently addressable modules beneath this 
 
 ## works when
 
+- typechecks
 - cli.ts imports ./config.ts
 - cli.ts imports ./derive.ts
 - cli.ts imports ./verify.ts

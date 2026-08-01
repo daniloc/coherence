@@ -14,6 +14,40 @@ evidence inside that record.
 
 ---
 
+## v0.24.1 — the evidence layer is typechecked, and the harness claims it
+
+`tsc --noEmit` reported clean on this repo while a test file referenced a
+completely undefined identifier. The base tsconfig is an EMIT config
+(`rootDir: "src"`, `outDir: "dist"`), so it structurally cannot include `test/` —
+every test file reports TS6059 — and 612 tests' worth of code was never checked.
+
+It was not academic. Including `test/` surfaced exactly three errors, all the same
+shape: `Map<string, ClaimRecord>` passed where `Map<ClaimKey, ClaimRecord>` is
+required. `ClaimKey` is BRANDED precisely so an un-normalized map is a compile
+error, after the silent history-erasure bug where sticky history keyed on the raw
+claim string while `claimKey` normalized the crossing clause. The brand was
+enforced across `src` and unenforced across `test` — so the evidence layer could
+construct exactly the illegal state the brand forbids, and it is the layer
+asserting the behaviour is correct.
+
+Two of the three were cosmetic (the keys were already minted; only the annotation
+widened the brand away). The third was the real one: a fixture keyed by raw
+`${node} ${claim}` template literals, bypassing the mint entirely. It was green
+only by accident — none of its claims carry a `crossing` clause, so normalization
+was a no-op and raw happened to equal minted. Add one and it would have broken
+confusingly, in a test whose subject is that very lookup.
+
+`tsconfig.test.json` typechecks src + test with no emit, and `npm run typecheck`
+runs it. And the harness now CLAIMS it: `- typechecks` was missing from
+`harness.spec.md`, so the config's typecheck command was never executed by
+`verify` on this repo at all — the project could be broken while the gate stayed
+green, which is the defect class the whole v0.24.0 line exists to close. Mutation
+checked: restoring one raw key reds `typechecks` by name.
+
+612/612, verify 29/29 green.
+
+---
+
 ## v0.24.0 — the instrument stops lying about its own evidence
 
 v0.23.0 made the harness refuse to grade nothing. Then it was attacked — three

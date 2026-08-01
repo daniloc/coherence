@@ -6,7 +6,7 @@
 // status file); the IO readers (zones off a spec) run against a temp project.
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { parseBoundary, normalizeBoundaryClaim, claimKey } from "../src/boundary.ts";
+import { parseBoundary, normalizeBoundaryClaim, claimKey, type ClaimKey } from "../src/boundary.ts";
 import { parseZones } from "../src/walk.ts";
 import { CLAIM_FORMS } from "../src/phrasebook.ts";
 import { assemblePromiseModel, deriveGates, residenceOf, readZones } from "../src/promise.ts";
@@ -100,12 +100,19 @@ test("grade — A/B/C/D/U from constructed records; UNPLACED when a gate declare
     'boundary "u" at CU via guard "ou"',   // a skip → U (the unassessed floor)
     'boundary "n" at CN',                  // no oracle → D (declared, no evidence)
   ];
-  const recBy = new Map<string, ClaimRecord>([
-    [`N ${claims[0]}`, rec("N", claims[0], "pass", { commit: "head111" })],
-    [`N ${claims[1]}`, rec("N", claims[1], "pass", { commit: "old000" })],
-    [`N ${claims[2]}`, rec("N", claims[2], "pass", { commit: "head111" })],
-    [`N ${claims[3]}`, rec("N", claims[3], "fail")],
-    [`N ${claims[4]}`, rec("N", claims[4], "skip")],
+  // KEYS COME FROM THE MINT, never from a template literal. `claimKey` normalizes a
+  // boundary claim's crossing clause, so a raw `${node} ${claim}` key is the exact
+  // un-normalized shape the ClaimKey brand exists to forbid — the one that silently
+  // reset everFailed/runs when a crossing was annotated. This fixture was green only
+  // by accident: none of its claims carry a `crossing` clause, so normalization is a
+  // no-op here and raw happened to equal minted. Add one and it would have broken
+  // confusingly, in a test whose subject is that very lookup.
+  const recBy = new Map<ClaimKey, ClaimRecord>([
+    [claimKey("N", claims[0]), rec("N", claims[0], "pass", { commit: "head111" })],
+    [claimKey("N", claims[1]), rec("N", claims[1], "pass", { commit: "old000" })],
+    [claimKey("N", claims[2]), rec("N", claims[2], "pass", { commit: "head111" })],
+    [claimKey("N", claims[3]), rec("N", claims[3], "fail")],
+    [claimKey("N", claims[4]), rec("N", claims[4], "skip")],
     // claims[5] has no record at all
   ]);
   const g = deriveGates(claims, "N", recBy, "head111");
@@ -181,12 +188,12 @@ test("normalization — the crossing clause is stripped from record identity; an
 
   // A record stored WITHOUT the crossing (pre-annotation verify run) is found by the
   // post-annotation claim — the gate keeps its earned A instead of dropping to D.
-  const recBy = new Map<string, ClaimRecord>([[claimKey("N", bare), rec("N", bare, "pass", { commit: "head111" })]]);
+  const recBy = new Map<ClaimKey, ClaimRecord>([[claimKey("N", bare), rec("N", bare, "pass", { commit: "head111" })]]);
   const g1 = deriveGates([crossed], "N", recBy, "head111");
   assert.equal(g1[0].grade, "A", "pre-crossing record matches the post-crossing claim");
   assert.equal(g1[0].verdict, "pass");
   // And the REVERSE: a record stored with the crossing is found by the bare claim.
-  const recBy2 = new Map<string, ClaimRecord>([[claimKey("N", crossed), rec("N", crossed, "pass", { commit: "head111" })]]);
+  const recBy2 = new Map<ClaimKey, ClaimRecord>([[claimKey("N", crossed), rec("N", crossed, "pass", { commit: "head111" })]]);
   const g2 = deriveGates([bare], "N", recBy2, "head111");
   assert.equal(g2[0].grade, "A", "post-crossing record matches the pre-crossing claim");
 });

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-01 18:17Z",
+  "generatedAt": "2026-08-01 18:27Z",
   "root": "coherence",
   "absRoot": "/Users/daniloc/Documents/Development/coherence",
   "nodes": [
@@ -23,6 +23,7 @@
       "sub": "Builds the source/spec graph, evaluates declared claims, renders reading surfaces, and records the decisions and observations that must survive an agent's context window.",
       "claimed": true,
       "claims": [
+        "typechecks",
         "cli.ts imports ./config.ts",
         "cli.ts imports ./derive.ts",
         "cli.ts imports ./verify.ts",
