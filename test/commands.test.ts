@@ -19,7 +19,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import ts from "typescript";
-import { readFile, writeFile } from "node:fs/promises";
+import { readFile, writeFile, readdir } from "node:fs/promises";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
@@ -310,4 +311,73 @@ test("every registry entry is well-formed (a blank summary would render an empty
   for (const a of COMMANDS.flatMap((c) => c.aliases ?? [])) {
     assert.ok(!seen.has(a), `alias \`${a}\` collides with a command name`);
   }
+});
+
+// ── writesArtifacts: the flag the floor reads, checked against OBSERVED behavior ────────
+
+/** Every file under `outputDir`, plus the two generated files that live at the project
+ *  root, content-addressed. Comparing this before and after a command is how "did it write
+ *  a generated artifact" gets ANSWERED rather than assumed. */
+async function artifactSnapshot(dir: string): Promise<string> {
+  const parts: string[] = [];
+  for (const rel of ["AGENTS.md", "CLAUDE.md"]) {
+    parts.push(rel + ":" + await readFile(join(dir, rel), "utf8").catch(() => ""));
+  }
+  const out = join(dir, "public");
+  const names = await readdir(out).catch(() => [] as string[]);
+  for (const name of names.sort()) {
+    parts.push("public/" + name + ":" + await readFile(join(out, name), "utf8").catch(() => ""));
+  }
+  return parts.join(" ");
+}
+
+test("TOTALITY: every command that writes a generated artifact declares `writesArtifacts`", async () => {
+  // WHY THIS IS BEHAVIORAL AND NOT A LIST. `writesArtifacts` exists so the non-vacuity
+  // floor can stop a broken deriver from overwriting a good map with a blank one. A flag
+  // that is only declared protects nothing on the day someone adds a seventh generator and
+  // forgets to set it — and that omission is SILENT, because an unguarded generator behaves
+  // perfectly normally right up until the deriver breaks. So this oracle RUNS every command
+  // in the registry against a real fixture and observes which ones actually move an
+  // artifact, the same way the dispatch oracle above reads the AST instead of a list
+  // someone maintains. Each command gets its OWN fixture, so one writer's output can never
+  // be credited to the command that runs after it.
+  //
+  // Commands are run BARE, with no flags, and that is deliberate: a command whose default
+  // is read-only but which writes under `--update-baseline` (the ratchets) is correctly not
+  // flagged here. The floor guards GENERATION; re-baselining is an explicit human act that
+  // leaves a reviewable diff. Whether a broken deriver should also be barred from zeroing a
+  // baseline is a real and separate question — left open in the journal rather than settled
+  // by a flag nobody reasoned about.
+  const FIXTURE = {
+    "coherence.config.json": JSON.stringify({ outputDir: "public", entryDir: "app" }),
+    "app/app.spec.md": "# app\n\nThe fixture component.\n\n## works when\n\n- app.ts exists at this node\n",
+    "app/app.ts": "export const x = 1;\n",
+  };
+  const observed: string[] = [];
+  await Promise.all(COMMANDS.map(async (c) => {
+    const dir = await tmpProject(FIXTURE);
+    try {
+      const before = await artifactSnapshot(dir);
+      // A nonzero exit is fine and expected for every command that needs arguments — the
+      // only question asked here is whether an artifact moved. A timeout would be a failure
+      // of THIS oracle rather than of the registry, so it is generous and still bounded.
+      //
+      // STDIN IS CLOSED IMMEDIATELY, and it has to be: `hook` is a hook HANDLER that reads
+      // its payload from stdin, so against an open pipe it blocks until the timeout and
+      // charges the whole oracle for it (measured: 120s of a 120s budget, versus ~1.6s for
+      // every other command). Closing stdin makes it read EOF and exit like the rest.
+      const p = run(process.execPath, [CLI_PATH, c.name], { cwd: dir, timeout: 60_000 });
+      p.child.stdin?.end();
+      await p.catch(() => {});
+      if (await artifactSnapshot(dir) !== before) observed.push(c.name);
+    } finally { await cleanup(dir); }
+  }));
+
+  const declared = COMMANDS.filter((c) => c.writesArtifacts).map((c) => c.name);
+  const missing = observed.filter((n) => !declared.includes(n)).sort();
+  assert.deepEqual(missing, [], `these commands WROTE a generated artifact but do not declare \`writesArtifacts\`, so the non-vacuity floor does not guard them: ${missing.join(", ")}`);
+  // The instrument has to be able to see anything at all: an artifactSnapshot that silently
+  // returned a constant would make the assertion above vacuously true — which is precisely
+  // the failure mode this release exists to close, so it is checked rather than trusted.
+  assert.ok(observed.length >= 3, `the oracle observed only ${observed.length} writer(s) — the instrument is broken, not the registry`);
 });

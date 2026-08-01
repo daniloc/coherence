@@ -15,7 +15,7 @@ import { buildGraph } from "./derive.ts";
 import { renderOutline } from "./render-outline.ts";
 import { renderOverview } from "./render-overview.ts";
 import { renderClaude, spliceBlock, extractBlock, resolveClaudeMdPath, CLAUDE_BEGIN, CLAUDE_END } from "./render-claude.ts";
-import { renderCommandsBlock, renderPhrasebookBlock, usageBanner, COMMANDS_BEGIN, COMMANDS_END, PHRASEBOOK_BEGIN, PHRASEBOOK_END } from "./commands.ts";
+import { renderCommandsBlock, renderPhrasebookBlock, usageBanner, COMMANDS, COMMANDS_BEGIN, COMMANDS_END, PHRASEBOOK_BEGIN, PHRASEBOOK_END } from "./commands.ts";
 import { runVerify, applyVerdicts } from "./verify.ts";
 import { decompose } from "./decompose.ts";
 import { drift } from "./drift.ts";
@@ -233,6 +233,24 @@ async function doPhrasebook(): Promise<string[]> {
   await writeFile(path, spliced);
   console.log("phrasebook: wrote the derived claim-form table into README.md");
   return [];
+}
+
+// THE FLOOR GUARDS THE GENERATORS, NOT JUST THE GRADER. `verify` refuses to grade an
+// empty derivation; these commands WRITE the map, and writing a blank one is the same
+// failure with a longer fuse. The incident that forced this: a mutation test gutted
+// buildGraph, `contract` ran against the claimless graph and wrote promise.json with 13
+// gates degraded to "unknown" — then the SOURCE was reverted, which does not re-run the
+// generator, so the artifacts survived the mutation and read to the next reviewer as
+// history silently vanishing (the exact signature of a claim-key erasure bug). It cost a
+// real investigation to prove it was not one. A generator that overwrites a good map with
+// a blank one launders a broken deriver into a committed diff.
+//
+// APPLIED TO `--check` TOO, deliberately, with no exemption to rot: a staleness report is
+// a DIAGNOSIS, and "4 artifacts stale" sends a reader to regenerate when the truth is that
+// derivation is broken. Same reading, same refusal, one less way to be misled.
+if (COMMANDS.some((c) => c.name === cmd && c.writesArtifacts)) {
+  const refusal = vacuityRefusal(readSurface(await buildGraph(cfg), await readStatus(cfg)));
+  if (refusal) { for (const l of refusal) console.log(l); await exit(1); }
 }
 
 if (cmd === "graph") {

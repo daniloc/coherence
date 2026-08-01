@@ -45,6 +45,18 @@ export interface PlatformAdapter {
 
 export interface Config {
   root: string;
+  // THE PROJECT'S NAME, DECLARED — because it is rendered INTO every generated artifact
+  // (the AGENTS.md title and structure tree, graph.json's `root`, both HTML headers, the
+  // contract), and an artifact is supposed to be a pure function of the TRACKED tree.
+  // Undeclared, it falls back to the directory BASENAME, which is not tracked and not
+  // stable: the same commit checked out at a different path regenerates every one of
+  // those artifacts, so `docs --check` reports four files stale that are byte-correct.
+  // That is a false positive in the one gate whose whole job is detecting real drift —
+  // it cost a reviewer a full detour before it was named — and it fails any CI that
+  // clones to a non-default directory name. Declaring it is `declare > infer` applied
+  // to the harness itself: the basename fallback stays, for a project that has not
+  // adopted the field, and it is the ONLY non-hermetic path left.
+  name?: string;
   outputDir: string;        // where generated html/json artifacts go (e.g. "public")
   entryDir: string;         // the entrypoint component's dir, "." = root
   tooling: string[];        // path prefixes demoted to a "tooling" group

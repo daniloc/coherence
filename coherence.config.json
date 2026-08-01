@@ -1,4 +1,5 @@
 {
+  "name": "coherence",
   "outputDir": "public",
   "entryDir": ".",
   "tooling": [

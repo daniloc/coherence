@@ -62,6 +62,42 @@ Also here: the pre-deploy gate is now stated as **`verify` plus `npm test`, the
 pair, never `verify` alone** — measured, after eviscerating `evalClaim` left 20
 guard oracles failing while `verify` printed green.
 
+**The floor guards the generators, not just the grader.** Reviewing this release
+turned up the second door onto the same failure. A mutation test gutted
+`buildGraph`; `contract` then ran against the claimless graph and rewrote
+promise.json with 13 gates degraded from grade C to `"unknown"`. The mutation was
+reverted — but reverting *source* does not re-run a generator, so the poisoned
+artifacts outlived it and read to the next reviewer as claim history silently
+vanishing, which is the exact signature of a claim-key erasure bug. Proving it
+was *not* one cost a full investigation. `verify` refusing to grade an empty
+derivation never protected this: writing a blank map launders a broken deriver
+into a committed diff. So every command that writes a graph-derived artifact —
+`graph`, `overview`, `docs`, `claude`, `contract`, `atlas` — now passes the same
+floor first, `--check` included, because "4 artifacts stale" is a *diagnosis*
+that sends a reader to regenerate when the truth is that derivation is broken.
+The set is declared once on the command registry (`writesArtifacts`) rather than
+as a second list in cli.ts, and a **behavioral** totality oracle runs every
+command in the registry against a fixture and asserts that everything observed
+writing an artifact carries the flag — so a seventh generator that forgets it
+fails, instead of going silently unguarded. (Ratchets that write *baselines*
+under `--update-baseline` are deliberately not covered; whether a broken deriver
+should be barred from zeroing a baseline is left open as a conjecture rather than
+settled by a flag nobody reasoned about.)
+
+**A generated artifact is now a function of the tracked tree, and nothing else.**
+`buildGraph` set the project's rendered name to `basename(resolve(root))`, so the
+checkout's *path* leaked into AGENTS.md, graph.json and both HTML renders.
+Verifying a commit in a worktree whose directory was named differently made
+`docs --check` report four byte-correct artifacts stale — a false positive in the
+one gate whose entire job is detecting real drift, and an outright failure for
+any CI that clones to a non-default directory name. The name is now **declared**
+(`name` in coherence.config.json), with the basename surviving only as the
+fallback for a project that has not adopted the field: `dissolve > declare >
+infer`, applied to the harness itself. The negative control is the load-bearing
+test — it varies the path with no name declared and asserts the artifacts *do*
+diverge, because a stability test that never varies the path would pass just as
+happily against the old hard-coded basename.
+
 ### The scene is evicted; its shared organs move to `src/tree.ts`
 
 `coherence scene` is gone: `src/scene.ts` (532 lines), `src/render-scene.ts`
@@ -133,8 +169,9 @@ because a diff surface that silently truncates is the defect this harness hunts.
 
 **The ledger for the release**, since a release about removal should state what it
 removed: `src` + `test` go from **25,938 to 22,633 lines (−3,305)** and the suite
-from **627 to 581 tests (−46 scene, −11 review, +11 floor)**, while claims go
-**27 → 28** and `verify` stays `✓ coherent`. The tests that vanished are exactly
+from **627 to 586 tests (−46 scene, −11 review, +11 floor, +5 for the two review
+findings above)**, while claims go **27 → 28** and `verify` stays `✓ coherent`.
+The tests that vanished are exactly
 the suites of the evicted commands and nothing else — verified by counting them
 individually rather than by trusting the total. Both evictions were decided on
 **use-evidence, not judgement of the idea**: zero invocations, zero journal

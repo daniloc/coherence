@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-01 00:07Z",
+  "generatedAt": "2026-08-01 01:40Z",
   "root": "coherence",
   "absRoot": "/Users/daniloc/Documents/Development/coherence",
   "nodes": [
@@ -491,7 +491,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/commands.ts",
-      "line": 85
+      "line": 101
     },
     {
       "id": "s:src/commands.ts#commandNames",
@@ -500,7 +500,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/commands.ts",
-      "line": 199,
+      "line": 215,
       "prose": "Every command name, in registry order. The `<a|b|c>` list — aliases excluded."
     },
     {
@@ -510,7 +510,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/commands.ts",
-      "line": 203,
+      "line": 219,
       "prose": "Every token the dispatch must accept: names AND aliases. The totality oracle compares\n THIS against the `cmd === \"…\"` literals it reads out of cli.ts."
     },
     {
@@ -520,7 +520,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/commands.ts",
-      "line": 230,
+      "line": 246,
       "prose": "SPELLING ONE — the usage banner, printed to stderr when the verb is unknown or absent.\nDerived in full: there is no command-name string literal left in cli.ts's help text, so\nthe banner cannot be 29 while the dispatch is 30, and two branches editing different\ncommands can no longer conflict on one line."
     },
     {
@@ -530,7 +530,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/commands.ts",
-      "line": 263,
+      "line": 279,
       "prose": "SPELLING TWO — the README's command index, markers inclusive, ready for `spliceBlock`.\n\nA BULLET LIST, not a markdown table, and that is a real constraint rather than taste:\n`redundancy` reads the first column of every markdown table as an enumerated domain, so\na generated table would hand it a fresh README↔dispatch pair to report — trading the\nfinding this change exists to remove for an identical one. A generated block that the\nproject's own detector still flags has not fixed anything.\n\nThe block is an INDEX and nothing more: name, arg shape, one line. The authored\nper-command reasoning lives OUTSIDE the markers, below the block, and is not expected to\ncover every command — completeness is what the derivation owes, depth is what the prose\nowes, and confusing the two is how the reference got twelve commands behind."
     },
     {
@@ -540,7 +540,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/commands.ts",
-      "line": 301,
+      "line": 317,
       "prose": "The README's claim-form index, markers inclusive, ready for `spliceBlock` — the same\ntreatment the command index got, for the same defect: the hand-kept table listed 8 forms\nwhile the registry carried 9 (`lives in` was missing entirely) and its boundary grammar\nhad lost the `[crossing <zone> -> <zone>]` clause. The README even predicted the drift\n(\"nothing compares it against the registry, so it *can* drift\"). Now something does.\n\nA BULLET LIST, not a markdown table, for the reason renderCommandsBlock records:\n`redundancy` reads the first column of every markdown table as an enumerated domain, so\na generated table would hand it a fresh README↔registry pair to report.\n\nThe block is the GRAMMAR and nothing more: name, tier, grammar, example — the fields the\nregistry actually carries. The authored per-form reasoning (tier behavior under `--fast`,\nthe meta-oracle, skip-vs-fail semantics) lives OUTSIDE the markers, below the block."
     },
     {
@@ -4721,6 +4721,15 @@
       "prose": "decompose.test.ts — the LOCALITY math (the \"anti-entropy thermostat\"). It is advisory\n(never gates CI), but it is the metric you reason about when judging whether a codebase\nis decohering, so its CORRECTNESS is worth pinning. Two layers, by design:\n  1. the pure math — driven through analyze(cfg, graph, INJECTED commits): exhaustive,\n     deterministic, no git. (the one-line commit-injection seam in decompose.ts.)\n  2. the git/glue the injection bypasses — readCommitLog's parser and componentMap's\n     git-prefix stripping — driven through REAL throwaway git repos, because that plumbing\n     is exactly where injection is blind and where real path-mapping bugs hide."
     },
     {
+      "id": "f:test/derive.test.ts",
+      "parent": "c:test",
+      "label": "derive.test.ts",
+      "kind": "file",
+      "sub": "test/derive.test.ts",
+      "path": "test/derive.test.ts",
+      "prose": "derive.test.ts — A GENERATED ARTIFACT IS A FUNCTION OF THE TRACKED TREE, AND OF\nNOTHING ELSE.\n\nThe defect these pin, measured 2026-07-31: verifying a commit inside a git worktree\nwhose DIRECTORY was named differently from the main checkout made `docs --check` report\nfour artifacts stale — AGENTS.md, graph.json, _graph.html, _overview.html — that were\nbyte-correct for that commit. `buildGraph` set the project's rendered name to\n`basename(resolve(root))`, so the checkout's PATH leaked into every artifact. The name\nis not tracked, so the gate whose entire job is detecting real drift was reporting drift\nthat did not exist, and it fails outright in any CI that clones to a non-default\ndirectory name.\n\nThis is the harness's own doctrine turned on itself — `dissolve > declare > infer`. The\nname was INFERRED from the filesystem; it is now DECLARED in coherence.config.json, and\nthe basename survives only as the fallback for a project that has not adopted the field.\n\nTwo directions are needed and the negative control is the load-bearing one: asserting\nthat a DECLARED name is stable proves nothing on its own, because a test that never\nvaries the path would pass just as happily against the old hard-coded basename. So the\nfirst test varies the path with NO name declared and asserts the artifacts DO diverge —\npinning the fallback as the known non-hermetic path — and the second varies the same\npath with a name declared and asserts byte-equality."
+    },
+    {
       "id": "f:test/dictionary.test.ts",
       "parent": "c:test",
       "label": "dictionary.test.ts",
@@ -6799,6 +6808,12 @@
       "kind": "imports"
     },
     {
+      "id": "f:test/commands.test.ts->x:node:path:imports",
+      "source": "f:test/commands.test.ts",
+      "target": "x:node:path",
+      "kind": "imports"
+    },
+    {
       "id": "f:test/commands.test.ts->x:node:url:imports",
       "source": "f:test/commands.test.ts",
       "target": "x:node:url",
@@ -7087,6 +7102,30 @@
       "kind": "imports"
     },
     {
+      "id": "f:test/derive.test.ts->x:node:test:imports",
+      "source": "f:test/derive.test.ts",
+      "target": "x:node:test",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/derive.test.ts->x:node:assert/strict:imports",
+      "source": "f:test/derive.test.ts",
+      "target": "x:node:assert/strict",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/derive.test.ts->f:src/derive.ts:imports",
+      "source": "f:test/derive.test.ts",
+      "target": "f:src/derive.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/derive.test.ts->f:test/_helpers.ts:imports",
+      "source": "f:test/derive.test.ts",
+      "target": "f:test/_helpers.ts",
+      "kind": "imports"
+    },
+    {
       "id": "f:test/dictionary.test.ts->x:node:test:imports",
       "source": "f:test/dictionary.test.ts",
       "target": "x:node:test",
@@ -7264,6 +7303,24 @@
       "id": "f:test/floor.test.ts->x:node:fs/promises:imports",
       "source": "f:test/floor.test.ts",
       "target": "x:node:fs/promises",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/floor.test.ts->x:node:url:imports",
+      "source": "f:test/floor.test.ts",
+      "target": "x:node:url",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/floor.test.ts->x:node:child_process:imports",
+      "source": "f:test/floor.test.ts",
+      "target": "x:node:child_process",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/floor.test.ts->x:node:util:imports",
+      "source": "f:test/floor.test.ts",
+      "target": "x:node:util",
       "kind": "imports"
     },
     {

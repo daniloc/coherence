@@ -80,14 +80,30 @@ export interface Command {
    *  in the banner's `<a|b|c>` list nor as its own README entry, and the totality oracle
    *  counts it on the dispatch side. */
   aliases?: string[];
+  /** This command WRITES a generated artifact derived from the graph — into `outputDir`
+   *  (graph.json, the HTML renders, promise.json, atlas.md) or AGENTS.md. Declared here
+   *  rather than as a list in cli.ts, because a second spelling of a domain is exactly the
+   *  drift this file exists to end.
+   *
+   *  WHAT READS IT: the non-vacuity floor guards every command carrying this flag, so a
+   *  broken deriver cannot overwrite a good map with a blank one. The incident: a mutation
+   *  test gutted `buildGraph`, `contract` wrote promise.json with 13 gates degraded to
+   *  "unknown", and reverting the SOURCE did not re-run the generator — so the poisoned
+   *  artifacts outlived the mutation and read to the next reviewer as history vanishing.
+   *
+   *  Grouping cannot substitute for it: the writers span three groups (`derive`,
+   *  `perceive` for contract, `ratchet` for atlas), and `perceive`/`ratchet` also contain
+   *  commands that write nothing. test/commands.test.ts enforces the flag against OBSERVED
+   *  writes, so a new generator that forgets it fails rather than silently going unguarded. */
+  writesArtifacts?: true;
 }
 
 export const COMMANDS: Command[] = [
   // ── derive ───────────────────────────────────────────────────────────────────────────
-  { name: "graph", group: "derive", usage: "[--check]", summary: "emit `graph.json` + `_graph.html` (the outline) to `outputDir`" },
-  { name: "overview", group: "derive", usage: "[--check]", summary: "emit `_overview.html` + `AGENTS.md`" },
-  { name: "docs", group: "derive", usage: "[--check]", summary: "graph + overview + this command index; `--check` fails on any stale artifact" },
-  { name: "claude", group: "derive", usage: "[--check]", summary: "regenerate the owned fenced block inside `CLAUDE.md`" },
+  { name: "graph", group: "derive", usage: "[--check]", summary: "emit `graph.json` + `_graph.html` (the outline) to `outputDir`", writesArtifacts: true },
+  { name: "overview", group: "derive", usage: "[--check]", summary: "emit `_overview.html` + `AGENTS.md`", writesArtifacts: true },
+  { name: "docs", group: "derive", usage: "[--check]", summary: "graph + overview + this command index; `--check` fails on any stale artifact", writesArtifacts: true },
+  { name: "claude", group: "derive", usage: "[--check]", summary: "regenerate the owned fenced block inside `CLAUDE.md`", writesArtifacts: true },
 
   // ── verify ───────────────────────────────────────────────────────────────────────────
   {
@@ -139,7 +155,7 @@ export const COMMANDS: Command[] = [
 
   // ── perceive ─────────────────────────────────────────────────────────────────────────
   { name: "panel", group: "perceive", usage: "[--no-watch | --once]", summary: "live TUI over the graph + the status record" },
-  { name: "contract", group: "perceive", summary: "the promise graph — graded gates + the reliance ledger (`_contract.html`)" },
+  { name: "contract", group: "perceive", summary: "the promise graph — graded gates + the reliance ledger (`_contract.html`)", writesArtifacts: true },
   {
     name: "context", group: "perceive", usage: "[<file>...] [--symbol <name>] [--changed|--staged]",
     summary: "emit the smallest graph-addressed context packet for a file, symbol, or current change",
@@ -149,7 +165,7 @@ export const COMMANDS: Command[] = [
   { name: "lint-sinks", group: "ratchet", usage: "[--check | --update-baseline]", summary: "interpolation-surface ratchet — raw SQL-identifier and HTML sinks" },
   { name: "conventions", group: "ratchet", usage: "[--check | --update-baseline]", summary: "guard-vs-contract detector + growth ratchet" },
   { name: "mass", group: "ratchet", usage: "[--check|--update-baseline] [--raise]", summary: "how much machine there is — lines, files, symbols, deps and project measures, pinned" },
-  { name: "atlas", group: "ratchet", usage: "[--check] [--raise]", summary: "trust-graded manifold render + the drift / dangling / over-claim gate" },
+  { name: "atlas", group: "ratchet", usage: "[--check] [--raise]", summary: "trust-graded manifold render + the drift / dangling / over-claim gate", writesArtifacts: true },
   { name: "contracts", group: "ratchet", usage: "[--check]", summary: "producer/consumer contracts across deploy artifacts + the uncovered-surface detector" },
 
   // ── advisory ─────────────────────────────────────────────────────────────────────────

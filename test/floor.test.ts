@@ -13,11 +13,17 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { join } from "node:path";
-import { readFile, writeFile, mkdir } from "node:fs/promises";
+import { readFile, writeFile, mkdir, rm } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
 import { runVerify } from "../src/verify.ts";
 import { readSurface, vacuityRefusal, adoptionLadder } from "../src/floor.ts";
 import type { StatusRecord } from "../src/status.ts";
 import { tmpProject, cleanup, runCaptured, cfg, comp, sym, graph } from "./_helpers.ts";
+
+const CLI_PATH = fileURLToPath(new URL("../src/cli.ts", import.meta.url));
+const run = promisify(execFile);
 
 const withProject = async (
   files: Record<string, string>,
@@ -166,4 +172,55 @@ test("on-ramp — rung 5 wants one observed failure; the first refutation gradua
 test("on-ramp — `conforms to` counts as oracle-backed: a word is a contract, not a nag target", async () => {
   const state = await adoptionLadder({ root: "/nowhere" } as any, graph([comp(".", { claims: ["conforms to SealedSchema"], why: "r" })]));
   assert.notEqual(state?.rung, 4);
+});
+
+// ── the floor guards the GENERATORS, not just the grader ──────────────────────────────
+
+test("FLOOR — a generator REFUSES to overwrite a good map with a blank one", async () => {
+  // THE INCIDENT THIS PINS (2026-07-31). A mutation test gutted `buildGraph`; `contract`
+  // then ran against the claimless graph and rewrote promise.json with 13 gates degraded
+  // from grade C to "unknown". The mutation was reverted — but reverting SOURCE does not
+  // re-run a generator, so the poisoned artifacts outlived it and read to the next reviewer
+  // as claim history silently vanishing, which is the exact signature of a claim-key
+  // erasure bug. It cost a full investigation to prove it was not one.
+  //
+  // `verify` refusing to GRADE an empty derivation never protected this: the generators are
+  // a second door onto the same failure, and writing a blank map through it launders a
+  // broken deriver into a committed diff. The assertion that matters is the last one — the
+  // artifacts are BYTE-UNCHANGED, not merely that the command exited nonzero.
+  const dir = await tmpProject({
+    "coherence.config.json": JSON.stringify({ outputDir: "public", entryDir: "app" }),
+    "app/app.spec.md": "# app\n\nThe fixture component.\n\n## works when\n\n- app.ts exists at this node\n",
+    "app/app.ts": "export const x = 1;\n",
+  });
+  try {
+    // 1. A healthy tree generates a real map.
+    await run(process.execPath, [CLI_PATH, "docs"], { cwd: dir });
+    await run(process.execPath, [CLI_PATH, "contract"], { cwd: dir });
+    const good = await readFile(join(dir, "public", "graph.json"), "utf8");
+    const goodContract = await readFile(join(dir, "public", "promise.json"), "utf8");
+    assert.ok(good.includes("app.ts"), "the fixture must produce a non-empty map, or this test proves nothing");
+
+    // 2. Derivation breaks — modelled by removing the spec the graph is derived FROM,
+    //    which is what a gutted `buildGraph` looks like from the artifacts' point of view:
+    //    zero components, zero claims. The record still remembers the surface.
+    await rm(join(dir, "app", "app.spec.md"));
+    await mkdir(join(dir, ".coherence"), { recursive: true });
+    await writeFile(join(dir, ".coherence", "status.json"), remembered(3));
+
+    // 3. Every generator refuses — writing AND checking, because a staleness report is a
+    //    diagnosis and "4 artifacts stale" sends a reader to regenerate when the truth is
+    //    that derivation is broken.
+    for (const args of [["docs"], ["graph"], ["contract"], ["atlas"], ["docs", "--check"]]) {
+      const r = await run(process.execPath, [CLI_PATH, ...args], { cwd: dir })
+        .then((ok) => ({ code: 0, stdout: ok.stdout }))
+        .catch((e: { code?: number; stdout?: string }) => ({ code: e.code ?? -1, stdout: e.stdout ?? "" }));
+      assert.equal(r.code, 1, `\`coherence ${args.join(" ")}\` must refuse an empty derivation, not proceed`);
+      assert.match(r.stdout, /\[floor\]/, `\`coherence ${args.join(" ")}\` must say WHY it refused`);
+    }
+
+    // 4. And nothing was overwritten. This is the whole point.
+    assert.equal(await readFile(join(dir, "public", "graph.json"), "utf8"), good, "the refusal must leave the good map intact");
+    assert.equal(await readFile(join(dir, "public", "promise.json"), "utf8"), goodContract, "the refusal must leave the good contract intact");
+  } finally { await cleanup(dir); }
 });

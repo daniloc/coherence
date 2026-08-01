@@ -95,5 +95,11 @@ export async function buildGraph(cfg: Config): Promise<Graph> {
     for (const m of src.matchAll(/fetch\(\s*["']https?:\/\/([^"'/]+)/g)) { const id = `x:host:${m[1]}`; add({ id, label: m[1], kind: "external", sub: "service" }); link(fileIds.get(f)!, id, "calls"); }
   }
 
-  return { generatedAt: new Date().toISOString().slice(0, 16).replace("T", " ") + "Z", root: basename(resolve(root)), absRoot: resolve(root), nodes, edges, bindings };
+  // `root` is the project's NAME as every artifact renders it. Declared wins; the
+  // directory basename is the fallback, and it is the only value here that is not a
+  // function of the tracked tree (see Config.name — an undeclared name makes
+  // `docs --check` report byte-correct artifacts stale in any checkout whose directory
+  // is named differently). `absRoot` is deliberately still the absolute path: it is
+  // normalized away by the staleness comparison rather than committed as truth.
+  return { generatedAt: new Date().toISOString().slice(0, 16).replace("T", " ") + "Z", root: cfg.name?.trim() || basename(resolve(root)), absRoot: resolve(root), nodes, edges, bindings };
 }
