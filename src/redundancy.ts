@@ -480,8 +480,17 @@ export function renderRedundancy(pairs: RedundancyPair[], suppressed: Suppressed
   out.push(`  suppressed: ${suppressed.typeLinked} compiler-enforced (a type ties the two sites together) · ` +
     `${suppressed.declared} already carrying a parity claim · ${suppressed.belowScore} below the floor` +
     (suppressed.belowScore ? " (--all to see them)" : ""));
+  // THE DENOMINATOR DECIDES WHICH SENTENCE THIS IS. With zero sites there is no ✓ to be
+  // had: "nothing duplicated" and "nothing read" produce the identical finding, and only
+  // the population separates them. The report says which one it is — `drift`'s "only 0
+  // mapped development commits" and `economy`'s "no closures to measure" already do.
+  if (!siteCount) {
+    out.push("\n  no domain sites to compare: 0 site(s) found — nothing in this tree spells an");
+    out.push("  enumerated domain out loud (or the walk reached no files at all).\n");
+    return out.join("\n");
+  }
   if (!shown.length) {
-    out.push("\n  ✓ no undeclared duplicated domain above the floor.\n");
+    out.push(`\n  ✓ no undeclared duplicated domain above the floor (${siteCount} site(s) and ${pairs.length} overlapping pair(s) examined).\n`);
     return out.join("\n");
   }
   out.push("");

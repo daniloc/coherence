@@ -48,31 +48,45 @@ const normalize = (s: string) => s.toLowerCase().replace(/[\/\-_]+/g, " ").repla
 interface MechanismFinding { component: string; sentence: string; sym: string; }
 interface AnchorFinding { component: string; kind: "unanchored-paragraph" | "unanchored-invariant"; text: string; }
 
+/** WHAT CHECK (1) LOOKED AT, carried out beside what it found. A finding list alone
+ *  cannot distinguish "no sentence restates a mechanism" from "no sentence, or no
+ *  anchored symbol to restate" — three different facts that rendered as one ✓ until
+ *  this reading existed. Both halves are needed: the check is a JOIN, so it is vacuous
+ *  the moment either side is empty. */
+interface MechanismReading { findings: MechanismFinding[]; symbols: number; sentences: number; paragraphs: number; }
+
 /** (1) Sentences that name an anchored symbol alongside an oracle-verb — the prose
  *  is restating the mechanism the boundary claim already carries. */
-function checkMechanismRestatement(graph: Graph): MechanismFinding[] {
+function checkMechanismRestatement(graph: Graph): MechanismReading {
   const boundaries = allBoundaries(graph);
   const symbols = new Set<string>();
   for (const b of boundaries.values()) { symbols.add(b.chokepoint); if (b.oracle) symbols.add(b.oracle); }
-  if (!symbols.size) return [];
-  const symRe = new RegExp(`\\b(${[...symbols].map(escapeRe).join("|")})\\b`);
 
   const findings: MechanismFinding[] = [];
+  let sentences = 0, paragraphs = 0;
+  // The prose side is counted even when the symbol side is empty: "31 paragraphs against
+  // 0 anchored symbols" names the reason this check could not fire, and that is precisely
+  // the sentence a reader needs instead of a ✓.
+  const symRe = symbols.size ? new RegExp(`\\b(${[...symbols].map(escapeRe).join("|")})\\b`) : null;
   for (const n of graph.nodes) {
     if (n.kind !== "component" || !n.why) continue;
     // Split paragraphs first so a sentence can't bleed across a paragraph break,
     // then strip each paragraph's bold-anchor lead-in (the anchoring mechanism is
     // not itself "mechanism-restating prose") before sentence-splitting.
     for (const para of n.why.split(/\n\s*\n/)) {
+      if (!para.trim()) continue;
+      paragraphs++;
       for (const raw of splitSentences(stripAnchorLead(para.trim()))) {
         const s = raw.trim();
-        if (!s || !ORACLE_VERB.test(s)) continue;
+        if (!s) continue;
+        sentences++;
+        if (!symRe || !ORACLE_VERB.test(s)) continue;
         const m = symRe.exec(s);
         if (m) findings.push({ component: n.label, sentence: s.replace(/\s+/g, " ").slice(0, 140), sym: m[1] });
       }
     }
   }
-  return findings;
+  return { findings, symbols: symbols.size, sentences, paragraphs };
 }
 
 /** (2) For each component with `## invariants`, reconcile `## why` paragraphs
@@ -105,19 +119,45 @@ function checkAnchoredParagraphs(node: GraphNode): AnchorFinding[] {
 }
 
 export function whyLint(graph: Graph, mode: "report" | "check"): number {
-  const mech = checkMechanismRestatement(graph);
+  const read = checkMechanismRestatement(graph);
+  const mech = read.findings;
   const anchor: AnchorFinding[] = [];
-  for (const n of graph.nodes) anchor.push(...checkAnchoredParagraphs(n));
+  // The second check's population, counted where it is decided: a component is IN it only
+  // if it carries both `## why` prose and `## invariants` — the exemption is the check's
+  // own rule, so the denominator has to be read off the same predicate rather than
+  // re-derived from the graph and left free to disagree with it.
+  let bearing = 0, anchorParas = 0, anchorInvs = 0;
+  for (const n of graph.nodes) {
+    anchor.push(...checkAnchoredParagraphs(n));
+    if (n.kind !== "component" || !n.why || !n.invariants?.length) continue;
+    bearing++;
+    anchorParas += n.why.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean).length;
+    anchorInvs += n.invariants.length;
+  }
 
   console.log("\n  ## WHY LINT — prose restating derivable mechanism (anchored symbol + oracle-verb)\n");
-  if (!mech.length) console.log("  ✓ no ## why sentence restates an anchored chokepoint/oracle mechanism.\n");
+  // A JOIN IS VACUOUS WHEN EITHER SIDE IS EMPTY, and both sides are named — an operator
+  // reading "0 anchored symbol(s)" knows the check is waiting on boundary claims, while
+  // one reading "0 sentence(s)" knows it is waiting on prose. The ✓ carries its
+  // denominator too, always, so a healthy run and an empty one never read alike.
+  if (!read.symbols || !read.sentences)
+    console.log(`  no ## why sentence to check: ${read.sentences} sentence(s) across ${read.paragraphs} paragraph(s),`
+      + ` against ${read.symbols} anchored chokepoint/oracle symbol(s) — this check needs both.\n`);
+  else if (!mech.length)
+    console.log(`  ✓ no ## why sentence restates an anchored chokepoint/oracle mechanism`
+      + ` (${read.sentences} sentence(s) across ${read.paragraphs} paragraph(s) examined against ${read.symbols} anchored symbol(s)).\n`);
   else {
     for (const f of mech) console.log(`  · ${f.component}: names anchored "${f.sym}" with an oracle-verb\n      "${f.sentence}…"`);
-    console.log(`\n  ${mech.length} sentence(s) — the WHAT is derivable (the boundary claim anchors it); keep ## why for the non-derivable WHY.\n`);
+    console.log(`\n  ${mech.length} of ${read.sentences} sentence(s) — the WHAT is derivable (the boundary claim anchors it); keep ## why for the non-derivable WHY.\n`);
   }
 
   console.log("  ## WHY LINT — paragraph ↔ invariant anchoring (invariant-bearing specs)\n");
-  if (!anchor.length) console.log("  ✓ every ## why paragraph anchors to a declared invariant, and every invariant is anchored.\n");
+  if (!bearing)
+    console.log(`  no invariant-bearing spec to check: 0 component(s) carry both \`## why\` and \`## invariants\``
+      + ` — free-form rationale is exempt from this check by design.\n`);
+  else if (!anchor.length)
+    console.log(`  ✓ every ## why paragraph anchors to a declared invariant, and every invariant is anchored`
+      + ` (${anchorParas} paragraph(s) and ${anchorInvs} invariant(s) across ${bearing} invariant-bearing spec(s) examined).\n`);
   else {
     const byComp = new Map<string, AnchorFinding[]>();
     for (const f of anchor) (byComp.get(f.component) ?? byComp.set(f.component, []).get(f.component)!).push(f);
@@ -130,7 +170,8 @@ export function whyLint(graph: Graph, mode: "report" | "check"): number {
     }
     const p = anchor.filter((f) => f.kind === "unanchored-paragraph").length;
     const i = anchor.filter((f) => f.kind === "unanchored-invariant").length;
-    console.log(`\n  ${p} unanchored paragraph(s), ${i} unanchored invariant(s) — pair rationale to the invariant set in both directions.`);
+    console.log(`\n  ${p} of ${anchorParas} paragraph(s) unanchored, ${i} of ${anchorInvs} invariant(s) unanchored,`
+      + ` across ${bearing} invariant-bearing spec(s) — pair rationale to the invariant set in both directions.`);
   }
   console.log("  Advisory — prose quality, not a hard gate.\n");
 

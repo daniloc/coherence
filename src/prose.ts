@@ -303,8 +303,18 @@ export function renderProse(pairs: ProsePair[], suppressed: ProseSuppressed, uni
   out.push(`  LOWER BOUND: below the floor a heavily-rewritten copy and a fresh paraphrase are indistinguishable`);
   out.push(`  from text alone, so both are ignored — the copies that drifted furthest are the ones this cannot see.`);
   out.push(`  ${suppressed.belowFloor} candidate pair(s) fell below the floor` + (pairs.length > shown.length ? ` · ${pairs.length - shown.length} above it not shown (--all)` : "") + ".");
+  // THE COMPARABLE POPULATION, not the scanned one: a sentence under `minWords` cannot
+  // pair, so a tree of nothing but short lines has a denominator of zero however many
+  // sentences were read. With nothing comparable there is no ✓ — "no copies" and "no
+  // sentences" are the same silence, and only the count tells them apart.
+  const comparable = unitCount - suppressed.short;
+  if (comparable <= 0) {
+    out.push(`\n  no prose to compare: ${comparable === 0 && unitCount ? `all ${unitCount} sentence(s) fell under ${o.minWords} words` : "0 sentence(s) scanned"} —`);
+    out.push("  nothing here is long enough to be a copy of anything else.\n");
+    return out.join("\n");
+  }
   if (!shown.length) {
-    out.push("\n  ✓ no duplicated prose above the floor.\n");
+    out.push(`\n  ✓ no duplicated prose above the floor (${comparable} comparable sentence(s) and ${pairs.length} linked pair(s) examined).\n`);
     return out.join("\n");
   }
   out.push("");

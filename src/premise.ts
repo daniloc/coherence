@@ -270,15 +270,23 @@ export function renderPremiseAudit(audits: DecisionPremiseAudit[], unreadable = 
   // unleased decision into a row drowns the smaller list that actually has somewhere to go.
   const findings = audits.filter((a) => a.status !== "valid" && a.status !== "unleased");
   const gateFailures = audits.filter((a) => a.checkFailure).length;
+  // THE POPULATION IS THE ADDRESSES, NOT THE DECISIONS. A journal of a hundred decisions
+  // that named no path and no symbol leases NOTHING, and "every extracted address
+  // resolves" over zero extracted addresses is the report saying it looked when it did
+  // not. The count is printed on every run, healthy or empty.
+  const leases = audits.reduce((n, a) => n + a.leases.length, 0);
   const out = [
     "",
     "  PREMISE LEASES — do standing decisions' named structural addresses still resolve?",
     "  semantic premises checked: NO — a live address does not prove the recorded rationale remains true.",
     "",
-    `  ${audits.length} standing decision(s) · ${valid} address-valid · ${unleased} unleased · ${findings.length} finding(s) · ${gateFailures} gate-grade failure(s)`,
+    `  ${audits.length} standing decision(s) · ${leases} extracted address(es) · ${valid} address-valid · ${unleased} unleased · ${findings.length} finding(s) · ${gateFailures} gate-grade failure(s)`,
   ];
   if (unreadable) out.push(`  WARNING: ${unreadable} unreadable journal line(s) were skipped.`);
-  if (!findings.length) out.push("  ✓ every extracted address resolves (semantic validity remains untested).");
+  if (!leases)
+    out.push(`  no address to check: ${audits.length} standing decision(s) named no file and no symbol — nothing to resolve.`);
+  else if (!findings.length)
+    out.push(`  ✓ every extracted address resolves (${leases} address(es) across ${audits.length - unleased} leased decision(s) examined; semantic validity remains untested).`);
   for (const a of findings) {
     out.push("", `  ${mark(a.status)} ${a.decisionId}  ${a.status}${a.checkFailure ? "  [CHECK]" : "  [advisory]"}`);
     out.push(`      chose: ${a.chose}`);
@@ -306,9 +314,16 @@ export async function premise(
   console.log(renderPremiseAudit(audits, journal.unreadable));
   const failed = audits.some((a) => a.checkFailure);
   if (mode === "check") {
+    // THE GATE'S OWN DENOMINATOR IS NARROWER THAN THE REPORT'S: only a STRONG lease — an
+    // authored `files` address — is gate-grade, so the population this line speaks for is
+    // the strong leases and not every extracted address. With none of them, there is
+    // nothing to hold and the line says so rather than holding nothing.
+    const strong = audits.reduce((n, a) => n + a.leases.filter((l) => l.strength === "strong").length, 0);
     console.log(failed
       ? "  ✗ premise --check FAILED — one or more explicit journal file leases no longer resolve.\n"
-      : "  ✓ premise --check held — every explicit journal file lease resolves (semantics were not checked).\n");
+      : strong
+        ? `  ✓ premise --check held — every explicit journal file lease resolves (${strong} authored \`files\` address(es) checked; semantics were not).\n`
+        : `  premise --check has nothing to gate: ${audits.length} standing decision(s) carry 0 authored \`files\` address(es) (only those are gate-grade).\n`);
   }
   return mode === "check" && failed ? 1 : 0;
 }
