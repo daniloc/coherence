@@ -30,6 +30,20 @@
 // SCOPED RUNS CANNOT TRIP THE FLOOR, structurally: the floor reads the DERIVED GRAPH,
 // which is always full-tree — `--staged`/`--since` narrow which components are EVALUATED,
 // never what is derived. A reading taken above the scoping seam needs no scope exemption.
+//
+// THE SAME READING, GENERALIZED (2026-07-31, the same day as the graph floor above). A verdict has two halves: the POPULATION an
+// instrument examined and what it found there. Drop the population and `0 of 0` renders
+// exactly like `0 of 500` — "I looked and found nothing wrong" becomes indistinguishable
+// from "I did not look". Two more shapes of that defect live here beside the graph floor,
+// because they are one doctrine and not three:
+//   · `ratchetVacuityRefusal` — the BASELINED ratchets (mass, conventions, lint-sinks) hold
+//     the same memory/reading pair verify does, with the baseline playing status.json's
+//     part. Each supplies its OWN denominator: mass counts graph files+symbols, while
+//     lint-sinks never sees a graph at all (it reads scanSources), so "the graph has no
+//     claims" is the wrong instrument for it. The rule is shared; the reading is not.
+//   · `Unrunnable` — green-by-absence wearing the opposite face. An instrument that cannot
+//     run must say WHY in a sentence; a stack trace is a report that failed to say what was
+//     and was not measured, which is the same defect with the sign flipped.
 import { stat } from "node:fs/promises";
 import { join } from "node:path";
 import type { Config, Graph } from "./types.ts";
@@ -81,6 +95,98 @@ export function vacuityRefusal(s: SurfaceReading): string[] | null {
     `    .coherence/status.json — the next run then reads as adoption from zero, not as`,
     `    success. That deletion is deliberate friction: it leaves a diff a reviewer sees.`,
   ];
+}
+
+// ── the baselined ratchets ────────────────────────────────────────────────────────────
+
+/**
+ * ONE RATCHET'S READING, as the shared rule needs it. Every field is supplied by the
+ * ratchet itself, because no two of them measure the same population: `mass` reads the
+ * derived graph, `conventions` and `lint-sinks` read `scanSources` and never see a graph.
+ * A single predicate over one of those (verify's "the graph has no claims") would guard
+ * one ratchet and silently exempt the other two.
+ */
+export interface RatchetReading {
+  /** the command, as a reader types it. */
+  ratchet: string;
+  /** the pinned file, as a path a reader can open. */
+  baseline: string;
+  /** the population this run examined. ZERO is the whole subject. */
+  live: number;
+  /** what `live` counts — "source file(s) scanned", "graph file(s) + symbol(s)". */
+  unit: string;
+  /** THE BASELINE'S OWN EVIDENCE that the population was once non-empty. It plays
+   *  status.json's part above: the ratchet's memory. It need not be in the same unit as
+   *  `live` (a pinned sink implies a file it was found in), because it answers a strictly
+   *  weaker question — was there ever anything here — and a lower bound answers it. */
+  pinned: number;
+  /** what `pinned` counts — "reviewed interpolation site(s)", "pinned dimension(s)". */
+  pinnedUnit: string;
+}
+
+/**
+ * THE RATCHET FLOOR — the refusal, or null when the run may proceed.
+ *
+ * Refuses exactly when the live population is EMPTY while the baseline remembers a
+ * non-empty one, at both seams: `--check` must not report "held" over nothing, and
+ * `--update-baseline` must not pin nothing over something. The two failures compound —
+ * a `held` that also prescribes re-pinning is an instrument talking an operator into
+ * banking its own breakage as the new floor, which is measured, not hypothetical
+ * (2026-07-31: a gutted `buildGraph` made `mass --check` print "✓ mass ratchet held" and
+ * "4 dimension(s) SHRANK — re-pin to bank it", and the pin that followed zeroed four
+ * dimensions and dropped a fifth).
+ *
+ * WHAT THIS DELIBERATELY DOES NOT CATCH — and it is the same line the graph floor draws
+ * twenty lines up: PARTIAL shrinkage. Deletion is real work and must stay free; a ratchet
+ * that punishes removal teaches people to stop removing. The discriminator is TOTAL
+ * COLLAPSE, which no amount of ordinary pruning reaches, because a project that still has
+ * one file still has a denominator.
+ */
+export function ratchetVacuityRefusal(r: RatchetReading, seam: "check" | "update"): string[] | null {
+  if (r.live > 0 || r.pinned <= 0) return null;
+  return [
+    `✗ [floor] ${r.ratchet} examined NOTHING this run — 0 ${r.unit} — but ${r.baseline}`,
+    `  pins ${r.pinned} ${r.pinnedUnit}, measured over a population that was not empty.`,
+    `  A population does not vanish because the work is done; it vanishes when the READING`,
+    `  breaks. Refusing to ${seam === "check" ? "grade" : "pin"} this run — ${seam === "check"
+      ? `a ratchet "held" over zero is success`
+      : `pinning zero over a live baseline banks the break as`}`,
+    `  ${seam === "check"
+      ? `reported over nothing, and the shrinkage it would report next invites re-pinning it.`
+      : `the new floor, and every later run then reads the project's own mass as GROWTH.`}`,
+    `  · reading broken?  check what this ratchet consumes: coherence.config.json`,
+    `    (\`ignore\`, \`codeExt\`, \`sources\`, \`entryDir\`), and whether the tree is where`,
+    `    you think it is — a ratchet run from the wrong cwd reads an empty project.`,
+    `  · genuinely emptied the project?  delete ${r.baseline} — the next run then pins`,
+    `    from zero, and that deletion leaves a diff a reviewer sees. That friction is`,
+    `    deliberate: it is the one act that must not be a side effect.`,
+  ];
+}
+
+// ── instruments that cannot run ───────────────────────────────────────────────────────
+
+/**
+ * AN INSTRUMENT THAT CANNOT RUN, carrying the sentence an operator needs instead of the
+ * stack that produced it. Thrown from the seam that KNOWS what is missing (it is the only
+ * place that can name the requirement), rendered by the CLI, which is the only place that
+ * owns an exit code.
+ *
+ * WHY A TYPED THROW AND NOT A PRE-CHECK AT EACH CALLER. A pre-check is a second spelling
+ * of the requirement, one per caller, and the third caller added next month is the one
+ * that forgets — the same drift this repo's command registry exists to end. The throw
+ * keeps the requirement stated ONCE, at the seam that discovers it, and the renderer is
+ * total over every command by construction rather than by review.
+ */
+export class Unrunnable extends Error {
+  /** The whole report, line by line, exactly as the operator should read it. A field and
+   *  not a constructor parameter property: this tree runs under node's type-STRIPPING
+   *  loader, which refuses `constructor(readonly x)` outright. */
+  report: string[];
+  constructor(report: string[]) {
+    super(report[0]?.replace(/^\s*[✗·]\s*/, "") ?? "instrument cannot run");
+    this.name = "Unrunnable";
+    this.report = report;
+  }
 }
 
 // A claim an oracle can red: the executable forms, plus `conforms to` (a word is a

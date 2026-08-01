@@ -31,7 +31,7 @@ import { runPanel } from "./panel.ts";
 import { buildPromiseModel } from "./promise.ts";
 import { renderContract } from "./render-contract.ts";
 import { readStatus } from "./status.ts";
-import { readSurface, vacuityRefusal } from "./floor.ts";
+import { readSurface, vacuityRefusal, Unrunnable } from "./floor.ts";
 import { CLAIM_FORMS, loadDictionary } from "./phrasebook.ts";
 import { appendDecision, renderJournal, readJournal, resolvableConjecture, compactJournal } from "./decisions.ts";
 import { recordObservation, formatObserved } from "./observed.ts";
@@ -82,6 +82,26 @@ const exit = async (code: number): Promise<never> => {
   await new Promise<void>((res) => process.stdout.write("", () => res()));
   process.exit(code);
 };
+
+// AN INSTRUMENT THAT CANNOT RUN REPORTS; IT DOES NOT CRASH. Every command below is a
+// top-level `await`, so a throw out of any of them reached the operator as a stack trace
+// and a `Node.js vX` banner — measured for `log` and `signal` in a tree that is not a git
+// repository, which is a shallow CI clone or a source export, not an exotic state. A
+// crash is a report that failed to say what was and was not measured; that is the same
+// defect as green-by-absence, so it is answered at the same seam.
+//
+// TOTAL BY CONSTRUCTION: this catches every `Unrunnable` from every command, present and
+// future, instead of one pre-check per caller that the next caller forgets. Exit 2 — the
+// code this CLI already uses for "could not run" (`--check` with no baseline, an unknown
+// verb) as distinct from 1, "ran and failed". Anything NOT an Unrunnable is a genuine
+// defect in the harness and keeps its stack, because that stack is the report.
+const renderUnrunnable = (e: unknown): void => {
+  if (!(e instanceof Unrunnable)) { console.error(e); process.exit(1); }
+  for (const line of e.report) console.error(line);
+  process.exit(2);
+};
+process.on("uncaughtException", renderUnrunnable);
+process.on("unhandledRejection", renderUnrunnable);
 
 const cfg = await loadConfig(process.cwd());
 const stamp = new Date().toISOString().slice(0, 16).replace("T", " ") + "Z";

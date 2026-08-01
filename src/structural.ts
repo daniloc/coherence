@@ -18,6 +18,7 @@ import { buildGraph } from "./derive.ts";
 import { ownerOf } from "./walk.ts";
 import { CONFORMS_RE, dictionaryDir, parseWord } from "./phrasebook.ts";
 import { noveltyVerdict, renderNovelty, scanSurface, surfaceSignals } from "./novelty.ts";
+import { Unrunnable } from "./floor.ts";
 import type { Config, Graph, GraphNode } from "./types.ts";
 
 /** Files changed vs `since` (a ref), or — when null — the working tree vs HEAD
@@ -189,7 +190,22 @@ export function boundariesAt(graph: Graph, sym: string): Array<Boundary & { comp
 export async function withTreeAt<T>(cfg: Config, ref: string | null, fn: (projRoot: string) => Promise<T>): Promise<T> {
   if (!ref) return fn(cfg.root);
   const top = git(["rev-parse", "--show-toplevel"], cfg.root);
-  if (top.status !== 0) throw new Error(`not a git repo at ${cfg.root}: ${(top.stderr || "").trim()}`);
+  // NOT a bare throw. This is the realistic case, not the exotic one — a shallow CI clone,
+  // a source export, a worktree that lost its .git — and it used to reach the operator as a
+  // stack trace plus a Node version banner. An instrument that cannot run must SAY SO; a
+  // crash is a report that failed to state what was and was not measured, which is
+  // green-by-absence with the sign flipped (see floor.ts).
+  if (top.status !== 0) throw new Unrunnable([
+    `✗ [floor] this instrument reads git HISTORY, and ${cfg.root} is not inside a git repository.`,
+    `  git rev-parse --show-toplevel failed${(top.stderr || "").trim() ? `: ${(top.stderr || "").trim().split("\n")[0]}` : ""}.`,
+    `  Nothing was measured — there is no earlier tree to compare this one against, and`,
+    `  reporting "no structural change" over an absent history would be success over nothing.`,
+    `  · a shallow clone or a source export?  the verbs that read history (\`log\`, \`signal\`)`,
+    `    cannot run here. Everything that reads only the working tree still can:`,
+    `    coherence verify · graph · decompose · mass · redundancy.`,
+    `  · a worktree that lost its .git?  run \`git status\` at this path to confirm, then`,
+    `    restore or re-clone the repository.`,
+  ]);
   const repoRoot = top.stdout.trim();
   const relProject = relative(repoRoot, resolve(cfg.root));
   const tmp = await mkdtemp(join(tmpdir(), "coherence-wt-"));
@@ -199,7 +215,14 @@ export async function withTreeAt<T>(cfg: Config, ref: string | null, fn: (projRo
   const add = git(["worktree", "add", "--detach", tmp, ref], cfg.root);
   if (add.status !== 0) {
     await rm(tmp, { recursive: true, force: true }).catch(() => {});
-    throw new Error(`cannot check out "${ref}": ${(add.stderr || "").trim()}`);
+    // Same treatment, same reason: a ref that does not resolve (a fresh repo with no
+    // commits, a branch name that moved) is an operator fact, not a defect in the harness.
+    throw new Unrunnable([
+      `✗ [floor] cannot check out "${ref}" — this instrument reads the tree AT THAT REF and`,
+      `  git could not produce it${(add.stderr || "").trim() ? `: ${(add.stderr || "").trim().split("\n")[0]}` : ""}.`,
+      `  Nothing was measured. Name a ref that resolves (\`git rev-parse ${ref}\` proves it),`,
+      `  or — in a repository with no commits yet — make the first commit and re-run.`,
+    ]);
   }
   try {
     return await fn(join(tmp, relProject));
