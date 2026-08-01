@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-31 23:59Z",
+  "generatedAt": "2026-08-01 00:07Z",
   "root": "coherence",
   "absRoot": "/Users/daniloc/Documents/Development/coherence",
   "nodes": [
@@ -4202,7 +4202,7 @@
       "kind": "file",
       "sub": "src/tree.ts",
       "path": "src/tree.ts",
-      "prose": "tree.ts — the FILE TREE as evidence: the shared utilities every consumer of \"what is\nactually on disk, at HEAD or at a base ref\" reads from ONE home. Four seams live here\nbecause they answer the same question at different layers, and because their previous\nhome (scene.ts) was a command, not a library — a command's utilities must outlive the\ncommand, so they live where no verb owns them:\n\n  · fileStats — per-file content STATS read from disk (line count + content hash). The\n    line count is the honest-mass driver (mass, economy, the contract's per-component\n    lines); the hash is the body-edit signal a structural diff would otherwise miss.\n    ONE implementation, so a file's measured size can never disagree across commands.\n  · claimedFilePaths — the ONE definition of which of a component's FILES a claim\n    blesses, matched by PATH, blessing at MOST ONE file per claim token. Every counter\n    of \"claimed vs unclaimed\" reads this set, so coverage is never over-reported and\n    two commands can never disagree on what a claim names.\n  · withBaseWorktree — base-tree acquisition: materialize a ref in a THROWAWAY detached\n    git worktree, load ITS config + build ITS graph, and ALWAYS tear it down. Extracted\n    so the layers that diff against a base cannot re-derive (and drift on) worktree\n    teardown or the subdirectory-root alignment rule.\n  · outsideTally / deriveOutside — the changed files a graph does NOT own, tallied from\n    `git diff --name-status`. A diff surface must never silently truncate: scripts, CI\n    and docs the graph never modeled are counted so the consumer can say so."
+      "prose": "tree.ts — the FILE TREE as evidence: the shared utilities every consumer of \"what is\nactually on disk\" reads from ONE home. Two seams live here because they answer the same\nquestion at different layers, and because their previous home (scene.ts) was a command,\nnot a library — a command's utilities must outlive the command, so they live where no\nverb owns them:\n\n  · fileStats — per-file content STATS read from disk (line count + content hash). The\n    line count is the honest-mass driver (mass, economy, the contract's per-component\n    lines); the hash is the body-edit signal a structural diff would otherwise miss.\n    ONE implementation, so a file's measured size can never disagree across commands.\n  · claimedFilePaths — the ONE definition of which of a component's FILES a claim\n    blesses, matched by PATH, blessing at MOST ONE file per claim token. Every counter\n    of \"claimed vs unclaimed\" reads this set, so coverage is never over-reported and\n    two commands can never disagree on what a claim names.\n\nA THIRD SEAM USED TO LIVE HERE AND NO LONGER DOES. `withBaseWorktree` (base-tree\nacquisition in a throwaway detached worktree) and `outsideTally`/`deriveOutside` (the\nchanged files a graph does not own) arrived in this file with the others, extracted from\nscene.ts ahead of its eviction. Their only two callers were `scene`'s deriveBaseModel and\n`review`'s derivePromiseBase, and both commands were evicted the same day — leaving the\nthree functions with zero callers AND zero tests, in a package that exports only a `bin`,\nso nothing outside this repo could reach them either. They were removed rather than kept\nagainst a future diff-against-a-base command: an eviction release that ships dead code\nteaches the opposite of what it is for, and git still has them. What they knew is in the\nrelease notes so the next base-diff can be written knowingly rather than rediscovered."
     },
     {
       "id": "s:src/tree.ts#FileStat",
@@ -4211,7 +4211,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/tree.ts",
-      "line": 37,
+      "line": 36,
       "prose": "Per-file content STATS keyed by repo-relative path: the LINE count (honest mass) and a\n content HASH (the body-edit signal for any diff). Unreadable or binary (a NUL byte) →\n 0 lines; the hash is still taken from the raw bytes so a body edit to a binary would\n register. `lines` counts NEWLINES (join(cfg.root, path))."
     },
     {
@@ -4221,7 +4221,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/tree.ts",
-      "line": 38
+      "line": 37
     },
     {
       "id": "s:src/tree.ts#claimedFilePaths",
@@ -4230,48 +4230,8 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/tree.ts",
-      "line": 74,
+      "line": 73,
       "prose": "The ONE definition of which of a component's FILES a claim blesses — matched by PATH,\n blessing at MOST ONE file per claim token, NEVER over-reporting coverage. A file is\n named via `<file> exists at …` or `<file> imports …`; a boundary claim names a\n chokepoint SYMBOL (skipped here), and typechecks/passes test/responds/conforms name\n neither. The file token is resolved against the component's REAL paths:\n   · a token WITH a `/` → PATH-SUFFIX match (segments == the path's trailing segments);\n   · a BARE basename    → matches only if EXACTLY ONE file carries that basename.\n Either way, if a token has several candidates it blesses NONE — a component with four\n `hooks.ts` never reads 4/4 claimed off a single same-named claim. Every consumer reads\n this ONE set, so per-file flags and aggregate counts stay exactly consistent."
-    },
-    {
-      "id": "s:src/tree.ts#withBaseWorktree",
-      "parent": "f:src/tree.ts",
-      "label": "withBaseWorktree",
-      "kind": "symbol",
-      "sub": "function",
-      "path": "src/tree.ts",
-      "line": 97,
-      "prose": "The SHARED base-tree acquisition every against-a-ref diff rides on: resolve `ref`,\n materialize it in a THROWAWAY detached git worktree, load ITS config + build ITS\n graph, hand them to `fn`, and ALWAYS tear the worktree down. The ref is resolved FIRST —\n the clean gate for \"not a repo / unknown ref\" before any worktree machinery — and its\n short sha is passed to `fn` (the base ref a diff records). Every write `fn` triggers\n lands in the discarded tmpdir, never the live tree. Extracting this keeps consumers\n from re-deriving (and drifting on) worktree teardown."
-    },
-    {
-      "id": "s:src/tree.ts#OutsideTally",
-      "parent": "f:src/tree.ts",
-      "label": "OutsideTally",
-      "kind": "symbol",
-      "sub": "interface",
-      "path": "src/tree.ts",
-      "line": 133,
-      "prose": "The changed-files tally OUTSIDE a graph: added / removed / changed counts of the files\n the graph does not model."
-    },
-    {
-      "id": "s:src/tree.ts#outsideTally",
-      "parent": "f:src/tree.ts",
-      "label": "outsideTally",
-      "kind": "symbol",
-      "sub": "function",
-      "path": "src/tree.ts",
-      "line": 140,
-      "prose": "PURE: tally the changed files OUTSIDE the graph from `git diff --name-status` output.\n A → added, D → removed, everything else (M, and R/C renames/copies) → changed. An entry\n whose path (either the old or the new for a rename) is graph-owned is DROPPED — those\n are already modeled. What's left is scripts/CI/docs the graph never saw — counted so\n the consumer can badge \"N changes outside the map\" instead of silently truncating."
-    },
-    {
-      "id": "s:src/tree.ts#deriveOutside",
-      "parent": "f:src/tree.ts",
-      "label": "deriveOutside",
-      "kind": "symbol",
-      "sub": "function",
-      "path": "src/tree.ts",
-      "line": 156,
-      "prose": "IO shell over outsideTally: run `git diff --name-status <base> HEAD` and tally what the\n graph does NOT own. A non-repo / failed diff yields an all-zero tally (nothing to badge)."
     },
     {
       "id": "f:src/types.ts",
@@ -6533,27 +6493,9 @@
       "kind": "imports"
     },
     {
-      "id": "f:src/tree.ts->x:node:fs:imports",
-      "source": "f:src/tree.ts",
-      "target": "x:node:fs",
-      "kind": "imports"
-    },
-    {
       "id": "f:src/tree.ts->x:node:path:imports",
       "source": "f:src/tree.ts",
       "target": "x:node:path",
-      "kind": "imports"
-    },
-    {
-      "id": "f:src/tree.ts->x:node:os:imports",
-      "source": "f:src/tree.ts",
-      "target": "x:node:os",
-      "kind": "imports"
-    },
-    {
-      "id": "f:src/tree.ts->x:node:child_process:imports",
-      "source": "f:src/tree.ts",
-      "target": "x:node:child_process",
       "kind": "imports"
     },
     {
@@ -6572,18 +6514,6 @@
       "id": "f:src/tree.ts->f:src/boundary.ts:imports",
       "source": "f:src/tree.ts",
       "target": "f:src/boundary.ts",
-      "kind": "imports"
-    },
-    {
-      "id": "f:src/tree.ts->f:src/config.ts:imports",
-      "source": "f:src/tree.ts",
-      "target": "f:src/config.ts",
-      "kind": "imports"
-    },
-    {
-      "id": "f:src/tree.ts->f:src/derive.ts:imports",
-      "source": "f:src/tree.ts",
-      "target": "f:src/derive.ts",
       "kind": "imports"
     },
     {

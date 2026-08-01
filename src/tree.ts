@@ -1,8 +1,8 @@
 // tree.ts — the FILE TREE as evidence: the shared utilities every consumer of "what is
-// actually on disk, at HEAD or at a base ref" reads from ONE home. Four seams live here
-// because they answer the same question at different layers, and because their previous
-// home (scene.ts) was a command, not a library — a command's utilities must outlive the
-// command, so they live where no verb owns them:
+// actually on disk" reads from ONE home. Two seams live here because they answer the same
+// question at different layers, and because their previous home (scene.ts) was a command,
+// not a library — a command's utilities must outlive the command, so they live where no
+// verb owns them:
 //
 //   · fileStats — per-file content STATS read from disk (line count + content hash). The
 //     line count is the honest-mass driver (mass, economy, the contract's per-component
@@ -12,23 +12,22 @@
 //     blesses, matched by PATH, blessing at MOST ONE file per claim token. Every counter
 //     of "claimed vs unclaimed" reads this set, so coverage is never over-reported and
 //     two commands can never disagree on what a claim names.
-//   · withBaseWorktree — base-tree acquisition: materialize a ref in a THROWAWAY detached
-//     git worktree, load ITS config + build ITS graph, and ALWAYS tear it down. Extracted
-//     so the layers that diff against a base cannot re-derive (and drift on) worktree
-//     teardown or the subdirectory-root alignment rule.
-//   · outsideTally / deriveOutside — the changed files a graph does NOT own, tallied from
-//     `git diff --name-status`. A diff surface must never silently truncate: scripts, CI
-//     and docs the graph never modeled are counted so the consumer can say so.
-import { readFile, mkdtemp, rm } from "node:fs/promises";
-import { realpathSync } from "node:fs";
-import { join, basename, relative, resolve } from "node:path";
-import { tmpdir } from "node:os";
-import { spawnSync } from "node:child_process";
+//
+// A THIRD SEAM USED TO LIVE HERE AND NO LONGER DOES. `withBaseWorktree` (base-tree
+// acquisition in a throwaway detached worktree) and `outsideTally`/`deriveOutside` (the
+// changed files a graph does not own) arrived in this file with the others, extracted from
+// scene.ts ahead of its eviction. Their only two callers were `scene`'s deriveBaseModel and
+// `review`'s derivePromiseBase, and both commands were evicted the same day — leaving the
+// three functions with zero callers AND zero tests, in a package that exports only a `bin`,
+// so nothing outside this repo could reach them either. They were removed rather than kept
+// against a future diff-against-a-base command: an eviction release that ships dead code
+// teaches the opposite of what it is for, and git still has them. What they knew is in the
+// release notes so the next base-diff can be written knowingly rather than rediscovered.
+import { readFile } from "node:fs/promises";
+import { join, basename } from "node:path";
 import { createHash } from "node:crypto";
-import type { Config, Graph, GraphNode } from "./types.ts";
+import type { Config, GraphNode } from "./types.ts";
 import { parseBoundary } from "./boundary.ts";
-import { loadConfig } from "./config.ts";
-import { buildGraph } from "./derive.ts";
 
 /** Per-file content STATS keyed by repo-relative path: the LINE count (honest mass) and a
  *  content HASH (the body-edit signal for any diff). Unreadable or binary (a NUL byte) →
@@ -87,74 +86,3 @@ export function claimedFilePaths(claims: string[], files: GraphNode[]): Set<stri
   return blessed;
 }
 
-/** The SHARED base-tree acquisition every against-a-ref diff rides on: resolve `ref`,
- *  materialize it in a THROWAWAY detached git worktree, load ITS config + build ITS
- *  graph, hand them to `fn`, and ALWAYS tear the worktree down. The ref is resolved FIRST —
- *  the clean gate for "not a repo / unknown ref" before any worktree machinery — and its
- *  short sha is passed to `fn` (the base ref a diff records). Every write `fn` triggers
- *  lands in the discarded tmpdir, never the live tree. Extracting this keeps consumers
- *  from re-deriving (and drifting on) worktree teardown. */
-export async function withBaseWorktree<T>(
-  cfg: Config,
-  ref: string,
-  fn: (baseCfg: Config, baseGraph: Graph, shortRef: string) => Promise<T>,
-): Promise<T> {
-  const rp = spawnSync("git", ["rev-parse", "--short", ref], { cwd: cfg.root, encoding: "utf8" });
-  if (rp.status !== 0) throw new Error(`cannot resolve '${ref}' (not a git repo, or unknown ref)`);
-  const short = rp.stdout.trim();
-
-  const tmp = await mkdtemp(join(tmpdir(), "coh-base-"));
-  try {
-    const add = spawnSync("git", ["worktree", "add", "--detach", tmp, ref], { cwd: cfg.root, encoding: "utf8" });
-    if (add.status !== 0) throw new Error(`git worktree add failed: ${(add.stderr || "").trim()}`);
-    // The coherence root may be a SUBDIRECTORY of the git repo (a sub-package with its own
-    // coherence.config.json). The worktree materializes the WHOLE repo, so the base config
-    // must be loaded from the SAME subdirectory inside it — loading from the worktree top
-    // would fall back to defaults rooted at the repo top-level, prefix every base component
-    // dir with the subdir, and make every diff a total razed/arrived storm. realpath both
-    // ends because `git rev-parse --show-toplevel` returns the canonical path (e.g. macOS
-    // /tmp → /private/tmp) while cfg.root may be the symlinked spelling.
-    const tl = spawnSync("git", ["rev-parse", "--show-toplevel"], { cwd: cfg.root, encoding: "utf8" });
-    const rel = tl.status === 0 ? relative(realpathSync(tl.stdout.trim()), realpathSync(resolve(cfg.root))) : "";
-    const baseCfg = await loadConfig(rel && !rel.startsWith("..") ? join(tmp, rel) : tmp);
-    const baseGraph = await buildGraph(baseCfg);
-    return await fn(baseCfg, baseGraph, short);
-  } finally {
-    // Tear down unconditionally: --force removes even a dirty worktree; prune cleans the
-    // administrative ref if remove ever half-fails; rm sweeps the dir itself.
-    spawnSync("git", ["worktree", "remove", "--force", tmp], { cwd: cfg.root, encoding: "utf8" });
-    spawnSync("git", ["worktree", "prune"], { cwd: cfg.root, encoding: "utf8" });
-    await rm(tmp, { recursive: true, force: true });
-  }
-}
-
-/** The changed-files tally OUTSIDE a graph: added / removed / changed counts of the files
- *  the graph does not model. */
-export interface OutsideTally { added: number; removed: number; changed: number }
-
-/** PURE: tally the changed files OUTSIDE the graph from `git diff --name-status` output.
- *  A → added, D → removed, everything else (M, and R/C renames/copies) → changed. An entry
- *  whose path (either the old or the new for a rename) is graph-owned is DROPPED — those
- *  are already modeled. What's left is scripts/CI/docs the graph never saw — counted so
- *  the consumer can badge "N changes outside the map" instead of silently truncating. */
-export function outsideTally(nameStatus: string, owned: Set<string>): OutsideTally {
-  let added = 0, removed = 0, changed = 0;
-  for (const line of nameStatus.split("\n")) {
-    if (!line.trim()) continue;
-    const [status, ...paths] = line.split("\t");
-    if (paths.some((p) => owned.has(p))) continue;   // the graph models this one already
-    const code = status[0];
-    if (code === "A") added++;
-    else if (code === "D") removed++;
-    else changed++;                                   // M, R…, C…, T → a change
-  }
-  return { added, removed, changed };
-}
-
-/** IO shell over outsideTally: run `git diff --name-status <base> HEAD` and tally what the
- *  graph does NOT own. A non-repo / failed diff yields an all-zero tally (nothing to badge). */
-export function deriveOutside(cfg: Config, baseRef: string, owned: Set<string>): OutsideTally {
-  const r = spawnSync("git", ["diff", "--name-status", baseRef, "HEAD"], { cwd: cfg.root, encoding: "utf8" });
-  if (r.status !== 0) return { added: 0, removed: 0, changed: 0 };
-  return outsideTally(r.stdout, owned);
-}
