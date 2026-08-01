@@ -14,7 +14,55 @@ evidence inside that record.
 
 ---
 
-## Unreleased — the scene is evicted; its shared organs move to `src/tree.ts`
+## v0.23.0 — the harness refuses to grade nothing, and learns to remove
+
+Every release before this one taught coherence to *add* — a claim, a ratchet, an
+advisory. This one is the other arm of `dissolve > declare > infer`, which the
+tool had preached and never practised on itself. Two halves, and they turn out to
+be the same half.
+
+**The floor: an empty derivation refuses, and never passes.** The deepest vacuity
+in the tool went unnoticed until it was mutated for: gutting `buildGraph` made
+`verify` print `claims: 0 · 0 green · 0 red · 0 skipped`, then `✓ coherent`, then
+exit 0. A broken deriver reported success over nothing, which is the single worst
+thing a verification tool can do — it is not a missing check, it is a green light
+with no evidence behind it. `src/floor.ts` now refuses when the derived graph
+carries **zero claims** while `.coherence/status.json` remembers **≥ 1**: exit 1,
+a legible `✗ [floor]` message, and **no record filed**, because a refusal that
+overwrote the memory it refused against would refuse exactly once. It is
+**scope-blind by construction** — it reads the always-full-tree graph, above the
+`--staged`/`--since` seam, so scoped narrowing cannot trip it and no scope
+exemption exists to rot later. It deliberately does *not* catch partial collapse
+(27 → 3 with every component keeping a claim): that shape is observationally
+identical to deliberate pruning — this repo pruned its own trivialities the same
+day — and `coverage` already reds a component whose claims all vanish. A project
+that wants the count pinned pins it with `mass`.
+
+**The same reading is the adoption on-ramp.** A repo with no specs and a repo
+with a gutted deriver produced *identical* output, which is what made the vacuity
+invisible. Distinguishing them is one question — does the record remember
+anything? — so the floor's own reading answers both. With no memory there is
+nothing to refuse, and the run becomes a ladder that prints exactly **one** next
+action: no config → the minimal shape; config but no specs → *name one, and do
+not guess at boundaries, measure them* (`decompose` / `economy` / `redundancy`);
+specs with no claims → not an error, with the warning that *the first claim
+should be born from an incident, not conjectured*; claims with no oracle → named,
+riding after a normal `✓ coherent`; oracles never observed failing → one
+refutation. It exits 0 throughout but never prints `✓ coherent`, because an
+unadopted project is neither passing nor failing. `scaffold component` now ships
+an **empty** `## works when` for the same reason: the trivialities it used to
+emit (`typechecks`, `<entry> exists at root`) are exactly what this repo pruned
+from itself, and a scaffold that pre-fills them makes the ladder look climbed.
+
+**`coherence onboard` is evicted** (73 lines, zero tests) — it drafted a spec of
+those same trivialities, and every measured property argued for one code path
+answering both empty states rather than two.
+
+Also here: the pre-deploy gate is now stated as **`verify` plus `npm test`, the
+pair, never `verify` alone** — measured, after eviscerating `evalClaim` left 20
+guard oracles failing while `verify` printed green.
+
+### The scene is evicted; its shared organs move to `src/tree.ts`
 
 `coherence scene` is gone: `src/scene.ts` (532 lines), `src/render-scene.ts`
 (1,241), `src/scene-model.ts` (134), their two suites (46 tests), the `scene`
@@ -62,10 +110,37 @@ carrying its blast radius (the reliants holding a degraded or strengthened
 asset), with an outside tally so the ledger never silently truncates.
 `coherence contract` survives intact, including the `review` field in the
 model contract and the review chrome in `render-contract.ts`, so a future
-against-a-ref surface has its seams waiting. Orphan honestly reported:
-`withBaseWorktree` and `outsideTally`/`deriveOutside` in `tree.ts` now have no
-product consumer (scene and review were their only readers) — kept, flagged in
-the journal, for the next sweep to judge.
+against-a-ref surface has its seams waiting.
+
+**And the orphans the evictions created were removed, not kept.** `scene` and
+`review` were the only readers of `withBaseWorktree` and
+`outsideTally`/`deriveOutside`, so evicting both left three functions in
+`tree.ts` with zero callers *and* zero tests, in a package that exports only a
+`bin` — unreachable from outside the repo too. Keeping them would have made
+this release ship dead code, which teaches the opposite of what it is for.
+`tree.ts` is 160 → 88 lines. What they knew, so the next base-diff is written
+knowingly rather than rediscovered: a base ref must be materialized in a
+**throwaway detached worktree** and torn down unconditionally (`remove --force`,
+then `prune`, then `rm` — teardown that survives a half-failure); when the
+coherence root is a **subdirectory** of the repo, the base config must be loaded
+from that same subdirectory inside the worktree, or every diff reads as a total
+razed/arrived storm; and both ends of that comparison need `realpath`, because
+`git rev-parse --show-toplevel` returns the canonical path (macOS `/tmp` →
+`/private/tmp`) while `cfg.root` may be the symlinked spelling. For the tally:
+a rename must drop on **either** path matching the graph, and what remains —
+scripts, CI, docs the graph never modeled — is counted rather than dropped,
+because a diff surface that silently truncates is the defect this harness hunts.
+
+**The ledger for the release**, since a release about removal should state what it
+removed: `src` + `test` go from **25,938 to 22,633 lines (−3,305)** and the suite
+from **627 to 581 tests (−46 scene, −11 review, +11 floor)**, while claims go
+**27 → 28** and `verify` stays `✓ coherent`. The tests that vanished are exactly
+the suites of the evicted commands and nothing else — verified by counting them
+individually rather than by trusting the total. Both evictions were decided on
+**use-evidence, not judgement of the idea**: zero invocations, zero journal
+citations, in a repo that keeps a journal precisely so that question is
+answerable. And the reasoning was preserved in prose above rather than deleted
+with the code, because eviction should remove mass, not memory.
 
 ---
 
