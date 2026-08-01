@@ -35,8 +35,22 @@ overwrote the memory it refused against would refuse exactly once. It is
 exemption exists to rot later. It deliberately does *not* catch partial collapse
 (27 → 3 with every component keeping a claim): that shape is observationally
 identical to deliberate pruning — this repo pruned its own trivialities the same
-day — and `coverage` already reds a component whose claims all vanish. A project
-that wants the count pinned pins it with `mass`.
+day, and evicted two whole components in this release — and deletion has to stay
+free.
+
+**Know the hole under that exemption.** `coverage` reds a component that *survives
+derivation* carrying zero claims — a broken spec parse. It iterates the DERIVED
+graph, so a component the **walk dropped entirely** (a bad `ignore` entry, a glob
+bug, a moved `*.spec.md`) leaves no node to red. Measured: one component removed
+from what the walk discovers, a record remembering 2 claims, and the run printed
+`claims: 1 · 1 green`, `components 1/1 claimed`, `✓ coherent`, exit 0 — then
+rewrote the record to 1 claim, so a gradual N→1 collapse never accumulates toward
+the floor. Every step looks like one pruned component. Gating it would punish
+deletion, so **the mitigation is a pin**: a `measures` dimension in `config.mass`
+whose command counts the population (component nodes or claim lines in the derived
+graph) makes the shrink a *ratchet* finding — reviewable, and re-pinnable only
+with a diff. It answers what the floor cannot: not "is anything left?" but "is
+there as much as there was?".
 
 **The same reading is the adoption on-ramp.** A repo with no specs and a repo
 with a gutted deriver produced *identical* output, which is what made the vacuity

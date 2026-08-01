@@ -1793,8 +1793,24 @@ surface **refuses** — exit 1, a legible `✗ [floor]` message, and no record f
 that overwrote the memory it refused against would refuse exactly once). Scoped runs cannot
 trip it: the floor reads the always-full-tree graph, above the `--staged`/`--since` seam. It
 deliberately stops at zero — a partial collapse where every component keeps a claim is
-observationally identical to deliberate pruning, and coverage already reds any component
-whose claims all vanished. The only legitimate zero is a project with no memory, and that
+observationally identical to deliberate pruning, and deletion has to stay free.
+
+**The complement is narrower than it looks, and this is the hole to know about.** Coverage
+reds a component that *survives derivation* carrying zero claims — a broken spec parse. It
+iterates the DERIVED graph, so a component the **walk dropped entirely** (a bad `ignore`
+entry, a glob bug, a moved or renamed `*.spec.md`) is invisible to it: there is no node
+left to red. Measured: with one component removed from what the walk discovers, a record
+remembering 2 claims produced `claims: 1 · 1 green`, `components 1/1 claimed`, `✓ coherent`
+exit 0 — and the record was rewritten to 1 claim in the same run, so a gradual N→1 collapse
+never accumulates toward the floor. That is not gated on purpose: a vanished node is
+exactly what deleting a spec produces, and a gate that punishes removal teaches people to
+stop removing. **The mitigation is a pin, not a gate** — a `measures` dimension in
+`config.mass` whose command counts the population (component nodes or claim lines in the
+derived graph) turns the shrink into a *ratchet* finding: reviewable, and re-pinnable only
+with a diff. It answers the question the floor cannot — not "is anything left?" but "is
+there as much as there was?".
+
+The only legitimate zero is a project with no memory, and that
 gets the **adoption ladder** (see `onboard`'s eviction note in the command detail) instead
 of a green: the same empty observation, told apart by the record.
 

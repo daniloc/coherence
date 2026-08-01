@@ -21,11 +21,28 @@
 // WHAT THE FLOOR DELIBERATELY DOES NOT CATCH: a PARTIAL collapse (27 → 3) where every
 // component still carries at least one claim. That shape is observationally identical to
 // deliberate spec pruning — this repo pruned green trivialities from its own spec the day
-// this floor was written — and refusing it would train people to reset the record instead
-// of reading the refusal. The complementary gate already exists: coverage reds any
-// component whose claims ALL vanished, so a collapse that stays green requires every
-// component to keep one, which is exactly what pruning looks like. A project that wants
-// the count itself pinned can pin it as a `measures` dimension in `mass`.
+// this floor was written, and evicted two whole components in the same release — and
+// refusing it would train people to reset the record instead of reading the refusal.
+//
+// AND THE COMPLEMENT IS WEAKER THAN THIS COMMENT USED TO CLAIM. It said coverage reds any
+// component whose claims all vanished, "so a collapse that stays green requires every
+// component to keep one". That holds only when the component NODE SURVIVES with zero
+// claims — a broken spec parse. Coverage iterates the DERIVED graph, so a component the
+// WALK dropped entirely is invisible to it: there is no node left to red. Measured
+// 2026-07-31 with an ignore/glob-bug simulacrum (one component removed from what the walk
+// discovers): the record remembered 2 claims, the run printed `claims: 1 · 1 green` and
+// `✓ coherent` exit 0 with `components 1/1 claimed`, and the record was laundered down to
+// 1 claim in the same run — so a gradual N→1 collapse never accumulates toward this floor
+// at all. Each step looks like one pruned component.
+//
+// THAT HOLE IS NAMED RATHER THAN CLOSED, and deliberately. A vanished node is exactly what
+// deleting a component's spec produces, and deletion must stay free — a gate that punishes
+// removal teaches people to stop removing, which is the same argument
+// `ratchetVacuityRefusal` makes below for partial shrinkage. THE MITIGATION IS A PIN, not
+// a gate: a `measures` dimension in `config.mass` whose command counts the population
+// (component nodes or claim lines in the derived graph) makes the shrink a RATCHET
+// finding — reviewable, waivable by re-pinning with a diff, and answering the question
+// this floor cannot: not "is there anything left?" but "is there as much as there was?".
 //
 // SCOPED RUNS CANNOT TRIP THE FLOOR, structurally: the floor reads the DERIVED GRAPH,
 // which is always full-tree — `--staged`/`--since` narrow which components are EVALUATED,

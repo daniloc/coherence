@@ -142,7 +142,12 @@ suddenly sees zero must refuse rather than report success over nothing; the only
 legitimate zero (a project adopting from nothing) is exactly the one with no memory, and
 it gets the adoption ladder instead. The floor deliberately stops at zero: a partial
 collapse where every component keeps a claim is observationally identical to deliberate
-pruning, and coverage already reds any component whose claims all vanished.
+pruning, and deletion has to stay free or people stop deleting. What the complement
+underneath it actually reaches is narrower than it first appears — a component stripped of
+its claims is still a node someone can red, while a component the walk never discovered
+leaves nothing behind to notice, so an N→1 slide reads as N ordinary prunings. Pinning the
+population as a mass dimension is the honest answer there, because the question it settles
+is not whether anything survived but whether as much survived as last time.
 
 (The import claims above separately prove that the composition root still reaches the
 configuration loader, graph derivation, verifier, spec walker, and journal.)
