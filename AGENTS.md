@@ -66,7 +66,7 @@ _works when:_
 - decisions.test.ts exists at this node
 - commands.test.ts exists at this node
 
-_files:_ `_helpers.ts`, `atlas.test.ts`, `calibration.test.ts`, `claude.test.ts`, `commands.test.ts`, `conjecture.test.ts`, `context.test.ts`, `contracts.test.ts`, `decisions.test.ts`, `decompose.test.ts`, `derive.test.ts`, `dictionary.test.ts`, `economy.test.ts`, `evolution.test.ts`, `floor.test.ts`, `kinds.test.ts`, `mass.test.ts`, `novelty.test.ts`, `observed.test.ts`, `oracle.test.ts`, `panel.test.ts`, `parity.test.ts`, `parse.test.ts`, `phrasebook.test.ts`, `premise.test.ts`, `promise.test.ts`, `prose.test.ts`, `python-oracle.test.ts`, `raise.test.ts`, `redundancy.test.ts`, `render-contract.test.ts`, `run-named-test.test.ts`, `signal.test.ts`, `sinks.test.ts`, `status.test.ts`, `structural.test.ts`, `test-batch.test.ts`, `vacuity.test.ts`, `verify.test.ts`, `why-lint.test.ts`
+_files:_ `_helpers.ts`, `atlas.test.ts`, `calibration.test.ts`, `claude.test.ts`, `commands.test.ts`, `conjecture.test.ts`, `context.test.ts`, `contracts.test.ts`, `decisions.test.ts`, `decompose.test.ts`, `derive.test.ts`, `dictionary.test.ts`, `economy.test.ts`, `evolution.test.ts`, `floor.test.ts`, `kinds.test.ts`, `mass.test.ts`, `novelty.test.ts`, `observed.test.ts`, `oracle.test.ts`, `panel.test.ts`, `parity.test.ts`, `parse.test.ts`, `phrasebook.test.ts`, `premise.test.ts`, `promise.test.ts`, `prose.test.ts`, `python-oracle.test.ts`, `raise.test.ts`, `redundancy.test.ts`, `render-contract.test.ts`, `run-named-test.test.ts`, `signal.test.ts`, `sinks.test.ts`, `status.test.ts`, `structural.test.ts`, `test-batch.test.ts`, `tree.test.ts`, `vacuity.test.ts`, `verify.test.ts`, `why-lint.test.ts`
 
 ## Structure
 
@@ -164,6 +164,7 @@ coherence/
    ├─ status.test.ts
    ├─ structural.test.ts
    ├─ test-batch.test.ts
+   ├─ tree.test.ts
    ├─ vacuity.test.ts
    ├─ verify.test.ts
    └─ why-lint.test.ts

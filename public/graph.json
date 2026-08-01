@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-01 02:57Z",
+  "generatedAt": "2026-08-01 03:16Z",
   "root": "coherence",
   "absRoot": "/Users/daniloc/Documents/Development/coherence",
   "nodes": [
@@ -5050,6 +5050,15 @@
       "prose": "test-batch.test.ts — BATCHED ORACLE EXECUTION. Two halves: the pure report layer\n(parse + match) driven directly, and the whole feature driven end-to-end through\nrunVerify against a fake batch runner.\n\nTHE FIXTURE IS REAL. `VITEST_REPORT` below was captured from an actual\n`npx vitest run --reporter=json --outputFile=…` on vitest 4.1.10 (stack traces pared\ndown, timings dropped; every field name, nesting level, and `fullName` value is\nverbatim). The schema was not guessed — the whole feature rests on `fullName` being\nthe runner's own suite-path concatenation and on `-t` matching it unanchored, and both\nwere verified by running the real thing before any of this was written.\n\nNote the fixture contains \"write policy totality covers every op\" AND\n\"write policy totality covers every op extended\" — the prefix edge, where a claim name\nthat is a strict prefix of a longer test's name must match BOTH, because that is what\nthe runner's `-t` does."
     },
     {
+      "id": "f:test/tree.test.ts",
+      "parent": "c:test",
+      "label": "tree.test.ts",
+      "kind": "file",
+      "sub": "test/tree.test.ts",
+      "path": "test/tree.test.ts",
+      "prose": "tree.test.ts — THE ANTI-OVER-REPORT RULE, restored to direct evidence.\n\nWHY THIS FILE EXISTS, AND IT IS NOT A FLATTERING STORY. `claimedFilePaths` decides which\nof a component's files a claim BLESSES, and it drives the contract's `accounted` coverage\nnumbers (src/promise.ts). Its whole doctrine is refusal: a claim token with several\ncandidates blesses NONE, so a component with four `hooks.ts` can never read 4/4 claimed\noff one bare-basename claim. Over-reporting coverage is the failure it exists to prevent.\n\nIts only direct witness lived in `test/scene.test.ts`, and `scene` was evicted. The\neviction was audited by TEST COUNT — 627 → 581, proven to be exactly the deleted suites\nand nothing else — and that audit was true and answered the wrong question. Counting what\nvanished says nothing about what the vanished tests were the SOLE WITNESS FOR. An\nadversarial review found the hole by mutation: flip the refusal to `for (const c of cands)\nblessed.add(c)` — bless every ambiguous candidate, the precise defect the function is\nbuilt to prevent — and the full suite passes 593/593 while `verify` prints ✓ coherent. No\nspec anchor names this function, so the project's own \"verify PLUS npm test\" pre-deploy\ngate was blind to it in both directions at once.\n\nThe asymmetry is the sharp part: mutating the function to bless NOTHING is caught (a\npromise.test.ts mass/accounted assertion reds), because under-reporting perturbs a number\nsomebody already asserts. Only the OVER-report direction went dark — the direction that\nsilently inflates a coverage figure a reader trusts. A guarantee is only defended in the\ndirection someone actually tested.\n\nTHE GENERAL LESSON, recorded here because it will recur: when a command is evicted, the\nquestion is not \"did the test count drop by exactly the deleted suites\" but \"was any\nsurviving guarantee ONLY witnessed there\". The first is arithmetic; the second is the one\nthat bites. This test is the deleted case ported to call `claimedFilePaths` directly,\nwith no scene-model wrapper between the assertion and the rule."
+    },
+    {
       "id": "f:test/vacuity.test.ts",
       "parent": "c:test",
       "label": "vacuity.test.ts",
@@ -8310,6 +8319,30 @@
       "id": "f:test/test-batch.test.ts->f:test/_helpers.ts:imports",
       "source": "f:test/test-batch.test.ts",
       "target": "f:test/_helpers.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/tree.test.ts->x:node:test:imports",
+      "source": "f:test/tree.test.ts",
+      "target": "x:node:test",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/tree.test.ts->x:node:assert/strict:imports",
+      "source": "f:test/tree.test.ts",
+      "target": "x:node:assert/strict",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/tree.test.ts->f:src/tree.ts:imports",
+      "source": "f:test/tree.test.ts",
+      "target": "f:src/tree.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/tree.test.ts->f:src/types.ts:imports",
+      "source": "f:test/tree.test.ts",
+      "target": "f:src/types.ts",
       "kind": "imports"
     },
     {

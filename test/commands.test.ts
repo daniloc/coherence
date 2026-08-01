@@ -320,7 +320,13 @@ test("every registry entry is well-formed (a blank summary would render an empty
  *  a generated artifact" gets ANSWERED rather than assumed. */
 async function artifactSnapshot(dir: string): Promise<string> {
   const parts: string[] = [];
-  for (const rel of ["AGENTS.md", "CLAUDE.md"]) {
+  // README.md is in the watch set because `docs` splices its command-index and phrasebook
+  // blocks into it — a fact this snapshot originally missed. An adversarial review proved
+  // the blind spot by making an UNDECLARED command write README.md at the fixture root: the
+  // oracle passed. No current generator writes only there, so there is no live offender —
+  // but the oracle's entire justification is the FUTURE generator that forgets the flag, and
+  // a root-markdown-only writer is precisely that shape.
+  for (const rel of ["AGENTS.md", "CLAUDE.md", "README.md"]) {
     parts.push(rel + ":" + await readFile(join(dir, rel), "utf8").catch(() => ""));
   }
   const out = join(dir, "public");

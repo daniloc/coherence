@@ -83,8 +83,35 @@ async function runAll(): Promise<Ran[]> {
   }));
 }
 
+/** Both assertions below are UNIVERSAL QUANTIFIERS over command output — "no command
+ *  printed ✓", "no command crashed" — and a universal quantifier over an empty set is
+ *  gloriously true. So the population is checked BEFORE it is judged.
+ *
+ *  THIS FILE SHIPPED WITHOUT THIS CHECK AND AN ADVERSARIAL REVIEW BROKE IT IMMEDIATELY:
+ *  inserting `process.exit(2)` in cli.ts right after `const cmd = process.argv[2]` means no
+ *  command can ever dispatch and nothing is ever printed — and both tests passed, green, in
+ *  a file whose entire subject is instruments that cannot tell "I found nothing wrong" from
+ *  "I did not look". The idiom was already in this suite twice (commands.test.ts's
+ *  `live.length >= 20`, and `observed.length >= 3` in both totality oracles); it simply was
+ *  not copied here. Writing the rule down is not the same as obeying it.
+ *
+ *  SUBSTANTIVE means: the process said something that is not merely the usage banner. A
+ *  command rejected for a missing positional prints usage and is not evidence that the
+ *  reporting path ran at all. */
+function assertPopulationObserved(ran: Ran[]): void {
+  const substantive = ran.filter((r) => {
+    const t = r.out.trim();
+    return t.length > 0 && !t.startsWith("usage: coherence");
+  });
+  assert.ok(substantive.length >= 8,
+    `the oracle observed only ${substantive.length} substantive report(s) across ${ran.length} command(s) — the INSTRUMENT is broken, not the CLI. ` +
+    `Every assertion in this file is a claim about command output; with no output they all pass vacuously, which is the exact defect this file exists to hunt.`);
+}
+
 test("VACUITY — no instrument claims health in a project where nothing was examined", async () => {
-  const offenders = (await runAll()).filter((r) => r.out.includes(HEALTH));
+  const ran = await runAll();
+  assertPopulationObserved(ran);
+  const offenders = ran.filter((r) => r.out.includes(HEALTH));
   assert.deepEqual(offenders.map((r) => r.name), [],
     `these commands printed the health glyph "${HEALTH}" against a project with zero code files and no git history, which asserts a check that never had anything to check:\n` +
     offenders.map((r) => `  ${r.name}: ${(r.out.split("\n").find((l) => l.includes(HEALTH)) ?? "").trim()}`).join("\n") +
@@ -97,7 +124,9 @@ test("VACUITY — an instrument that cannot run says so, and never emits a stack
   // needs history must name that requirement in a sentence. Handing an operator a stack
   // trace is the same defect as green-by-absence wearing the opposite face — in both cases
   // the report fails to say what was and was not measured.
-  const crashed = (await runAll()).filter((r) => isCrash(r.out));
+  const ran = await runAll();
+  assertPopulationObserved(ran);
+  const crashed = ran.filter((r) => isCrash(r.out));
   assert.deepEqual(crashed.map((r) => r.name), [],
     `these commands crashed instead of reporting. An instrument that cannot run must say WHY in a sentence:\n` +
     crashed.map((r) => `  ${r.name}: ${(r.out.split("\n").find((l) => /Error|error/.test(l)) ?? "").trim().slice(0, 120)}`).join("\n"));

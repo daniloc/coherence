@@ -1,8 +1,8 @@
 {
   "root": "coherence",
   "intent": "The repository-level reading surface: configuration, package contract, generated maps, and the authored explanation of why the harness exists.",
-  "generatedAt": "2026-08-01T02:57:51.044Z",
-  "head": "f1132e5",
+  "generatedAt": "2026-08-01T03:16:56.588Z",
+  "head": "25c543e",
   "dirty": true,
   "zones": [],
   "components": [
@@ -37,7 +37,7 @@
           "grade": "C",
           "verdict": "pass",
           "reliants": [],
-          "freshest": "2026-08-01T02:57:22.134Z"
+          "freshest": "2026-08-01T03:16:18.895Z"
         },
         {
           "inv": "significant behavioral growth acquires an anchor or patch-specific decision",
@@ -48,7 +48,7 @@
           "grade": "C",
           "verdict": "pass",
           "reliants": [],
-          "freshest": "2026-08-01T02:57:22.134Z"
+          "freshest": "2026-08-01T03:16:18.895Z"
         },
         {
           "inv": "task context is bounded and names its approximations",
@@ -59,7 +59,7 @@
           "grade": "C",
           "verdict": "pass",
           "reliants": [],
-          "freshest": "2026-08-01T02:57:22.134Z"
+          "freshest": "2026-08-01T03:16:18.895Z"
         },
         {
           "inv": "cached decisions expose structurally expired premises",
@@ -70,7 +70,7 @@
           "grade": "C",
           "verdict": "pass",
           "reliants": [],
-          "freshest": "2026-08-01T02:57:22.134Z"
+          "freshest": "2026-08-01T03:16:18.895Z"
         },
         {
           "inv": "predicted context closure is calibrated against observed reads and outcomes",
@@ -81,7 +81,7 @@
           "grade": "C",
           "verdict": "pass",
           "reliants": [],
-          "freshest": "2026-08-01T02:57:22.134Z"
+          "freshest": "2026-08-01T03:16:18.895Z"
         },
         {
           "inv": "reviewed risk sites survive relocation but never duplication",
@@ -92,7 +92,7 @@
           "grade": "C",
           "verdict": "pass",
           "reliants": [],
-          "freshest": "2026-08-01T02:57:22.134Z"
+          "freshest": "2026-08-01T03:16:18.895Z"
         },
         {
           "inv": "pinned mass follows a value-conserving rename but never absorbs growth",
@@ -103,7 +103,7 @@
           "grade": "C",
           "verdict": "pass",
           "reliants": [],
-          "freshest": "2026-08-01T02:57:22.134Z"
+          "freshest": "2026-08-01T03:16:18.895Z"
         },
         {
           "inv": "a claim goes green only on positive evidence its oracle ran",
@@ -114,7 +114,7 @@
           "grade": "C",
           "verdict": "pass",
           "reliants": [],
-          "freshest": "2026-08-01T02:57:22.134Z"
+          "freshest": "2026-08-01T03:16:18.895Z"
         },
         {
           "inv": "a vanished oracle reds its claim, never green-by-absence",
@@ -125,7 +125,7 @@
           "grade": "C",
           "verdict": "pass",
           "reliants": [],
-          "freshest": "2026-08-01T02:57:22.134Z"
+          "freshest": "2026-08-01T03:16:18.895Z"
         },
         {
           "inv": "a declared invariant unanchored by any boundary fails coverage",
@@ -136,7 +136,7 @@
           "grade": "C",
           "verdict": "pass",
           "reliants": [],
-          "freshest": "2026-08-01T02:57:22.134Z"
+          "freshest": "2026-08-01T03:16:18.895Z"
         },
         {
           "inv": "a via-test oracle that iterates no live domain fails its claim",
@@ -147,7 +147,7 @@
           "grade": "C",
           "verdict": "pass",
           "reliants": [],
-          "freshest": "2026-08-01T02:57:22.134Z"
+          "freshest": "2026-08-01T03:16:18.895Z"
         },
         {
           "inv": "a skipped run never clobbers an oracle's recorded verdict",
@@ -158,7 +158,7 @@
           "grade": "C",
           "verdict": "pass",
           "reliants": [],
-          "freshest": "2026-08-01T02:57:22.134Z"
+          "freshest": "2026-08-01T03:16:18.895Z"
         },
         {
           "inv": "a named oracle that no test runs cannot pass",
@@ -169,7 +169,7 @@
           "grade": "C",
           "verdict": "pass",
           "reliants": [],
-          "freshest": "2026-08-01T02:57:22.134Z"
+          "freshest": "2026-08-01T03:16:18.895Z"
         },
         {
           "inv": "an empty derivation against a remembered surface refuses, never passes",
@@ -180,7 +180,7 @@
           "grade": "C",
           "verdict": "pass",
           "reliants": [],
-          "freshest": "2026-08-01T02:57:22.134Z"
+          "freshest": "2026-08-01T03:16:18.895Z"
         }
       ],
       "relies": [
@@ -235,12 +235,12 @@
         }
       ],
       "mass": {
-        "files": 40,
-        "lines": 9678
+        "files": 41,
+        "lines": 9790
       },
       "accounted": {
         "files": 4,
-        "lines": 1527
+        "lines": 1533
       }
     }
   ],
