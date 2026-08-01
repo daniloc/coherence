@@ -1,16 +1,16 @@
 {
   "project": "coherence",
   "intent": "The repository-level reading surface: configuration, package contract, generated maps, and the authored explanation of why the harness exists.",
-  "generatedAt": "2026-08-01 21:08Z",
+  "generatedAt": "2026-08-01 21:09Z",
   "head": {
-    "commit": "1ad12d2",
+    "commit": "782feff",
     "dirty": true
   },
   "frame": {
     "kind": "cursor",
-    "ref": "d9053b8",
-    "commit": "d9053b8",
-    "at": "2026-08-01T14:27:27-04:00",
+    "ref": "1ad12d2",
+    "commit": "1ad12d2",
+    "at": "2026-08-01T17:08:17-04:00",
     "commits": 1,
     "why": "the HEAD this Index recorded the last time it ran — literally since you last looked."
   },
@@ -24,9 +24,9 @@
       "name": ".coherence/status.json — verify",
       "ok": true,
       "detail": "29 claim verdict(s), 0 failure(s), tier full",
-      "at": "2026-08-01T21:06:07.976Z",
-      "commit": "d9053b8",
-      "stale": true
+      "at": "2026-08-01T21:09:14.741Z",
+      "commit": "782feff",
+      "stale": false
     },
     {
       "name": ".coherence/status.json — atlas",
@@ -37,8 +37,8 @@
     {
       "name": "git history",
       "ok": true,
-      "detail": "87 concern-carrying commit(s) in the last 200, touching 165 path(s)",
-      "commit": "1ad12d2"
+      "detail": "88 concern-carrying commit(s) in the last 200, touching 171 path(s)",
+      "commit": "782feff"
     },
     {
       "name": ".coherence/decisions",
@@ -46,10 +46,10 @@
       "detail": "230 record(s) across 40 session(s)"
     },
     {
-      "name": "structural diff vs d9053b8",
+      "name": "structural diff vs 1ad12d2",
       "ok": true,
       "detail": "0 structural change(s), 0 loss(es)",
-      "commit": "d9053b8"
+      "commit": "1ad12d2"
     }
   ],
   "map": {
@@ -161,7 +161,7 @@
           "verb": "guard",
           "oracle": "testMatch — a runner exiting 0 with no matching output FAILS (the renamed-test trap)",
           "grade": "C",
-          "verdict": "stale",
+          "verdict": "pass",
           "crossing": null,
           "reliants": 0,
           "witnessed": true
@@ -173,7 +173,7 @@
           "verb": "guard",
           "oracle": "RATCHET — a declared invariant with no anchoring boundary fails coverage",
           "grade": "C",
-          "verdict": "stale",
+          "verdict": "pass",
           "crossing": null,
           "reliants": 0,
           "witnessed": true
@@ -185,7 +185,7 @@
           "verb": "guard",
           "oracle": "runner contract — a name that exists nowhere exits nonzero (the vanished oracle cannot pass)",
           "grade": "C",
-          "verdict": "stale",
+          "verdict": "pass",
           "crossing": null,
           "reliants": 0,
           "witnessed": true
@@ -197,7 +197,7 @@
           "verb": "guard",
           "oracle": "merge — a skip never clobbers a real verdict; the old verdict rides through with its own stamp",
           "grade": "C",
-          "verdict": "stale",
+          "verdict": "pass",
           "crossing": null,
           "reliants": 0,
           "witnessed": true
@@ -209,7 +209,7 @@
           "verb": "guard",
           "oracle": "match — ZERO matching tests is its OWN state: the vanished oracle, named as such",
           "grade": "C",
-          "verdict": "stale",
+          "verdict": "pass",
           "crossing": null,
           "reliants": 0,
           "witnessed": true
@@ -221,7 +221,7 @@
           "verb": "guard",
           "oracle": "META-ORACLE — a `via test` boundary whose oracle loops a LITERAL fails",
           "grade": "C",
-          "verdict": "stale",
+          "verdict": "pass",
           "crossing": null,
           "reliants": 0,
           "witnessed": true
@@ -233,7 +233,7 @@
           "verb": "guard",
           "oracle": "hooks — generated wiring uses the low-cost entrypoint and observes writes",
           "grade": "C",
-          "verdict": "stale",
+          "verdict": "pass",
           "crossing": null,
           "reliants": 0,
           "witnessed": false
@@ -245,7 +245,7 @@
           "verb": "guard",
           "oracle": "FLOOR — an empty derivation against a remembered surface REFUSES, never reports coherent",
           "grade": "C",
-          "verdict": "stale",
+          "verdict": "pass",
           "crossing": null,
           "reliants": 0,
           "witnessed": true
@@ -257,7 +257,7 @@
           "verb": "guard",
           "oracle": "audit — retracted decisions disappear and only broken strong leases fail a check",
           "grade": "C",
-          "verdict": "stale",
+          "verdict": "pass",
           "crossing": null,
           "reliants": 0,
           "witnessed": true
@@ -269,7 +269,7 @@
           "verb": "guard",
           "oracle": "mass — a renamed component keeps its pin; growth and novelty are never absorbed",
           "grade": "C",
-          "verdict": "stale",
+          "verdict": "pass",
           "crossing": null,
           "reliants": 0,
           "witnessed": true
@@ -281,7 +281,7 @@
           "verb": "guard",
           "oracle": "calibration reports coverage, outside reads, and defect rates by prediction misses",
           "grade": "C",
-          "verdict": "stale",
+          "verdict": "pass",
           "crossing": null,
           "reliants": 0,
           "witnessed": true
@@ -293,7 +293,7 @@
           "verb": "guard",
           "oracle": "sinks — a moved file keeps its baselined identity and a genuinely new site still fails",
           "grade": "C",
-          "verdict": "stale",
+          "verdict": "pass",
           "crossing": null,
           "reliants": 0,
           "witnessed": true
@@ -305,7 +305,7 @@
           "verb": "guard",
           "oracle": "only a zero-anchor alarm without attestation needs a decision",
           "grade": "C",
-          "verdict": "stale",
+          "verdict": "pass",
           "crossing": null,
           "reliants": 0,
           "witnessed": true
@@ -317,7 +317,7 @@
           "verb": "guard",
           "oracle": "renderContext — byte-stable for the same inputs and names every approximation",
           "grade": "C",
-          "verdict": "stale",
+          "verdict": "pass",
           "crossing": null,
           "reliants": 0,
           "witnessed": false
@@ -406,8 +406,8 @@
         "key": "unvisited",
         "label": "unvisited",
         "what": "paths recent work keeps touching that the graph does not own — no closure can be computed for them, so every read-cost figure here excludes them",
-        "dark": 72,
-        "total": 165,
+        "dark": 75,
+        "total": 171,
         "unit": "paths touched in the concern band",
         "worst": {
           "shown": [
@@ -416,12 +416,12 @@
             ".coherence/decisions/a0822697df6f0b473.jsonl",
             ".coherence/decisions/a0d10da06384ede58.jsonl",
             ".coherence/decisions/a52046bd2cb7efc4e.jsonl",
+            ".coherence/decisions/a873312c333faa81d.jsonl",
             ".coherence/decisions/a87bc84c1ac9f42ee.jsonl",
-            ".coherence/decisions/a8e360c3df216902a.jsonl",
-            ".coherence/decisions/a9721b7e8784fc332.jsonl"
+            ".coherence/decisions/a8e360c3df216902a.jsonl"
           ],
-          "withheld": 64,
-          "total": 72
+          "withheld": 67,
+          "total": 75
         }
       }
     ]
@@ -925,7 +925,7 @@
       "resolved": 19,
       "dismissed": 1,
       "retracted": 1,
-      "inFrame": 1
+      "inFrame": 0
     },
     "totals": {
       "blocked": 9,
@@ -984,8 +984,8 @@
     },
     "structuralWhy": null,
     "loc": {
-      "added": 1821,
-      "deleted": 4
+      "added": 1794,
+      "deleted": 0
     },
     "mass": {
       "at": "2026-07-31T17:56:23.525Z",
