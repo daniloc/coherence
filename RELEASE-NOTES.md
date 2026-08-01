@@ -14,6 +14,88 @@ evidence inside that record.
 
 ---
 
+## v0.24.0 — the instrument stops lying about its own evidence
+
+v0.23.0 made the harness refuse to grade nothing. Then it was attacked — three
+adversarial reviews, a degenerate-project sweep of all fourteen checking
+commands, and a replication of a finished feature from scratch. Everything below
+was found by mutation, corruption, or reconstruction. Not one was found by a
+claim going red; the suite was green through all of it.
+
+**GREEN-BY-ABSENCE, named and enforced.** Every instrument turns a reading into a
+verdict, and a reading has two halves: the population examined, and what was found
+in it. Drop the denominator and `0 of 0` renders exactly like `0 of 500` — "I
+looked and found nothing wrong" becomes indistinguishable from "I did not look."
+Measured against a project with a config, one spec, zero code files and no git:
+`why-lint` printed a ✓ over zero sentences, `redundancy`, `prose` and `premise`
+the same; `decompose` reported no smells without saying over what; `log` and
+`signal` threw stack traces instead of sentences. The cure already existed here
+five times over — `drift` says "only 0 mapped development commits", `lint-sinks`
+prints "total reviewed surface: 0" — and had simply never been generalized, which
+is verbatim the finding `redundancy` reports about other people's code.
+`test/vacuity.test.ts` now enumerates the command registry against that degenerate
+project and asserts no verb claims health and none crashes, so a command added
+tomorrow is covered the day it is registered.
+
+**A COLLAPSED READING CANNOT HOLD, AND CANNOT BE PINNED.** With the deriver gutted,
+`mass --check` exited 0, printed "✓ mass ratchet held", and then *prescribed the
+poisoning*: "4 dimension(s) SHRANK — re-pin to bank it." Pinning wrote zeroes over
+a healthy baseline, and restoring the deriver did not heal it — the ratchet then
+reported the project's own pre-existing mass as GROWTH and demanded a decision
+justifying it. The three baseline writers do not share a vacuity source (`mass` and
+`conventions` read the graph; `lintSinks` never receives one), so each supplies its
+own denominator and the shared rule consumes it. `writesBaseline` joins
+`writesArtifacts` on the registry, both enforced by oracles that RUN every command
+and observe what it touches rather than trusting a list.
+
+**ABSENT AND UNREADABLE ARE DIFFERENT FACTS.** The worst finding of the day. One
+truncated byte in `.coherence/status.json` silently converted the floor from refuse
+to adopt — and the next run filed a fresh empty record, making the disarm
+**permanent**, with no message and, where `.coherence/` is untracked, no diff. The
+escape hatch was documented as "deliberate friction that leaves a diff a reviewer
+sees"; corruption achieved the same disarm with no friction at all. `readStatus`,
+`readBaseline` and `loadConfig` were all `catch → default`. Now absent keeps its
+meaning and unreadable refuses, through one seam, rendered by the `Unrunnable`
+handler — because an instrument that cannot run must say so in a sentence.
+
+**AND THE FIXES WERE THEMSELVES DEFECTIVE.** `test/vacuity.test.ts` was vacuous:
+both assertions are universal quantifiers over command output with nothing checking
+that any command ran, so `process.exit(2)` at the top of the dispatch left it green
+— in the one file whose subject is instruments that cannot tell finding-nothing
+from not-looking. The scoped floor branch was a gate no test defended. `ownerOf`
+returned `"."` for any unowned path, so a scoped run over a healthy tree printed
+`✓ coherent` over zero claims, no mutation required. And `claimedFilePaths` lost
+its only witness to the `scene` eviction: inverting it to over-report coverage
+passed 593/593 green. That eviction was audited by test COUNT — true, and the wrong
+question. Counting what vanished says nothing about what the vanished tests were
+the SOLE WITNESS for.
+
+**THE CAP STOPPED BUYING TRIVIA.** The first real `verify --raise` against a
+consuming project spent its three-question budget with one slot on
+`README.md exists at root — 146 run(s), never observed failing`, drawn from an
+81-item list containing 58 boundary claims. Never-red findings now rank by whether
+a refutation would teach anything: oracle-backed first, bare boundaries next,
+structural `exists at`/`imports` last. Run count is deliberately not an input —
+146 runs green says a claim is stable, not that it is informative.
+
+**BEFORE YOU ADD A CONCEPT, COUNT ITS INSTANCES.** One paragraph in the hook
+instruction, which is the only channel in this project with a demonstrated record
+of changing behaviour. It exists because of a live case: a spine/organ posture axis
+was proposed for the spec grammar, and grouping a consuming project's 114 claims by
+component and claim form showed every one of its 14 components reads ORGAN — not
+one spine, and composition claims running 1–3 per component regardless of size,
+which is anchoring residue rather than a design statement. The mechanism would have
+shipped with no subjects. What replaced it was a subtraction. The decision records
+the QUERY, so the next agent re-runs it instead of re-arguing it, and so it can go
+stale honestly.
+
+Deliberately not built: an advisory that detects concepts with no instances. A
+feature enforcing not-adding-features is self-refuting.
+
+612 tests (627 before the evictions, via 570 at their floor). `verify` 28/28 green.
+
+---
+
 ## v0.23.0 — the harness refuses to grade nothing, and learns to remove
 
 Every release before this one taught coherence to *add* — a claim, a ratchet, an
