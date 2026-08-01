@@ -239,6 +239,20 @@ export const commandNames = (): string[] => COMMANDS.map((c) => c.name);
  *  THIS against the `cmd === "…"` literals it reads out of cli.ts. */
 export const dispatchTokens = (): string[] => COMMANDS.flatMap((c) => [c.name, ...(c.aliases ?? [])]);
 
+/**
+ * The registry entry a typed token names — BY NAME OR BY ALIAS. The one lookup any guard
+ * keyed on a flag (`writesArtifacts`, `writesBaseline`) may use.
+ *
+ * The floor guarding the generators matched `c.name === cmd` and nothing else, which is a
+ * latent bypass with no current victim: the only alias in the registry, `resolve`, writes
+ * nothing. But `aliases` exists precisely so a writing command can acquire a second
+ * spelling, and the day one does, the guard would silently exempt it — a gate that fails
+ * open on a rename is the class of defect this whole file exists to end. Closed here
+ * rather than at the call site, because the call site is where it was forgotten once.
+ */
+export const commandFor = (token: string | undefined): Command | undefined =>
+  token === undefined ? undefined : COMMANDS.find((c) => c.name === token || (c.aliases ?? []).includes(token));
+
 /** Groups in first-appearance order, each with the commands that declared it. */
 const grouped = (): { group: CommandGroup; title: string; cmds: Command[] }[] => {
   const order: CommandGroup[] = [];

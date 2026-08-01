@@ -20,6 +20,7 @@ import { promisify } from "node:util";
 import { runVerify } from "../src/verify.ts";
 import { readSurface, vacuityRefusal, ratchetVacuityRefusal, adoptionLadder, readJsonOrRefuse, Unrunnable } from "../src/floor.ts";
 import type { StatusRecord } from "../src/status.ts";
+import { commandFor, dispatchTokens } from "../src/commands.ts";
 import { tmpProject, cleanup, runCaptured, cfg, comp, sym, graph } from "./_helpers.ts";
 
 const CLI_PATH = fileURLToPath(new URL("../src/cli.ts", import.meta.url));
@@ -285,7 +286,16 @@ test("FLOOR — a generator REFUSES to overwrite a good map with a blank one", a
     // 3. Every generator refuses — writing AND checking, because a staleness report is a
     //    diagnosis and "4 artifacts stale" sends a reader to regenerate when the truth is
     //    that derivation is broken.
-    for (const args of [["docs"], ["graph"], ["contract"], ["atlas"], ["docs", "--check"]]) {
+    //
+    //    ENUMERATED FROM THE REGISTRY, AND BY DISPATCH TOKEN — not from a list written
+    //    here. A hardcoded list is a claim about the commands somebody remembered; this
+    //    demands the refusal from every spelling the dispatch accepts, so a new generator
+    //    inherits the oracle the day it declares the flag, and so does an ALIAS on one. The
+    //    guard in cli.ts matched `c.name === cmd` until now, which would have exempted the
+    //    second spelling of a writing command silently.
+    const writers = dispatchTokens().filter((t) => commandFor(t)?.writesArtifacts);
+    assert.ok(writers.length >= 5, `the registry must declare generators, or this oracle checks nothing (saw ${writers.length})`);
+    for (const args of [...writers.map((w) => [w]), ["docs", "--check"]]) {
       const r = await run(process.execPath, [CLI_PATH, ...args], { cwd: dir })
         .then((ok) => ({ code: 0, stdout: ok.stdout }))
         .catch((e: { code?: number; stdout?: string }) => ({ code: e.code ?? -1, stdout: e.stdout ?? "" }));

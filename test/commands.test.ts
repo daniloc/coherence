@@ -25,7 +25,7 @@ import { fileURLToPath } from "node:url";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import {
-  COMMANDS, commandNames, dispatchTokens, usageBanner, renderCommandsBlock,
+  COMMANDS, commandNames, commandFor, dispatchTokens, usageBanner, renderCommandsBlock,
   COMMANDS_BEGIN, COMMANDS_END, renderPhrasebookBlock, PHRASEBOOK_BEGIN, PHRASEBOOK_END,
 } from "../src/commands.ts";
 import { CLAIM_FORMS } from "../src/phrasebook.ts";
@@ -106,6 +106,31 @@ test("aliases are representable: an alias is dispatched, but is never a command 
     assert.ok(!renderCommandsBlock().includes(`\`coherence ${alias} `), `alias \`${alias}\` leaked into the README index as its own entry`);
     assert.ok(!renderCommandsBlock().includes(`\`coherence ${alias}\``), `alias \`${alias}\` leaked into the README index as its own entry`);
   }
+});
+
+test("commandFor — a guard keyed on a flag reads it through the ALIAS too, never through the name alone", () => {
+  // THE LATENT BYPASS THIS CLOSES. The non-vacuity floor guarding the generators matched
+  // `c.name === cmd` and nothing else, so a writing command that acquired a second
+  // spelling would have walked straight past it. No current victim — `resolve`, the only
+  // alias in the registry, writes nothing — which is exactly why it is worth closing now:
+  // an alias costs one array entry and the exemption would be silent.
+  //
+  // Pinned at the LOOKUP rather than as a list of writing commands, because a list is a
+  // claim about what somebody remembered. cli.ts now reads its flags through this
+  // function, and floor.test.ts demands the refusal from every DISPATCH TOKEN carrying
+  // `writesArtifacts` — so the day a generator gains an alias, both halves follow it.
+  const aliases = COMMANDS.flatMap((c) => (c.aliases ?? []).map((a) => ({ alias: a, of: c })));
+  assert.ok(aliases.length > 0, "no alias is declared, so this oracle would be checking nothing");
+  for (const { alias, of } of aliases) {
+    assert.equal(commandFor(alias), of, `\`${alias}\` must resolve to the \`${of.name}\` ENTRY — flags and all, not just a name match`);
+    assert.equal(commandFor(alias)?.writesArtifacts, of.writesArtifacts);
+    assert.equal(commandFor(alias)?.writesBaseline, of.writesBaseline);
+  }
+  for (const c of COMMANDS) assert.equal(commandFor(c.name), c, `\`${c.name}\` must still resolve by its own name`);
+  // A token nobody declared, and the no-argument invocation, resolve to nothing rather
+  // than to the first entry — the guard must not fire on `coherence` with no verb.
+  assert.equal(commandFor("nosuchverb"), undefined);
+  assert.equal(commandFor(undefined), undefined);
 });
 
 test("the banner is DERIVED — no command-name alternation literal survives in cli.ts", async () => {

@@ -15,7 +15,7 @@ import { buildGraph } from "./derive.ts";
 import { renderOutline } from "./render-outline.ts";
 import { renderOverview } from "./render-overview.ts";
 import { renderClaude, spliceBlock, extractBlock, resolveClaudeMdPath, CLAUDE_BEGIN, CLAUDE_END } from "./render-claude.ts";
-import { renderCommandsBlock, renderPhrasebookBlock, usageBanner, COMMANDS, COMMANDS_BEGIN, COMMANDS_END, PHRASEBOOK_BEGIN, PHRASEBOOK_END } from "./commands.ts";
+import { renderCommandsBlock, renderPhrasebookBlock, usageBanner, commandFor, COMMANDS_BEGIN, COMMANDS_END, PHRASEBOOK_BEGIN, PHRASEBOOK_END } from "./commands.ts";
 import { runVerify, applyVerdicts } from "./verify.ts";
 import { decompose } from "./decompose.ts";
 import { drift } from "./drift.ts";
@@ -268,7 +268,12 @@ async function doPhrasebook(): Promise<string[]> {
 // APPLIED TO `--check` TOO, deliberately, with no exemption to rot: a staleness report is
 // a DIAGNOSIS, and "4 artifacts stale" sends a reader to regenerate when the truth is that
 // derivation is broken. Same reading, same refusal, one less way to be misled.
-if (COMMANDS.some((c) => c.name === cmd && c.writesArtifacts)) {
+//
+// MATCHED THROUGH `commandFor`, which resolves ALIASES too. This read `c.name === cmd`,
+// so a writing command that acquired a second spelling would have walked past the floor
+// under it — no current victim (`resolve`, the only alias, writes nothing), and exactly
+// the shape of thing that is cheap now and a silent hole later.
+if (commandFor(cmd)?.writesArtifacts) {
   const refusal = vacuityRefusal(readSurface(await buildGraph(cfg), await readStatus(cfg)));
   if (refusal) { for (const l of refusal) console.log(l); await exit(1); }
 }
