@@ -12,8 +12,23 @@
 // is the diff of a HIGHER ABSTRACTION — the architecture and the system's design — plus
 // the record of what the agents DECIDED and where they got STUCK. So: three views, no more.
 //
-//   MAP         the structures as they stand — components, zones, gates, crossings, and a
-//               TRUST reading. Rows and tables; there is no picture here.
+//   MAP         the structures as they stand — the ORGANS, the regions, the guarded
+//               crossings between them, the gates, and a TRUST reading. The crossings ARE a
+//               picture: `from`/`to` are nodes, the guard's symbol names the arrow, `tier`
+//               is how strong the guarantee is and `heat` is the traffic through it. The
+//               render draws that (see render-index.ts); this model does not know it is
+//               being drawn.
+//
+//               THE DIAGRAM ALONE SHOWED THE PLUMBING AND HID THE ORGANS. `authed-user`,
+//               `storage`, `public-egress` are TOPOLOGY labels — true, and they explain
+//               nothing about what the system is for. The MEANING is in the components,
+//               which every project already names and DESCRIBES ("Meter — a windowed
+//               counter, one bare Durable Object per scope name…"), and the Index was
+//               burying that prose behind a drill-down. So `IndexComponent.intent` carries
+//               the sentence and `IndexComponent.guards` carries the JOIN that says which
+//               organ holds which piece of the perimeter — see `crossingOwners`. Neither is
+//               a new source: the intent is the graph node's `sub`, the join is the graph's
+//               own symbol → file → component parentage crossed with the atlas record.
 //   JOURNAL     what the agents decided. `blocked` FIRST: an agent saying it could not do
 //               something is the highest-value line a human can read, and no gate will
 //               ever report it.
@@ -167,7 +182,24 @@ export interface Frame {
 export interface IndexComponent {
   label: string;
   dir: string;
+  /**
+   * THE ORGAN'S OWN SENTENCE — the `# <Name>` heading's intent line from the component's
+   * spec, straight off the graph node's `sub`. It is the best human-written prose in the
+   * whole system and until now the Index buried it behind a drill-down while showing the
+   * plumbing (`authed-user`, `storage`, `public-egress`) at glance level. Empty string when
+   * the spec declares no intent line — that is a real state and it renders as one.
+   */
+  intent: string;
   zone: string | null;
+  /**
+   * THE CROSSINGS THIS COMPONENT OWNS — the atlas `sym`s whose chokepoint lives in a file
+   * this component owns. See `crossingOwners`. Non-empty is the PERIMETER; empty is the
+   * INTERIOR, and empty is a reading rather than a defect: a crossing is where trust
+   * changes hands, and a component whose contract is entirely internal never takes that
+   * transfer. Empty for EVERY component when no atlas ran — which is why the render tests
+   * `atlas === null` before it says anything about the split.
+   */
+  guards: string[];
   files: number;
   lines: number;
   accountedFiles: number;
@@ -201,10 +233,23 @@ export interface IndexGate {
   witnessed: boolean;
 }
 
-/** One atlas crossing, straight from the RECORD the atlas filed. */
+/**
+ * One atlas crossing, straight from the RECORD the atlas filed — plus the ONE joined field.
+ *
+ * `owner` is the component that owns the guard's chokepoint. It is a JOIN of two things the
+ * model already holds (the atlas's `sym`, the graph's symbol → file → component parentage),
+ * not a new derivation and not a new source: see `crossingOwners`. It is what lets the Map
+ * answer "which organ holds this piece of the perimeter" in the same picture that shows
+ * where the perimeter runs.
+ */
 export interface IndexCrossing {
   sym: string; from: string; to: string; tier: number;
   security: boolean; present: boolean; heat: number | null;
+  /** The owning component's label, or null when the join could not land it. */
+  owner: string | null;
+  /** WHY there is no owner. Present exactly when `owner` is null, never otherwise —
+   *  "no component owns this" and "this was never looked up" must not look alike. */
+  ownerWhy?: string;
 }
 
 /**
@@ -266,6 +311,29 @@ export interface IndexEntry {
   news: boolean;
 }
 
+/**
+ * ONE RECORD AS A POINT IN TIME — the whole standing journal, uncapped, carrying no text.
+ *
+ * WHY THIS EXISTS BESIDE THE CAPPED LISTS. The journal renders as a TIMELINE, and a
+ * timeline drawn from the capped lists would be a picture of the cap rather than of the
+ * history: measured on the consuming project, the three lists carry 28 of 182 standing
+ * records. Plotting 28 and labelling the axis with dates is the same green-by-absence shape
+ * this page exists to refuse — the reader would take a quiet stretch for a quiet month.
+ *
+ * So NOVELTY and TIME are complete here while TEXT stays capped: `shown` says whether this
+ * record's sentences are carried by one of the lists above, and a mark whose text was
+ * withheld renders as a hairline tick that cannot be opened. The cap is still on attention
+ * — a tick costs none — and the record is no longer misrepresented by it.
+ */
+export interface IndexMark {
+  id: string;
+  lane: "blocked" | "open" | "decision";
+  at: string;
+  news: boolean;
+  /** True when one of the capped lists carries this record's text, so it can be opened. */
+  shown: boolean;
+}
+
 /** VIEW TWO: what the agents decided, ordered by NEWS and led by impasses. */
 export interface JournalView {
   /** BLOCKED FIRST. An agent recording that it could not do something is the single
@@ -273,6 +341,8 @@ export interface JournalView {
   blocked: Capped<IndexEntry>;
   open: Capped<IndexEntry>;
   decisions: Capped<IndexEntry>;
+  /** EVERY standing record as a point on the time axis, oldest first. See `IndexMark`. */
+  marks: IndexMark[];
   /** Settled work collapses to counts — that is what settled means. */
   settled: { resolved: number; dismissed: number; retracted: number; inFrame: number };
   totals: { blocked: number; open: number; decisions: number; records: number; sessions: number; unreadable: number };
@@ -511,6 +581,48 @@ export function darknesses(
   ];
 }
 
+/**
+ * WHICH COMPONENT OWNS EACH GUARDED CROSSING — the join that turns a topology diagram into
+ * a roster of organs. `symbolDir` is label → the dirs of the components owning a symbol of
+ * that name; it comes from the graph's OWN parentage (symbol → file → component), which is
+ * the same chain `symbolsByDir` walks a few lines above. Longest-matching-dir-prefix over
+ * the symbol's `path` gives the identical answer on the consuming project (14/14, checked
+ * crossing by crossing) and would be a SECOND spelling of component ownership; this file's
+ * rule 1 forbids that, so the existing chain is read instead of a new one written.
+ *
+ * THE TWO WAYS IT DOES NOT LAND, each named rather than collapsed into a shrug:
+ *   · the guard's symbol is nowhere in the graph — an anchor pointing at code that is not
+ *     there, which is precisely the `present: false` DANGLING state the atlas already
+ *     grades. The crossing keeps its arrow and its row; nothing pretends to own it.
+ *   · the name resolves inside more than one component. Then no component owns it MORE than
+ *     the others and picking one would be inventing a fact. It is AMBIGUOUS, it says which
+ *     components it could be, and it counts toward nobody's perimeter.
+ */
+export function crossingOwners(
+  crossings: readonly { sym: string; present: boolean }[],
+  symbolDir: ReadonlyMap<string, ReadonlySet<string>>,
+  labelByDir: ReadonlyMap<string, string>,
+): Map<string, { owner: string | null; dir: string | null; why?: string }> {
+  const out = new Map<string, { owner: string | null; dir: string | null; why?: string }>();
+  for (const c of crossings) {
+    const dirs = [...(symbolDir.get(c.sym) ?? [])].filter((d) => labelByDir.has(d));
+    if (dirs.length === 1) { out.set(c.sym, { owner: labelByDir.get(dirs[0])!, dir: dirs[0] }); continue; }
+    if (dirs.length === 0) {
+      out.set(c.sym, {
+        owner: null, dir: null,
+        why: `no component owns a symbol named \`${c.sym}\`${c.present ? "" : " — the atlas already grades this chokepoint DANGLING"}, so this crossing counts toward nobody's perimeter.`,
+      });
+      continue;
+    }
+    const names = dirs.map((d) => labelByDir.get(d)!).sort();
+    out.set(c.sym, {
+      owner: null, dir: null,
+      why: `\`${c.sym}\` resolves in ${names.length} components (${names.join(", ")}), so no one of them owns it more than the others. AMBIGUOUS, and it counts toward nobody's perimeter rather than toward an arbitrary one.`,
+    });
+  }
+  return out;
+}
+
 /** The MAP, assembled from the promise model (components, zones, gates, grades), the graph
  *  (the darknesses) and the atlas RECORD (the crossings). */
 export function buildMap(
@@ -520,16 +632,30 @@ export function buildMap(
   const comps = graph.nodes.filter((n) => n.kind === "component");
   const nodeByDir = new Map(comps.map((c) => [c.id.slice(2), c]));
   const symbolsByDir = new Map<string, GraphNode[]>();
+  // label → the dirs of every component holding a symbol of that name. ONE walk feeds both
+  // the per-component symbol counts and the guard→organ join; see `crossingOwners`.
+  const symbolDir = new Map<string, Set<string>>();
   const fileParent = new Map(graph.nodes.filter((n) => n.kind === "file").map((f) => [f.id, (f.parent ?? "").slice(2)]));
   for (const s of graph.nodes) {
     if (s.kind !== "symbol" || !s.parent) continue;
     const dir = fileParent.get(s.parent) ?? "";
     (symbolsByDir.get(dir) ?? symbolsByDir.set(dir, []).get(dir)!).push(s);
+    (symbolDir.get(s.label) ?? symbolDir.set(s.label, new Set()).get(s.label)!).add(dir);
   }
 
   const grades = ZERO_GRADES();
   const gateRows: IndexGate[] = [];
   let gatesClean = 0, gatesTotal = 0;
+
+  // THE JOIN, taken before the component rows are built, because each row carries the
+  // crossings it owns and the ROSTER'S ORDER is a function of that.
+  const labelByDir = new Map(promise.components.map((pc) => [pc.dir, pc.label]));
+  const owners = crossingOwners(status.atlas?.crossings ?? [], symbolDir, labelByDir);
+  const guardsOf = new Map<string, string[]>();
+  for (const c of status.atlas?.crossings ?? []) {
+    const d = owners.get(c.sym)?.dir;
+    if (d !== null && d !== undefined) (guardsOf.get(d) ?? guardsOf.set(d, []).get(d)!).push(c.sym);
+  }
 
   const components: IndexComponent[] = promise.components.map((pc) => {
     const node = nodeByDir.get(pc.dir);
@@ -565,7 +691,13 @@ export function buildMap(
     }
     const syms = symbolsByDir.get(pc.dir) ?? [];
     return {
-      label: pc.label, dir: pc.dir, zone: pc.zone,
+      label: pc.label, dir: pc.dir,
+      // The intent line the spec's `# <Name>` heading already carries. `sub` on the
+      // component node IS that line — derive.ts put it there and `_overview.html` has been
+      // printing it all along; the Index simply stops hiding it.
+      intent: node?.sub ?? "",
+      zone: pc.zone,
+      guards: (guardsOf.get(pc.dir) ?? []).slice().sort(),
       files: pc.mass.files, lines: pc.mass.lines,
       accountedFiles: pc.accounted.files,
       claims: node?.claims?.length ?? 0,
@@ -589,12 +721,33 @@ export function buildMap(
     || b.reliants - a.reliants
     || a.comp.localeCompare(b.comp) || a.inv.localeCompare(b.inv));
 
+  // THE ROSTER'S ORDER, and it is DERIVED so that reading it top to bottom teaches the
+  // shape of the system: the components holding the most of the trust perimeter first, down
+  // through the ones holding one crossing, then the INTERIOR — everything that owns none.
+  // Alphabetical would order by an accident of naming; spec-tree order (dir sort, entry
+  // first) orders by where the files happen to sit. Neither says anything. This says: here
+  // is who takes the trust transfers, in order of how much of that they take.
+  //
+  // The sort is STABLE and the only key is the guard count, so spec-tree order survives
+  // intact inside each band — the split is the ONLY thing this reorders. Measured: 6/8 on
+  // the consuming project (perimeter hoist-chat 5, auth 4, env 2, then web, Patient, model
+  // at 1 each). With NO atlas record every count is 0, the order is unchanged, and the
+  // render says the split is UNREAD rather than calling everything interior.
+  components.sort((x, y) => y.guards.length - x.guards.length);
+
   const a = status.atlas;
   // Tier-3 first — an undeclared junction is the row worth having — then hottest first
   // within a tier. A crossing with NO heat reading sorts last rather than as cold: absence
   // is not zero (atlas.ts's rule, kept here so the two renders cannot disagree).
   const crossings: IndexCrossing[] = (a?.crossings ?? [])
-    .map((c) => ({ sym: c.sym, from: c.from, to: c.to, tier: c.tier, security: c.security, present: c.present, heat: typeof c.heat === "number" ? c.heat : null }))
+    .map((c) => {
+      const o = owners.get(c.sym) ?? { owner: null, why: "this crossing was not looked up." };
+      return {
+        sym: c.sym, from: c.from, to: c.to, tier: c.tier, security: c.security, present: c.present,
+        heat: typeof c.heat === "number" ? c.heat : null,
+        owner: o.owner, ...(o.owner === null ? { ownerWhy: o.why } : {}),
+      };
+    })
     .sort((x, y) =>
       y.tier - x.tier
       || Number(y.security) - Number(x.security)
@@ -618,6 +771,26 @@ export function buildMap(
 
 // ── the JOURNAL ───────────────────────────────────────────────────────────────────────
 
+/**
+ * IS `a` AT OR AFTER `b` — ON THE CLOCK, not in the alphabet.
+ *
+ * FOUND BY DOGFOODING, and it had shipped: the novelty gate compared the two ISO strings
+ * directly, and the two sides do not come from the same producer. Git's `%cI` carries a
+ * NUMERIC OFFSET (`2026-07-31T02:49:18-04:00`) while a journal record carries `Z`, so a
+ * lexicographic compare reads the offset's digits as time-of-day. Measured on the consuming
+ * project: two impasses written at 02:54Z and 03:24Z were flagged NEW against a frame that
+ * opened at 06:49Z — four hours of history reported as news, in the one gate whose entire
+ * job is separating news from standing. The timeline is what exposed it: the marks were
+ * drawn LEFT of the frame rule and outlined as news in the same picture.
+ *
+ * Falls back to the string compare only when a stamp does not parse at all, so a malformed
+ * record degrades to the old behaviour instead of silently becoming "not news".
+ */
+const atOrAfter = (a: string, b: string): boolean => {
+  const x = Date.parse(a), y = Date.parse(b);
+  return Number.isFinite(x) && Number.isFinite(y) ? x >= y : a >= b;
+};
+
 const toEntry = (r: DecisionRecord, cut: string | null): IndexEntry => ({
   id: r.id, kind: r.kind, at: r.at, agent: r.agent, session: r.session, commit: r.commit,
   chose: r.chose, because: r.because, over: r.over ?? [], couldBe: r.couldBe ?? [],
@@ -626,7 +799,7 @@ const toEntry = (r: DecisionRecord, cut: string | null): IndexEntry => ({
   // may be on a branch that never merged, so "was this written after the frame opened" is
   // the only join that is both cheap and honest. It over-reports across a long-lived
   // branch and under-reports nothing, which is the right way round for a novelty gate.
-  news: cut !== null && r.at >= cut,
+  news: cut !== null && atOrAfter(r.at, cut),
 });
 
 /**
@@ -646,12 +819,22 @@ export function buildJournal(records: DecisionRecord[], sessions: number, unread
 
   const b = order(blocked), o = order(open), d = order(standing);
   const inFrame = cut === null ? 0
-    : [...resolved, ...dismissed, ...retracted].filter((s) => s.by.at >= cut).length;
+    : [...resolved, ...dismissed, ...retracted].filter((s) => atOrAfter(s.by.at, cut)).length;
+
+  // THE MARKS — every standing record, uncapped, text-free. `shown` is read off the SAME
+  // cap the lists use rather than restated, so a cap change can never desynchronise the two
+  // (a mark advertised as openable with nothing behind it is a dead click).
+  const marks: IndexMark[] = [];
+  for (const [xs, lane, cap] of [[b, "blocked", CAPS.blocked], [o, "open", CAPS.open], [d, "decision", CAPS.decisions]] as const) {
+    xs.forEach((e, i) => marks.push({ id: e.id, lane, at: e.at, news: e.news, shown: i < cap }));
+  }
+  marks.sort((x, y) => x.at.localeCompare(y.at) || x.id.localeCompare(y.id));
 
   return {
     blocked: capList(b, CAPS.blocked),
     open: capList(o, CAPS.open),
     decisions: capList(d, CAPS.decisions),
+    marks,
     settled: { resolved: resolved.length, dismissed: dismissed.length, retracted: retracted.length, inFrame },
     totals: {
       blocked: b.length, open: o.length, decisions: d.length,

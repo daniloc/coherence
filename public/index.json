@@ -1,17 +1,17 @@
 {
   "project": "coherence",
   "intent": "The repository-level reading surface: configuration, package contract, generated maps, and the authored explanation of why the harness exists.",
-  "generatedAt": "2026-08-01 21:09Z",
+  "generatedAt": "2026-08-02 22:51Z",
   "head": {
-    "commit": "782feff",
+    "commit": "b347169",
     "dirty": true
   },
   "frame": {
     "kind": "cursor",
-    "ref": "1ad12d2",
-    "commit": "1ad12d2",
-    "at": "2026-08-01T17:08:17-04:00",
-    "commits": 1,
+    "ref": "b347169",
+    "commit": "b347169",
+    "at": "2026-08-01T17:11:02-04:00",
+    "commits": 0,
     "why": "the HEAD this Index recorded the last time it ran — literally since you last looked."
   },
   "sources": [
@@ -24,8 +24,8 @@
       "name": ".coherence/status.json — verify",
       "ok": true,
       "detail": "29 claim verdict(s), 0 failure(s), tier full",
-      "at": "2026-08-01T21:09:14.741Z",
-      "commit": "782feff",
+      "at": "2026-08-02T22:50:30.982Z",
+      "commit": "b347169",
       "stale": false
     },
     {
@@ -37,19 +37,19 @@
     {
       "name": "git history",
       "ok": true,
-      "detail": "88 concern-carrying commit(s) in the last 200, touching 171 path(s)",
-      "commit": "782feff"
+      "detail": "89 concern-carrying commit(s) in the last 200, touching 171 path(s)",
+      "commit": "b347169"
     },
     {
       "name": ".coherence/decisions",
       "ok": true,
-      "detail": "230 record(s) across 40 session(s)"
+      "detail": "250 record(s) across 42 session(s)"
     },
     {
-      "name": "structural diff vs 1ad12d2",
+      "name": "structural diff vs b347169",
       "ok": true,
       "detail": "0 structural change(s), 0 loss(es)",
-      "commit": "1ad12d2"
+      "commit": "b347169"
     }
   ],
   "map": {
@@ -57,7 +57,9 @@
       {
         "label": "Coherence",
         "dir": ".",
+        "intent": "The repository-level reading surface: configuration, package contract, generated maps, and the authored explanation of why the harness exists.",
         "zone": null,
+        "guards": [],
         "files": 0,
         "lines": 0,
         "accountedFiles": 0,
@@ -81,9 +83,11 @@
       {
         "label": "Harness core",
         "dir": "src",
+        "intent": "Builds the source/spec graph, evaluates declared claims, renders reading surfaces, and records the decisions and observations that must survive an agent's context window.",
         "zone": null,
+        "guards": [],
         "files": 51,
-        "lines": 14464,
+        "lines": 15367,
         "accountedFiles": 3,
         "claims": 20,
         "gates": 14,
@@ -98,14 +102,16 @@
         "invariants": 14,
         "anchored": 14,
         "witnessed": 12,
-        "symbols": 440,
+        "symbols": 442,
         "undocumented": 166,
         "naked": 0
       },
       {
         "label": "Source adapters",
         "dir": "src/adapters",
+        "intent": "Translate language syntax and platform configuration into the common graph vocabulary consumed by the harness core.",
         "zone": null,
+        "guards": [],
         "files": 3,
         "lines": 225,
         "accountedFiles": 3,
@@ -129,9 +135,11 @@
       {
         "label": "Executable contracts",
         "dir": "test",
+        "intent": "Exercises the harness through focused unit contracts and end-to-end fixtures built from the same public data shapes that consuming repositories use.",
         "zone": null,
+        "guards": [],
         "files": 42,
-        "lines": 10620,
+        "lines": 10969,
         "accountedFiles": 4,
         "claims": 4,
         "gates": 0,
@@ -385,7 +393,7 @@
         "label": "undocumented",
         "what": "symbols with no docblock — meaning a reader has to derive from the body",
         "dark": 171,
-        "total": 452,
+        "total": 454,
         "unit": "symbols",
         "worst": {
           "shown": [
@@ -429,6 +437,20 @@
   "journal": {
     "blocked": {
       "shown": [
+        {
+          "id": "d-c3b5dbd5",
+          "kind": "blocked",
+          "at": "2026-08-01T22:03:30.385Z",
+          "agent": "general-purpose",
+          "session": "a8b60c168b5c96b86",
+          "commit": "b347169",
+          "chose": "could not get the Map's diagram under 7 objects by the region count — hoist draws 9 region boxes and 14 arrows",
+          "because": "the atlas records 9 distinct from/to regions across 14 crossings (jq -r '.map.crossings.shown[]|.from,.to' | sort -u | wc -l). Any grouping that got it to 7 would have to invent a coarser region taxonomy the atlas never filed, which the brief forbids. What I did instead was hold the TOP-LEVEL object count to 5 per tab (masthead, tab bar, figure, one summary line, one drill strip — counted in-browser by walking the visible children of each section) and make the figure itself teach: layered left-to-right so browser-client -> public-web -> authed-user -> {patient,storage,meter} -> {public-egress,model-provider} reads as a drivetrain in one pass. The honest statement is that the SEVEN rule holds for page objects and does not hold for the diagram's interior, which is a function of the project's own region count.",
+          "over": [],
+          "couldBe": [],
+          "discriminatedBy": "",
+          "news": true
+        },
         {
           "id": "d-ad96879b",
           "kind": "blocked",
@@ -557,7 +579,7 @@
         }
       ],
       "withheld": 0,
-      "total": 9
+      "total": 10
     },
     "open": {
       "shown": [
@@ -748,197 +770,1604 @@
     "decisions": {
       "shown": [
         {
-          "id": "d-b3d1fd48",
+          "id": "d-dfaaa05d",
           "kind": "decision",
-          "at": "2026-08-01T21:07:07.787Z",
-          "agent": "index",
-          "session": "a873312c333faa81d",
-          "commit": "d9053b8",
-          "chose": "unvisited = paths in the recent concern band that the graph does not own — the complement of economy's closure, not a new churn statistic",
-          "because": "closureOf returns NULL for a commit touching nothing the graph owns, so a path outside the graph can never enter a closure by construction — the two candidate definitions denote the same set and the cheap one reuses fileChurn + the graph's file nodes with no second history read. It measures 173/274 on the consuming project and 72/165 here, which is the finding: most of what recent work touches is invisible to every read-cost figure the harness prints. Denominator is the distinct paths the 2..BULK band touched; with no git it is UNMEASURED, never 0.",
+          "at": "2026-08-02T22:48:14.404Z",
+          "agent": "general-purpose",
+          "session": "aa305d879a391c483",
+          "commit": "b347169",
+          "chose": "an unresolvable guard gets owner:null + a WHY, in two named shapes (no such symbol / AMBIGUOUS across N components) — never an arbitrary owner",
+          "because": "measured: 14/14 land on hoist and 0/0 on coherence (no atlas), so NEITHER degeneration has a live instance in either project — the mechanism is built anyway because attributing a DANGLING chokepoint to the entry component would inflate exactly the organ that already holds the most perimeter (5 of 14), and that is a silent overstatement of the thing the roster exists to report. Re-run: jq '.map.crossings.shown[]|select(.owner==null)' index.json",
           "over": [
-            "files with churn that appear in zero reading closures (identical set, computed the expensive way)",
-            "a churn-vs-coverage ratio per component"
+            "falling back to the entry component, which the brief's prefix rule does for root-owned symbols",
+            "one generic 'unowned' with no reason"
           ],
           "couldBe": [],
           "discriminatedBy": "",
           "news": true
         },
         {
-          "id": "d-6a34f3ac",
+          "id": "d-1ca55d4b",
           "kind": "decision",
-          "at": "2026-08-01T21:07:06.550Z",
-          "agent": "index",
-          "session": "a873312c333faa81d",
-          "commit": "d9053b8",
-          "chose": "index CATCHES Unrunnable from the structural diff and files it as an unread source, instead of letting cli.ts's total handler abort the run",
-          "because": "cli.ts's total Unrunnable handler is the right answer for a command whose WHOLE JOB needs history (log, signal): it exits 2 with a sentence. The Index has three views and only one of them reads history, so aborting would cost the reader the map and the journal because git was unavailable — a shallow CI clone or a source export is an ordinary consumer, not an exotic state. A pre-check would be floor.ts's rejected shape (a second spelling of the requirement, one per caller). Catching the typed throw keeps the requirement stated once at the seam that discovers it, and the page then says WHICH source it lost and why — which is the same doctrine, applied at a page instead of at a process.",
+          "at": "2026-08-02T22:48:09.127Z",
+          "agent": "general-purpose",
+          "session": "aa305d879a391c483",
+          "commit": "b347169",
+          "chose": "the roster's order key is the OWNED-CROSSING COUNT on a stable sort, so spec-tree order survives inside each band",
+          "because": "on hoist it yields hoist-chat 5, auth 4, env 2, then web/Patient/model at 1, then the 8 interior in spec-tree order — reading down IS reading how much of the trust perimeter each organ holds. A stable sort on one key means the split is the ONLY thing this reorders, so the components drill table's long-standing order is not silently rewritten too",
           "over": [
-            "letting the CLI's uncaughtException renderer take it, as log and signal do",
-            "pre-checking for a git repo before calling graphAtRef"
+            "alphabetical (orders by an accident of naming)",
+            "a hard two-band partition that re-sorts each band by label"
           ],
           "couldBe": [],
           "discriminatedBy": "",
           "news": true
         },
         {
-          "id": "d-dfd359f5",
+          "id": "d-1a23aa09",
           "kind": "decision",
-          "at": "2026-08-01T21:07:05.296Z",
-          "agent": "index",
-          "session": "a873312c333faa81d",
-          "commit": "d9053b8",
-          "chose": "extracted the refutation key rule to walk.ts's refutedInvariants and derived all three existing spellings from it, BEHAVIOUR-PRESERVING",
-          "because": "QUERY: `grep -n 'split(\":\")\\[0\\]' src/*.ts` found it three times — render-claude.ts:43 (the invariant table's refuted column), verify.ts:522 (the refutation coverage line) and verify.ts:559 (the never-red decoration filter). The Index needs it a fourth time, which is exactly the redundancy finding this repo has killed four times. Homed with the parser that produced the strings. Mutation-checked: gutting refutedInvariants reds 4 tests across all three call sites plus the new one, so the extraction is defended rather than merely tidy. The colonless-line semantics are LEFT ALONE on purpose — an extraction that also changes what it computes cannot be reviewed as an extraction.",
+          "at": "2026-08-02T22:34:17.754Z",
+          "agent": "general-purpose",
+          "session": "aa305d879a391c483",
+          "commit": "b347169",
+          "chose": "roster/diagram selection is ONE radio group over organs AND guards, with absolutely-positioned HTML <label> hotspots overlaying the SVG's already-computed label plates",
+          "because": "the diagram already computes each guard label's rect (lx, ly, lw, LABEL_H) to place it; reusing those numbers as overlay coordinates costs no new derivation, and <label for> is the only no-script way to make an arrow clickable since <label> is not valid inside SVG",
           "over": [
-            "adding a fourth spelling of `r.split(\":\")[0].trim()` inside index-model.ts",
-            "extracting it AND fixing the colonless-line case in the same change"
+            "SVG <a xlink:href> + :target (collides with the tab mechanism, which is also :target)",
+            "checkbox-per-organ (multi-select makes 'dim the rest' meaningless)",
+            "clicking only roster chips (that is one direction, and the brief asked for both)"
           ],
           "couldBe": [],
           "discriminatedBy": "",
           "news": true
         },
         {
-          "id": "d-91b82241",
+          "id": "d-dcbb589c",
           "kind": "decision",
-          "at": "2026-08-01T21:00:00.084Z",
-          "agent": "index",
-          "session": "a873312c333faa81d",
-          "commit": "d9053b8",
-          "chose": "the gate collapse folds grade B (aging green) as well as A — measured: on the 14-component consuming project it fired 0 times out of 59 gates",
-          "because": "QUERY, re-runnable: `node src/cli.ts index` in hoist/app, then `jq '.map.grades, .map.gatesClean' docs/coherence/index.json`. It read {A:0,B:47,C:11,D:1,U:0} with gatesClean 0 — because the verify record was filed at another commit (the ordinary state of any tree with uncommitted work), so every machine-checked gate degraded to stale/B at once and the collapse never fired. 47 rows carrying one bit between them is render-contract.ts's alarm-flood finding arriving a second time. Staleness is a fact about the RECORD, not about a gate: it is stated once in the sources strip. After the change hoist lists 12 rows (11 C + 1 D) instead of 59.",
+          "at": "2026-08-02T22:34:13.421Z",
+          "agent": "general-purpose",
+          "session": "aa305d879a391c483",
+          "commit": "b347169",
+          "chose": "the perimeter/interior split is UNREAD, not 0/N, when no atlas record exists — measured: coherence's own project has 4 components and NO atlas reading at all",
+          "because": "query: jq '.atlas' .coherence/status.json → null here, while hoist has 14 crossings. Saying '0 own a crossing' when nothing was read is green-by-absence in the exact shape floor.ts exists to refuse. The roster reads mp.atlas === null and mp.crossings.total === 0 as two DIFFERENT sentences",
           "over": [
-            "collapsing only fresh passing A gates, as first written",
-            "collapsing nothing and listing all 59 gates"
+            "printing '4 of 4 components own no crossing' on a project with no atlas"
           ],
           "couldBe": [],
           "discriminatedBy": "",
           "news": true
         },
         {
-          "id": "d-faa17811",
+          "id": "d-061e717c",
           "kind": "decision",
-          "at": "2026-08-01T20:49:42.104Z",
-          "agent": "index",
-          "session": "a873312c333faa81d",
-          "commit": "d9053b8",
-          "chose": "the default frame is the STORED CURSOR (the prior index.json's head), with the last tag only as a fallback — measured: 'since the last tag' resolves in neither dogfood target",
-          "because": "QUERY, re-runnable: `git describe --tags --abbrev=0` + `git rev-list --count <tag>..HEAD`. In coherence the last tag IS HEAD (v0.24.1 at d9053b8, 0 commits since) so the tag frame is EMPTY; in hoist/app `git tag | wc -l` is 0 so it does not resolve at all. A default that degenerates in 2 of 2 measured projects is not a default. The cursor is what 'since I last looked' actually means, and it works with no tags and no releases. Order: --since > stored cursor > last tag (only if it is not HEAD) > FIRST LOOK, which is stated as having no news by definition rather than dumping history.",
+          "at": "2026-08-02T22:34:06.454Z",
+          "agent": "general-purpose",
+          "session": "aa305d879a391c483",
+          "commit": "b347169",
+          "chose": "join guard→organ through the graph's OWN file→component parent chain (fileParent), not a longest-prefix match on the symbol's path",
+          "because": "measured both on hoist: 14/14 crossings resolve to the same owner either way (requireAuth/OwnedScope/enforceQuota/deleteCredential/serveJson→hoist-chat, 4→auth, 2→env, api→web, Patient→Patient, runWithRetry→model). The graph ALREADY assigns every file to a component via node.parent and buildMap already reads it for symbolsByDir; prefix matching would be a SECOND spelling of component ownership — index-model.ts's rule 1 forbids exactly that",
           "over": [
-            "since the last tag as the primary default, as briefed",
-            "always-all-history, with no frame at all"
+            "re-implementing longest-matching-dir-prefix over component dirs, as the brief described the join"
           ],
           "couldBe": [],
           "discriminatedBy": "",
           "news": true
         },
         {
-          "id": "d-2ff4b51b",
+          "id": "d-afec9036",
           "kind": "decision",
-          "at": "2026-08-01T20:49:17.879Z",
-          "agent": "index",
-          "session": "a873312c333faa81d",
-          "commit": "d9053b8",
-          "chose": "index reads the RECORDED drift/atlas sections rather than re-running drift() or atlas()",
-          "because": "panel.ts's governing rule — any number shown must be recorded first. drift's analyze() is private and atlas() writes atlas.md and prints a full report; both would be a SECOND SPELLING of a domain this repo has killed four times. The cost is honest: when a section is absent or from another commit the Index says so by name (\"drift: no reading recorded — run coherence drift\") instead of showing a blank that reads as health.",
+          "at": "2026-08-01T22:03:30.667Z",
+          "agent": "general-purpose",
+          "session": "a8b60c168b5c96b86",
+          "commit": "b347169",
+          "chose": "index.json grew from 55KB to 85KB on hoist and the page from 61KB to 102KB, and that is accepted",
+          "because": "MEASURED: the growth is journal.marks (182 text-free records, ~15KB) plus the SVG and one CSS rule per revealable entry. The page it replaced was 61KB of wall that went unread; a 102KB page where 5 objects paint first is cheaper to READ, which is the only cost this artifact is judged on. Named here so the next agent measures before assuming the marks array is the thing to cut.",
           "over": [
-            "calling drift() and atlas() in-process to get fresh numbers",
-            "re-implementing drift's locality/spread windows inside index-model.ts"
+            "trimming marks to the framed window only, which would make the timeline's axis a function of the frame instead of the record"
           ],
           "couldBe": [],
           "discriminatedBy": "",
           "news": true
         },
         {
-          "id": "d-d405e24e",
+          "id": "d-6143b0d2",
           "kind": "decision",
-          "at": "2026-08-01T03:44:19.515Z",
-          "agent": "gatefix",
-          "session": "a52046bd2cb7efc4e",
-          "commit": "5f91529",
-          "chose": "correct the floor's partial-collapse premise in all four places it is spelled, and name the mass measures pin as the mitigation — WITHOUT adding a gate",
-          "because": "reproduced the reviewer's shape: 2 remembered claims, one component dropped from the WALK, run printed 'claims: 1 · 1 green · ✓ coherent' exit 0 and laundered the record to 1 in the same run, so a gradual N→1 collapse never meets the floor. The premise 'coverage reds any component whose claims ALL vanished' is only true for a component whose NODE survives with zero claims — coverage iterates the derived graph and cannot see a node the walk dropped. But a gate here would be wrong: deleting a component's spec is legitimate pruning and is observationally identical (this repo evicted two components this release). A documented hole with a named mitigation beats a gate that punishes deletion.",
+          "at": "2026-08-01T22:03:16.692Z",
+          "agent": "general-purpose",
+          "session": "a8b60c168b5c96b86",
+          "commit": "b347169",
+          "chose": "TRAJECTORY joins each boundary event's chokepoint against map.crossings by symbol, so an event prints 'serveJson  authed-user -> public-egress' in the Map's own vocabulary",
+          "because": "the two tabs must name the same objects with the same words or they are two systems. The join key already exists and is exact: a boundary's chokepoint IS the atlas crossing's sym. Dogfooded on hoist --since HEAD~25, where 4,203 lines of churn (+2762/-1441) reduce to exactly three events — one rewired boundary, one added invariant, one added anchor — and the anchor row places itself on the diagram without the reader switching tabs.",
           "over": [
-            "gating the node-vanishing collapse (refusing when a component the record remembers is absent from the derived graph)",
-            "leaving the comment and fixing only the release notes"
+            "printing the chokepoint alone, as coherence log does",
+            "adding a crossing field to StructuralView, which would make the model carry a join the render can do from data it already holds"
           ],
           "couldBe": [],
           "discriminatedBy": "",
-          "news": false
+          "news": true
         },
         {
-          "id": "d-3add85b9",
+          "id": "d-6f9cf4d5",
           "kind": "decision",
-          "at": "2026-08-01T03:34:06.916Z",
-          "agent": "gatefix",
-          "session": "a52046bd2cb7efc4e",
-          "commit": "3aae3ea",
-          "chose": "ownerOf returns string|null — an unowned path has NO owner, and every caller states what it does with that",
-          "because": "the \".\" fallback is unrepresentable-vs-real confusion at the type: it returns the SAME value for \"the root component owns this\" and \"nothing owns this\", so no caller could tell them apart and affectedComponents fed a phantom component into the scope set — verify then announced it had examined component \".\" that does not exist, graded zero claims, and printed coherent. Refusing would be wrong: an unowned root-level file is ordinary (a config, a script), and the codebase already has the right sentence for it — nothing to check.",
+          "at": "2026-08-01T22:03:16.398Z",
+          "agent": "general-purpose",
+          "session": "a8b60c168b5c96b86",
+          "commit": "b347169",
+          "chose": "the honesty layer is a MARK beside the title (!! N unread · ! N stale) that opens intent + frame + the sources table; it is no longer the first thing on the page",
+          "because": "measured on the page it replaced: the masthead, a one-sentence intent, a two-line frame banner and a six-row sources table occupied everything above the fold, so a reader met three STALE/UNREAD sentences before a single structure. The information is not lost — it is one click from the title, it is still the first thing formatIndexSummary prints at the terminal, and print opens every panel so the paper copy carries it inline. What changed is its RANK, not its presence.",
           "over": [
-            "keeping the unconditional \".\" fallback and filtering the fabricated component out at the scoping seam only",
-            "refusing the run when a changed file is unowned"
+            "keeping the sources table above the fold, where it cost three sentences before the first structure",
+            "dropping the staleness sentences from the page and leaving them only at the terminal"
           ],
           "couldBe": [],
           "discriminatedBy": "",
-          "news": false
+          "news": true
         },
         {
-          "id": "d-3b7c4936",
+          "id": "d-6f01f848",
           "kind": "decision",
-          "at": "2026-08-01T03:27:12.214Z",
-          "agent": "gatefix",
-          "session": "a52046bd2cb7efc4e",
-          "commit": "275e5c2",
-          "chose": "one shared readJsonOrRefuse seam in floor.ts, throwing the existing Unrunnable, for all three persistent readers (status.json, the ratchet baselines, coherence.config.json)",
-          "because": "three copies of catch-return-default is exactly how green-by-absence got into all three files at once; the repo's redundancy doctrine is derive one spelling from the other. floor.ts already owns this doctrine and already exports Unrunnable, whose CLI renderer is total over every command by construction — so a fourth persistent reader added next month inherits the refusal instead of re-forgetting it.",
+          "at": "2026-08-01T21:56:21.953Z",
+          "agent": "general-purpose",
+          "session": "a8b60c168b5c96b86",
+          "commit": "b347169",
+          "chose": "the novelty gate parses both stamps (atOrAfter) instead of comparing ISO text — measured: it was over-reporting 26 of 182 standing records as news",
+          "because": "QUERY, re-runnable: node src/cli.ts index --since HEAD~25 in hoist/app, read the journal line. Before: 2 new impasse(s) / 12 question(s) / 67 decision(s). After: 0 / 10 / 43. Both false impasses and 24 false decisions were written HOURS BEFORE the frame opened; git's %cI carries -04:00 and the journal carries Z, so the lexicographic compare hit the seconds field and never reached the offset. Fixed at the COMPARISON because that is where the two producers meet — a normalisation at either producer leaves the other free to hand in a different spelling tomorrow.",
           "over": [
-            "three hand-rolled absent-vs-unreadable checks, one per reader",
-            "a new module for the seam"
+            "normalising every journal stamp to Z at write time in decisions.ts (fixes new records, leaves 321 existing ones wrong)",
+            "normalising the FRAME stamp only, at resolveFrame — the same fix spelled at one of two producers"
           ],
           "couldBe": [],
           "discriminatedBy": "",
-          "news": false
+          "news": true
         },
         {
-          "id": "d-bab08665",
+          "id": "d-4ad824f3",
           "kind": "decision",
-          "at": "2026-08-01T03:16:58.709Z",
-          "agent": "main",
-          "session": "3e2c9d10-82b3-4627-a861-555b53d9777d",
-          "commit": "25c543e",
-          "chose": "Fix all three adversarial-review findings rather than accepting any as known limitations, and record in each test's header WHY the gap existed",
-          "because": "Two fable reviewers found three real defects by mutation, each reproduced in both directions. (1) test/vacuity.test.ts was ITSELF vacuous: both its assertions are universal quantifiers over command output with no check that any command ran, so inserting process.exit(2) after cli.ts's cmd read made both tests pass green — in the one file whose entire subject is instruments that cannot distinguish finding nothing from not looking. The idiom was already in this suite twice (commands.test.ts live.length>=20, and observed.length>=3 in both totality oracles) and simply was not copied. Writing the rule down is not obeying it. (2) claimedFilePaths lost its only witness when scene.test.ts was evicted: mutating it to bless every ambiguous candidate — the exact over-report it exists to prevent — passes 593/593 with verify ✓ coherent, because no spec anchor names it. The asymmetry is the lesson: the UNDER-report direction reds a promise.test.ts assertion, so only the direction that silently inflates a coverage number went dark. (3) artifactSnapshot watched AGENTS.md/CLAUDE.md/public but not README.md, which docs also writes, so a future root-markdown-only generator would evade the writesArtifacts oracle. THE GENERAL LESSON, which the eviction audit missed: auditing an eviction by TEST COUNT answers arithmetic, not 'was any surviving guarantee ONLY witnessed there'. The second question is the one that bites",
+          "at": "2026-08-01T21:43:33.371Z",
+          "agent": "general-purpose",
+          "session": "a8b60c168b5c96b86",
+          "commit": "b347169",
+          "chose": "the journal timeline plots EVERY standing record via a new uncapped journal.marks (id/lane/at/news/shown), and CAPS stay where they are",
+          "because": "MEASURED on hoist: totals are 8 blocked + 14 open + 160 decisions = 182 standing records, of which the caps carry 8+10+10 = 28. A timeline drawn from 28 of 182 is a picture of the cap, not of the history — the same green-by-absence shape this page exists to refuse. A mark is a 6px tick and costs no attention, so the cap doctrine (the cap is on your attention) is satisfied by carrying marks uncapped and TEXT capped: withheld marks render as thin hairline ticks that are not clickable, and the axis states the ratio.",
           "over": [
-            "Deferring the README blind spot because no current generator writes only there",
-            "Treating the vacuity oracle's missing instrument check as theoretical, since it only opens when the CLI front door breaks"
+            "raising CAPS.blocked/open/decisions so every mark carries its text (would put ~180 entries of prose in the page)",
+            "plotting only the 28 capped entries, so the time axis silently describes 28 of 182 records"
           ],
           "couldBe": [],
           "discriminatedBy": "",
-          "news": false
+          "news": true
         }
       ],
-      "withheld": 152,
-      "total": 162
+      "withheld": 165,
+      "total": 175
     },
+    "marks": [
+      {
+        "id": "d-3b6ac90f",
+        "lane": "decision",
+        "at": "2026-07-28T21:09:11.435Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-0b42acf4",
+        "lane": "decision",
+        "at": "2026-07-28T21:09:23.909Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-a515afc4",
+        "lane": "decision",
+        "at": "2026-07-28T21:13:10.006Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-d202e4e0",
+        "lane": "decision",
+        "at": "2026-07-28T21:13:10.301Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-79110bfb",
+        "lane": "decision",
+        "at": "2026-07-28T21:15:03.515Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-ffa913a4",
+        "lane": "decision",
+        "at": "2026-07-28T21:15:12.472Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-734d0976",
+        "lane": "decision",
+        "at": "2026-07-28T21:16:11.374Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-c96fb65a",
+        "lane": "decision",
+        "at": "2026-07-28T21:21:46.801Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-7746fefb",
+        "lane": "decision",
+        "at": "2026-07-28T21:21:48.362Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-b04c13b6",
+        "lane": "decision",
+        "at": "2026-07-28T21:21:49.790Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-f277bad5",
+        "lane": "decision",
+        "at": "2026-07-28T21:21:51.337Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-9904a222",
+        "lane": "decision",
+        "at": "2026-07-28T21:21:52.847Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-fd16ea28",
+        "lane": "decision",
+        "at": "2026-07-28T21:21:54.250Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-cb216323",
+        "lane": "blocked",
+        "at": "2026-07-28T21:22:14.561Z",
+        "news": false,
+        "shown": true
+      },
+      {
+        "id": "d-9f65f0a5",
+        "lane": "decision",
+        "at": "2026-07-28T21:22:16.047Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-560b5059",
+        "lane": "blocked",
+        "at": "2026-07-28T21:23:02.144Z",
+        "news": false,
+        "shown": true
+      },
+      {
+        "id": "d-ae2daa7b",
+        "lane": "decision",
+        "at": "2026-07-28T21:23:03.610Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-361762b9",
+        "lane": "decision",
+        "at": "2026-07-29T18:09:26.368Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-a2f47f74",
+        "lane": "decision",
+        "at": "2026-07-29T18:09:43.694Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-04198572",
+        "lane": "open",
+        "at": "2026-07-29T18:18:01.318Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-8df24da4",
+        "lane": "decision",
+        "at": "2026-07-29T18:18:29.960Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-e72ef90d",
+        "lane": "decision",
+        "at": "2026-07-29T18:18:41.807Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-8f70d1d0",
+        "lane": "decision",
+        "at": "2026-07-29T18:18:42.063Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-12047216",
+        "lane": "decision",
+        "at": "2026-07-29T18:18:44.387Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-2738f091",
+        "lane": "decision",
+        "at": "2026-07-29T18:18:45.792Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-a7ec3b2a",
+        "lane": "decision",
+        "at": "2026-07-29T18:18:47.304Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-27aef982",
+        "lane": "blocked",
+        "at": "2026-07-29T18:22:22.808Z",
+        "news": false,
+        "shown": true
+      },
+      {
+        "id": "d-ac822941",
+        "lane": "decision",
+        "at": "2026-07-29T18:22:24.347Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-3e4702fb",
+        "lane": "decision",
+        "at": "2026-07-29T18:24:52.480Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-4f4df27b",
+        "lane": "decision",
+        "at": "2026-07-29T18:25:09.149Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-855d6e89",
+        "lane": "decision",
+        "at": "2026-07-29T18:25:10.512Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-5411dfc7",
+        "lane": "blocked",
+        "at": "2026-07-29T18:25:12.061Z",
+        "news": false,
+        "shown": true
+      },
+      {
+        "id": "d-89e0de5d",
+        "lane": "decision",
+        "at": "2026-07-29T18:26:38.250Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-ac31515f",
+        "lane": "decision",
+        "at": "2026-07-29T18:26:38.513Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-bca4d32b",
+        "lane": "blocked",
+        "at": "2026-07-29T18:26:47.795Z",
+        "news": false,
+        "shown": true
+      },
+      {
+        "id": "d-9c395730",
+        "lane": "decision",
+        "at": "2026-07-29T18:29:43.485Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-28fd0192",
+        "lane": "decision",
+        "at": "2026-07-29T18:29:53.102Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-ab93de1f",
+        "lane": "decision",
+        "at": "2026-07-29T18:30:50.243Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-c35f2d57",
+        "lane": "decision",
+        "at": "2026-07-29T18:49:24.697Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-bcd38bc2",
+        "lane": "decision",
+        "at": "2026-07-29T18:49:34.763Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-6b1d4da6",
+        "lane": "decision",
+        "at": "2026-07-29T18:49:44.943Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-6bfe7495",
+        "lane": "decision",
+        "at": "2026-07-29T18:56:00.295Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-cb6d1ab2",
+        "lane": "decision",
+        "at": "2026-07-29T18:57:32.965Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-eb7a5c32",
+        "lane": "decision",
+        "at": "2026-07-29T18:59:40.638Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-170acca0",
+        "lane": "decision",
+        "at": "2026-07-29T18:59:40.862Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-463900d8",
+        "lane": "decision",
+        "at": "2026-07-29T19:24:38.996Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-738d7116",
+        "lane": "decision",
+        "at": "2026-07-29T19:24:44.393Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-e2a39bdc",
+        "lane": "decision",
+        "at": "2026-07-29T19:24:53.404Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-db70b4a4",
+        "lane": "decision",
+        "at": "2026-07-29T19:38:56.955Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-f7681779",
+        "lane": "open",
+        "at": "2026-07-29T19:47:06.299Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-bdac8267",
+        "lane": "open",
+        "at": "2026-07-29T19:47:06.379Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-5d4cb64c",
+        "lane": "open",
+        "at": "2026-07-29T20:50:49.026Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-c600ecb5",
+        "lane": "open",
+        "at": "2026-07-29T20:50:49.065Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-c70e1abb",
+        "lane": "open",
+        "at": "2026-07-29T20:51:04.746Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-dd8563c0",
+        "lane": "decision",
+        "at": "2026-07-29T21:13:40.410Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-9ffd2ea6",
+        "lane": "decision",
+        "at": "2026-07-29T21:23:42.100Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-d1fd2828",
+        "lane": "decision",
+        "at": "2026-07-29T21:23:43.252Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-51b190e9",
+        "lane": "decision",
+        "at": "2026-07-29T21:23:44.460Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-aa702af8",
+        "lane": "decision",
+        "at": "2026-07-29T21:28:12.282Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-37e2b245",
+        "lane": "decision",
+        "at": "2026-07-29T21:29:56.669Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-bbe2808b",
+        "lane": "decision",
+        "at": "2026-07-29T21:29:57.835Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-18ddd84e",
+        "lane": "blocked",
+        "at": "2026-07-29T21:32:01.454Z",
+        "news": false,
+        "shown": true
+      },
+      {
+        "id": "d-eaa8814d",
+        "lane": "decision",
+        "at": "2026-07-30T02:49:44.897Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-db9957c2",
+        "lane": "decision",
+        "at": "2026-07-30T02:49:57.633Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-f2fc0b8f",
+        "lane": "decision",
+        "at": "2026-07-30T03:03:06.129Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-7c0623ff",
+        "lane": "decision",
+        "at": "2026-07-30T03:03:17.988Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-8cc24b30",
+        "lane": "decision",
+        "at": "2026-07-30T03:11:45.218Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-4380fe41",
+        "lane": "decision",
+        "at": "2026-07-30T05:29:28.851Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-cc0b3a85",
+        "lane": "decision",
+        "at": "2026-07-30T05:29:37.190Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-a2d33fff",
+        "lane": "decision",
+        "at": "2026-07-30T05:29:43.373Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-c74a4224",
+        "lane": "decision",
+        "at": "2026-07-30T05:34:32.916Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-60b06d59",
+        "lane": "decision",
+        "at": "2026-07-30T05:34:37.099Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-649c74e0",
+        "lane": "decision",
+        "at": "2026-07-30T05:34:44.981Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-5be99164",
+        "lane": "decision",
+        "at": "2026-07-30T05:41:13.274Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-dbceb6a0",
+        "lane": "decision",
+        "at": "2026-07-30T05:41:18.715Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-20ba2097",
+        "lane": "decision",
+        "at": "2026-07-30T05:41:25.499Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-c45911f0",
+        "lane": "blocked",
+        "at": "2026-07-30T05:47:15.995Z",
+        "news": false,
+        "shown": true
+      },
+      {
+        "id": "d-a550a0af",
+        "lane": "decision",
+        "at": "2026-07-30T05:53:39.073Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-7f89bc17",
+        "lane": "decision",
+        "at": "2026-07-30T05:53:43.136Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-9d5776a5",
+        "lane": "decision",
+        "at": "2026-07-31T02:08:20.007Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-c3420e57",
+        "lane": "decision",
+        "at": "2026-07-31T02:08:28.022Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-9492b164",
+        "lane": "decision",
+        "at": "2026-07-31T02:15:14.056Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-97f6f9ef",
+        "lane": "decision",
+        "at": "2026-07-31T02:15:21.447Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-cfa92038",
+        "lane": "decision",
+        "at": "2026-07-31T02:15:28.614Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-86a6c498",
+        "lane": "decision",
+        "at": "2026-07-31T02:33:27.995Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-3fe015df",
+        "lane": "decision",
+        "at": "2026-07-31T02:33:28.284Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-90a2f7a7",
+        "lane": "decision",
+        "at": "2026-07-31T02:33:38.949Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-3aa93a9b",
+        "lane": "decision",
+        "at": "2026-07-31T02:33:39.240Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-21661c5a",
+        "lane": "decision",
+        "at": "2026-07-31T02:33:51.013Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-769b025f",
+        "lane": "decision",
+        "at": "2026-07-31T02:33:51.305Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-be02ab02",
+        "lane": "decision",
+        "at": "2026-07-31T02:33:51.598Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-60e651df",
+        "lane": "blocked",
+        "at": "2026-07-31T02:34:19.712Z",
+        "news": false,
+        "shown": true
+      },
+      {
+        "id": "d-d126843f",
+        "lane": "decision",
+        "at": "2026-07-31T02:34:47.134Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-ee05c4a2",
+        "lane": "decision",
+        "at": "2026-07-31T03:30:49.926Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-8953ecae",
+        "lane": "decision",
+        "at": "2026-07-31T04:21:16.786Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-c80ef45d",
+        "lane": "decision",
+        "at": "2026-07-31T04:21:24.104Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-b5af7557",
+        "lane": "decision",
+        "at": "2026-07-31T04:21:24.373Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-2c328986",
+        "lane": "decision",
+        "at": "2026-07-31T04:24:59.197Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-6ff3b30a",
+        "lane": "decision",
+        "at": "2026-07-31T04:29:25.621Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-ab4ffddc",
+        "lane": "decision",
+        "at": "2026-07-31T04:29:25.895Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-9dfa5f1e",
+        "lane": "decision",
+        "at": "2026-07-31T04:29:26.172Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-cfe4a359",
+        "lane": "decision",
+        "at": "2026-07-31T04:29:26.441Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-eded250c",
+        "lane": "decision",
+        "at": "2026-07-31T04:29:38.325Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-c1316af0",
+        "lane": "decision",
+        "at": "2026-07-31T04:29:38.603Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-5e1c36bd",
+        "lane": "decision",
+        "at": "2026-07-31T04:29:38.882Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-970c1488",
+        "lane": "decision",
+        "at": "2026-07-31T04:29:39.149Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-e279f70a",
+        "lane": "decision",
+        "at": "2026-07-31T04:41:31.818Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-148435f9",
+        "lane": "open",
+        "at": "2026-07-31T05:06:46.939Z",
+        "news": false,
+        "shown": true
+      },
+      {
+        "id": "d-8bc76a8c",
+        "lane": "open",
+        "at": "2026-07-31T14:40:31.175Z",
+        "news": false,
+        "shown": true
+      },
+      {
+        "id": "d-e45dbe0f",
+        "lane": "open",
+        "at": "2026-07-31T14:50:52.405Z",
+        "news": false,
+        "shown": true
+      },
+      {
+        "id": "d-ec1b2f8e",
+        "lane": "decision",
+        "at": "2026-07-31T15:33:58.976Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-9d9ab24a",
+        "lane": "decision",
+        "at": "2026-07-31T15:58:50.418Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-fee800e8",
+        "lane": "decision",
+        "at": "2026-07-31T16:03:16.246Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-0c6adc55",
+        "lane": "decision",
+        "at": "2026-07-31T16:03:16.253Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-7ded2a2e",
+        "lane": "decision",
+        "at": "2026-07-31T16:03:33.317Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-161439bd",
+        "lane": "decision",
+        "at": "2026-07-31T16:03:50.540Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-12fc01dc",
+        "lane": "decision",
+        "at": "2026-07-31T16:03:50.543Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-2a20345e",
+        "lane": "decision",
+        "at": "2026-07-31T16:03:50.543Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-01a6c2c5",
+        "lane": "decision",
+        "at": "2026-07-31T16:04:23.788Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-ea412a4c",
+        "lane": "decision",
+        "at": "2026-07-31T16:04:24.815Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-ee3b7916",
+        "lane": "decision",
+        "at": "2026-07-31T16:06:45.244Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-118c08e9",
+        "lane": "decision",
+        "at": "2026-07-31T16:06:45.249Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-ee4f832f",
+        "lane": "decision",
+        "at": "2026-07-31T16:07:34.100Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-61dd6695",
+        "lane": "decision",
+        "at": "2026-07-31T16:08:45.614Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-8f83c2e9",
+        "lane": "decision",
+        "at": "2026-07-31T16:08:50.381Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-55949c14",
+        "lane": "decision",
+        "at": "2026-07-31T16:09:37.229Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-514fd5d3",
+        "lane": "decision",
+        "at": "2026-07-31T16:20:35.200Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-31a96b27",
+        "lane": "decision",
+        "at": "2026-07-31T16:20:35.513Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-704c87f5",
+        "lane": "decision",
+        "at": "2026-07-31T16:23:21.708Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-bedc37e1",
+        "lane": "decision",
+        "at": "2026-07-31T16:29:30.650Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-dbcfb74e",
+        "lane": "decision",
+        "at": "2026-07-31T17:12:11.502Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-cac0634b",
+        "lane": "decision",
+        "at": "2026-07-31T17:12:11.795Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-4544efd8",
+        "lane": "decision",
+        "at": "2026-07-31T17:30:05.866Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-33abbd36",
+        "lane": "decision",
+        "at": "2026-07-31T17:30:13.785Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-044803b8",
+        "lane": "decision",
+        "at": "2026-07-31T17:30:30.790Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-a545522f",
+        "lane": "decision",
+        "at": "2026-07-31T17:56:20.795Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-8449c260",
+        "lane": "decision",
+        "at": "2026-07-31T18:17:05.960Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-1852dbd8",
+        "lane": "open",
+        "at": "2026-07-31T18:19:56.781Z",
+        "news": false,
+        "shown": true
+      },
+      {
+        "id": "d-49be7bad",
+        "lane": "decision",
+        "at": "2026-07-31T18:20:42.320Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-2922ed5e",
+        "lane": "decision",
+        "at": "2026-07-31T18:22:24.082Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-00960336",
+        "lane": "decision",
+        "at": "2026-07-31T18:23:29.121Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-4065f95c",
+        "lane": "decision",
+        "at": "2026-07-31T18:23:50.047Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-08622cbe",
+        "lane": "decision",
+        "at": "2026-07-31T18:24:07.572Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-0333dd9d",
+        "lane": "decision",
+        "at": "2026-07-31T18:27:29.561Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-54603c8d",
+        "lane": "decision",
+        "at": "2026-07-31T18:29:31.778Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-f3eb6da1",
+        "lane": "decision",
+        "at": "2026-07-31T18:29:36.681Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-c11b9072",
+        "lane": "decision",
+        "at": "2026-07-31T18:29:47.495Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-c7a3dcd7",
+        "lane": "decision",
+        "at": "2026-07-31T18:29:58.483Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-c1b8e24a",
+        "lane": "decision",
+        "at": "2026-07-31T18:32:06.426Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-96482275",
+        "lane": "open",
+        "at": "2026-07-31T18:33:54.359Z",
+        "news": false,
+        "shown": true
+      },
+      {
+        "id": "d-cf4da93b",
+        "lane": "open",
+        "at": "2026-07-31T18:33:54.404Z",
+        "news": false,
+        "shown": true
+      },
+      {
+        "id": "d-ff8664e0",
+        "lane": "open",
+        "at": "2026-07-31T18:33:54.447Z",
+        "news": false,
+        "shown": true
+      },
+      {
+        "id": "d-e98d42f8",
+        "lane": "decision",
+        "at": "2026-07-31T18:34:13.967Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-bab18cea",
+        "lane": "decision",
+        "at": "2026-07-31T18:34:22.777Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-67ad673a",
+        "lane": "decision",
+        "at": "2026-07-31T18:34:24.048Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-eecb9c63",
+        "lane": "decision",
+        "at": "2026-07-31T18:37:10.482Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-e1756160",
+        "lane": "decision",
+        "at": "2026-07-31T18:38:40.601Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-6032bb85",
+        "lane": "decision",
+        "at": "2026-07-31T19:43:21.433Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-ef7fef4d",
+        "lane": "decision",
+        "at": "2026-07-31T19:43:21.716Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-6d6dba60",
+        "lane": "open",
+        "at": "2026-07-31T20:28:58.551Z",
+        "news": false,
+        "shown": true
+      },
+      {
+        "id": "d-52f32b2d",
+        "lane": "open",
+        "at": "2026-07-31T20:28:58.842Z",
+        "news": false,
+        "shown": true
+      },
+      {
+        "id": "d-6396128d",
+        "lane": "decision",
+        "at": "2026-07-31T23:40:53.390Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-d31f0a5a",
+        "lane": "decision",
+        "at": "2026-07-31T23:45:28.885Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-85b1bcd9",
+        "lane": "open",
+        "at": "2026-07-31T23:45:42.765Z",
+        "news": false,
+        "shown": true
+      },
+      {
+        "id": "d-729effd0",
+        "lane": "decision",
+        "at": "2026-07-31T23:52:33.844Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-66494b99",
+        "lane": "decision",
+        "at": "2026-07-31T23:58:05.410Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-48ceee2e",
+        "lane": "decision",
+        "at": "2026-07-31T23:58:05.699Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-3318c4d2",
+        "lane": "decision",
+        "at": "2026-07-31T23:58:05.988Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-28072ed2",
+        "lane": "decision",
+        "at": "2026-07-31T23:58:06.280Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-afd7f50f",
+        "lane": "decision",
+        "at": "2026-08-01T00:04:19.586Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-7bfac53e",
+        "lane": "decision",
+        "at": "2026-08-01T00:07:54.114Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-0c984407",
+        "lane": "decision",
+        "at": "2026-08-01T01:42:53.950Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-684f5e74",
+        "lane": "decision",
+        "at": "2026-08-01T02:35:44.730Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-6bed5cf6",
+        "lane": "decision",
+        "at": "2026-08-01T02:53:43.300Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-4bc6161a",
+        "lane": "decision",
+        "at": "2026-08-01T02:54:48.167Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-3ceb4095",
+        "lane": "decision",
+        "at": "2026-08-01T02:54:49.388Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-bab08665",
+        "lane": "decision",
+        "at": "2026-08-01T03:16:58.709Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-3b7c4936",
+        "lane": "decision",
+        "at": "2026-08-01T03:27:12.214Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-3add85b9",
+        "lane": "decision",
+        "at": "2026-08-01T03:34:06.916Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-d405e24e",
+        "lane": "decision",
+        "at": "2026-08-01T03:44:19.515Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-ad96879b",
+        "lane": "blocked",
+        "at": "2026-08-01T03:49:48.584Z",
+        "news": false,
+        "shown": true
+      },
+      {
+        "id": "d-2ff4b51b",
+        "lane": "decision",
+        "at": "2026-08-01T20:49:17.879Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-faa17811",
+        "lane": "decision",
+        "at": "2026-08-01T20:49:42.104Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-91b82241",
+        "lane": "decision",
+        "at": "2026-08-01T21:00:00.084Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-dfd359f5",
+        "lane": "decision",
+        "at": "2026-08-01T21:07:05.296Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-6a34f3ac",
+        "lane": "decision",
+        "at": "2026-08-01T21:07:06.550Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-b3d1fd48",
+        "lane": "decision",
+        "at": "2026-08-01T21:07:07.787Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-0aa2f307",
+        "lane": "decision",
+        "at": "2026-08-01T21:10:53.578Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-853bdab4",
+        "lane": "decision",
+        "at": "2026-08-01T21:43:19.543Z",
+        "news": true,
+        "shown": false
+      },
+      {
+        "id": "d-9094e2a5",
+        "lane": "decision",
+        "at": "2026-08-01T21:43:33.091Z",
+        "news": true,
+        "shown": false
+      },
+      {
+        "id": "d-4ad824f3",
+        "lane": "decision",
+        "at": "2026-08-01T21:43:33.371Z",
+        "news": true,
+        "shown": true
+      },
+      {
+        "id": "d-6f01f848",
+        "lane": "decision",
+        "at": "2026-08-01T21:56:21.953Z",
+        "news": true,
+        "shown": true
+      },
+      {
+        "id": "d-6f9cf4d5",
+        "lane": "decision",
+        "at": "2026-08-01T22:03:16.398Z",
+        "news": true,
+        "shown": true
+      },
+      {
+        "id": "d-6143b0d2",
+        "lane": "decision",
+        "at": "2026-08-01T22:03:16.692Z",
+        "news": true,
+        "shown": true
+      },
+      {
+        "id": "d-c3b5dbd5",
+        "lane": "blocked",
+        "at": "2026-08-01T22:03:30.385Z",
+        "news": true,
+        "shown": true
+      },
+      {
+        "id": "d-afec9036",
+        "lane": "decision",
+        "at": "2026-08-01T22:03:30.667Z",
+        "news": true,
+        "shown": true
+      },
+      {
+        "id": "d-061e717c",
+        "lane": "decision",
+        "at": "2026-08-02T22:34:06.454Z",
+        "news": true,
+        "shown": true
+      },
+      {
+        "id": "d-dcbb589c",
+        "lane": "decision",
+        "at": "2026-08-02T22:34:13.421Z",
+        "news": true,
+        "shown": true
+      },
+      {
+        "id": "d-1a23aa09",
+        "lane": "decision",
+        "at": "2026-08-02T22:34:17.754Z",
+        "news": true,
+        "shown": true
+      },
+      {
+        "id": "d-1ca55d4b",
+        "lane": "decision",
+        "at": "2026-08-02T22:48:09.127Z",
+        "news": true,
+        "shown": true
+      },
+      {
+        "id": "d-dfaaa05d",
+        "lane": "decision",
+        "at": "2026-08-02T22:48:14.404Z",
+        "news": true,
+        "shown": true
+      }
+    ],
     "settled": {
-      "resolved": 19,
+      "resolved": 21,
       "dismissed": 1,
-      "retracted": 1,
-      "inFrame": 0
+      "retracted": 2,
+      "inFrame": 3
     },
     "totals": {
-      "blocked": 9,
+      "blocked": 10,
       "open": 16,
-      "decisions": 162,
-      "records": 230,
-      "sessions": 40,
+      "decisions": 175,
+      "records": 250,
+      "sessions": 42,
       "unreadable": 0
     },
     "news": {
-      "blocked": 0,
+      "blocked": 1,
       "open": 0,
-      "decisions": 6
+      "decisions": 12
     }
   },
   "trajectory": {
@@ -984,8 +2413,8 @@
     },
     "structuralWhy": null,
     "loc": {
-      "added": 1794,
-      "deleted": 0
+      "added": 1444,
+      "deleted": 192
     },
     "mass": {
       "at": "2026-07-31T17:56:23.525Z",

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-01 21:08Z",
+  "generatedAt": "2026-08-02 22:51Z",
   "root": "coherence",
   "absRoot": "/Users/daniloc/Documents/Development/coherence",
   "nodes": [
@@ -1591,7 +1591,7 @@
       "kind": "file",
       "sub": "src/index-model.ts",
       "path": "src/index-model.ts",
-      "prose": "index-model.ts — THE INDEX: what a human needs after the agents have been working.\n\nWHY THIS EXISTS. Every other browser artifact this harness emits is a DUMP OF EVERYTHING\nAT ONE MOMENT: `_graph.html` is 364KB of outline, `_overview.html` is every component's\nprose, `_contract.html` is the whole promise network. They are complete, they are\ncorrect, and they go unread — because a complete picture has no attention budget in it\nand no delta, so a returning human cannot tell what is NEW from what has been true for\nthree weeks. The tooling has served the AGENT exhaustively and the HUMAN barely.\n\nTHE THESIS: code-level diffs are not useful in LLM development. Thousands of lines move\nin an afternoon and reading them is not how anyone learns what happened. What you want\nis the diff of a HIGHER ABSTRACTION — the architecture and the system's design — plus\nthe record of what the agents DECIDED and where they got STUCK. So: three views, no more.\n\n  MAP         the structures as they stand — components, zones, gates, crossings, and a\n              TRUST reading. Rows and tables; there is no picture here.\n  JOURNAL     what the agents decided. `blocked` FIRST: an agent saying it could not do\n              something is the highest-value line a human can read, and no gate will\n              ever report it.\n  TRAJECTORY  movement, AT THE LEVEL OF THE ABSTRACTION — what changed in the\n              invariant/boundary set, not which files moved.\n\n── THE RULES THIS FILE OBEYS, EACH LEARNED EXPENSIVELY ELSEWHERE IN THIS REPO ────────\n\n1. DERIVE NOTHING NEW. Every number here comes from a derivation that already exists:\n   the graph (derive.ts), the promise model (promise.ts), the run record\n   (.coherence/status.json), the journals (decisions.ts), and evolution.ts's history\n   reads. Where a reading is OWNED by a command that writes artifacts — `drift`'s\n   trajectory windows, `atlas`'s tier grades — this reads the RECORD that command filed\n   and never re-computes it. A second spelling of a domain drifts; this repo has killed\n   that four times, and the newest instrument is the worst place to reintroduce it.\n\n2. EVERY NUMBER CARRIES ITS DENOMINATOR, and an unread source is SAID OUT LOUD. A blank\n   section must never read as health — that is green-by-absence (floor.ts), the defect\n   this project spent a day eliminating. So the model carries `sources`, and a reading\n   that could not be taken is `total: null` (UNMEASURABLE) rather than `0`.\n\n3. NOVELTY GATES THE LIST; SEVERITY ONLY ORDERS WHAT SURVIVES. An anomaly is NEWS, not\n   merely a bad thing. A three-day-old impasse the reader has seen on every visit is not\n   news, however severe. Hence the FRAME (see `resolveFrame`) and the `news` flag on\n   every journal entry.\n\n4. THE WITHHELD TAIL IS STATED, NEVER SILENTLY TRUNCATED — raise.ts's cap/withheld\n   idiom, applied to a render. `capList` is the only place a list is shortened, and it\n   returns the withheld count so no caller can drop it by forgetting."
+      "prose": "index-model.ts — THE INDEX: what a human needs after the agents have been working.\n\nWHY THIS EXISTS. Every other browser artifact this harness emits is a DUMP OF EVERYTHING\nAT ONE MOMENT: `_graph.html` is 364KB of outline, `_overview.html` is every component's\nprose, `_contract.html` is the whole promise network. They are complete, they are\ncorrect, and they go unread — because a complete picture has no attention budget in it\nand no delta, so a returning human cannot tell what is NEW from what has been true for\nthree weeks. The tooling has served the AGENT exhaustively and the HUMAN barely.\n\nTHE THESIS: code-level diffs are not useful in LLM development. Thousands of lines move\nin an afternoon and reading them is not how anyone learns what happened. What you want\nis the diff of a HIGHER ABSTRACTION — the architecture and the system's design — plus\nthe record of what the agents DECIDED and where they got STUCK. So: three views, no more.\n\n  MAP         the structures as they stand — the ORGANS, the regions, the guarded\n              crossings between them, the gates, and a TRUST reading. The crossings ARE a\n              picture: `from`/`to` are nodes, the guard's symbol names the arrow, `tier`\n              is how strong the guarantee is and `heat` is the traffic through it. The\n              render draws that (see render-index.ts); this model does not know it is\n              being drawn.\n\n              THE DIAGRAM ALONE SHOWED THE PLUMBING AND HID THE ORGANS. `authed-user`,\n              `storage`, `public-egress` are TOPOLOGY labels — true, and they explain\n              nothing about what the system is for. The MEANING is in the components,\n              which every project already names and DESCRIBES (\"Meter — a windowed\n              counter, one bare Durable Object per scope name…\"), and the Index was\n              burying that prose behind a drill-down. So `IndexComponent.intent` carries\n              the sentence and `IndexComponent.guards` carries the JOIN that says which\n              organ holds which piece of the perimeter — see `crossingOwners`. Neither is\n              a new source: the intent is the graph node's `sub`, the join is the graph's\n              own symbol → file → component parentage crossed with the atlas record.\n  JOURNAL     what the agents decided. `blocked` FIRST: an agent saying it could not do\n              something is the highest-value line a human can read, and no gate will\n              ever report it.\n  TRAJECTORY  movement, AT THE LEVEL OF THE ABSTRACTION — what changed in the\n              invariant/boundary set, not which files moved.\n\n── THE RULES THIS FILE OBEYS, EACH LEARNED EXPENSIVELY ELSEWHERE IN THIS REPO ────────\n\n1. DERIVE NOTHING NEW. Every number here comes from a derivation that already exists:\n   the graph (derive.ts), the promise model (promise.ts), the run record\n   (.coherence/status.json), the journals (decisions.ts), and evolution.ts's history\n   reads. Where a reading is OWNED by a command that writes artifacts — `drift`'s\n   trajectory windows, `atlas`'s tier grades — this reads the RECORD that command filed\n   and never re-computes it. A second spelling of a domain drifts; this repo has killed\n   that four times, and the newest instrument is the worst place to reintroduce it.\n\n2. EVERY NUMBER CARRIES ITS DENOMINATOR, and an unread source is SAID OUT LOUD. A blank\n   section must never read as health — that is green-by-absence (floor.ts), the defect\n   this project spent a day eliminating. So the model carries `sources`, and a reading\n   that could not be taken is `total: null` (UNMEASURABLE) rather than `0`.\n\n3. NOVELTY GATES THE LIST; SEVERITY ONLY ORDERS WHAT SURVIVES. An anomaly is NEWS, not\n   merely a bad thing. A three-day-old impasse the reader has seen on every visit is not\n   news, however severe. Hence the FRAME (see `resolveFrame`) and the `news` flag on\n   every journal entry.\n\n4. THE WITHHELD TAIL IS STATED, NEVER SILENTLY TRUNCATED — raise.ts's cap/withheld\n   idiom, applied to a render. `capList` is the only place a list is shortened, and it\n   returns the withheld count so no caller can drop it by forgetting."
     },
     {
       "id": "s:src/index-model.ts#INDEX_JSON",
@@ -1600,7 +1600,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/index-model.ts",
-      "line": 65,
+      "line": 80,
       "prose": "The artifact pair this command owns, under `outputDir`. `index.json` is the MODEL and\n `_index.html` is a pure function of it — so anything the page says can be checked\n against a file a `jq` one-liner can read, and the render is never the only witness."
     },
     {
@@ -1610,7 +1610,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/index-model.ts",
-      "line": 68,
+      "line": 83,
       "prose": "The page itself. Underscore-prefixed like every other generated HTML render, so the\n walk skips it and the artifact never becomes a node in the graph it describes."
     },
     {
@@ -1620,7 +1620,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/index-model.ts",
-      "line": 74,
+      "line": 89,
       "prose": "A list that was shortened, WITH the count it withheld. There is no way to consume this\n and quietly drop the tail: the field is not optional."
     },
     {
@@ -1630,7 +1630,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/index-model.ts",
-      "line": 78,
+      "line": 93,
       "prose": "Shorten a list and SAY what was held back. The only truncation in this module.\n A cap of 0 means \"count only\" — a section that collapses to a number by design."
     },
     {
@@ -1640,7 +1640,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/index-model.ts",
-      "line": 89,
+      "line": 104,
       "prose": "THE CAPS, per section, each a claim about a reader's attention rather than about the\ndata. They are here together so the page's total length is one visible decision instead\nof eight scattered ones — the page is for someone who has ten minutes, and a page that\ngrows without bound with the project is the artifact this one replaces."
     },
     {
@@ -1650,7 +1650,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/index-model.ts",
-      "line": 113,
+      "line": 128,
       "prose": "ONE SOURCE THIS PAGE TRIED TO READ. `ok: false` is the load-bearing case: a section\nrendered from an unread source must say so, or its emptiness reads as health. `stale`\nis the third state between them — a record that WAS read, honestly, but at a different\ncommit (status.ts's doctrine: the record is the last known truth, honestly dated)."
     },
     {
@@ -1660,7 +1660,7 @@
       "kind": "symbol",
       "sub": "type",
       "path": "src/index-model.ts",
-      "line": 144,
+      "line": 159,
       "prose": "HOW \"SINCE I LAST LOOKED\" WAS DECIDED. Novelty gates every list on this page, so the\nframe is the page's most consequential number and it is stated at the top rather than\nassumed.\n\n  since   — an explicit `--since <ref>`. Always wins.\n  cursor  — the HEAD the PREVIOUS index run recorded, read back out of `index.json`.\n            This is what \"since I last looked\" actually means.\n  tag     — the last tag, and only when it is not HEAD itself.\n  first   — nothing to compare against. A FIRST LOOK HAS NO NEWS BY DEFINITION, and the\n            page says that instead of dumping the project's whole history as if it were.\n\nTHE ORDER WAS MEASURED, not assumed. \"Since the last tag\" was the briefed default and it\ndegenerates in both projects this was built against: in coherence the last tag IS HEAD\n(v0.24.1 at d9053b8, `git rev-list --count v0.24.1..HEAD` = 0), so the frame is empty; in\nthe consuming project `git tag` is empty, so it does not resolve at all. A default that\nfails in two of two measured projects is not a default — the cursor is, because it needs\nno releases and no tags."
     },
     {
@@ -1670,7 +1670,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/index-model.ts",
-      "line": 147,
+      "line": 162,
       "prose": "The resolved frame — which earlier state this page calls \"then\"."
     },
     {
@@ -1680,7 +1680,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/index-model.ts",
-      "line": 167,
+      "line": 182,
       "prose": "One component's row. Every count here is paired with the denominator it is a count OF —\n `anchored` is meaningless beside `invariants` alone, and `accountedFiles` beside\n `files` is the trial balance the contract already prints."
     },
     {
@@ -1690,7 +1690,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/index-model.ts",
-      "line": 191,
+      "line": 223,
       "prose": "One gate, listed because it is NOT a fresh passing A."
     },
     {
@@ -1700,8 +1700,8 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/index-model.ts",
-      "line": 205,
-      "prose": "One atlas crossing, straight from the RECORD the atlas filed."
+      "line": 245,
+      "prose": "One atlas crossing, straight from the RECORD the atlas filed — plus the ONE joined field.\n\n`owner` is the component that owns the guard's chokepoint. It is a JOIN of two things the\nmodel already holds (the atlas's `sym`, the graph's symbol → file → component parentage),\nnot a new derivation and not a new source: see `crossingOwners`. It is what lets the Map\nanswer \"which organ holds this piece of the perimeter\" in the same picture that shows\nwhere the perimeter runs."
     },
     {
       "id": "s:src/index-model.ts#Darkness",
@@ -1710,7 +1710,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/index-model.ts",
-      "line": 220,
+      "line": 265,
       "prose": "ONE OF THE FOUR DARKNESSES. They are named separately and NEVER merged, because a single\n\"dark region\" number is a lie: an undocumented symbol, a file no claim names, an\ninvariant nobody has watched fail, and a file being edited that the graph does not own\nare four different problems with four different repairs.\n\n`total: null` means UNMEASURABLE — the reading could not be taken — and is rendered as\nsuch. It is never rendered as a zero denominator, because 0/0 and 0/500 must not look\nalike (floor.ts, in the harness's own words)."
     },
     {
@@ -1720,7 +1720,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/index-model.ts",
-      "line": 236,
+      "line": 281,
       "prose": "VIEW ONE: the structures as they stand. Components and their zones, the gates that are\n not quiet greens, the crossings where trust changes hands, and the trust reading."
     },
     {
@@ -1730,8 +1730,18 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/index-model.ts",
-      "line": 254,
+      "line": 299,
       "prose": "One journal entry, flattened for rendering. `news` is the novelty gate: true when the\n entry was written inside the frame."
+    },
+    {
+      "id": "s:src/index-model.ts#IndexMark",
+      "parent": "f:src/index-model.ts",
+      "label": "IndexMark",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/index-model.ts",
+      "line": 328,
+      "prose": "ONE RECORD AS A POINT IN TIME — the whole standing journal, uncapped, carrying no text.\n\nWHY THIS EXISTS BESIDE THE CAPPED LISTS. The journal renders as a TIMELINE, and a\ntimeline drawn from the capped lists would be a picture of the cap rather than of the\nhistory: measured on the consuming project, the three lists carry 28 of 182 standing\nrecords. Plotting 28 and labelling the axis with dates is the same green-by-absence shape\nthis page exists to refuse — the reader would take a quiet stretch for a quiet month.\n\nSo NOVELTY and TIME are complete here while TEXT stays capped: `shown` says whether this\nrecord's sentences are carried by one of the lists above, and a mark whose text was\nwithheld renders as a hairline tick that cannot be opened. The cap is still on attention\n— a tick costs none — and the record is no longer misrepresented by it."
     },
     {
       "id": "s:src/index-model.ts#JournalView",
@@ -1740,7 +1750,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/index-model.ts",
-      "line": 270,
+      "line": 338,
       "prose": "VIEW TWO: what the agents decided, ordered by NEWS and led by impasses."
     },
     {
@@ -1750,7 +1760,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/index-model.ts",
-      "line": 286,
+      "line": 356,
       "prose": "The invariant/boundary movement across the frame — `coherence log`'s ledger, as data."
     },
     {
@@ -1760,7 +1770,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/index-model.ts",
-      "line": 302,
+      "line": 372,
       "prose": "VIEW THREE: movement at the level of the abstraction. Every field is nullable and each\n null carries its own reason, because \"nothing moved\" and \"nothing was read\" are\n different facts and a trajectory that confused them would be the worst lie on the page."
     },
     {
@@ -1770,7 +1780,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/index-model.ts",
-      "line": 319,
+      "line": 389,
       "prose": "THE MODEL. Written to `index.json` beside the page, so every figure rendered is\n checkable against a file, and so the next run has a cursor to frame against."
     },
     {
@@ -1780,7 +1790,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/index-model.ts",
-      "line": 353,
+      "line": 423,
       "prose": "The prior run's HEAD, read back out of `index.json` — the CURSOR.\n\n Through `readJsonOrRefuse` and not a `catch → null`, because this file is a MEMORY in\n exactly floor.ts's sense: an unreadable one is not an absent one. Defaulting past a\n corrupt index.json would silently retitle the page \"FIRST LOOK — no prior index\" for a\n project that has one, which is the page lying about its own frame."
     },
     {
@@ -1790,7 +1800,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/index-model.ts",
-      "line": 378,
+      "line": 448,
       "prose": "Pick the frame. See the `Frame` doctrine above for why the order is what it is."
     },
     {
@@ -1800,8 +1810,18 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/index-model.ts",
-      "line": 432,
+      "line": 502,
       "prose": "THE FOUR DARKNESSES, each with its own denominator and its own repair.\n\n`unvisited` is the one that needs history, and it is therefore the one that can be\nUNMEASURABLE. It is the complement of economy's closure: a path recent concern commits\nkeep touching that the graph does not own is a path no closure can ever be computed for,\nso every read-side cost this harness reports silently excludes it. That is why it is a\ndarkness and not merely a statistic."
+    },
+    {
+      "id": "s:src/index-model.ts#crossingOwners",
+      "parent": "f:src/index-model.ts",
+      "label": "crossingOwners",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/index-model.ts",
+      "line": 601,
+      "prose": "WHICH COMPONENT OWNS EACH GUARDED CROSSING — the join that turns a topology diagram into\na roster of organs. `symbolDir` is label → the dirs of the components owning a symbol of\nthat name; it comes from the graph's OWN parentage (symbol → file → component), which is\nthe same chain `symbolsByDir` walks a few lines above. Longest-matching-dir-prefix over\nthe symbol's `path` gives the identical answer on the consuming project (14/14, checked\ncrossing by crossing) and would be a SECOND spelling of component ownership; this file's\nrule 1 forbids that, so the existing chain is read instead of a new one written.\n\nTHE TWO WAYS IT DOES NOT LAND, each named rather than collapsed into a shrug:\n  · the guard's symbol is nowhere in the graph — an anchor pointing at code that is not\n    there, which is precisely the `present: false` DANGLING state the atlas already\n    grades. The crossing keeps its arrow and its row; nothing pretends to own it.\n  · the name resolves inside more than one component. Then no component owns it MORE than\n    the others and picking one would be inventing a fact. It is AMBIGUOUS, it says which\n    components it could be, and it counts toward nobody's perimeter."
     },
     {
       "id": "s:src/index-model.ts#buildMap",
@@ -1810,7 +1830,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/index-model.ts",
-      "line": 516,
+      "line": 628,
       "prose": "The MAP, assembled from the promise model (components, zones, gates, grades), the graph\n (the darknesses) and the atlas RECORD (the crossings)."
     },
     {
@@ -1820,7 +1840,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/index-model.ts",
-      "line": 641,
+      "line": 814,
       "prose": "THE JOURNAL VIEW — `blocked` first, then open conjectures, then decisions; settled work\ncollapses to counts.\n\nNEWS FIRST WITHIN EACH SECTION, and this is the whole behavioural point: a three-day-old\nimpasse the reader has already seen is not news however severe it is, so it sinks below\nthe entries written inside the frame rather than being dropped (it is still standing, and\na standing impasse that vanished from the page would be worse than one that scrolled)."
     },
     {
@@ -1830,7 +1850,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/index-model.ts",
-      "line": 674,
+      "line": 857,
       "prose": "`coherence log`'s structural ledger, as data rather than as printed lines."
     },
     {
@@ -1840,7 +1860,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/index-model.ts",
-      "line": 695,
+      "line": 878,
       "prose": "What the CLI hands the model builder: the reader's frame override, and the run stamp\n (so the model owns no clock of its own and the render is a pure function of it)."
     },
     {
@@ -1850,7 +1870,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/index-model.ts",
-      "line": 710,
+      "line": 893,
       "prose": "BUILD THE MODEL. Every history read is INDIVIDUALLY guarded and individually reported:\na project with no git is a perfectly ordinary consumer (a shallow CI clone, a source\nexport), and one unreadable source must cost that source's section, never the page. An\n`Unrunnable` thrown by the structural diff is caught HERE rather than at the CLI's total\nhandler for exactly that reason — the CLI's handler is the right answer for a command\nwhose whole job needs history, and the wrong one for a page with three views."
     },
     {
@@ -3786,7 +3806,7 @@
       "kind": "file",
       "sub": "src/render-index.ts",
       "path": "src/render-index.ts",
-      "prose": "render-index.ts — IndexModel → one self-contained `_index.html`.\n\nA PURE FUNCTION OF THE MODEL. `index.json` is written beside this page, so every figure\nrendered here is checkable against a file a `jq` one-liner can read; the render invents\nnothing, reads no clock (the stamp arrives in the model) and touches no disk.\n\n── THE FORM, AND WHY IT IS THIS AUSTERE ──────────────────────────────────────────────\n\nThe reference points are a SPEC SHEET, `git log --graph`, and an instrument readout —\nnot a dashboard and not a marketing page. Concretely, and each of these is a constraint\nrather than a taste:\n\n  · MONOSPACE THROUGHOUT, system stack. Everything on this page is tabular — counts\n    against denominators, grades, tiers, commit ids — and a proportional face breaks the\n    column alignment that makes a table readable at a glance.\n  · HAIRLINE RULES AND WHITESPACE do the separating. No cards, no rounding, no shadows,\n    no gradients, no animation. A border-radius is an invitation to add a second one.\n  · COLOUR IS DATA ENCODING ONLY, NEVER DECORATION, and the palette is four values:\n    foreground, dim, warn, alarm. Nothing else may use them.\n  · IT MUST READ PRINTED IN GREYSCALE. That is the actual test of the previous rule: if\n    a distinction disappears without colour, it was never encoded. So every coloured\n    thing ALSO carries its distinction as text — the grade letter, the tier number, the\n    word `FAIL`, and a leading MARK column (`!` attention, `!!` alarm) that survives any\n    desaturation. Colour reinforces; it never carries.\n  · LIGHT AND DARK ARE BOTH FIRST-CLASS via `prefers-color-scheme`. Neither is the\n    \"real\" one with the other bolted on."
+      "prose": "render-index.ts — IndexModel → one self-contained `_index.html`.\n\nA PURE FUNCTION OF THE MODEL. `index.json` is written beside this page, so every figure\nrendered here is checkable against a file a `jq` one-liner can read; the render invents\nnothing, reads no clock (the stamp arrives in the model) and touches no disk.\n\n── THE FORM, AND THE FAILURE IT WAS REWRITTEN AFTER ──────────────────────────────────\n\nThe first version of this page was briefed as a SPEC SHEET — dense, tabular, monospace —\nand it delivered exactly that: every table on one scroll, three staleness sentences above\nthe fold, 401 lines of rendered wall. The verdict on it was \"it teaches nothing, it\nstructures nothing, it's an assault.\" The brief was the defect, not the implementation:\nMINIMALIST MEANS FEW THINGS, NOT SMALL TYPE AT MAXIMUM DENSITY. A page optimised for\ninformation per square inch is optimised against teaching.\n\nTHE REFERENCE IS NOW THE PRIUS ENERGY MONITOR. A hybrid drivetrain is explained with no\ndocumentation at all by three boxes — engine, battery, wheels — and arrows between them\nthat light up as power flows. You learn the STRUCTURE by watching it operate. Five\nobjects, one glance. That is what the MAP is now, and the data was already there:\n`map.crossings` is regions, arrows, a NAMED GUARD on each arrow, the guard's strength\n(`tier`) and the current through it (`heat`).\n\n── THE RULES ─────────────────────────────────────────────────────────────────────────\n\n  · THREE TABS, ONE VISIBLE. Map · Journal · Trajectory. The other two are `display:none`\n    — genuinely hidden, not merely below the fold.\n  · AT MOST SEVEN PRIMARY OBJECTS PER TAB ON FIRST PAINT. Every tab here paints five:\n    masthead, tab bar, the figure, one summary line, one drill strip. If a tab cannot get\n    under seven the level of abstraction is wrong, not the font size.\n  · NO PARAGRAPH OF PROSE ABOVE THE FOLD, ANYWHERE. Sentences are drill-down. The three\n    STALE/UNREAD sentences that used to open the page are now a MARK beside the title;\n    the sentences are one click away and are not lost.\n  · THREE LEVELS MAXIMUM: glance → open one thing → read the sentence. A fourth level\n    belongs in `_graph.html`.\n  · NO SCRIPT. The tabs are `:target`, the disclosures are checkbox + `~`, the journal's\n    click-to-reveal is a radio group. The page is a document: it works with scripting\n    off, nothing on it can execute, and the hash makes a tab linkable — which is what the\n    brief asked for and what `:target` natively IS.\n  · MONOSPACE THROUGHOUT, four colour values (fg / dim / warn / alarm), hairline rules,\n    no cards, no rounding, no shadows, no gradients, no animation beyond show/hide.\n  · IT MUST READ PRINTED IN GREYSCALE. That is the actual test of the colour rule. So\n    `tier` is LINE TREATMENT (solid → dashed → dotted, continuity falling with the\n    strength of the guarantee), `security` is a drawn MARK on the arrow, `heat` is LINE\n    WEIGHT, severity is a leading `!`/`!!` text column, and print opens every tab and\n    every panel so the paper copy is the whole document."
     },
     {
       "id": "s:src/render-index.ts#formatIndexSummary",
@@ -3795,7 +3815,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/render-index.ts",
-      "line": 327,
+      "line": 1086,
       "prose": "THE SAME MODEL AT THE TERMINAL — what `coherence index` prints after writing the page.\n\nIt lives beside the HTML render because it is the SECOND rendering of ONE model, and\nkeeping them apart is how the two start disagreeing about a number. It is deliberately\na pointer, not a summary of the report: the page is the artifact, and a terminal digest\ncomplete enough to substitute for it would be a third view nobody asked for.\n\nNO HEALTH GLYPH IS REACHABLE FROM HERE, ever — not on a rich project and not on an empty\none. The Index states readings and grades nothing, so a ✓ would be an assertion this\ncommand has no standing to make (test/vacuity.test.ts enumerates every command against a\nproject where nothing can honestly be pronounced healthy)."
     },
     {
@@ -3805,8 +3825,8 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/render-index.ts",
-      "line": 359,
-      "prose": "THE PAGE. One self-contained document, a pure function of the model: no clock, no\n disk, no network, and nothing on it that `index.json` does not already hold."
+      "line": 1118,
+      "prose": "THE PAGE. One self-contained document, a pure function of the model: no clock, no\n disk, no network, no script, and nothing on it that `index.json` does not already hold."
     },
     {
       "id": "f:src/render-outline.ts",
@@ -4984,8 +5004,8 @@
       "kind": "symbol",
       "sub": "function",
       "path": "test/_helpers.ts",
-      "line": 75,
-      "prose": "A symbol graph node — what a boundary claim's chokepoint resolves against."
+      "line": 78,
+      "prose": "A symbol graph node — what a boundary claim's chokepoint resolves against.\n `parent` (a `f:<path>` file id) is optional because most callers only need the symbol to\n EXIST; supply it when the test is about which COMPONENT owns the symbol, which is the\n chain `buildMap` walks to join a guarded crossing to the organ that holds it."
     },
     {
       "id": "s:test/_helpers.ts#graph",
@@ -4994,7 +5014,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "test/_helpers.ts",
-      "line": 79
+      "line": 82
     },
     {
       "id": "s:test/_helpers.ts#fileNode",
@@ -5003,7 +5023,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "test/_helpers.ts",
-      "line": 84,
+      "line": 87,
       "prose": "A file graph node owned by component `dir` — what componentMap maps git paths against."
     },
     {
@@ -5013,7 +5033,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "test/_helpers.ts",
-      "line": 89,
+      "line": 92,
       "prose": "An `imports` edge between two file nodes — what the decompose fan-in (hubs) reads."
     },
     {

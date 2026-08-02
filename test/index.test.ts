@@ -30,7 +30,7 @@ import { promisify } from "node:util";
 import { execFile } from "node:child_process";
 import {
   capList, CAPS, resolveFrame, darknesses, buildJournal, buildMap, structuralView,
-  INDEX_HTML, INDEX_JSON, type IndexModel,
+  INDEX_HTML, INDEX_JSON, crossingOwners, type IndexModel, type IndexCrossing,
 } from "../src/index-model.ts";
 import { renderIndex, formatIndexSummary } from "../src/render-index.ts";
 import { assemblePromiseModel } from "../src/promise.ts";
@@ -213,6 +213,25 @@ test("JOURNAL — novelty GATES the order, severity only sorts what survived, an
   assert.equal(j.decisions.total, 1);
 });
 
+test("JOURNAL — novelty compares INSTANTS, not ISO text: a `-04:00` frame against `Z` records", () => {
+  // THE DEFECT THIS CATCHES, and it had shipped. The frame's stamp comes from git (`%cI`,
+  // which carries a numeric offset) and a journal record's comes from the journal (`Z`).
+  // Compared as strings, the lexicographic walk reaches the SECONDS field before it ever
+  // reaches the offset — so `02:54:53Z` sorted after `02:49:18-04:00` (= 06:49:18Z) and
+  // four hours of standing history was reported as news. Measured on the consuming project:
+  // 26 of 182 standing records were flagged NEW, including BOTH of its impasses.
+  const cut = "2026-07-31T02:49:18-04:00"; // 06:49:18Z
+  const before = rec({ id: "before", kind: "decision", at: "2026-07-31T02:54:53.044Z" });
+  const after = rec({ id: "after", kind: "decision", at: "2026-07-31T07:01:00.000Z" });
+  assert.ok(before.at >= cut, "the fixture must actually reproduce the string-compare trap or this test checks nothing");
+
+  const j = buildJournal([before, after], 1, 0, cut);
+  const news = new Map(j.decisions.shown.map((e) => [e.id, e.news]));
+  assert.equal(news.get("before"), false, "written four hours BEFORE the frame opened — standing, not news");
+  assert.equal(news.get("after"), true);
+  assert.equal(j.news.decisions, 1);
+});
+
 test("JOURNAL — with NO frame, nothing is news: a first look has no news by definition", () => {
   const j = buildJournal([rec({ id: "b", kind: "blocked", at: "2026-06-02T00:00:00Z" })], 1, 0, null);
   assert.equal(j.news.blocked, 0);
@@ -222,6 +241,27 @@ test("JOURNAL — with NO frame, nothing is news: a first look has no news by de
 test("JOURNAL — an unreadable journal line is COUNTED, never silently dropped", () => {
   const j = buildJournal([rec({ id: "d", kind: "decision", at: "2026-01-01T00:00:00Z" })], 1, 4, null);
   assert.equal(j.totals.unreadable, 4);
+});
+
+test("JOURNAL — every standing record gets a MARK, and `shown` never over-promises", () => {
+  // THE TIMELINE IS DRAWN FROM `marks`, and a timeline drawn from the capped lists would be
+  // a picture of the cap: measured on the consuming project, the lists carry 28 of 182
+  // standing records. So time and novelty are complete here and only TEXT is capped —
+  // `shown` is read off the same cap the lists use, so a mark can never advertise a reveal
+  // the page cannot perform.
+  const many = Array.from({ length: CAPS.decisions + 6 }, (_, i) =>
+    rec({ id: `d${i}`, kind: "decision", at: `2026-03-${String(i + 1).padStart(2, "0")}T00:00:00Z` }));
+  const j = buildJournal([...many, rec({ id: "b", kind: "blocked", at: "2026-02-01T00:00:00Z" })], 1, 0, null);
+
+  assert.equal(j.marks.length, j.totals.decisions + j.totals.blocked + j.totals.open,
+    "every standing record is plotted — the axis must not describe a subset it does not name");
+  assert.equal(j.marks.filter((m) => m.shown).length, CAPS.decisions + 1,
+    "exactly the records whose text the page carries are openable");
+  assert.deepEqual(new Set(j.marks.filter((m) => m.shown).map((m) => m.id)),
+    new Set([...j.decisions.shown, ...j.blocked.shown].map((e) => e.id)),
+    "`shown` is the cap's own answer, not a second spelling of it");
+  const ordered = j.marks.map((m) => m.at);
+  assert.deepEqual(ordered, [...ordered].sort(), "marks are oldest-first so the render never has to sort");
 });
 
 test("JOURNAL — every list is capped and the tail is stated", () => {
@@ -335,6 +375,7 @@ const modelWith = (over: Partial<IndexModel> = {}): IndexModel => ({
   },
   journal: {
     blocked: capList([], CAPS.blocked), open: capList([], CAPS.open), decisions: capList([], CAPS.decisions),
+    marks: [],
     settled: { resolved: 0, dismissed: 0, retracted: 0, inFrame: 0 },
     totals: { blocked: 0, open: 0, decisions: 0, records: 0, sessions: 0, unreadable: 0 },
     news: { blocked: 0, open: 0, decisions: 0 },
@@ -385,6 +426,311 @@ test("RENDER — the withheld tail appears in the page, never a silent truncatio
   const html = renderIndex(modelWith({ journal: buildJournal(many, 1, 0, null) }));
   assert.match(html, /3 more impasse\(s\) not shown/);
   assert.match(html, new RegExp(`${CAPS.blocked + 3} in total`));
+});
+
+// ── the MAP as a DIAGRAM ──────────────────────────────────────────────────────────────
+//
+// THE PAGE THIS REPLACED was a wall of tables, and the verdict on it was that it taught
+// nothing. The reference now is the Prius energy monitor: three boxes and the arrows
+// between them explain a drivetrain with no documentation at all. These assert that the
+// picture actually CARRIES the four things it claims to encode — and that each of them
+// survives greyscale, which is the only reason they are shape and weight rather than hue.
+
+const xing = (o: Partial<IndexCrossing> & { sym: string; from: string; to: string }): IndexCrossing =>
+  ({ tier: 2, security: false, present: true, heat: 0.1, owner: null, ...o });
+
+const widths = (svg: string) =>
+  [...svg.matchAll(/stroke-width="([\d.]+)"/g)].map((m) => Number(m[1]));
+
+test("DIAGRAM — regions are boxes, crossings are arrows, and the GUARD'S NAME labels each one", () => {
+  const crossings = [
+    xing({ sym: "requireAuth", from: "public-web", to: "authed-user", security: true, heat: 0.9 }),
+    xing({ sym: "OwnedScope", from: "authed-user", to: "patient", tier: 1, security: true, heat: 0.2 }),
+    xing({ sym: "runWithRetry", from: "patient", to: "model-provider", heat: 0.02 }),
+  ];
+  const html = renderIndex(modelWith({
+    map: { ...modelWith().map, crossings: capList(crossings, CAPS.crossings) },
+  }));
+  const svg = html.slice(html.indexOf("<svg"), html.indexOf("</svg>"));
+  assert.ok(svg.length > 500, "an empty <svg> would satisfy every assertion below");
+
+  // Every region is a labelled box, and every crossing is a named arrow. The count is the
+  // point: a diagram that silently drops an edge is worse than a table that lists it.
+  for (const r of ["public-web", "authed-user", "patient", "model-provider"]) {
+    assert.match(svg, new RegExp(`>${r}</text>`), `region ${r} must be drawn`);
+  }
+  for (const c of crossings) assert.match(svg, new RegExp(`>${c.sym}</text>`), `${c.sym} must label its arrow`);
+  assert.equal((svg.match(/<rect /g) ?? []).length, 4 + 2 * crossings.length,
+    "four region boxes, plus a background plate AND a (hidden) selection ring per edge label");
+
+  // HEAT IS LINE WEIGHT. The hottest crossing draws the thickest line, and the order of the
+  // widths is the order of the heats — that is the whole "current flowing" encoding.
+  const w = widths(svg).slice(0, 3);
+  assert.ok(w[0] > w[1] && w[1] > w[2], `heat must order the line weights, got ${w.join(",")}`);
+
+  // TIER IS LINE TREATMENT, not colour: the stronger the guarantee, the more continuous the
+  // line. tier-1 (enshrined) is solid, so it carries NO dash array at all.
+  const lines = [...svg.matchAll(/<line [^>]*>/g)].map((m) => m[0]).slice(0, 3);
+  assert.equal(lines.length, 3, "one line per crossing, in the model's own order");
+  assert.doesNotMatch(lines[1], /stroke-dasharray/,
+    "the ENSHRINED crossing draws solid — a distinction that vanishes in greyscale was never encoded");
+  assert.match(lines[0], /stroke-dasharray="7 4"/, "a totality-checked crossing draws dashed");
+  assert.match(lines[2], /stroke-dasharray="7 4"/);
+
+  // SECURITY IS A DRAWN MARK. Two security crossings plus the legend's sample = three.
+  assert.equal((svg.match(/l4\.5,-4\.5 l4\.5,4\.5 l-4\.5,4\.5 Z/g) ?? []).length, 3,
+    "a security crossing carries a shape, so it survives a black-and-white printer");
+
+  // AND THE LEGEND ONLY NAMES WHAT IS ON THE PAGE. `convention` has no subjects in this
+  // fixture, so teaching the word here would be teaching a vocabulary the data does not use.
+  assert.match(svg, />enshrined</);
+  assert.match(svg, />totality-checked</);
+  assert.doesNotMatch(svg, />convention</);
+});
+
+test("DIAGRAM — with no crossings the Map SAYS SO; it never draws an empty frame", () => {
+  const html = renderIndex(modelWith());
+  assert.doesNotMatch(html, /<svg/, "an empty diagram would read as a system with no boundaries");
+  assert.match(html, /NO CROSSING DIAGRAM/);
+  assert.match(html, /the shape is UNREAD, not absent/,
+    "unread and absent are different facts and the tab must not merge them");
+});
+
+test("DIAGRAM — a CYCLE in the region graph terminates, and every crossing is still drawn", () => {
+  // The layering is a longest-path relaxation, which does not converge on a cycle. It is
+  // bounded by the region count instead of guarded by a DAG check, because a cyclic trust
+  // graph is a REAL shape: the diagram must draw something honest for it, not refuse.
+  const crossings = [
+    xing({ sym: "aToB", from: "a", to: "b" }),
+    xing({ sym: "bToC", from: "b", to: "c" }),
+    xing({ sym: "cToA", from: "c", to: "a" }),
+    xing({ sym: "selfA", from: "a", to: "a", tier: 3, present: false }),
+  ];
+  const html = renderIndex(modelWith({
+    map: { ...modelWith().map, crossings: capList(crossings, CAPS.crossings) },
+  }));
+  for (const c of crossings) assert.match(html, new RegExp(`>${c.sym}`), `${c.sym} must survive the cycle`);
+  assert.match(html, />selfA DANGLING</, "a chokepoint no longer in source says so on its own arrow");
+  assert.match(html, /stroke-dasharray="1.5 3"/, "a convention-tier crossing draws dotted");
+});
+
+// ── the page: three tabs, one visible, and no dead reveals ────────────────────────────
+
+// ── the ORGAN ROSTER: the join, and the order that teaches ────────────────────────────
+//
+// THE DIAGRAM SHOWED THE PLUMBING AND HID THE ORGANS. `authed-user`, `storage`,
+// `public-egress` are region names — true, and they say nothing about what the system is
+// for. These test the two things that changed: the JOIN that says which component owns each
+// guarded crossing, and the ORDER (perimeter before interior) that makes the roster read as
+// a statement rather than a list. Both are honesty tests again, not arithmetic ones: the
+// failure modes are claiming an owner the data does not support, and reporting "owns none"
+// for a project where nothing was ever measured.
+
+/**
+ * A project with a real perimeter: three components, four graded crossings, and one guard
+ * (`ghostGuard`) whose symbol is in NO component — the shape that makes the join degenerate.
+ */
+function organFixture() {
+  const g = graph([
+    comp(".", { label: "entry", intent: "The door: every request lands here first.", claims: [], invariants: [] }),
+    comp("shared/auth", { label: "auth", intent: "Sessions and passkeys, and the only place a token is minted.", claims: [], invariants: [] }),
+    comp("shared/ids", { label: "ids", intent: "Compile-only brands. Never crosses a wire.", claims: [], invariants: [] }),
+    fileNode("server.ts", "."),
+    fileNode("shared/auth/auth.ts", "shared/auth"),
+    fileNode("shared/ids/ids.ts", "shared/ids"),
+    sym("requireAuth", "server.ts", "f:server.ts"),
+    sym("serveJson", "server.ts", "f:server.ts"),
+    sym("verifySession", "shared/auth/auth.ts", "f:shared/auth/auth.ts"),
+    sym("UserId", "shared/ids/ids.ts", "f:shared/ids/ids.ts"),
+  ]);
+  const xs = ["requireAuth", "serveJson", "verifySession", "ghostGuard"];
+  const status: StatusRecord = {
+    version: 1,
+    atlas: {
+      at: "2026-06-01T00:00:00Z", commit: "h",
+      tiers: { enshrined: 0, checked: 4, convention: 0 },
+      crossings: xs.map((sym, i) => ({
+        sym, from: "public-web", to: "authed-user", tier: 2, security: false,
+        note: "", translates: "", present: sym !== "ghostGuard", pending: false, heat: 0.1 * (i + 1),
+      })),
+      drift: [], dangling: ["ghostGuard"], overclaimed: [], tier3Security: [],
+    },
+  };
+  const pm = assemblePromiseModel(g, status, new Map(), [], { commit: "h", dirty: false });
+  return buildMap(cfg("/x"), g, pm, status, "h", null);
+}
+
+test("ROSTER — every guard resolves to the ORGAN that owns it, and the intent prose comes with it", () => {
+  const m = organFixture();
+  const owner = new Map(m.crossings.shown.map((c) => [c.sym, c.owner]));
+  // The join is the graph's OWN symbol → file → component parentage crossed with the atlas
+  // record. Nothing here is a new source and nothing is a second spelling of ownership.
+  assert.equal(owner.get("requireAuth"), "entry");
+  assert.equal(owner.get("serveJson"), "entry");
+  assert.equal(owner.get("verifySession"), "auth");
+
+  const by = new Map(m.components.map((c) => [c.label, c]));
+  assert.deepEqual(by.get("entry")!.guards, ["requireAuth", "serveJson"]);
+  assert.deepEqual(by.get("auth")!.guards, ["verifySession"]);
+  assert.deepEqual(by.get("ids")!.guards, [], "a component owning no crossing is INTERIOR, not broken");
+
+  // AND THE SENTENCE TRAVELS WITH THE ROW. The intent line is the best human-written prose
+  // in any of these projects and the Index used to bury it behind a drill-down.
+  assert.equal(by.get("auth")!.intent, "Sessions and passkeys, and the only place a token is minted.");
+});
+
+test("ROSTER — the ORDER is derived: perimeter first, most-held first, interior last", () => {
+  const m = organFixture();
+  assert.deepEqual(m.components.map((c) => c.label), ["entry", "auth", "ids"],
+    "entry holds 2 crossings, auth 1, ids none — and that is the reading order");
+  const guards = m.components.map((c) => c.guards.length);
+  assert.deepEqual([...guards].sort((a, b) => b - a), guards, "the counts must never rise as you read down");
+  // ALPHABETICAL WOULD HAVE ORDERED BY AN ACCIDENT OF NAMING. If the sort ever degrades to
+  // that, this fixture says so out loud: alphabetical here is auth, entry, ids.
+  assert.notDeepEqual(m.components.map((c) => c.label), ["auth", "entry", "ids"]);
+});
+
+test("ROSTER — a guard no component owns says WHY, and is never given an arbitrary owner", () => {
+  const m = organFixture();
+  const ghost = m.crossings.shown.find((c) => c.sym === "ghostGuard")!;
+  assert.equal(ghost.owner, null, "inventing an owner for an unresolvable guard is the one thing this must not do");
+  assert.match(ghost.ownerWhy ?? "", /no component owns a symbol named/);
+  assert.match(ghost.ownerWhy ?? "", /DANGLING/, "the atlas already grades this state and the roster says so in its words");
+  // AND IT COUNTS TOWARD NOBODY'S PERIMETER — the alternative (silently attributing it to
+  // the entry component) would inflate one organ's perimeter with a symbol that is not there.
+  assert.equal(m.components.reduce((n, c) => n + c.guards.length, 0), 3,
+    "three of the four crossings are owned; the fourth is owned by no one and stays that way");
+
+  // THE OTHER DEGENERATION: one name, two components. Neither owns it more than the other,
+  // so it is AMBIGUOUS and it says which two — picking one would be inventing a fact.
+  const amb = crossingOwners(
+    [{ sym: "handle", present: true }],
+    new Map([["handle", new Set(["a", "b"])]]),
+    new Map([["a", "Alpha"], ["b", "Beta"]]),
+  ).get("handle")!;
+  assert.equal(amb.owner, null);
+  assert.match(amb.why ?? "", /AMBIGUOUS/);
+  assert.match(amb.why ?? "", /Alpha, Beta/);
+});
+
+test("ROSTER — with NO atlas the perimeter is UNREAD, never `0 of N own a crossing`", () => {
+  // THE GREEN-BY-ABSENCE TRAP, in its newest hiding place. This harness's own repo has four
+  // components and no atlas config at all, so every `guards` array is empty — and reporting
+  // that as "4 of 4 are interior" would be the page asserting a measurement nobody took.
+  const { g, status } = mapFixture(["pass", "pass", "pass"], "h");
+  const pm = assemblePromiseModel(g, status, new Map(), [], { commit: "h", dirty: false });
+  const map = buildMap(cfg("/x"), g, pm, status, "h", null);
+  assert.equal(map.atlas, null);
+  assert.deepEqual(map.components[0].guards, []);
+
+  const html = renderIndex(modelWith({ map }));
+  assert.match(html, /The perimeter is UNREAD/);
+  assert.doesNotMatch(html, /own no graded crossing/,
+    "an unmeasured perimeter must not borrow the sentence a measured one earns");
+  assert.doesNotMatch(html, /class="bhead"/, "and it must not draw bands it has no reading to fill");
+});
+
+test("ROSTER — the intent prose is at GLANCE level, not behind a drill-down", () => {
+  const html = renderIndex(modelWith({ map: organFixture() }));
+  const map = html.slice(html.indexOf('id="map"'), html.indexOf('id="journal"'));
+  const roster = map.slice(map.indexOf('class="roster"'));
+  const drill = map.indexOf('class="drill"');
+  assert.ok(map.indexOf('class="roster"') < drill && drill !== -1,
+    "the roster precedes the drill strip: the prose is on the first paint, not one click down");
+  for (const line of ["The door: every request lands here first.",
+    "Sessions and passkeys, and the only place a token is minted.",
+    "Compile-only brands. Never crosses a wire."]) {
+    assert.ok(roster.includes(line), `the roster must carry: ${line}`);
+  }
+  // ONE BLOCK, NOT N. Fourteen organs are fourteen rows and one object; the ≤7-objects rule
+  // is about things a reader orients among, and the two bands live inside the single roster.
+  assert.equal((map.match(/class="roster"/g) ?? []).length, 1);
+  // The band labels are lower-case in the markup and upper-cased by `text-transform`, so
+  // this asserts the STRING the page carries rather than the one a screenshot shows.
+  assert.match(roster, /class="bhead">perimeter /);
+  assert.match(roster, /class="bhead">interior /);
+  assert.match(roster, /own no graded crossing/);
+  assert.match(roster, /reading of the shape, not a gap to close/,
+    "an interior component is a READING, and the page must not let it read as a defect");
+});
+
+test("ROSTER — selection works BOTH ways with no script, and no control points at nothing", () => {
+  const html = renderIndex(modelWith({ map: organFixture() }));
+  assert.doesNotMatch(html, /<script/i, "the whole interaction is :checked plus a sibling combinator");
+
+  // ONE radio group: a selection is one thing at a time, which is what makes "dim the rest"
+  // mean anything. Checkboxes would allow "auth and entry and ids" and no highlight at all.
+  assert.doesNotMatch(html, /name="[a-z]*sel"[^>]*type="checkbox"/);
+  const group = [...html.matchAll(/name="orgsel" id="([^"]+)"/g)].map((m) => m[1]);
+  assert.ok(group.includes("sel-all"), "a reset, checked in the markup, so the reader can get the whole map back");
+
+  // EVERY CONTROL HAS A RULE AND EVERY RULE HAS A CONTROL — the journal timeline's dead-click
+  // prohibition, applied to the map. A label pointing at an id with no styling behind it
+  // looks exactly like one that works.
+  for (const id of group.filter((x) => x !== "sel-all")) {
+    assert.ok(html.includes(`<label for="${id}"`), `#${id} has no control that selects it`);
+    assert.ok(html.includes(`#${id}:checked`), `#${id} is selectable and changes nothing`);
+  }
+  for (const m of html.matchAll(/<label for="([og]-[^"]+)"/g)) {
+    assert.ok(group.includes(m[1]), `a label points at #${m[1]}, which is in no selection group`);
+  }
+
+  // ORGAN → ITS GUARDS IN THE PICTURE. Selecting `entry` lights the two crossings it owns.
+  assert.match(html, /#o-_:checked ~ \.figure \.cx-requireAuth,#o-_:checked ~ \.figure \.cx-serveJson\{opacity:1\}/);
+  // GUARD → ITS ORGAN. Selecting `verifySession` marks auth's row AND reveals the sentence.
+  assert.match(html, /#g-verifySession:checked ~ \.own-verifySession\{display:block\}/);
+  assert.match(html, /#g-verifySession:checked ~ \.roster \.org-shared_auth\{/);
+  assert.match(html, /<p class="own own-verifySession">.*<b>auth<\/b> <span class="dim">owns this crossing/);
+  // …and a guard nobody owns says that instead, rather than marking an arbitrary row.
+  assert.match(html, /<p class="own own-ghostGuard">.*no organ owns this crossing/);
+  assert.doesNotMatch(html, /#g-ghostGuard:checked ~ \.roster \.org-/);
+
+  // THE HIGHLIGHT IS NOT COLOUR. The rest fades (a tone, which greyscale keeps) and the
+  // selected guard gains a drawn RING — either alone survives a black-and-white printer.
+  assert.match(html, /#map:has\(\.msel:checked\) \.cx \{ opacity: \.13; \}/);
+  assert.match(html, /class="ring"/);
+  // AND PRINT REOPENS EVERYTHING: paper has no selection state.
+  assert.match(html, /#map:has\(\.msel:checked\) \.cx \{ opacity: 1 !important; \}/);
+});
+
+test("RENDER — THREE TABS, one visible, each linkable by hash, and no script anywhere", () => {
+  const html = renderIndex(modelWith());
+  for (const id of ["map", "journal", "trajectory"]) {
+    assert.match(html, new RegExp(`<section class="view" id="${id}">`), `${id} is a section, addressable as #${id}`);
+    assert.match(html, new RegExp(`href="#${id}"`), `${id} has a tab that links to it`);
+  }
+  // The other two tabs must be genuinely hidden — not merely below a fold, which is the
+  // failure the whole rewrite exists to undo.
+  assert.match(html, /\.view \{ display: none;/);
+  assert.match(html, /\.view:target \{ display: block; \}/);
+  assert.match(html, /body:not\(:has\(\.view:target\)\) #map \{ display: block; \}/,
+    "with no hash the Map is the default — the tab state has to exist before the first click");
+  assert.doesNotMatch(html, /<script/i, "the switching is :target and checkboxes: this is a document, not an application");
+});
+
+test("RENDER — every openable mark has a rule, and every rule has a mark: no dead clicks", () => {
+  // THE FAILURE THIS CATCHES. The reveal is one generated CSS rule per record, and the
+  // marks are generated from `journal.marks`. If those two lists ever disagree, a reader
+  // clicks a mark and nothing happens — a page that silently refuses to show what it
+  // advertised, which is the same class of lie as a table that looks complete.
+  const records = Array.from({ length: CAPS.decisions + 4 }, (_, i) =>
+    rec({ id: `d-${i}`, kind: "decision", at: `2026-04-${String(i + 1).padStart(2, "0")}T00:00:00Z` }));
+  const j = buildJournal([...records, rec({ id: "d-blk", kind: "blocked", at: "2026-04-20T00:00:00Z" })], 3, 0, null);
+  const html = renderIndex(modelWith({ journal: j }));
+
+  const rules = new Set([...html.matchAll(/#e-([\w-]+):checked ~ \.detail \.d-\1\{/g)].map((m) => m[1]));
+  const labels = new Set([...html.matchAll(/<label for="e-([\w-]+)" class="mkr/g)].map((m) => m[1]));
+  const openable = new Set(j.marks.filter((m) => m.shown).map((m) => m.id));
+  assert.ok(openable.size > 0, "the fixture must produce openable marks or this test is vacuous");
+  assert.deepEqual(labels, openable, "exactly the records whose text is carried are clickable");
+  assert.deepEqual(rules, openable, "and each of those has the rule that reveals it");
+
+  // A WITHHELD RECORD IS STILL PLOTTED — as a tick that cannot be clicked. The timeline
+  // never hides that the cap ran, and never offers a reveal it cannot perform.
+  const held = j.marks.filter((m) => !m.shown).length;
+  assert.equal(held, 4);
+  assert.equal((html.match(/class="mkr decision held"/g) ?? []).length, 4);
+  assert.match(html, /4 more decision\(s\) not shown/);
 });
 
 test("RENDER — the Index grades NOTHING: no health glyph is reachable at the terminal", () => {
