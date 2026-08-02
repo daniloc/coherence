@@ -32,12 +32,23 @@
 //     the sentences are one click away and are not lost.
 //   · THREE LEVELS MAXIMUM: glance → open one thing → read the sentence. A fourth level
 //     belongs in `_graph.html`.
-//   · NO SCRIPT. The tabs are `:target`, the disclosures are checkbox + `~`, the journal's
-//     click-to-reveal is a radio group. The page is a document: it works with scripting
-//     off, nothing on it can execute, and the hash makes a tab linkable — which is what the
-//     brief asked for and what `:target` natively IS.
+//   · NO NETWORK, EVER. That is the invariant the old "no script" rule was really buying:
+//     one file, no second request, nothing to fetch. It is now stated directly — no `http:`,
+//     no `src=`, no `@import`, no `fetch(` — and INLINE SCRIPT IS ALLOWED, because the
+//     scriptless spelling of "click an arrow" was absolutely-positioned `<label>` hotspots
+//     laid over the SVG at pre-computed pixel rects, and THAT CONSTRAINED THE LAYOUT: every
+//     interactive thing had to stay where a computed rectangle said. The listeners are now
+//     on the real SVG elements. The tabs stay `:target` and the disclosures stay
+//     checkbox + `~`: those cost the layout nothing, so nothing is gained by moving them.
+//     Selection is the only scripted behaviour, and its OFF state is the whole figure —
+//     scripting off degrades to "no highlight", never to a page that hides its content.
 //   · MONOSPACE THROUGHOUT, four colour values (fg / dim / warn / alarm), hairline rules,
 //     no cards, no rounding, no shadows, no gradients, no animation beyond show/hide.
+//   · A MODULAR GRID, base unit 8px. Node widths, column pitch, row height, band height,
+//     gutters and the page's own vertical rhythm are all multiples of it, and the figure
+//     routes ORTHOGONALLY ONLY — horizontal runs on rows, vertical bus bars on columns.
+//   · THREE TYPE SIZES, no more (`--t1` prose, `--t2` figures, `--t3` micro-labels). Weight
+//     and tone carry every other distinction.
 //   · IT MUST READ PRINTED IN GREYSCALE. That is the actual test of the colour rule. So
 //     `tier` is LINE TREATMENT (solid → dashed → dotted, continuity falling with the
 //     strength of the guarantee), `security` is a drawn MARK on the arrow, `heat` is LINE
@@ -115,66 +126,128 @@ function sourcesTable(sources: SourceRead[]): string {
     <tbody>${sources.map(row).join("")}</tbody></table>`;
 }
 
-// ── I. THE MAP, AS A DIAGRAM ──────────────────────────────────────────────────────────
+// ── I. THE MAP, AS A MATRIX SCHEMATIC ─────────────────────────────────────────────────
 //
-// THE ENERGY MONITOR. Regions are boxes, crossings are arrows, and every channel the
-// atlas graded is drawn with its guard's name on it. Nothing here is derived: `from`,
-// `to`, `sym`, `tier`, `security`, `present` and `heat` are all fields the atlas record
-// already filed, and the ONLY computed thing is where to put them.
+// EVERY CROSSING GETS ITS OWN ROW. Regions are the COLUMNS — vertical bus bars in layer
+// order, `browser-client → public-web → authed-user → {patient, storage, meter} →
+// {public-egress, model-provider}` on the project this was built against, so left-to-right
+// is still the direction trust travels. A crossing is one horizontal run on its own row,
+// from its source bar to its target bar. Nothing here is derived: `from`, `to`, `sym`,
+// `tier`, `security`, `present`, `heat` and `owner` are all fields the atlas record and the
+// spec tree already filed, and the ONLY computed thing is where to put them.
 //
-// THE LAYOUT IS A LAYERED DAG — longest path from a source — because that is what the
-// crossing set of a real system is: `browser-client → public-web → authed-user →
-// {patient, storage, meter} → {public-egress, model-provider}` on the project this was
-// built against. Reading left to right IS reading the drivetrain. The relaxation is
-// bounded by the region count so a CYCLE in the crossing graph terminates with an honest
-// (if arbitrary) layering rather than hanging: a cyclic trust graph is a real shape.
+// ── WHY THIS AND NOT A BOX-AND-ARROW DAG ──────────────────────────────────────────────
+//
+// The previous layout was regions-as-boxes with arrows between them, and it could not hold
+// four things at once: uniform nodes, even gutters, orthogonal routing, and CLUSTERING BY
+// ORGAN. Organs cut ACROSS the region layering — on the project this was built against six
+// components own fourteen crossings whose region pairs share no grouping at all — so an
+// organ bracket over a layered picture is a bounding box around scattered labels.
+//
+// One row per crossing fixes all four by construction:
+//   · ROWS GROUP BY ORGAN CONTIGUOUSLY, in the roster's own order, so the two objects on
+//     this tab read down in the same sequence and a band is a plain run of rows.
+//   · A RUN CANNOT BE OBSTRUCTED. The old layout needed reserved lanes for layer-skipping
+//     crossings, and four of them ended up as dashed rails under the figure whose risers
+//     coincided — they read as attached to nothing. A row belongs to one crossing, so its
+//     endpoints are always visibly its own.
+//   · EVERY GUARD NAME LANDS ON ONE VERTICAL ALIGNMENT LINE, which is the thing a greedy
+//     collision-avoiding label placer can never give you.
+//
+// The layering relaxation is still bounded by the region count, so a CYCLE in the crossing
+// graph terminates with an honest (if arbitrary) column order rather than hanging: a cyclic
+// trust graph is a real shape.
 
+/** THE BASE UNIT of the whole page. Every x, y, width, height, gutter and row in this
+ *  figure is a multiple of it; so is the page's vertical rhythm. Text baselines sit at the
+ *  half unit, which is where a 10.5px face centres in a 24px row. */
+const U = 8;
+/** ONE type size inside the figure — the page's `--t3`. Weight and tone carry every other
+ *  distinction, which is what keeps the whole document to three sizes. */
+const FS = 10.5;
 /** Monospace advance as a fraction of font-size. Slightly over the 0.6 of the faces in the
- *  stack, so a label's background plate is never narrower than the text on it. */
+ *  stack, so a reserved column is never narrower than the text in it. */
 const CH = 0.61;
-const BOX_FS = 11, EDGE_FS = 10;
-const PAD_X = 11, MIN_H = 26, PORT = 15, ROW_GAP = 30, MIN_GAP = 120, EDGE_PAD = 14;
-const LANE = 17, LEGEND_H = 26, JUT = 16, LABEL_H = 15;
+const ROW = 3 * U, BAND_H = 3 * U, HEAD_H = 3 * U, LEG_H = 5 * U;
+/** Widths snap to TWO units, so a column's centre line — where its bus bar runs — is itself
+ *  on the grid rather than at a half unit. */
+const snap2 = (n: number) => Math.ceil(n / (2 * U)) * 2 * U;
 
-const textW = (s: string, fs: number) => s.length * fs * CH;
+const textW = (s: string, fs: number = FS) => s.length * fs * CH;
 
 /** TIER → LINE TREATMENT, and the ordering is the point: the stronger the guarantee, the
  *  more continuous the line. It carries in greyscale, which colour would not. */
 const DASH: Record<number, string> = { 1: "", 2: "7 4", 3: "1.5 3" };
 const TIER_NAME: Record<number, string> = { 1: "enshrined", 2: "totality-checked", 3: "convention" };
 
-interface Rect { x: number; y: number; w: number; h: number }
-const hits = (a: Rect, b: Rect) =>
-  a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
-
-/** An arrowhead as a filled triangle, apex on the target. Drawn rather than `marker-end`
- *  so it inherits the edge's own colour without a marker definition per colour. */
-function head(x: number, y: number, dx: number, dy: number, fill: string): string {
-  const n = Math.hypot(dx, dy) || 1;
-  const ux = dx / n, uy = dy / n, bx = x - ux * 8, by = y - uy * 8;
-  const px = -uy * 3.6, py = ux * 3.6;
-  return `<path d="M${x.toFixed(1)},${y.toFixed(1)} L${(bx + px).toFixed(1)},${(by + py).toFixed(1)} L${(bx - px).toFixed(1)},${(by - py).toFixed(1)} Z" fill="${fill}"/>`;
+/** An arrowhead as a filled triangle, apex on the target, pointing along ±x only — this
+ *  figure has no diagonal in it. Drawn rather than `marker-end` so it inherits the edge's
+ *  own colour without a marker definition per colour. */
+function head(x: number, y: number, dir: 1 | -1, fill: string): string {
+  const b = x - dir * U;
+  return `<path d="M${x},${y} L${b},${y - 4} L${b},${y + 4} Z" fill="${fill}"/>`;
 }
 
-/** One clickable rectangle over a guard's label plate, in the SVG's own pixel coordinates.
- *  The overlay is how an arrow becomes selectable with no script: `<label>` is not valid
- *  inside SVG, so the hit areas are HTML positioned on top of it at the same numbers the
- *  layout already computed to place the text. */
-interface Hot { sym: string; x: number; y: number; w: number; h: number }
+/** THE SECURITY MARK — a drawn diamond, never a hue, so it survives a greyscale printer.
+ *  One shape, used on the row and once again in the legend. */
+const diamond = (x: number, y: number, fill: string) =>
+  `<path d="M${x},${y} l4.5,-4.5 l4.5,4.5 l-4.5,4.5 Z" fill="${fill}"/>`;
 
+/** ONE ORGAN'S STRETCH OF THE PERIMETER: a contiguous run of rows, in the roster's order.
+ *  `dir` is the component directory — the id the roster keys its own row by, so selecting a
+ *  band and selecting a roster row are the same act. Null when nothing owns these. */
+interface Band { label: string; dir: string | null; rows: IndexCrossing[] }
 /**
  * THE DIAGRAM. Returns null when there is no crossing data at all — the caller then says
  * so in one line rather than drawing an empty frame, because a picture of nothing is the
  * green-by-absence this page exists to refuse.
+ *
+ * `comps` is the roster's own component list, already ordered perimeter-first. It is here
+ * ONLY to fix the band order: the figure and the roster must read down in the same
+ * sequence, and deriving a second order from the crossings would be a second spelling of
+ * the same fact.
  */
-function diagram(cs: readonly IndexCrossing[]): { svg: string; regions: string[]; hots: Hot[]; w: number; h: number } | null {
+function diagram(cs: readonly IndexCrossing[], comps: readonly IndexComponent[]):
+  { svg: string; regions: string[]; w: number; h: number } | null {
   if (!cs.length) return null;
 
+  // ── THE ROWS, GROUPED INTO ORGAN BANDS ──────────────────────────────────────────────
+  // Band order is the roster's. WITHIN a band the strongest tier leads and heat breaks the
+  // rest, so the one enshrined crossing on a project sits at the top of its organ's stretch
+  // instead of being lost among thirteen checked ones.
+  const owned = new Map<string, IndexCrossing[]>();
+  for (const c of cs) {
+    const k = c.owner ?? "";
+    (owned.get(k) ?? owned.set(k, []).get(k)!).push(c);
+  }
+  const rank = (a: IndexCrossing, b: IndexCrossing) =>
+    a.tier - b.tier || (b.heat ?? -1) - (a.heat ?? -1) || a.sym.localeCompare(b.sym);
+
+  const bands: Band[] = [];
+  for (const comp of comps) {
+    const rows = owned.get(comp.label);
+    if (!rows?.length) continue;
+    owned.delete(comp.label);          // two components may share a label; the first claims it
+    bands.push({ label: comp.label, dir: comp.dir, rows: [...rows].sort(rank) });
+  }
+  // WHATEVER IS LEFT IS UNOWNED, and it gets a band that says so rather than being folded
+  // into somebody else's stretch — the roster's rule about inventing an owner, drawn.
+  const orphans = [...owned.values()].flat().sort(rank);
+  if (orphans.length) bands.push({ label: "no organ owns these", dir: null, rows: orphans });
+
+  const rowOf = new Map<IndexCrossing, number>();
+  bands.flatMap((b) => b.rows).forEach((c, i) => rowOf.set(c, i));
+  // A ROW CARRIES ITS ORGAN'S DIRECTORY, not its label — that is the id the roster keys its
+  // own rows by, and two components may share a label while no two share a directory.
+  const dirOf = new Map<IndexCrossing, string | null>();
+  for (const b of bands) for (const c of b.rows) dirOf.set(c, b.dir);
+
+  // ── THE COLUMNS ─────────────────────────────────────────────────────────────────────
+  // Layer = longest path from a source, relaxed at most |regions| times: a DAG converges
+  // long before that, and a cycle stops at the bound instead of looping forever.
   const regions: string[] = [];
   for (const c of cs) for (const r of [c.from, c.to]) if (!regions.includes(r)) regions.push(r);
 
-  // LAYERS. Relaxed at most |regions| times: a DAG converges long before that, and a cycle
-  // stops at the bound instead of looping forever.
   const layer = new Map(regions.map((r) => [r, 0]));
   for (let it = 0; it < regions.length; it++) {
     let moved = false;
@@ -186,169 +259,155 @@ function diagram(cs: readonly IndexCrossing[]): { svg: string; regions: string[]
     if (!moved) break;
   }
   const depth = Math.max(...regions.map((r) => layer.get(r)!)) + 1;
-  const cols: string[][] = Array.from({ length: depth }, () => []);
-  for (const r of regions) cols[layer.get(r)!].push(r);
 
-  // ORDER WITHIN A COLUMN — the barycentre of the sources already placed, so edges cross as
-  // little as the data allows. Ties break on the name: the page is a PURE FUNCTION of the
-  // model, and an order that depended on anything else would make it not one.
-  const order = new Map<string, number>();
+  // WITHIN a layer, order by the mean row of the crossings that touch the region, so a
+  // column sits beside the rows that use it and the runs stay short. Ties break on the
+  // name: the page is a PURE FUNCTION of the model, and an order that depended on anything
+  // else would make it not one.
+  const meanRow = (r: string) => {
+    const rs = cs.filter((c) => c.from === r || c.to === r).map((c) => rowOf.get(c)!);
+    return rs.length ? rs.reduce((a, b) => a + b, 0) / rs.length : 0;
+  };
+  const cols: string[] = [];
   for (let j = 0; j < depth; j++) {
-    const bary = (r: string) => {
-      const ps = cs.filter((c) => c.to === r && order.has(c.from)).map((c) => order.get(c.from)!);
-      return ps.length ? ps.reduce((a, b) => a + b, 0) / ps.length : Number.MAX_SAFE_INTEGER;
-    };
-    cols[j] = cols[j].map((r) => ({ r, k: bary(r) }))
-      .sort((a, b) => a.k - b.k || a.r.localeCompare(b.r)).map((z) => z.r);
-    cols[j].forEach((r, i) => order.set(r, i));
+    cols.push(...regions.filter((r) => layer.get(r) === j)
+      .map((r) => ({ r, k: meanRow(r) }))
+      .sort((a, b) => a.k - b.k || a.r.localeCompare(b.r)).map((z) => z.r));
   }
+  const colAt = new Map(cols.map((r, i) => [r, i]));
 
-  const outs = new Map<string, IndexCrossing[]>(), ins = new Map<string, IndexCrossing[]>();
-  for (const c of cs) {
-    (outs.get(c.from) ?? outs.set(c.from, []).get(c.from)!).push(c);
-    (ins.get(c.to) ?? ins.set(c.to, []).get(c.to)!).push(c);
-  }
+  // ── THE LATTICE ─────────────────────────────────────────────────────────────────────
+  // Two reserved columns and then N region columns of ONE width. Every number below is a
+  // multiple of the base unit, and none of them is tuned to a project: the guard column is
+  // as wide as the longest guard name, the region pitch as wide as the longest region name.
+  const nameOf = (c: IndexCrossing) => c.present ? c.sym : `${c.sym} DANGLING`;
+  const GUARD_W = snap2(Math.max(...cs.map((c) => textW(nameOf(c)))) + 6 * U);
+  const COL_W = snap2(Math.max(...cols.map((r) => textW(r))) + 2 * U);
+  const x0 = U + GUARD_W;                       // left edge of the region field
+  const width = x0 + cols.length * COL_W + U;
+  const barX = (r: string) => x0 + colAt.get(r)! * COL_W + COL_W / 2;
 
-  // A BOX IS AS TALL AS THE GUARDED PATHS THROUGH IT. Ports never crowd, and the height
-  // says something true rather than being decoration.
-  const colW = cols.map((col) => Math.max(66, ...col.map((r) => Math.ceil(textW(r, BOX_FS)) + 2 * PAD_X)));
-  const H = new Map(regions.map((r) =>
-    [r, Math.max(MIN_H, Math.max(outs.get(r)?.length ?? 0, ins.get(r)?.length ?? 0) * PORT + 6)]));
-  const wOf = (r: string) => colW[layer.get(r)!];
+  const yTop = U + HEAD_H + U;
+  let yCur = yTop;
+  const bandY = new Map<Band, number>();
+  for (const b of bands) { bandY.set(b, yCur); yCur += BAND_H + b.rows.length * ROW; }
+  const fieldEnd = yCur;
+  const height = fieldEnd + U + LEG_H;
+  const rowY = (c: IndexCrossing) => {
+    const b = bands.find((x) => x.rows.includes(c))!;
+    return bandY.get(b)! + BAND_H + b.rows.indexOf(c) * ROW + ROW / 2;
+  };
 
-  // THE COLUMN GAP IS SET BY THE LONGEST GUARD NAME, not by a constant: the arrow labels
-  // live in the gaps, and a gap narrower than its labels would either overlap them or push
-  // them onto somebody else's line. Tuning a fixed number to one project is how a layout
-  // stops being a function of the data.
-  const colGap = Math.max(MIN_GAP, Math.ceil(Math.max(...cs.map((c) => textW(c.sym, EDGE_FS)))) + 34);
-  const colX: number[] = [];
-  for (let j = 0, x = EDGE_PAD; j < depth; j++) { colX.push(x); x += colW[j] + colGap; }
-  const width = colX[depth - 1] + colW[depth - 1] + EDGE_PAD;
-
-  const colH = cols.map((col) => col.reduce((s, r) => s + H.get(r)!, 0) + ROW_GAP * Math.max(0, col.length - 1));
-  const contentH = Math.max(...colH);
-  const selfs = cs.filter((c) => c.from === c.to);
-  const top = EDGE_PAD + (selfs.length ? 26 : 0);
-
-  const X = new Map<string, number>(), Y = new Map<string, number>();
-  for (let j = 0; j < depth; j++) {
-    let y = top + (contentH - colH[j]) / 2;
-    for (const r of cols[j]) { X.set(r, colX[j]); Y.set(r, y); y += H.get(r)! + ROW_GAP; }
-  }
-  const cy = (r: string) => Y.get(r)! + H.get(r)! / 2;
-
-  const outY = new Map<IndexCrossing, number>(), inY = new Map<IndexCrossing, number>();
-  for (const [r, list] of outs) {
-    [...list].sort((a, b) => cy(a.to) - cy(b.to) || a.sym.localeCompare(b.sym))
-      .forEach((c, i, all) => outY.set(c, Y.get(r)! + H.get(r)! * (i + 1) / (all.length + 1)));
-  }
-  for (const [r, list] of ins) {
-    [...list].sort((a, b) => cy(a.from) - cy(b.from) || a.sym.localeCompare(b.sym))
-      .forEach((c, i, all) => inY.set(c, Y.get(r)! + H.get(r)! * (i + 1) / (all.length + 1)));
-  }
-
-  // A CROSSING THAT SKIPS A LAYER (or runs backwards, or sideways) takes a lane below the
-  // diagram rather than a straight line through somebody else's box.
-  const bypass = cs.filter((c) => c.from !== c.to && layer.get(c.to)! !== layer.get(c.from)! + 1);
-  const laneY = new Map(bypass.map((c, i) => [c, top + contentH + 20 + i * LANE]));
-  const height = top + contentH + (bypass.length ? 20 + bypass.length * LANE : 8) + LEGEND_H;
-
-  const maxHeat = Math.max(0, ...cs.map((c) => c.heat ?? 0));
-  const weight = (c: IndexCrossing) =>
-    c.heat === null || maxHeat <= 0 ? 1 : +(1 + 3.6 * (c.heat / maxHeat)).toFixed(2);
-  // COLOUR ONLY REINFORCES. A dangling chokepoint and an unmanaged tier-3 security crossing
-  // are the two states the atlas itself calls out; both also carry it in text on the label.
+  // ── THE ENCODINGS ───────────────────────────────────────────────────────────────────
+  // HEAT IS LINE WEIGHT and it has to be SEEN. A linear map of a range whose ends differ by
+  // sixty-fold puts every cold crossing inside a pixel of every other, which is how a
+  // declared encoding becomes an inert one; the exponent spreads the bottom of the range
+  // where all the crossings actually are. Anchored at 1 so an unrecorded heat is a hairline
+  // and is legended as unrecorded rather than cold.
+  const heats = cs.map((c) => c.heat).filter((h): h is number => h !== null);
+  const maxHeat = Math.max(0, ...heats);
+  const weight = (h: number | null) =>
+    h === null || maxHeat <= 0 ? 1 : +(1 + 4 * Math.pow(h / maxHeat, 0.6)).toFixed(2);
+  // TIER IS TONE AND TREATMENT TOGETHER, and the rare tier is the loud one. An enshrined
+  // crossing draws solid at full strength with its name in bold; everything weaker draws
+  // broken and dim. Thirteen dashed lines against one solid one is the reading — the
+  // previous spelling made the field of dashes the default and the strongest crossing the
+  // thing you had to hunt for.
   const colourOf = (c: IndexCrossing) =>
-    !c.present || (c.tier === 3 && c.security) ? "var(--alarm)" : "var(--fg)";
+    !c.present || (c.tier === 3 && c.security) ? "var(--alarm)" : c.tier === 1 ? "var(--fg)" : "var(--dim)";
 
-  const occupied: Rect[] = regions.map((r) =>
-    ({ x: X.get(r)! - 4, y: Y.get(r)! - 4, w: wOf(r) + 8, h: H.get(r)! + 8 }));
+  // ── THE DRAWING ─────────────────────────────────────────────────────────────────────
+  const tints: string[] = [], bars: string[] = [], heads: string[] = [], rows: string[] = [];
 
-  // EVERY PIECE OF ONE CROSSING WEARS THAT CROSSING'S CLASS — `<g class="cx cx-SYM">` — so
-  // "highlight these, dim the rest" is a handful of CSS rules rather than per-element
-  // bookkeeping. It is TWO groups per crossing, not one, because the z-order is load
-  // bearing: every edge draws beneath every box, every label plate draws above them, and
-  // fusing the two layers would let a late arrow cross an early guard's name.
-  const edgeGroups: string[] = [], labelGroups: string[] = [];
-  const hots: Hot[] = [];
+  // Region columns: a bus bar the full height of the row field, and the region's name over
+  // it. The bar is what lets the eye drop from a name to any row without a ruler.
+  for (const r of cols) {
+    const x = barX(r);
+    bars.push(`<path d="M${x},${yTop - U} V${fieldEnd}" stroke="var(--rule)" stroke-width="1" fill="none"/>`);
+    heads.push(`<text x="${x}" y="${U + HEAD_H - U}" class="rn" text-anchor="middle">${esc(r)}</text>`);
+  }
+  heads.push(`<path d="M0,${yTop - U} H${width}" stroke="var(--fg)" stroke-width="1" fill="none"/>`);
+
+  bands.forEach((b, i) => {
+    const y = bandY.get(b)!, h = BAND_H + b.rows.length * ROW;
+    // THE BAND IS A TINT, A RULE AND A NAME — three redundant markers, because the tint is
+    // the one that does not survive a bad printer.
+    if (i % 2 === 1) tints.push(`<rect x="0" y="${y}" width="${width}" height="${h}" fill="var(--flat)"/>`);
+    tints.push(`<path d="M0,${y} H${width}" stroke="var(--rule)" stroke-width="1" fill="none"/>`);
+    const sel = b.dir === null ? "" : ` data-org="${esc(b.dir)}" tabindex="0" role="button"`;
+    tints.push(`<g class="bandh"${sel}>`
+      + `<rect x="0" y="${y}" width="${width}" height="${BAND_H}" fill="none" pointer-events="all"/>`
+      + `<text x="${U}" y="${y + 2 * U}" class="bn">${esc(b.label)}</text>`
+      + `<text x="${x0 - 2 * U}" y="${y + 2 * U}" class="dim" text-anchor="end">${b.rows.length}</text></g>`);
+  });
+
   for (const c of cs) {
-    const edges: string[] = [], labels: string[] = [];
-    const col = colourOf(c), w = weight(c), dash = DASH[c.tier] ?? DASH[3];
+    const y = rowY(c), col = colourOf(c), w = weight(c.heat), dash = DASH[c.tier] ?? DASH[3];
     const stroke = `stroke="${col}" stroke-width="${w}"${dash ? ` stroke-dasharray="${dash}"` : ""} fill="none"`;
-    let ax = 0, ay = 0;
+    const a = barX(c.from), b = barX(c.to);
+    const g: string[] = [];
 
+    // THE RUN. Horizontal, on the row's own centre line, from source bar to target bar — a
+    // filled square where it leaves, an arrowhead where it lands. A crossing that ends where
+    // it began cannot be a run, so it draws the smallest orthogonal loop that closes.
     if (c.from === c.to) {
-      const x1 = X.get(c.from)! + wOf(c.from) * 0.32, x2 = X.get(c.from)! + wOf(c.from) * 0.68;
-      const yb = Y.get(c.from)!, yt = yb - 18;
-      edges.push(`<path d="M${x1},${yb} V${yt} H${x2} V${yb}" ${stroke}/>`, head(x2, yb, 0, 1, col));
-      ax = X.get(c.from)! + wOf(c.from) / 2; ay = yt - 10;
-    } else if (bypass.includes(c)) {
-      const x1 = X.get(c.from)! + wOf(c.from), y1 = outY.get(c)!;
-      const x2 = X.get(c.to)!, y2 = inY.get(c)!, by = laneY.get(c)!;
-      edges.push(`<path d="M${x1},${y1.toFixed(1)} H${x1 + JUT} V${by} H${x2 - JUT} V${y2.toFixed(1)} H${x2}" ${stroke}/>`,
-        head(x2, y2, 1, 0, col));
-      ax = (x1 + JUT + x2 - JUT) / 2; ay = by;
+      g.push(`<path d="M${a},${y} h${2 * U} v${U} h${-2 * U}" ${stroke}/>`, head(a, y + U, -1, col));
     } else {
-      const x1 = X.get(c.from)! + wOf(c.from), y1 = outY.get(c)!;
-      const x2 = X.get(c.to)!, y2 = inY.get(c)!;
-      edges.push(`<line x1="${x1}" y1="${y1.toFixed(1)}" x2="${x2}" y2="${y2.toFixed(1)}" ${stroke}/>`,
-        head(x2, y2, x2 - x1, y2 - y1, col));
-      ax = (x1 + x2) / 2; ay = (y1 + y2) / 2;
+      g.push(`<line x1="${a}" y1="${y}" x2="${b}" y2="${y}" ${stroke}/>`, head(b, y, b > a ? 1 : -1, col));
     }
-
-    // THE GUARD'S NAME LABELS THE ARROW, placed greedily off the anchor until it collides
-    // with nothing already drawn. Deterministic, so the SVG stays a function of the model.
-    const txt = c.present ? c.sym : `${c.sym} DANGLING`;
-    const lw = textW(txt, EDGE_FS) + (c.security ? 15 : 0) + 9;
-    let ly = ay;
-    for (const d of [0, -LABEL_H, LABEL_H, -2 * LABEL_H, 2 * LABEL_H, -3 * LABEL_H, 3 * LABEL_H, -4 * LABEL_H, 4 * LABEL_H]) {
-      ly = ay + d;
-      if (!occupied.some((o) => hits(o, { x: ax - lw / 2, y: ly - LABEL_H / 2, w: lw, h: LABEL_H }))) break;
-    }
-    occupied.push({ x: ax - lw / 2, y: ly - LABEL_H / 2, w: lw, h: LABEL_H });
-    const lx = ax - lw / 2, lt = ly - LABEL_H / 2;
-    labels.push(`<rect x="${lx.toFixed(1)}" y="${lt.toFixed(1)}" width="${lw.toFixed(1)}" height="${LABEL_H}" fill="var(--bg)"/>`
-      + (c.security ? `<path d="M${(lx + 5).toFixed(1)},${ly.toFixed(1)} l4.5,-4.5 l4.5,4.5 l-4.5,4.5 Z" fill="${col}"/>` : "")
-      + `<text x="${(lx + (c.security ? 15 : 5)).toFixed(1)}" y="${(ly + 3.5).toFixed(1)}" class="el" fill="${c.present ? col : "var(--alarm)"}">${esc(txt)}</text>`);
-    // THE SELECTION RING — a drawn box around the guard's name. It is a MARK, not a hue,
-    // so a selection is still visible on a black-and-white printer and to a reader who
-    // cannot separate the four palette values. Hidden until its radio is checked.
-    labels.push(`<rect class="ring" x="${(lx - 2.5).toFixed(1)}" y="${(lt - 2.5).toFixed(1)}" width="${(lw + 5).toFixed(1)}" height="${LABEL_H + 5}" fill="none" stroke="var(--fg)" stroke-width="1.5"/>`);
-    hots.push({ sym: c.sym, x: lx - 2.5, y: lt - 2.5, w: lw + 5, h: LABEL_H + 5 });
-    const g = `cx cx-${slug(c.sym)}`;
-    edgeGroups.push(`<g class="${g}">${edges.join("")}</g>`);
-    labelGroups.push(`<g class="${g}">${labels.join("")}</g>`);
+    g.push(`<rect x="${a - U / 2}" y="${y - U / 2}" width="${U}" height="${U}" fill="${col}"/>`);
+    // THE LEADER ties the name column to the run. Without it the two halves of a row are
+    // two objects a reader has to join by eye, which is the complaint this layout answers.
+    // EVERY LEADER STARTS AT ONE X, not at the end of its own name: a ragged set of start
+    // points is a second, accidental alignment line running down the middle of the figure.
+    g.push(`<path d="M${x0 - 2 * U},${y} H${a - U}" stroke="var(--rule)" stroke-width="1" stroke-dasharray="1 3" fill="none"/>`);
+    if (c.security) g.push(diamond(U + 4, y, col));
+    g.push(`<text x="${4 * U}" y="${y + 4}" class="gn${c.tier === 1 ? " t1" : ""}" fill="${c.present ? col : "var(--alarm)"}">${esc(nameOf(c))}</text>`);
+    // THE SELECTION RING — a drawn box around the guard's name, hidden until selected. It is
+    // a MARK, not a hue, so a selection survives a black-and-white printer and a reader who
+    // cannot separate the four palette values.
+    g.push(`<rect class="ring" x="${U / 2}" y="${y - U}" width="${GUARD_W}" height="${2 * U}" fill="none" stroke="var(--fg)" stroke-width="1.5"/>`);
+    // …and the whole row is the hit area. A row IS the crossing here, so anything narrower
+    // would be a target the picture does not draw.
+    g.push(`<rect x="0" y="${y - ROW / 2}" width="${width}" height="${ROW}" fill="none" pointer-events="all"/>`);
+    const heat = c.heat === null ? "heat unrecorded" : `heat ${(c.heat * 100).toFixed(1)}%`;
+    rows.push(`<g class="cx" data-sym="${esc(c.sym)}"${dirOf.get(c) ? ` data-owner="${esc(dirOf.get(c)!)}"` : ""} tabindex="0" role="button">`
+      + `<title>${esc(`${nameOf(c)} — ${c.from} → ${c.to}, ${TIER_NAME[c.tier] ?? `tier-${c.tier}`}${c.security ? ", security" : ""}, ${heat}`)}</title>`
+      + g.join("") + `</g>`);
   }
 
-  const boxes = regions.map((r) =>
-    `<rect x="${X.get(r)}" y="${Y.get(r)}" width="${wOf(r)}" height="${H.get(r)}" fill="var(--bg)" stroke="var(--fg)" stroke-width="1"/>`
-    + `<text x="${X.get(r)! + wOf(r) / 2}" y="${(cy(r) + 4).toFixed(1)}" class="bl" text-anchor="middle">${esc(r)}</text>`).join("");
-
-  // THE LEGEND ONLY NAMES WHAT IS ON THE PAGE. A treatment with no subjects here would be
-  // teaching a vocabulary this project does not use.
-  const seenTiers = [...new Set(cs.map((c) => c.tier))].sort();
+  // ── THE LEGEND. It only names what is on the page: a treatment with no subjects here
+  // would be teaching a vocabulary this project does not use. The heat scale prints its own
+  // ENDPOINTS, so the reader can check the encoding against the crossings table instead of
+  // taking "line weight = heat" on faith.
   const leg: string[] = [];
-  let lgx = EDGE_PAD;
-  const ly0 = height - LEGEND_H / 2;
-  for (const t of seenTiers) {
-    const label = TIER_NAME[t] ?? `tier-${t}`;
-    leg.push(`<line x1="${lgx}" y1="${ly0}" x2="${lgx + 24}" y2="${ly0}" stroke="var(--fg)" stroke-width="2"${DASH[t] ? ` stroke-dasharray="${DASH[t]}"` : ""}/>`,
-      `<text x="${lgx + 29}" y="${ly0 + 3.5}" class="el dim">${esc(label)}</text>`);
-    lgx += 29 + textW(label, EDGE_FS) + 20;
+  let lx = U, ly = fieldEnd + U + 2 * U;
+  const sample = (draw: (x: number) => string, label: string, w: number) => {
+    if (lx + w + textW(label) + 3 * U > width) { lx = U; ly += 2 * U; }
+    leg.push(draw(lx), `<text x="${lx + w + U}" y="${ly + 4}" class="lg dim">${esc(label)}</text>`);
+    lx += Math.ceil((w + U + textW(label) + 3 * U) / U) * U;
+  };
+  for (const t of [...new Set(cs.map((c) => c.tier))].sort()) {
+    const nm = TIER_NAME[t] ?? `tier-${t}`;
+    sample((x) => `<line x1="${x}" y1="${ly}" x2="${x + 3 * U}" y2="${ly}" stroke="var(--${t === 1 ? "fg" : "dim"})" stroke-width="${t === 1 ? 3 : 1.5}"${DASH[t] ? ` stroke-dasharray="${DASH[t]}"` : ""}/>`,
+      `${nm}${t === 1 ? " — drawn solid and at full strength" : ""}`, 3 * U);
   }
-  if (cs.some((c) => c.security)) {
-    leg.push(`<path d="M${lgx + 5},${ly0} l4.5,-4.5 l4.5,4.5 l-4.5,4.5 Z" fill="var(--fg)"/>`,
-      `<text x="${lgx + 20}" y="${ly0 + 3.5}" class="el dim">security crossing</text>`);
-    lgx += 20 + textW("security crossing", EDGE_FS) + 20;
+  if (cs.some((c) => c.security)) sample((x) => diamond(x + 4, ly, "var(--fg)"), "security crossing", 2 * U);
+  if (!heats.length) {
+    sample((x) => `<line x1="${x}" y1="${ly}" x2="${x + 3 * U}" y2="${ly}" stroke="var(--dim)" stroke-width="1"/>`,
+      "line weight — heat UNRECORDED, every line is a hairline for that reason", 3 * U);
+  } else {
+    const lo = Math.min(...heats), hi = Math.max(...heats);
+    sample((x) => [lo, (lo + hi) / 2, hi].map((h, i) =>
+      `<line x1="${x}" y1="${ly - U + i * U}" x2="${x + 3 * U}" y2="${ly - U + i * U}" stroke="var(--dim)" stroke-width="${weight(h)}"/>`).join(""),
+      `line weight = change heat, ${(lo * 100).toFixed(1)}% to ${(hi * 100).toFixed(1)}%`
+      + (heats.length < cs.length ? " (hairline = unrecorded, not cold)" : ""), 3 * U);
   }
-  const heatText = cs.every((c) => c.heat === null)
-    ? "line weight — heat UNRECORDED, every line is thin for that reason"
-    : `line weight = change heat${cs.some((c) => c.heat === null) ? " (thinnest = unrecorded, not cold)" : ""}`;
-  leg.push(`<text x="${lgx}" y="${ly0 + 3.5}" class="el dim">${esc(heatText)}</text>`);
+  const legH = ly + 2 * U - height;
 
-  const svg = `<svg viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" role="img" aria-label="crossings diagram">`
-    + edgeGroups.join("") + boxes + labelGroups.join("") + leg.join("") + `</svg>`;
-  return { svg, regions, hots, w: width, h: height };
+  const svg = `<svg viewBox="0 0 ${width} ${height + Math.max(0, legH)}" width="${width}" height="${height + Math.max(0, legH)}" role="img" aria-label="crossings diagram">`
+    + tints.join("") + bars.join("") + heads.join("") + rows.join("") + leg.join("") + `</svg>`;
+  return { svg, regions, w: width, h: height + Math.max(0, legH) };
 }
 
 // ── the MAP's drill-downs ─────────────────────────────────────────────────────────────
@@ -455,26 +514,41 @@ function trustSection(ds: Darkness[]): string {
 //
 // SO THE ROSTER IS ONE BLOCK, NOT N. Fourteen components are fourteen rows and ONE object;
 // the ≤7-per-tab rule is about objects a reader must orient among, and a list is one of
-// them. What it is NOT is a table: an intent line squeezed into a cell wraps to four words
-// per line and stops being readable, so the prose gets its own row at its own measure and
-// the numbers go beside the NAME where they are a caption rather than a column.
+// them. What it is NOT is a table of prose: an intent line squeezed into a cell wraps to
+// four words per line and stops being readable, so the sentence gets its own grid row at
+// its own measure — and everything that is NOT prose gets a real column.
+//
+// FIXED COLUMNS, NOT A FLEX ROW. Every row lays out on the same `ch`-based template, so the
+// eye has a vertical line to follow: mark, name, directory, then five right-aligned metric
+// columns in tabular figures. Nothing here is content-sized, because a content-sized column
+// is a column that agrees with itself on one row and no other.
 //
 // THE ORDER IS THE TEACHING. Perimeter first — the components that own a trust crossing,
 // most-held first — then the interior, which owns none. See index-model.ts's sort.
 
-/** The compact numbers beside an organ's name. Small enough to read as a caption, and each
- *  still carries the denominator that makes it mean anything. */
-function organNums(c: IndexComponent): string {
+/** THE METRIC COLUMNS, in order, and the caption each one gets in the band head. The
+ *  captions are why the values can be bare: `4/17` under `witnessed` says what
+ *  `4/17 witnessed` said on every row, once. */
+const NUM_COLS = ["files", "lines", "gates / grades", "witnessed", ""] as const;
+
+/** One organ's numbers, one cell per column. The last is the FLAG cell: it is what the
+ *  leading `!` on the row means, spelled out — a severity mark whose reason is not on the
+ *  page is a mark the reader has to guess at. */
+function organNums(c: IndexComponent): string[] {
   const grades = (["A", "B", "C", "D", "U"] as const)
     .filter((g) => c.grades[g] > 0).map((g) => `${c.grades[g]}${g}`).join(" ");
-  return [
-    `${c.files}f`,
-    `${c.lines}L`,
-    `${c.gates} gate(s)${grades ? ` ${grades}` : ""}`,
-    `${c.witnessed}/${c.invariants} witnessed`,
-    c.naked ? `<span class="warn">! ${c.naked} naked</span>` : "",
+  const flags = [
     c.breaches ? `<span class="alarm">!! ${c.breaches} breach(es)</span>` : "",
-  ].filter(Boolean).join(' <span class="dim">·</span> ');
+    c.naked ? `<span class="warn">! ${c.naked} naked</span>` : "",
+    c.invariants > c.anchored ? `<span class="warn">! ${c.invariants - c.anchored} unanchored</span>` : "",
+  ].filter(Boolean);
+  return [
+    String(c.files),
+    String(c.lines),
+    `${c.gates}${grades ? ` <span class="dim">${grades}</span>` : ""}`,
+    `${c.witnessed}<span class="dim">/${c.invariants}</span>`,
+    flags.join(" "),
+  ];
 }
 
 /**
@@ -492,18 +566,18 @@ function roster(mp: IndexModel["map"], drawn: ReadonlySet<string>): string {
   const interior = cs.filter((c) => c.guards.length === 0);
 
   const chip = (sym: string) => drawn.has(sym)
-    ? `<label for="g-${slug(sym)}" class="chip chip-${slug(sym)}">${esc(sym)}</label>`
+    ? `<span class="chip" data-sym="${esc(sym)}" tabindex="0" role="button">${esc(sym)}</span>`
     : `<span class="chip held" title="held back by the crossings cap — it is in the table below, not on the picture">${esc(sym)}</span>`;
 
   const row = (c: IndexComponent) => {
     const sev: Sev = c.breaches > 0 ? "alarm" : c.naked > 0 || c.invariants > c.anchored ? "warn" : "quiet";
     const name = c.guards.length
-      ? `<label for="o-${slug(c.dir)}" class="oname">${esc(c.label)}</label>`
+      ? `<span class="oname" data-org="${esc(c.dir)}" tabindex="0" role="button">${esc(c.label)}</span>`
       : `<span class="oname flat">${esc(c.label)}</span>`;
-    return `<div class="org org-${slug(c.dir)}">`
-      + `<div class="ohead"><span class="omk ${sev}">${MARK[sev]}</span>${name}`
+    return `<div class="org" data-dir="${esc(c.dir)}">`
+      + `<span class="omk ${sev}">${MARK[sev]}</span>${name}`
       + `<span class="odir dim">${esc(c.dir)}</span>`
-      + `<span class="onum dim">${organNums(c)}</span></div>`
+      + `<span class="onum">${organNums(c).map((n) => `<span>${n}</span>`).join("")}</span>`
       + (c.intent
         ? `<p class="ointent">${esc(c.intent)}</p>`
         : `<p class="ointent dim">This component's spec declares no intent line, so it has no sentence of its own here — the one thing on this page nothing else can supply.</p>`)
@@ -522,15 +596,34 @@ function roster(mp: IndexModel["map"], drawn: ReadonlySet<string>): string {
       ? `<p class="dim rsplit">The atlas ran and graded <b>no crossings</b>, so no component owns one. All ${cs.length} are interior by that reading — which is a statement about the atlas config as much as about the code.</p>`
       : `<p class="dim rsplit"><b>${interior.length}</b> of ${cs.length} own no graded crossing. Their contract is entirely INTERNAL — a crossing is where trust changes hands, and these never take that transfer. That is a reading of the shape, not a gap to close.</p>`;
 
+  // THE BAND HEAD IS THE COLUMN HEAD. It rides the same template as the rows below it, so
+  // the captions sit exactly over the figures they name and the numbers can be bare.
   const band = (label: string, note: string, xs: IndexComponent[]) => xs.length
-    ? `<div class="band"><div class="bhead">${esc(label)} <span class="dim">${esc(note)}</span> <span class="ct">${xs.length}</span></div>${xs.map(row).join("")}</div>`
+    ? `<div class="band"><div class="bhead"><span class="omk"></span>`
+      + `<span class="bname">${esc(label)} <span class="ct">${xs.length}</span></span>`
+      + `<span class="dim bnote">${esc(note)}</span>`
+      + `<span class="onum dim">${NUM_COLS.map((n) => `<span>${esc(n)}</span>`).join("")}</span></div>`
+      + xs.map(row).join("") + `</div>`
     : "";
 
-  return `<div class="roster">`
+  // WHAT THE LEADING MARK MEANS, said once — and only when something on the page wears one.
+  // A severity glyph whose reason is not on the page is a glyph the reader has to guess at;
+  // a key for a glyph that is not on the page is the legend rule broken the other way.
+  const marked = cs.some((c) => c.breaches > 0 || c.naked > 0 || c.invariants > c.anchored);
+  const key = marked
+    ? `<p class="rkey dim"><span class="warn">!</span> an invariant with no anchor, or a naked sink `
+      + `<span class="dim">·</span> <span class="alarm">!!</span> a breached gate `
+      + `<span class="dim">·</span> the rightmost column says which, per organ</p>`
+    : "";
+
+  return `<div class="roster">` + key
     + (mp.atlas && mp.crossings.total
       ? band("perimeter", "owns a trust crossing — most held first", perimeter)
         + band("interior", "owns none", interior)
-      : `<div class="band">${cs.map(row).join("")}</div>`)
+      // WITH NO PERIMETER READING there is still a head, because the head is what CAPTIONS the
+      // metric columns — and a column of bare figures with no caption is worse than no column.
+      // It names no split: "spec-tree order" is the only order that was actually taken.
+      : band("components", "in spec-tree order — the perimeter is unread", cs))
     + split + `</div>`;
 }
 
@@ -538,18 +631,15 @@ function roster(mp: IndexModel["map"], drawn: ReadonlySet<string>): string {
  *  strip — plus the masthead and the tab bar that every tab shares. */
 function mapTab(m: IndexModel): string {
   const mp = m.map;
-  const d = diagram(mp.crossings.shown);
+  const d = diagram(mp.crossings.shown, mp.components);
   const a = mp.atlas;
 
-  // THE HOTSPOTS. One `<label>` per guard, absolutely positioned over the plate the layout
-  // already computed for that guard's name — the only way to make an arrow clickable
-  // without script, because `<label>` is not valid inside SVG. The coordinates are the
-  // SVG's own pixels and the SVG is emitted at its natural size, so they cannot drift.
-  const hot = (h: { sym: string; x: number; y: number; w: number; h: number }) =>
-    `<label for="g-${slug(h.sym)}" class="hot" style="left:${h.x.toFixed(1)}px;top:${h.y.toFixed(1)}px;width:${h.w.toFixed(1)}px;height:${h.h}px" title="${esc(h.sym)} — who owns this crossing"></label>`;
-
+  // THE FIGURE SCALES. It is emitted at its natural width and capped there, but it is free
+  // to shrink to the column — which is only possible now that the hit areas are the SVG's
+  // own elements. The old absolutely-positioned overlay pinned the picture to one pixel
+  // size, and that is the layout constraint the script bought its way out of.
   const figure = d
-    ? `<div class="figure"><div class="fwrap" style="width:${d.w}px;height:${d.h}px">${d.svg}${d.hots.map(hot).join("")}</div></div>`
+    ? `<div class="figure" style="--fw:${d.w}px">${d.svg}</div>`
     : `<p class="none"><b>NO CROSSING DIAGRAM.</b> ${a
       ? "The atlas record holds no crossings, so there are no regions to draw and none are invented."
       : "No atlas reading is recorded here — the shape is UNREAD, not absent."}${mp.zones.length ? "" : " No <code>## zones</code> are declared either."}</p>`;
@@ -579,7 +669,7 @@ function mapTab(m: IndexModel): string {
   // caption on the picture above it, and a page with a seven-object budget does not spend
   // one of them on instructions.
   const hint = d
-    ? ` <span class="dim">·</span> <span class="dim">click a guard, or an organ below</span> <label for="sel-all" class="clear">show all</label>`
+    ? ` <span class="dim">·</span> <span class="dim">click a row, a band or an organ below</span> <span class="clear" data-clear tabindex="0" role="button">show all</span>`
     : "";
   const summary = `<p class="sum">${bits.join(" <span class=\"dim\">·</span> ")}${hint}</p>`;
 
@@ -595,28 +685,18 @@ function mapTab(m: IndexModel): string {
     ? panel("zones", `<p class="dim">Declared order IS trust order.</p><p>${mp.zones.map((z) => `<b>${esc(z.name)}</b>${z.inside ? ` <span class="dim">inside ${esc(z.inside)}</span>` : ""}`).join(" <span class=\"dim\">·</span> ")}</p>`)
     : "";
 
-  // THE SELECTION GROUP — one radio per selectable organ and one per drawn guard, plus the
-  // reset that is checked in the markup. They must PRECEDE the figure and the roster: the
-  // whole mechanism is `#id:checked ~ .figure` / `~ .roster`, and a sibling combinator only
-  // looks forwards. One group, not two, because the selection is ONE thing at a time —
-  // checkboxes would allow "web and auth and Patient", for which "dim the rest" means
-  // nothing.
+  // WHO OWNS THE SELECTED CROSSING, one line per guard, revealed when that guard is picked.
+  // This is the second direction of the join: the diagram alone can say where a crossing
+  // runs and never which organ holds it.
   const drawn = new Set(mp.crossings.shown.map((c) => c.sym));
-  const radios = `<input type="radio" name="orgsel" id="sel-all" class="tog" checked>`
-    + mp.components.filter((c) => c.guards.length).map((c) => `<input type="radio" name="orgsel" id="o-${slug(c.dir)}" class="tog msel">`).join("")
-    + mp.crossings.shown.map((c) => `<input type="radio" name="orgsel" id="g-${slug(c.sym)}" class="tog msel">`).join("");
-
-  // WHO OWNS THE SELECTED ARROW, one line per guard, revealed by that guard's radio. This
-  // is the second direction of the join: the diagram alone can say where a crossing runs
-  // and never which organ holds it.
   const owners = mp.crossings.shown.map((c) => {
     const who = c.owner
       ? `<b>${esc(c.owner)}</b> <span class="dim">owns this crossing —</span> ${esc(c.from)} <span class="dim">&rarr;</span> ${esc(c.to)}<span class="dim">, tier-${c.tier}${c.security ? ", security" : ""}</span>`
       : `<span class="warn">! no organ owns this crossing.</span> <span class="dim">${esc(c.ownerWhy ?? "")}</span>`;
-    return `<p class="own own-${slug(c.sym)}"><span class="lbl">${esc(c.sym)}</span> ${who}</p>`;
+    return `<p class="own" data-own="${esc(c.sym)}"><span class="lbl">${esc(c.sym)}</span> ${who}</p>`;
   }).join("");
 
-  return radios + figure + summary + owners + roster(mp, drawn) + `<div class="drill">${strip}`
+  return figure + summary + owners + roster(mp, drawn) + `<div class="drill">${strip}`
     + panel("comp", `<div class="scroll">${componentsTable(mp.components)}</div>`)
     + panel("gates", `<div class="scroll">${gatesTable(mp.gates, mp.gatesClean, mp.gatesTotal)}</div>`)
     + panel("cross", `<div class="scroll">${crossingsTable(mp)}</div>`)
@@ -811,20 +891,29 @@ const STYLE = `
   color-scheme: light dark;
   --bg: #fbfbfa; --fg: #17191d; --dim: #6a7078; --rule: rgba(0,0,0,.16);
   --warn: #8a5300; --alarm: #a3161d; --flat: rgba(0,0,0,.035);
+  /* THE BASE UNIT, and the three type sizes. There is no fourth: weight and tone carry
+     every other distinction, which is the only way monospace stays a lattice. */
+  --u: 8px;
+  --t1: 15px; --t2: 12.5px; --t3: 10.5px;
 }
 @media (prefers-color-scheme: dark) {
   :root { --bg: #0e0f11; --fg: #d6d9de; --dim: #868d97; --rule: rgba(255,255,255,.17);
-          --warn: #cf9a37; --alarm: #e2726b; --flat: rgba(255,255,255,.045); }
+          --warn: #cf9a37; --alarm: #e2726b; --flat: rgba(255,255,255,.05); }
 }
 * { box-sizing: border-box; }
 body {
   margin: 0; background: var(--bg); color: var(--fg);
-  font: 13px/1.55 ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  /* 15/24 — the line box IS three base units, so body prose sits on the same grid the
+     figure is drawn on. */
+  font: var(--t1)/1.6 ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  font-variant-numeric: tabular-nums;
   -webkit-font-smoothing: antialiased;
 }
-main { max-width: 1180px; margin: 0 auto; padding: 1.6rem 1.4rem 5rem; overflow-x: hidden; }
-h1 { font-size: 1.05rem; font-weight: 700; margin: 0; letter-spacing: .02em; }
-p { margin: .4rem 0; }
+/* THE SIDE PADDING IS THREE UNITS, not two, because the roster's selected-row rule hangs
+   into the margin — at two it landed under the overflow clip and a selection lost its mark. */
+main { max-width: 1184px; margin: 0 auto; padding: calc(3*var(--u)) calc(3*var(--u)) calc(10*var(--u)); overflow-x: hidden; }
+h1 { font-size: var(--t1); font-weight: 700; margin: 0; letter-spacing: .04em; }
+p { margin: var(--u) 0; }
 code { font: inherit; }
 b { font-weight: 700; }
 .dim { color: var(--dim); }
@@ -832,26 +921,26 @@ b { font-weight: 700; }
 .alarm { color: var(--alarm); }
 .fgb { color: var(--fg); font-weight: 700; }
 .mono { font-variant-ligatures: none; }
-.sub { font-size: .92em; font-weight: 400; }
+.sub { font-size: var(--t2); font-weight: 400; }
 
 /* ── the masthead: a title, a status MARK, and nothing else ─────────────────────────── */
-.mast { border-bottom: 1px solid var(--fg); padding-bottom: .5rem; }
-.top { display: flex; flex-wrap: wrap; gap: .4rem 1.2rem; align-items: baseline; }
-.badge { cursor: pointer; border: 1px solid var(--rule); padding: 0 .5rem; letter-spacing: .04em;
-         font-size: .92em; user-select: none; }
+.mast { border-bottom: 1px solid var(--fg); padding-bottom: var(--u); }
+.top { display: flex; flex-wrap: wrap; gap: var(--u) calc(2*var(--u)); align-items: baseline; }
+.badge { cursor: pointer; border: 1px solid var(--rule); padding: 0 var(--u); letter-spacing: .06em;
+         font-size: var(--t3); user-select: none; }
 .badge::after { content: " \\25B8"; }
 #x-src:checked ~ .top .badge::after { content: " \\25BE"; }
-.tabs { display: flex; flex-wrap: wrap; gap: .2rem 1.6rem; align-items: baseline; margin-top: .7rem; }
-.tabs a { color: var(--dim); text-decoration: none; letter-spacing: .18em; font-size: .8rem;
-          font-weight: 700; padding-bottom: .15rem; border-bottom: 2px solid transparent; }
-.tabs .stamp { margin-left: auto; color: var(--dim); font-size: .88em; letter-spacing: 0; }
+.tabs { display: flex; flex-wrap: wrap; gap: var(--u) calc(3*var(--u)); align-items: baseline; margin-top: var(--u); }
+.tabs a { color: var(--dim); text-decoration: none; letter-spacing: .18em; font-size: var(--t3);
+          font-weight: 700; padding-bottom: 2px; border-bottom: 2px solid transparent; }
+.tabs .stamp { margin-left: auto; color: var(--dim); font-size: var(--t2); letter-spacing: 0; }
 
 /* ── tabs: :target, so a tab is a linkable URL and no script is needed ──────────────── */
 /* A TAB IS A HASH, so the browser scrolls the section into view — and would scroll the
    masthead off the top, taking the title, the honesty mark and the tab bar with it. The
    margin is larger than the page's own offset, so the scroll clamps to zero and switching
    tabs never moves the reader. */
-.view { display: none; padding-top: 1.4rem; scroll-margin-top: 100vh; }
+.view { display: none; padding-top: calc(3*var(--u)); scroll-margin-top: 100vh; }
 .view:target { display: block; }
 body:not(:has(.view:target)) #map { display: block; }
 body:not(:has(.view:target)) .tabs a[href="#map"],
@@ -861,10 +950,10 @@ body:has(#trajectory:target) .tabs a[href="#trajectory"] { color: var(--fg); bor
 
 /* ── the disclosure: a hidden control, a one-line strip of terms, panels below ──────── */
 .tog { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
-.drill { margin-top: 1.4rem; border-top: 1px solid var(--rule); padding-top: .7rem;
-         display: flex; flex-wrap: wrap; gap: .3rem 1.5rem; align-items: baseline; }
-.term { cursor: pointer; user-select: none; letter-spacing: .08em; text-transform: uppercase;
-        font-size: .76rem; font-weight: 700; }
+.drill { margin-top: calc(3*var(--u)); border-top: 1px solid var(--rule); padding-top: calc(2*var(--u));
+         display: flex; flex-wrap: wrap; gap: var(--u) calc(3*var(--u)); align-items: baseline; }
+.term { cursor: pointer; user-select: none; letter-spacing: .12em; text-transform: uppercase;
+        font-size: var(--t3); font-weight: 700; }
 .term::after { content: " \\25B8"; font-weight: 400; }
 .term .ct { font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--dim); }
 .tog:focus-visible + .term { outline: 1px solid var(--fg); outline-offset: 2px; }
@@ -877,80 +966,106 @@ body:has(#trajectory:target) .tabs a[href="#trajectory"] { color: var(--fg); bor
 #x-zones:checked ~ .term[for="x-zones"]::after, #x-rec:checked ~ .term[for="x-rec"]::after,
 #x-note:checked ~ .term[for="x-note"]::after { content: " \\25BE"; }
 
-/* ── the figure ─────────────────────────────────────────────────────────────────────── */
-.figure { overflow-x: auto; margin: 0 0 1rem; }
-.figure svg { display: block; }
-.fwrap { position: relative; }
-svg text.bl { font: 700 11px ui-monospace, SFMono-Regular, Menlo, monospace; fill: var(--fg); }
-svg text.el { font: 400 10px ui-monospace, SFMono-Regular, Menlo, monospace; }
-svg text.el.dim { fill: var(--dim); }
-.sum { border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); padding: .5rem 0; margin: 0; }
-.clear { cursor: pointer; user-select: none; border: 1px solid var(--rule); padding: 0 .45rem;
-         margin-left: .6rem; font-size: .88em; }
+/* ── the figure ─────────────────────────────────────────────────────────────────────────
+   IT SCALES. The SVG is emitted at its natural width and never drawn wider, but it is free
+   to shrink to the column — which the pixel-positioned hotspot overlay used to forbid. */
+.figure { margin: 0 0 calc(2*var(--u)); }
+.figure svg { display: block; width: 100%; height: auto; max-width: var(--fw); }
+svg text { font: 400 10.5px ui-monospace, SFMono-Regular, Menlo, monospace; fill: var(--fg); }
+svg text.rn { font-weight: 700; letter-spacing: .04em; }
+svg text.bn { font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
+svg text.gn { fill: var(--dim); }
+svg text.gn.t1 { font-weight: 700; }
+svg text.dim, svg text.lg { fill: var(--dim); }
+.sum { border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule);
+       padding: var(--u) 0; margin: 0; font-size: var(--t2); }
+.clear { cursor: pointer; user-select: none; border: 1px solid var(--rule); padding: 0 var(--u);
+         margin-left: var(--u); }
 
-/* ── SELECTION: one radio group over organs AND guards, no script ───────────────────────
-   The hit areas for the arrows are HTML labels laid over the SVG at the same pixel
-   coordinates the layout used to place each guard's name — <label> is not valid inside SVG,
-   and this is the only way an arrow becomes clickable in a document with no script.
-   THE HIGHLIGHT IS NOT COLOUR: the unselected crossings fade (a TONE change, which is what
+/* ── SELECTION: real listeners on the real elements ─────────────────────────────────────
+   THE HIGHLIGHT IS NOT COLOUR: the unselected rows fade (a TONE change, which is what
    greyscale preserves) and the selected one gains a drawn RING around its name. Either one
    alone would survive a black-and-white printer; the pair is unmistakable. */
-.hot { position: absolute; cursor: pointer; }
-.hot:focus-visible { outline: 1px solid var(--fg); outline-offset: 1px; }
+.cx, .bandh, .chip, .oname[data-org], .clear { cursor: pointer; }
 .cx .ring { display: none; }
-#map:has(.msel:checked) .cx { opacity: .13; }
-.own { display: none; border-left: 3px solid var(--fg); padding-left: .8rem; margin: .5rem 0 0; }
+.cx.on .ring { display: block; }
+.figure.sel .cx, .figure.sel .bandh { opacity: .22; }
+.figure.sel .cx.on, .figure.sel .bandh.on { opacity: 1; }
+.cx:focus-visible, .bandh:focus-visible { outline: 1px solid var(--fg); }
+.chip:focus-visible, .oname:focus-visible, .clear:focus-visible { outline: 1px solid var(--fg); outline-offset: 2px; }
+.own { display: none; border-left: 3px solid var(--fg); padding-left: calc(2*var(--u));
+       margin: var(--u) 0 0; font-size: var(--t2); }
+.own.on { display: block; }
 .own .lbl { display: inline-block; min-width: 18ch; font-weight: 700; }
 
-/* ── the ORGAN ROSTER: one block, N rows, the prose at its own measure ──────────────────
-   NOT a table. An intent line in a cell wraps to four words and stops being prose, which
-   is the whole reason this exists — so the sentence gets its own row and its own measure,
-   and the numbers sit beside the name as a caption. */
-.roster { margin-top: 1.5rem; }
-.band { margin-bottom: 1.1rem; }
-.bhead { display: flex; flex-wrap: wrap; gap: 0 .8rem; align-items: baseline;
-         font-size: .76rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
-         border-bottom: 1px solid var(--fg); padding-bottom: .25rem; margin-bottom: .5rem; }
-.bhead .dim { font-weight: 400; letter-spacing: .04em; text-transform: none; font-size: .95em; }
-.bhead .ct { margin-left: auto; font-weight: 400; color: var(--dim); }
-.org { border-left: 3px solid transparent; padding: .45rem 0 .55rem .7rem;
-       border-bottom: 1px solid var(--rule); }
-.org:last-child { border-bottom: 0; }
-.ohead { display: flex; flex-wrap: wrap; gap: 0 .8rem; align-items: baseline; }
-.omk { width: 2ch; font-weight: 700; }
+/* ── the ORGAN ROSTER: fixed columns, and the prose at its own measure ──────────────────
+   ONE TEMPLATE for the band head and every row under it, in ch units so the columns are
+   the same width on every row rather than the width of whatever landed in them. The
+   sentence is the exception and it is deliberate: an intent line in a 20ch cell wraps to
+   four words and stops being prose, so it takes its own grid row at its own measure. */
+.roster { margin-top: calc(3*var(--u)); }
+.band { margin-bottom: calc(3*var(--u)); }
+.bhead, .org {
+  display: grid;
+  grid-template-columns: 3ch minmax(14ch, max-content) 1fr max-content;
+  grid-template-areas: "mk name dir nums" ". intent intent intent" ". chips chips chips";
+  column-gap: calc(2*var(--u)); align-items: baseline;
+}
+/* The band head carries the ROWS' font size, never its own: a ch resolves against the
+   element's own size, so a smaller head would silently shift every column it captions. */
+.bhead { font-weight: 700; letter-spacing: .12em; text-transform: uppercase;
+         border-bottom: 1px solid var(--fg); padding-bottom: var(--u); }
+.bhead .bname { grid-area: name; white-space: nowrap; font-size: var(--t3); }
+.bhead .bnote { grid-area: dir; font-weight: 400; letter-spacing: .04em; text-transform: none;
+                font-size: var(--t3); }
+/* No tracking on the captions: letter-spacing adds a trailing sliver AFTER the last glyph,
+   which pushes a right-aligned caption off the column of figures it is naming. */
+.bhead .onum { color: var(--dim); letter-spacing: 0; }
+.bhead .ct { font-weight: 400; color: var(--dim); }
+.org { border-left: 3px solid transparent; padding: calc(2*var(--u)) 0 calc(2*var(--u)) calc(2*var(--u));
+       margin-left: calc(-2*var(--u) - 3px); border-bottom: 1px solid var(--rule); row-gap: var(--u); }
+.org:last-of-type { border-bottom: 0; }
+.org.on { border-left-color: var(--fg); }
+.omk { grid-area: mk; font-weight: 700; }
 .omk.warn { color: var(--warn); }
 .omk.alarm { color: var(--alarm); }
-.oname { font-weight: 700; cursor: pointer; }
-.oname.flat { cursor: default; }
-label.oname { text-decoration: underline; text-underline-offset: 3px;
-              text-decoration-color: var(--rule); }
-.odir { font-size: .9em; }
-.onum { font-size: .9em; margin-left: auto; text-align: right; }
+.oname { grid-area: name; font-weight: 700; }
+.oname[data-org] { text-decoration: underline; text-underline-offset: 3px;
+                   text-decoration-color: var(--rule); }
+.odir { grid-area: dir; font-size: var(--t2); }
+/* THE METRICS: their own fixed sub-grid, right-aligned, in tabular figures — so a column of
+   numbers is a column, and the band head's captions sit over the figures they name. */
+.onum { grid-area: nums; display: grid; font-size: var(--t2);
+        grid-template-columns: 6ch 8ch 16ch 12ch 15ch; column-gap: calc(2*var(--u));
+        text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
 /* THE POINT OF THE WHOLE BLOCK. A readable measure, not a column: ~78 characters is where
    monospace prose stops being a shape and starts being a sentence. */
-.ointent { max-width: 78ch; margin: .3rem 0 0 2ch; }
-.ochips { margin: .35rem 0 0 2ch; display: flex; flex-wrap: wrap; gap: .25rem .4rem; }
-.chip { border: 1px solid var(--rule); padding: 0 .4rem; font-size: .88em; cursor: pointer;
+.ointent { grid-area: intent; max-width: 78ch; margin: 0; }
+.ochips { grid-area: chips; display: flex; flex-wrap: wrap; gap: var(--u); }
+.chip { border: 1px solid var(--rule); padding: 0 var(--u); font-size: var(--t2);
         user-select: none; }
 .chip.held { cursor: default; color: var(--dim); border-style: dashed; }
-.rsplit { border-top: 1px solid var(--rule); padding-top: .55rem; max-width: 82ch; }
+.chip.on, .org.on .chip { border-color: var(--fg); font-weight: 700; }
+.rkey { font-size: var(--t2); margin: 0 0 var(--u); }
+.rsplit { border-top: 1px solid var(--rule); padding-top: calc(2*var(--u)); max-width: 82ch;
+          font-size: var(--t2); }
 
 /* ── the timeline ───────────────────────────────────────────────────────────────────── */
-.tl { margin-top: 1.4rem; }
+.tl { margin-top: calc(3*var(--u)); }
 .lanes { border-left: 1px solid var(--rule); border-right: 1px solid var(--rule); }
 .lrow { display: grid; grid-template-columns: 13ch 5ch 1fr; align-items: center;
         border-bottom: 1px solid var(--rule); }
 .lrow:last-child { border-bottom: 0; }
-.lrow .ln { font-size: .76rem; letter-spacing: .1em; text-transform: uppercase; font-weight: 700;
-            padding-left: .4rem; white-space: nowrap; }
+.lrow .ln { font-size: var(--t3); letter-spacing: .12em; text-transform: uppercase; font-weight: 700;
+            padding-left: var(--u); white-space: nowrap; }
 .lrow.fr { border-bottom: 0; }
-.fr .track { height: 17px; }
-.fr .tc { position: absolute; top: 0; font-size: .82em; color: var(--fg); white-space: nowrap; }
+.fr .track { height: calc(2*var(--u)); }
+.fr .tc { position: absolute; top: 0; font-size: var(--t3); color: var(--fg); white-space: nowrap; }
 .fr .tc.right { transform: translateX(-100%); }
-.lrow .ct { color: var(--dim); font-size: .9em; text-align: right; padding-right: .8rem; }
-.track { position: relative; height: 30px; }
-.axis .track { height: 18px; }
-.axis .t0, .axis .t1 { position: absolute; top: 1px; color: var(--dim); font-size: .84em; white-space: nowrap; }
+.lrow .ct { color: var(--dim); font-size: var(--t2); text-align: right; padding-right: var(--u); }
+.track { position: relative; height: calc(4*var(--u)); }
+.axis .track { height: calc(3*var(--u)); }
+.axis .t0, .axis .t1 { position: absolute; top: 1px; color: var(--dim); font-size: var(--t3); white-space: nowrap; }
 .axis .t0 { left: 0; }
 .axis .t1 { right: 0; }
 .cut { position: absolute; top: 0; bottom: 0; width: 0; border-left: 1px dashed var(--fg); }
@@ -961,50 +1076,54 @@ label.oname { text-decoration: underline; text-underline-offset: 3px;
 label.mkr { cursor: pointer; }
 .mkr.new { outline: 1px solid var(--fg); outline-offset: 2px; }
 .mkr.held { background: none; border-left: 1px solid currentColor; width: 0; height: 11px; outline: 0; }
-.detail { margin-top: 1rem; border-top: 1px solid var(--rule); padding-top: .8rem; max-width: 92ch; min-height: 7rem; }
+.detail { margin-top: calc(2*var(--u)); border-top: 1px solid var(--rule); padding-top: calc(2*var(--u));
+          max-width: 92ch; min-height: calc(14*var(--u)); }
 .detail .d { display: none; }
 .tl:has(.tog:checked) .hint { display: none; }
-.detail .meta { font-size: .9em; letter-spacing: .04em; margin-bottom: .35rem; }
-.detail .meta > span { margin-right: .8rem; }
+.detail .meta { font-size: var(--t2); letter-spacing: .04em; margin-bottom: var(--u); }
+.detail .meta > span { margin-right: calc(2*var(--u)); }
 .detail .meta > span:first-child { font-weight: 700; }
-.detail .chose { margin: .25rem 0; }
-.detail .because { color: var(--dim); margin: .2rem 0; }
-.detail .lbl { display: inline-block; min-width: 11ch; color: var(--dim); font-size: .88em;
-               letter-spacing: .1em; text-transform: uppercase; }
+.detail .chose { margin: var(--u) 0; }
+.detail .because { color: var(--dim); margin: var(--u) 0; }
+.detail .lbl { display: inline-block; min-width: 11ch; color: var(--dim); font-size: var(--t3);
+               letter-spacing: .12em; text-transform: uppercase; }
+.hint { font-size: var(--t2); }
 
 /* ── tables (drill-down only; nothing tabular is above the fold) ─────────────────────── */
-table.grid { width: 100%; border-collapse: collapse; margin: .5rem 0 .2rem; }
-table.grid th { text-align: left; font-weight: 400; color: var(--dim); font-size: .92em;
-                padding: .25rem .7rem .3rem 0; border-bottom: 1px solid var(--rule); white-space: nowrap; }
-table.grid td { padding: .32rem .7rem .32rem 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+table.grid { width: 100%; border-collapse: collapse; margin: var(--u) 0; font-size: var(--t2); }
+table.grid th { text-align: left; font-weight: 400; color: var(--dim); font-size: var(--t3);
+                letter-spacing: .08em; text-transform: uppercase;
+                padding: 0 calc(2*var(--u)) var(--u) 0; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+table.grid td { padding: var(--u) calc(2*var(--u)) var(--u) 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
 table.grid tr:last-child td { border-bottom: 0; }
-table.grid td.n, table.grid th.n { text-align: right; padding-right: 1rem; white-space: nowrap; }
+table.grid td.n, table.grid th.n { text-align: right; padding-right: calc(2*var(--u)); white-space: nowrap; }
 table.grid td.k { font-weight: 700; }
 table.grid td.g { letter-spacing: .06em; white-space: nowrap; }
 /* THE MARK COLUMN: the severity encoding that survives greyscale and a black-and-white
    printer. Colour in these tables only ever REINFORCES what this column already says. */
-td.mk { width: 2.2ch; padding-right: .5rem; font-weight: 700; text-align: left; }
+td.mk { width: 3ch; padding-right: var(--u); font-weight: 700; text-align: left; }
 td.mk.warn { color: var(--warn); }
 td.mk.alarm { color: var(--alarm); }
 td.ev { width: 2ch; font-weight: 700; }
-td.evk { width: 11ch; color: var(--dim); font-size: .9em; letter-spacing: .08em; text-transform: uppercase; }
+td.evk { width: 11ch; color: var(--dim); font-size: var(--t3); letter-spacing: .08em; text-transform: uppercase; }
 .scroll { overflow-x: auto; }
-.worst { margin: .35rem 0 .1rem; color: var(--dim); font-size: .94em; }
-.withheld { color: var(--dim); font-size: .94em; margin: .35rem 0; }
-.collapsed { color: var(--dim); margin: .3rem 0 .6rem; }
-.none { color: var(--dim); border-left: 1px solid var(--rule); padding-left: .9rem; margin: .6rem 0; }
+.worst { margin: var(--u) 0 0; color: var(--dim); }
+.withheld { color: var(--dim); margin: var(--u) 0; }
+.collapsed { color: var(--dim); margin: var(--u) 0; font-size: var(--t2); }
+.none { color: var(--dim); border-left: 1px solid var(--rule); padding-left: calc(2*var(--u)); margin: var(--u) 0; }
 .series { letter-spacing: .1em; }
-.lbl-inline { display: inline-block; min-width: 21ch; letter-spacing: .1em; text-transform: uppercase; font-size: .88em; }
-.trend { margin-top: 1.6rem; border-top: 1px solid var(--rule); padding-top: .7rem; }
-.trend > div { margin: .2rem 0; }
-footer { margin-top: 3.5rem; padding-top: .8rem; border-top: 1px solid var(--rule);
-         color: var(--dim); font-size: .92em; }
+.lbl-inline { display: inline-block; min-width: 21ch; letter-spacing: .12em; text-transform: uppercase; font-size: var(--t3); }
+.trend { margin-top: calc(4*var(--u)); border-top: 1px solid var(--rule); padding-top: calc(2*var(--u));
+         font-size: var(--t2); }
+.trend > div { margin: var(--u) 0; }
+footer { margin-top: calc(7*var(--u)); padding-top: calc(2*var(--u)); border-top: 1px solid var(--rule);
+         color: var(--dim); font-size: var(--t2); max-width: 92ch; }
 
 /* ── PRINT IS THE WHOLE DOCUMENT. Hiding two thirds of the page on paper would make the
       greyscale test a test of one tab. Everything opens; nothing is lost to a fold. ──── */
 @media print {
-  :root { --bg: #fff; --fg: #000; --dim: #555; --rule: rgba(0,0,0,.35); --warn: #000; --alarm: #000; }
-  body { font-size: 10px; }
+  :root { --bg: #fff; --fg: #000; --dim: #444; --rule: rgba(0,0,0,.35); --warn: #000; --alarm: #000;
+          --flat: rgba(0,0,0,.06); --t1: 11px; --t2: 10px; --t3: 9px; }
   main { max-width: none; }
   .view, .panel, .detail .d, .own { display: block !important; }
   .view { page-break-before: always; }
@@ -1013,62 +1132,85 @@ footer { margin-top: 3.5rem; padding-top: .8rem; border-top: 1px solid var(--rul
   .hint { display: none; }
   /* A SELECTION IS SCREEN STATE, and paper has none: every crossing comes back to full
      weight and every owner line prints, so the paper copy is the whole document however
-     the reader left the screen. The hotspots go with it — the SVG is scaled to the page
-     and pixel-positioned overlays would no longer sit on their own labels. */
-  #map:has(.msel:checked) .cx { opacity: 1 !important; }
-  .hot { display: none; }
-  .org { break-inside: avoid; }
+     the reader left the screen. */
+  .figure.sel .cx, .figure.sel .bandh { opacity: 1 !important; }
+  .cx .ring { display: none !important; }
+  .org, .band { break-inside: avoid; }
 }
 `;
 
 /**
- * THE SELECTION RULES — one small block of CSS per selectable organ and per drawn guard.
+ * THE SELECTION — the page's ONE piece of script, and the reason it is allowed.
  *
- * GENERATED, because the join is per-project data and a static stylesheet cannot name
- * `verifySession`. It follows the page's existing rule exactly (`#e-<id>:checked ~ .detail
- * .d-<id>` for journal records): a rule is emitted ONLY for something the page actually
- * carries, so a control can never point at nothing.
+ * The scriptless spelling of this was a radio group spanning organs and guards, one
+ * generated CSS rule per pair, and a `<label>` hotspot per guard absolutely positioned over
+ * the SVG at a rect the layout had computed. It worked; what it cost was the LAYOUT, because
+ * every interactive thing had to stay where a pixel rectangle said it was — the picture
+ * could not scale, could not reflow, and the guard names had to be placed where the hit
+ * areas were rather than where the grid wanted them.
  *
- * BOTH DIRECTIONS FALL OUT OF ONE RADIO GROUP. Selecting an organ un-dims the crossings it
- * owns and rings their names; selecting a guard un-dims that one, rings it, marks its chip,
- * marks its owner's row in the roster and reveals the sentence naming that owner. There is
- * no third mechanism and no script — `:checked` plus the sibling combinator is the whole of
- * it, which is why it survives with scripting off.
+ * This is the whole replacement: one listener, one selected key, two directions of the same
+ * join. It is GENERIC — it names no symbol, so unlike the generated rules it cannot fall out
+ * of step with the data. Nothing here reads the network, the clock or storage; with script
+ * off the page loses the highlight and keeps every mark, every sentence and every number.
  */
-function selectionRules(m: IndexModel): string {
-  const mp = m.map;
-  const drawn = new Set(mp.crossings.shown.map((c) => c.sym));
-  // guard → the DIR of the component that owns it, inverted from the roster's own `guards`
-  // arrays rather than looked up by label: two components may share a label, and no page
-  // element is keyed by one.
-  const dirOf = new Map<string, string>();
-  for (const c of mp.components) for (const g of c.guards) dirOf.set(g, c.dir);
+const SCRIPT = `
+(function () {
+  var map = document.getElementById("map");
+  if (!map) return;
+  var fig = map.querySelector(".figure");
+  var sel = null;
 
-  const out: string[] = [];
-  const SEL = "border-left-color:var(--fg)";
-  const ON = "opacity:1";
-
-  for (const c of mp.components) {
-    const gs = c.guards.filter((g) => drawn.has(g));
-    if (!gs.length) continue;
-    const id = `#o-${slug(c.dir)}:checked`;
-    out.push(`${gs.map((g) => `${id} ~ .figure .cx-${slug(g)}`).join(",")}{${ON}}`);
-    out.push(`${gs.map((g) => `${id} ~ .figure .cx-${slug(g)} .ring`).join(",")}{display:block}`);
-    out.push(`${id} ~ .roster .org-${slug(c.dir)}{${SEL}}`);
-    out.push(`${id} ~ .roster .org-${slug(c.dir)} .chip{border-color:var(--fg);font-weight:700}`);
+  function apply() {
+    if (fig) fig.classList.toggle("sel", sel !== null);
+    var sym = sel && sel.kind === "sym" ? sel.key : null;
+    var dir = sel && sel.kind === "org" ? sel.key : null;
+    map.querySelectorAll("[data-sym]").forEach(function (el) {
+      var own = el.getAttribute("data-owner");
+      el.classList.toggle("on", sel === null ? false
+        : sym !== null ? el.getAttribute("data-sym") === sym : own !== null && own === dir);
+    });
+    // A GUARD SELECTS ITS ORGAN'S ROW TOO — that is the second direction of the join, and
+    // the roster row is the only place the organ's sentence lives.
+    var ownerDir = dir;
+    if (sym !== null) {
+      var g = map.querySelector('.cx[data-sym="' + CSS.escape(sym) + '"]');
+      ownerDir = g ? g.getAttribute("data-owner") : null;
+    }
+    map.querySelectorAll(".org").forEach(function (el) {
+      el.classList.toggle("on", ownerDir !== null && el.getAttribute("data-dir") === ownerDir);
+    });
+    map.querySelectorAll("[data-org]").forEach(function (el) {
+      el.classList.toggle("on", ownerDir !== null && el.getAttribute("data-org") === ownerDir);
+    });
+    map.querySelectorAll(".own").forEach(function (el) {
+      el.classList.toggle("on", sym !== null && el.getAttribute("data-own") === sym);
+    });
   }
 
-  for (const x of mp.crossings.shown) {
-    const t = slug(x.sym), id = `#g-${t}:checked`;
-    out.push(`${id} ~ .figure .cx-${t}{${ON}}`);
-    out.push(`${id} ~ .figure .cx-${t} .ring{display:block}`);
-    out.push(`${id} ~ .own-${t}{display:block}`);
-    out.push(`${id} ~ .roster .chip-${t}{border-color:var(--fg);font-weight:700}`);
-    const d = dirOf.get(x.sym);
-    if (d !== undefined) out.push(`${id} ~ .roster .org-${slug(d)}{${SEL}}`);
+  function pick(el) {
+    if (el.hasAttribute("data-clear")) { sel = null; apply(); return; }
+    var kind = el.hasAttribute("data-sym") ? "sym" : "org";
+    var key = el.getAttribute(kind === "sym" ? "data-sym" : "data-org");
+    // Clicking the selected thing again clears it: the way out must be the way in.
+    sel = sel && sel.kind === kind && sel.key === key ? null : { kind: kind, key: key };
+    apply();
   }
-  return out.join("\n");
-}
+
+  function hit(t) {
+    return t && t.closest ? t.closest("[data-sym],[data-org],[data-clear]") : null;
+  }
+  map.addEventListener("click", function (e) {
+    var el = hit(e.target);
+    if (el) pick(el);
+  });
+  map.addEventListener("keydown", function (e) {
+    if (e.key !== "Enter" && e.key !== " ") return;
+    var el = hit(e.target);
+    if (el) { e.preventDefault(); pick(el); }
+  });
+})();
+`;
 
 /**
  * THE SAME MODEL AT THE TERMINAL — what `coherence index` prints after writing the page.
@@ -1140,8 +1282,7 @@ export function renderIndex(m: IndexModel): string {
   // renders, so a rule can never name an entry the page does not carry.
   const ids = new Set<string>();
   for (const c of [m.journal.blocked, m.journal.open, m.journal.decisions]) for (const e of c.shown) ids.add(slug(e.id));
-  const dyn = [...ids].map((id) => `#e-${id}:checked ~ .detail .d-${id}{display:block}`).join("\n")
-    + "\n" + selectionRules(m);
+  const dyn = [...ids].map((id) => `#e-${id}:checked ~ .detail .d-${id}{display:block}`).join("\n");
 
   return `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -1177,6 +1318,6 @@ ${empty}
   Every figure here is a reading something else already took — this page derives nothing of its own.
   Do not edit by hand; re-run the harness.
 </footer>
-</main></body></html>
+</main><script>${SCRIPT}</script></body></html>
 `;
 }

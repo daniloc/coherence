@@ -1,16 +1,16 @@
 {
   "project": "coherence",
   "intent": "The repository-level reading surface: configuration, package contract, generated maps, and the authored explanation of why the harness exists.",
-  "generatedAt": "2026-08-02 22:51Z",
+  "generatedAt": "2026-08-02 23:40Z",
   "head": {
-    "commit": "b347169",
+    "commit": "e2833ce",
     "dirty": true
   },
   "frame": {
     "kind": "cursor",
-    "ref": "b347169",
-    "commit": "b347169",
-    "at": "2026-08-01T17:11:02-04:00",
+    "ref": "e2833ce",
+    "commit": "e2833ce",
+    "at": "2026-08-02T18:51:00-04:00",
     "commits": 0,
     "why": "the HEAD this Index recorded the last time it ran — literally since you last looked."
   },
@@ -24,8 +24,8 @@
       "name": ".coherence/status.json — verify",
       "ok": true,
       "detail": "29 claim verdict(s), 0 failure(s), tier full",
-      "at": "2026-08-02T22:50:30.982Z",
-      "commit": "b347169",
+      "at": "2026-08-02T23:39:57.200Z",
+      "commit": "e2833ce",
       "stale": false
     },
     {
@@ -37,19 +37,19 @@
     {
       "name": "git history",
       "ok": true,
-      "detail": "89 concern-carrying commit(s) in the last 200, touching 171 path(s)",
-      "commit": "b347169"
+      "detail": "90 concern-carrying commit(s) in the last 200, touching 173 path(s)",
+      "commit": "e2833ce"
     },
     {
       "name": ".coherence/decisions",
       "ok": true,
-      "detail": "250 record(s) across 42 session(s)"
+      "detail": "255 record(s) across 43 session(s)"
     },
     {
-      "name": "structural diff vs b347169",
+      "name": "structural diff vs e2833ce",
       "ok": true,
       "detail": "0 structural change(s), 0 loss(es)",
-      "commit": "b347169"
+      "commit": "e2833ce"
     }
   ],
   "map": {
@@ -87,7 +87,7 @@
         "zone": null,
         "guards": [],
         "files": 51,
-        "lines": 15367,
+        "lines": 15508,
         "accountedFiles": 3,
         "claims": 20,
         "gates": 14,
@@ -139,7 +139,7 @@
         "zone": null,
         "guards": [],
         "files": 42,
-        "lines": 10969,
+        "lines": 11081,
         "accountedFiles": 4,
         "claims": 4,
         "gates": 0,
@@ -414,8 +414,8 @@
         "key": "unvisited",
         "label": "unvisited",
         "what": "paths recent work keeps touching that the graph does not own — no closure can be computed for them, so every read-cost figure here excludes them",
-        "dark": 75,
-        "total": 171,
+        "dark": 77,
+        "total": 173,
         "unit": "paths touched in the concern band",
         "worst": {
           "shown": [
@@ -426,10 +426,10 @@
             ".coherence/decisions/a52046bd2cb7efc4e.jsonl",
             ".coherence/decisions/a873312c333faa81d.jsonl",
             ".coherence/decisions/a87bc84c1ac9f42ee.jsonl",
-            ".coherence/decisions/a8e360c3df216902a.jsonl"
+            ".coherence/decisions/a8b60c168b5c96b86.jsonl"
           ],
-          "withheld": 67,
-          "total": 75
+          "withheld": 69,
+          "total": 77
         }
       }
     ]
@@ -449,7 +449,7 @@
           "over": [],
           "couldBe": [],
           "discriminatedBy": "",
-          "news": true
+          "news": false
         },
         {
           "id": "d-ad96879b",
@@ -583,6 +583,23 @@
     },
     "open": {
       "shown": [
+        {
+          "id": "d-759f7107",
+          "kind": "conjecture",
+          "at": "2026-08-02T23:37:23.891Z",
+          "agent": "general-purpose",
+          "session": "a4b6a56fedc8782e8",
+          "commit": "e2833ce",
+          "chose": "the crossing set of the project this was dogfooded on is 13/14 tier-2 and 12/14 security — the tiers are nearly a constant, so the tier encoding is carrying almost no information on the very project it was designed against",
+          "because": "",
+          "over": [],
+          "couldBe": [
+            "the atlas genuinely grades almost everything totality-checked because that is what the codebase is",
+            "tier-1 (enshrined) requires a via-guard the atlas can only infer in narrow cases, so the grade is an artifact of what the instrument can see"
+          ],
+          "discriminatedBy": "count enshrined crossings across several dogfooded projects; if tier-1 is ~1 everywhere regardless of codebase, it is the instrument, and the diagram should encode something with variance instead",
+          "news": true
+        },
         {
           "id": "d-85b1bcd9",
           "kind": "conjecture",
@@ -744,31 +761,78 @@
           ],
           "discriminatedBy": "compute mass-delta vs claim-delta per component over the last N commits on hoist and this repo; if the ratio flags components a human agrees are under-anchored (and stays quiet on ones they agree are fine), it is an instrument; if it flags everything young, it needs a maturity gate before it can ship",
           "news": false
-        },
-        {
-          "id": "d-148435f9",
-          "kind": "conjecture",
-          "at": "2026-07-31T05:06:46.939Z",
-          "agent": "main",
-          "session": "s-adcd72be1a20",
-          "commit": "fafe386",
-          "chose": "verify ranks [doc] jobs by defining-file WRITE churn, but hoist's first field reading shows the two instruments disagree about the same file: shared/paths/schemas.ts carries 20 of 44 undocumented symbols and sits in 69% of read closures (economy's #3 hub, holding 42% even under a narrow 2-3-file band), yet ranks cold because its AUTHORS rarely touch it — write churn may be the wrong ranking key for debt that READERS pay",
-          "because": "",
-          "over": [],
-          "couldBe": [
-            "the instrument is wrong — the thing that PRODUCED this number, not the thing it describes",
-            "the ranking key should be closure membership (economy's fileAttribution) when an economy record exists, falling back to churn when it does not",
-            "both keys are needed: churn ranks debt for the next WRITER, closure membership ranks it for the next READER, and the jobs list should say which lens ranked it"
-          ],
-          "discriminatedBy": "join verify's docGaps against status.json's economy data on hoist and compare the two orderings against a human judgment of which symbols an arriving agent actually needs documented first; if closure-ranked wins, wire fileAttribution into rankDocGaps as the primary key for v0.21",
-          "news": false
         }
       ],
-      "withheld": 6,
-      "total": 16
+      "withheld": 7,
+      "total": 17
     },
     "decisions": {
       "shown": [
+        {
+          "id": "d-904ad0c0",
+          "kind": "decision",
+          "at": "2026-08-02T23:37:36.924Z",
+          "agent": "general-purpose",
+          "session": "a4b6a56fedc8782e8",
+          "commit": "e2833ce",
+          "chose": "no reserved routing lanes — measured 4 of 14 layer-skipping crossings on the dogfood project, and the row layout makes the concept have zero subjects",
+          "because": "the brief asked for reserved lanes because the old layout had four bypass edges sharing coincident risers, reading as rails attached to nothing. Query: count crossings where layer(to) != layer(from)+1. With one grid row per crossing EVERY row is its own reserved lane, so a layer-skipping crossing is the same object as any other and its run cannot be obstructed. The mechanism has no subjects; the subtraction does its work.",
+          "over": [
+            "reserved lanes at fixed grid offsets below the figure, with fanned-out risers so each edge is traceable"
+          ],
+          "couldBe": [],
+          "discriminatedBy": "",
+          "news": true
+        },
+        {
+          "id": "d-c87d30eb",
+          "kind": "decision",
+          "at": "2026-08-02T23:37:35.757Z",
+          "agent": "general-purpose",
+          "session": "a4b6a56fedc8782e8",
+          "commit": "e2833ce",
+          "chose": "keep :target tabs and checkbox disclosures scriptless even though inline script is now allowed",
+          "because": "the no-script rule was lifted because it CONSTRAINED THE LAYOUT, and :target constrains nothing — it costs no pixel rect, and it makes a tab a linkable URL, which a click handler would have to re-implement. A test now asserts the script never mentions #map/#journal/#trajectory/display, so the boundary is enforced rather than remembered.",
+          "over": [
+            "moving tab switching into the same listener that does selection"
+          ],
+          "couldBe": [],
+          "discriminatedBy": "",
+          "news": true
+        },
+        {
+          "id": "d-7573ea9c",
+          "kind": "decision",
+          "at": "2026-08-02T23:34:29.506Z",
+          "agent": "general-purpose",
+          "session": "a4b6a56fedc8782e8",
+          "commit": "e2833ce",
+          "chose": "delete the scriptless selection layer: the radio group, the per-guard generated CSS, and the absolutely-positioned label hotspots",
+          "because": "the overlay pinned the figure to one pixel size (hit rects were computed in SVG user units and emitted as absolute CSS px), so the picture could not scale to the column and every guard name had to be placed where a hit area was rather than where the grid wanted it. The replacement is 60 lines of generic listener that names no symbol — unlike the generated rules it cannot fall out of step with the data — and the page still carries every mark, number and sentence with scripting off. The invariant that mattered (self-containment) is now tested directly: no http(s), src=, @import, fetch(, XHR, WebSocket, import(, link, iframe.",
+          "over": [
+            "keeping the hotspot overlay and only re-laying-out the SVG under it"
+          ],
+          "couldBe": [],
+          "discriminatedBy": "",
+          "news": true
+        },
+        {
+          "id": "d-fef2d033",
+          "kind": "decision",
+          "at": "2026-08-02T23:13:47.482Z",
+          "agent": "general-purpose",
+          "session": "a4b6a56fedc8782e8",
+          "commit": "e2833ce",
+          "chose": "rebuild the crossing diagram as a MATRIX schematic: one grid row per crossing, regions as vertical bus-bar columns, guard names in one left-aligned column, rows grouped into organ bands",
+          "because": "the layered DAG could not satisfy the brief simultaneously: uniform node width + even gutters + orthogonal-only routing + reserved lanes that visibly connect + organ clustering. Organs cut ACROSS the region layering (hoist: 6 organs own 14 crossings whose from/to pairs share no region grouping), so any organ bracket over a layered layout is a bounding box over scattered labels. Giving every crossing its OWN row makes organ grouping contiguous by construction, makes every edge a single horizontal run that cannot be obstructed (the four floating rails were layer-skipping bypasses whose risers coincided), and puts all 14 guard names on one vertical alignment line.",
+          "over": [
+            "the layered box-and-arrow DAG with labels placed greedily in the gutters",
+            "canvas (rejected in the brief: costs selectable text, print fidelity, prefers-color-scheme, DOM)"
+          ],
+          "couldBe": [],
+          "discriminatedBy": "",
+          "news": true
+        },
         {
           "id": "d-dfaaa05d",
           "kind": "decision",
@@ -784,7 +848,7 @@
           ],
           "couldBe": [],
           "discriminatedBy": "",
-          "news": true
+          "news": false
         },
         {
           "id": "d-1ca55d4b",
@@ -801,7 +865,7 @@
           ],
           "couldBe": [],
           "discriminatedBy": "",
-          "news": true
+          "news": false
         },
         {
           "id": "d-1a23aa09",
@@ -819,7 +883,7 @@
           ],
           "couldBe": [],
           "discriminatedBy": "",
-          "news": true
+          "news": false
         },
         {
           "id": "d-dcbb589c",
@@ -835,7 +899,7 @@
           ],
           "couldBe": [],
           "discriminatedBy": "",
-          "news": true
+          "news": false
         },
         {
           "id": "d-061e717c",
@@ -851,7 +915,7 @@
           ],
           "couldBe": [],
           "discriminatedBy": "",
-          "news": true
+          "news": false
         },
         {
           "id": "d-afec9036",
@@ -867,79 +931,11 @@
           ],
           "couldBe": [],
           "discriminatedBy": "",
-          "news": true
-        },
-        {
-          "id": "d-6143b0d2",
-          "kind": "decision",
-          "at": "2026-08-01T22:03:16.692Z",
-          "agent": "general-purpose",
-          "session": "a8b60c168b5c96b86",
-          "commit": "b347169",
-          "chose": "TRAJECTORY joins each boundary event's chokepoint against map.crossings by symbol, so an event prints 'serveJson  authed-user -> public-egress' in the Map's own vocabulary",
-          "because": "the two tabs must name the same objects with the same words or they are two systems. The join key already exists and is exact: a boundary's chokepoint IS the atlas crossing's sym. Dogfooded on hoist --since HEAD~25, where 4,203 lines of churn (+2762/-1441) reduce to exactly three events — one rewired boundary, one added invariant, one added anchor — and the anchor row places itself on the diagram without the reader switching tabs.",
-          "over": [
-            "printing the chokepoint alone, as coherence log does",
-            "adding a crossing field to StructuralView, which would make the model carry a join the render can do from data it already holds"
-          ],
-          "couldBe": [],
-          "discriminatedBy": "",
-          "news": true
-        },
-        {
-          "id": "d-6f9cf4d5",
-          "kind": "decision",
-          "at": "2026-08-01T22:03:16.398Z",
-          "agent": "general-purpose",
-          "session": "a8b60c168b5c96b86",
-          "commit": "b347169",
-          "chose": "the honesty layer is a MARK beside the title (!! N unread · ! N stale) that opens intent + frame + the sources table; it is no longer the first thing on the page",
-          "because": "measured on the page it replaced: the masthead, a one-sentence intent, a two-line frame banner and a six-row sources table occupied everything above the fold, so a reader met three STALE/UNREAD sentences before a single structure. The information is not lost — it is one click from the title, it is still the first thing formatIndexSummary prints at the terminal, and print opens every panel so the paper copy carries it inline. What changed is its RANK, not its presence.",
-          "over": [
-            "keeping the sources table above the fold, where it cost three sentences before the first structure",
-            "dropping the staleness sentences from the page and leaving them only at the terminal"
-          ],
-          "couldBe": [],
-          "discriminatedBy": "",
-          "news": true
-        },
-        {
-          "id": "d-6f01f848",
-          "kind": "decision",
-          "at": "2026-08-01T21:56:21.953Z",
-          "agent": "general-purpose",
-          "session": "a8b60c168b5c96b86",
-          "commit": "b347169",
-          "chose": "the novelty gate parses both stamps (atOrAfter) instead of comparing ISO text — measured: it was over-reporting 26 of 182 standing records as news",
-          "because": "QUERY, re-runnable: node src/cli.ts index --since HEAD~25 in hoist/app, read the journal line. Before: 2 new impasse(s) / 12 question(s) / 67 decision(s). After: 0 / 10 / 43. Both false impasses and 24 false decisions were written HOURS BEFORE the frame opened; git's %cI carries -04:00 and the journal carries Z, so the lexicographic compare hit the seconds field and never reached the offset. Fixed at the COMPARISON because that is where the two producers meet — a normalisation at either producer leaves the other free to hand in a different spelling tomorrow.",
-          "over": [
-            "normalising every journal stamp to Z at write time in decisions.ts (fixes new records, leaves 321 existing ones wrong)",
-            "normalising the FRAME stamp only, at resolveFrame — the same fix spelled at one of two producers"
-          ],
-          "couldBe": [],
-          "discriminatedBy": "",
-          "news": true
-        },
-        {
-          "id": "d-4ad824f3",
-          "kind": "decision",
-          "at": "2026-08-01T21:43:33.371Z",
-          "agent": "general-purpose",
-          "session": "a8b60c168b5c96b86",
-          "commit": "b347169",
-          "chose": "the journal timeline plots EVERY standing record via a new uncapped journal.marks (id/lane/at/news/shown), and CAPS stay where they are",
-          "because": "MEASURED on hoist: totals are 8 blocked + 14 open + 160 decisions = 182 standing records, of which the caps carry 8+10+10 = 28. A timeline drawn from 28 of 182 is a picture of the cap, not of the history — the same green-by-absence shape this page exists to refuse. A mark is a 6px tick and costs no attention, so the cap doctrine (the cap is on your attention) is satisfied by carrying marks uncapped and TEXT capped: withheld marks render as thin hairline ticks that are not clickable, and the axis states the ratio.",
-          "over": [
-            "raising CAPS.blocked/open/decisions so every mark carries its text (would put ~180 entries of prose in the page)",
-            "plotting only the 28 capped entries, so the time axis silently describes 28 of 182 records"
-          ],
-          "couldBe": [],
-          "discriminatedBy": "",
-          "news": true
+          "news": false
         }
       ],
-      "withheld": 165,
-      "total": 175
+      "withheld": 169,
+      "total": 179
     },
     "marks": [
       {
@@ -1696,7 +1692,7 @@
         "lane": "open",
         "at": "2026-07-31T05:06:46.939Z",
         "news": false,
-        "shown": true
+        "shown": false
       },
       {
         "id": "d-8bc76a8c",
@@ -2262,90 +2258,125 @@
         "id": "d-853bdab4",
         "lane": "decision",
         "at": "2026-08-01T21:43:19.543Z",
-        "news": true,
+        "news": false,
         "shown": false
       },
       {
         "id": "d-9094e2a5",
         "lane": "decision",
         "at": "2026-08-01T21:43:33.091Z",
-        "news": true,
+        "news": false,
         "shown": false
       },
       {
         "id": "d-4ad824f3",
         "lane": "decision",
         "at": "2026-08-01T21:43:33.371Z",
-        "news": true,
-        "shown": true
+        "news": false,
+        "shown": false
       },
       {
         "id": "d-6f01f848",
         "lane": "decision",
         "at": "2026-08-01T21:56:21.953Z",
-        "news": true,
-        "shown": true
+        "news": false,
+        "shown": false
       },
       {
         "id": "d-6f9cf4d5",
         "lane": "decision",
         "at": "2026-08-01T22:03:16.398Z",
-        "news": true,
-        "shown": true
+        "news": false,
+        "shown": false
       },
       {
         "id": "d-6143b0d2",
         "lane": "decision",
         "at": "2026-08-01T22:03:16.692Z",
-        "news": true,
-        "shown": true
+        "news": false,
+        "shown": false
       },
       {
         "id": "d-c3b5dbd5",
         "lane": "blocked",
         "at": "2026-08-01T22:03:30.385Z",
-        "news": true,
+        "news": false,
         "shown": true
       },
       {
         "id": "d-afec9036",
         "lane": "decision",
         "at": "2026-08-01T22:03:30.667Z",
-        "news": true,
+        "news": false,
         "shown": true
       },
       {
         "id": "d-061e717c",
         "lane": "decision",
         "at": "2026-08-02T22:34:06.454Z",
-        "news": true,
+        "news": false,
         "shown": true
       },
       {
         "id": "d-dcbb589c",
         "lane": "decision",
         "at": "2026-08-02T22:34:13.421Z",
-        "news": true,
+        "news": false,
         "shown": true
       },
       {
         "id": "d-1a23aa09",
         "lane": "decision",
         "at": "2026-08-02T22:34:17.754Z",
-        "news": true,
+        "news": false,
         "shown": true
       },
       {
         "id": "d-1ca55d4b",
         "lane": "decision",
         "at": "2026-08-02T22:48:09.127Z",
-        "news": true,
+        "news": false,
         "shown": true
       },
       {
         "id": "d-dfaaa05d",
         "lane": "decision",
         "at": "2026-08-02T22:48:14.404Z",
+        "news": false,
+        "shown": true
+      },
+      {
+        "id": "d-fef2d033",
+        "lane": "decision",
+        "at": "2026-08-02T23:13:47.482Z",
+        "news": true,
+        "shown": true
+      },
+      {
+        "id": "d-7573ea9c",
+        "lane": "decision",
+        "at": "2026-08-02T23:34:29.506Z",
+        "news": true,
+        "shown": true
+      },
+      {
+        "id": "d-759f7107",
+        "lane": "open",
+        "at": "2026-08-02T23:37:23.891Z",
+        "news": true,
+        "shown": true
+      },
+      {
+        "id": "d-c87d30eb",
+        "lane": "decision",
+        "at": "2026-08-02T23:37:35.757Z",
+        "news": true,
+        "shown": true
+      },
+      {
+        "id": "d-904ad0c0",
+        "lane": "decision",
+        "at": "2026-08-02T23:37:36.924Z",
         "news": true,
         "shown": true
       }
@@ -2354,20 +2385,20 @@
       "resolved": 21,
       "dismissed": 1,
       "retracted": 2,
-      "inFrame": 3
+      "inFrame": 0
     },
     "totals": {
       "blocked": 10,
-      "open": 16,
-      "decisions": 175,
-      "records": 250,
-      "sessions": 42,
+      "open": 17,
+      "decisions": 179,
+      "records": 255,
+      "sessions": 43,
       "unreadable": 0
     },
     "news": {
-      "blocked": 1,
-      "open": 0,
-      "decisions": 12
+      "blocked": 0,
+      "open": 1,
+      "decisions": 4
     }
   },
   "trajectory": {
@@ -2413,8 +2444,8 @@
     },
     "structuralWhy": null,
     "loc": {
-      "added": 1444,
-      "deleted": 192
+      "added": 684,
+      "deleted": 431
     },
     "mass": {
       "at": "2026-07-31T17:56:23.525Z",

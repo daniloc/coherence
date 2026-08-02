@@ -395,10 +395,22 @@ test("RENDER — an UNREAD source and an UNMEASURED reading both say so on the p
 
 test("RENDER — the page is SELF-CONTAINED and carries no forbidden ornament", () => {
   const html = renderIndex(modelWith());
-  // Self-contained: a strict offline artifact, like every other render this harness emits.
-  assert.doesNotMatch(html, /<script/i, "no script: the page is a readout, not an application");
-  assert.doesNotMatch(html, /src\s*=\s*["']https?:/i);
-  assert.doesNotMatch(html, /<link\b/i, "no external stylesheet or font");
+  // SELF-CONTAINED IS THE RULE; "no script" was only ever a proxy for it, and an expensive
+  // one — the scriptless spelling of "click an arrow" was a pixel-positioned overlay that
+  // dictated the layout. What must hold is that NOTHING ON THIS PAGE REACHES THE NETWORK:
+  // one file, one request, no second fetch, offline forever.
+  for (const reach of [/https?:\/\//i, /\bsrc\s*=/i, /@import/i, /\bfetch\s*\(/i,
+    /XMLHttpRequest/i, /WebSocket/i, /\bimport\s*\(/i, /<link\b/i, /<iframe/i]) {
+    assert.doesNotMatch(html, reach, `the Index must never reach the network: ${reach.source}`);
+  }
+  // AND THE SCRIPT MUST NOT BE LORD OF THE PAGE. It selects; it does not build. If the
+  // content were assembled at runtime the print stylesheet, the greyscale test and a reader
+  // with scripting off would all be looking at an empty document.
+  const body = markup(html);
+  for (const id of ["map", "journal", "trajectory"]) {
+    assert.ok(body.includes(`<section class="view" id="${id}">`),
+      `every object on this page is in the markup before a line of script runs: ${id} is not`);
+  }
   // The form is a spec sheet, not a dashboard. These are the ornaments that were ruled out
   // by name, and a regression here is a regression in the brief rather than in the code.
   for (const banned of [/border-radius/, /box-shadow/, /linear-gradient/, /radial-gradient/, /@keyframes/, /transition\s*:/]) {
@@ -407,6 +419,33 @@ test("RENDER — the page is SELF-CONTAINED and carries no forbidden ornament", 
   assert.match(html, /ui-monospace/, "monospace throughout — everything on the page is tabular");
   assert.match(html, /prefers-color-scheme: dark/, "light and dark are both first-class");
 });
+
+test("RENDER — PRINT still works: every tab opens, and the screen's selection state is dropped", () => {
+  // PAPER IS THE GREYSCALE TEST. A print stylesheet that only reopened one tab would make
+  // "legible in black and white" a claim about a third of the document — and a selection is
+  // screen state, so a reader who left one crossing highlighted must not get a page where
+  // the other thirteen are faded to nothing.
+  const html = renderIndex(modelWith({ map: organFixture() }));
+  const print = html.slice(html.indexOf("@media print"));
+  assert.ok(print.length > 200, "there must BE a print block or every assertion here is vacuous");
+  assert.match(print, /\.view, \.panel, \.detail \.d, \.own \{ display: block !important; \}/,
+    "every tab, every panel and every revealed sentence opens on paper");
+  assert.match(print, /page-break-before: always/, "one tab per page, not three run together");
+  assert.match(print, /\.figure\.sel \.cx, \.figure\.sel \.bandh \{ opacity: 1 !important; \}/,
+    "a selection is screen state: paper gets the whole figure back");
+  assert.match(print, /--warn: #000; --alarm: #000/,
+    "the palette collapses to black on paper, which is what makes the MARKS load-bearing");
+});
+
+/** THE FIGURE'S GEOMETRY, as numbers. Every coordinate the layout emits, so a test can ask
+ *  whether the thing is actually on a grid instead of taking the comment's word for it. */
+const coords = (svg: string) => {
+  const ns: number[] = [];
+  // Geometry only. `stroke-width` is a WEIGHT — it encodes heat and is continuous by design.
+  for (const m of svg.matchAll(/(?:^|[\s"])(?:x|y|x1|y1|x2|y2|width|height)="(-?[\d.]+)"/g)) ns.push(Number(m[1]));
+  for (const m of svg.matchAll(/\bd="M(-?[\d.]+),(-?[\d.]+)/g)) ns.push(Number(m[1]), Number(m[2]));
+  return ns;
+};
 
 test("RENDER — severity is encoded as TEXT first, so the page survives greyscale", () => {
   const { g, status } = mapFixture(["fail", "pass", "pass"], "h");
@@ -439,10 +478,17 @@ test("RENDER — the withheld tail appears in the page, never a silent truncatio
 const xing = (o: Partial<IndexCrossing> & { sym: string; from: string; to: string }): IndexCrossing =>
   ({ tier: 2, security: false, present: true, heat: 0.1, owner: null, ...o });
 
-const widths = (svg: string) =>
-  [...svg.matchAll(/stroke-width="([\d.]+)"/g)].map((m) => Number(m[1]));
+/** THE PAGE MINUS ITS SCRIPT. The script is generic and contains the same attribute names
+ *  the markup does, so a scrape of the whole file would count its selectors as controls. */
+const markup = (html: string) => html.slice(0, html.indexOf("<script>"));
 
-test("DIAGRAM — regions are boxes, crossings are arrows, and the GUARD'S NAME labels each one", () => {
+/** One `<g class="cx">` per crossing, in the model's own order — the row IS the crossing. */
+const cxRows = (svg: string) => svg.split('<g class="cx"').slice(1);
+
+const widths = (svg: string) =>
+  cxRows(svg).map((g) => Number(/stroke-width="([\d.]+)"/.exec(g)![1]));
+
+test("DIAGRAM — regions are columns, every crossing is its OWN row, and the guard names it", () => {
   const crossings = [
     xing({ sym: "requireAuth", from: "public-web", to: "authed-user", security: true, heat: 0.9 }),
     xing({ sym: "OwnedScope", from: "authed-user", to: "patient", tier: 1, security: true, heat: 0.2 }),
@@ -454,28 +500,33 @@ test("DIAGRAM — regions are boxes, crossings are arrows, and the GUARD'S NAME 
   const svg = html.slice(html.indexOf("<svg"), html.indexOf("</svg>"));
   assert.ok(svg.length > 500, "an empty <svg> would satisfy every assertion below");
 
-  // Every region is a labelled box, and every crossing is a named arrow. The count is the
-  // point: a diagram that silently drops an edge is worse than a table that lists it.
+  // Every region heads a column and every crossing takes a row. The count is the point: a
+  // diagram that silently drops an edge is worse than a table that lists it.
   for (const r of ["public-web", "authed-user", "patient", "model-provider"]) {
-    assert.match(svg, new RegExp(`>${r}</text>`), `region ${r} must be drawn`);
+    assert.match(svg, new RegExp(`>${r}</text>`), `region ${r} must head a column`);
   }
-  for (const c of crossings) assert.match(svg, new RegExp(`>${c.sym}</text>`), `${c.sym} must label its arrow`);
-  assert.equal((svg.match(/<rect /g) ?? []).length, 4 + 2 * crossings.length,
-    "four region boxes, plus a background plate AND a (hidden) selection ring per edge label");
+  for (const c of crossings) assert.match(svg, new RegExp(`>${c.sym}</text>`), `${c.sym} must name its row`);
+  assert.equal((svg.match(/<g class="cx"/g) ?? []).length, crossings.length,
+    "one group per crossing — the row IS the crossing, and it is one selectable object");
 
-  // HEAT IS LINE WEIGHT. The hottest crossing draws the thickest line, and the order of the
-  // widths is the order of the heats — that is the whole "current flowing" encoding.
+  // HEAT IS LINE WEIGHT, and it has to be SEEN. The order of the widths is the order of the
+  // heats, and the SPREAD is wide enough to read: an encoding whose extremes differ by a
+  // fifth of a pixel is a declared encoding, not a working one.
   const w = widths(svg).slice(0, 3);
   assert.ok(w[0] > w[1] && w[1] > w[2], `heat must order the line weights, got ${w.join(",")}`);
+  assert.ok(w[0] - w[2] > 2, `the hottest and coldest must differ visibly, got ${w[2]} vs ${w[0]}`);
 
-  // TIER IS LINE TREATMENT, not colour: the stronger the guarantee, the more continuous the
-  // line. tier-1 (enshrined) is solid, so it carries NO dash array at all.
-  const lines = [...svg.matchAll(/<line [^>]*>/g)].map((m) => m[0]).slice(0, 3);
-  assert.equal(lines.length, 3, "one line per crossing, in the model's own order");
+  // TIER IS TREATMENT AND TONE TOGETHER, and the RARE tier is the loud one: tier-1
+  // (enshrined) draws solid, at full strength, with its name in bold. A page whose only
+  // enshrined crossing is the hardest one to see has the encoding backwards.
+  const lines = cxRows(svg).map((g) => /<line [^>]*>/.exec(g)![0]);
+  assert.equal(lines.length, 3, "one run per crossing, in the model's own order");
   assert.doesNotMatch(lines[1], /stroke-dasharray/,
     "the ENSHRINED crossing draws solid — a distinction that vanishes in greyscale was never encoded");
+  assert.match(lines[1], /stroke="var\(--fg\)"/, "…and at full strength");
   assert.match(lines[0], /stroke-dasharray="7 4"/, "a totality-checked crossing draws dashed");
-  assert.match(lines[2], /stroke-dasharray="7 4"/);
+  assert.match(lines[0], /stroke="var\(--dim\)"/, "…and dimmer than the enshrined one");
+  assert.match(svg, /class="gn t1"/, "the enshrined crossing's name is the bold one");
 
   // SECURITY IS A DRAWN MARK. Two security crossings plus the legend's sample = three.
   assert.equal((svg.match(/l4\.5,-4\.5 l4\.5,4\.5 l-4\.5,4\.5 Z/g) ?? []).length, 3,
@@ -483,9 +534,49 @@ test("DIAGRAM — regions are boxes, crossings are arrows, and the GUARD'S NAME 
 
   // AND THE LEGEND ONLY NAMES WHAT IS ON THE PAGE. `convention` has no subjects in this
   // fixture, so teaching the word here would be teaching a vocabulary the data does not use.
-  assert.match(svg, />enshrined</);
+  assert.match(svg, />enshrined/);
   assert.match(svg, />totality-checked</);
   assert.doesNotMatch(svg, />convention</);
+  // The heat legend prints its own ENDPOINTS, so "line weight = heat" is checkable against
+  // the crossings table rather than taken on faith.
+  assert.match(svg, /line weight = change heat, 2\.0% to 90\.0%/);
+});
+
+test("DIAGRAM — the figure is on a MODULAR GRID and routes orthogonally, with no diagonal", () => {
+  // THE COMPLAINT THIS ANSWERS was "nothing aligns to anything else". Alignment is not a
+  // matter of taste here, it is arithmetic: if every coordinate is a multiple of one unit
+  // then everything lines up with everything, and if one is not, something floats.
+  const crossings = [
+    xing({ sym: "requireAuth", from: "public-web", to: "authed-user", security: true, heat: 0.9 }),
+    xing({ sym: "OwnedScope", from: "authed-user", to: "patient", tier: 1, heat: 0.2 }),
+    xing({ sym: "skipsALayer", from: "public-web", to: "patient", heat: 0.5 }),
+    xing({ sym: "runWithRetry", from: "patient", to: "model-provider", heat: 0.02 }),
+  ];
+  const html = renderIndex(modelWith({
+    map: { ...modelWith().map, crossings: capList(crossings, CAPS.crossings) },
+  }));
+  const svg = html.slice(html.indexOf("<svg"), html.indexOf("</svg>"));
+
+  // EVERY RUN IS HORIZONTAL. y1 === y2 on every line in the figure, so there is no diagonal
+  // anywhere — which is what lets a row be read across without the eye tracking a slope.
+  const runs = cxRows(svg).map((g) => /<line x1="([\d.]+)" y1="([\d.]+)" x2="([\d.]+)" y2="([\d.]+)"/.exec(g)!);
+  assert.equal(runs.length, crossings.length);
+  for (const r of runs) assert.equal(r[2], r[4], `a crossing run must be horizontal, got ${r[0]}`);
+
+  // AND A LAYER-SKIPPING CROSSING IS NOT SPECIAL. It was the old layout's reserved-lane case
+  // and the reason four rails ended up floating under the figure attached to nothing; on a
+  // row of its own it is the same object as every other row, and its run visibly joins its
+  // two endpoints — it spans more than one column pitch and still starts and ends on a bar.
+  const skip = cxRows(svg).find((g) => g.includes(">skipsALayer<"))!;
+  const [, sx1, , sx2] = /<line x1="([\d.]+)" y1="([\d.]+)" x2="([\d.]+)"/.exec(skip)!;
+  const bars = [...svg.matchAll(/<path d="M([\d.]+),[\d.]+ V/g)].map((m) => m[1]);
+  assert.ok(bars.includes(sx1) && bars.includes(sx2),
+    `a routed crossing must START and END on a region bar, got ${sx1} → ${sx2} of ${bars.join(",")}`);
+
+  // ON THE GRID. Half units are allowed for one thing only — the text baseline, which is
+  // where a 10.5px face centres in a 24px row — so the tolerance is 4, not 8.
+  const off = coords(svg).filter((n) => n % 4 !== 0);
+  assert.deepEqual(off, [], `every coordinate is a multiple of the base unit; these are not: ${off.join(",")}`);
 });
 
 test("DIAGRAM — with no crossings the Map SAYS SO; it never draws an empty frame", () => {
@@ -627,7 +718,12 @@ test("ROSTER — with NO atlas the perimeter is UNREAD, never `0 of N own a cros
   assert.match(html, /The perimeter is UNREAD/);
   assert.doesNotMatch(html, /own no graded crossing/,
     "an unmeasured perimeter must not borrow the sentence a measured one earns");
-  assert.doesNotMatch(html, /class="bhead"/, "and it must not draw bands it has no reading to fill");
+  // AND IT MUST NOT DRAW THE BANDS IT HAS NO READING TO FILL. There is still ONE head —
+  // it is what captions the metric columns, and it names the only order actually taken.
+  assert.doesNotMatch(html, /class="bname">perimeter/);
+  assert.doesNotMatch(html, /class="bname">interior/);
+  assert.match(html, /class="bname">components/);
+  assert.match(html, /in spec-tree order — the perimeter is unread/);
 });
 
 test("ROSTER — the intent prose is at GLANCE level, not behind a drill-down", () => {
@@ -647,53 +743,63 @@ test("ROSTER — the intent prose is at GLANCE level, not behind a drill-down", 
   assert.equal((map.match(/class="roster"/g) ?? []).length, 1);
   // The band labels are lower-case in the markup and upper-cased by `text-transform`, so
   // this asserts the STRING the page carries rather than the one a screenshot shows.
-  assert.match(roster, /class="bhead">perimeter /);
-  assert.match(roster, /class="bhead">interior /);
+  assert.match(roster, /class="bname">perimeter /);
+  assert.match(roster, /class="bname">interior /);
   assert.match(roster, /own no graded crossing/);
   assert.match(roster, /reading of the shape, not a gap to close/,
     "an interior component is a READING, and the page must not let it read as a defect");
 });
 
-test("ROSTER — selection works BOTH ways with no script, and no control points at nothing", () => {
+test("ROSTER — selection works BOTH ways, and no control points at nothing", () => {
   const html = renderIndex(modelWith({ map: organFixture() }));
-  assert.doesNotMatch(html, /<script/i, "the whole interaction is :checked plus a sibling combinator");
 
-  // ONE radio group: a selection is one thing at a time, which is what makes "dim the rest"
-  // mean anything. Checkboxes would allow "auth and entry and ids" and no highlight at all.
-  assert.doesNotMatch(html, /name="[a-z]*sel"[^>]*type="checkbox"/);
-  const group = [...html.matchAll(/name="orgsel" id="([^"]+)"/g)].map((m) => m[1]);
-  assert.ok(group.includes("sel-all"), "a reset, checked in the markup, so the reader can get the whole map back");
+  // THE JOIN IS IN THE MARKUP, not in generated CSS. Every selectable thing carries the id
+  // it selects by as a data attribute, and the script is GENERIC — it names no symbol, so
+  // unlike a stylesheet emitted per guard it cannot fall out of step with the data.
+  const page = markup(html);
+  const syms = [...page.matchAll(/data-sym="([^"]+)"/g)].map((m) => m[1]);
+  const orgs = [...page.matchAll(/data-org="([^"]+)"/g)].map((m) => m[1]);
+  const owns = [...page.matchAll(/data-own="([^"]+)"/g)].map((m) => m[1]);
+  const dirs = new Set([...page.matchAll(/data-dir="([^"]+)"/g)].map((m) => m[1]));
 
-  // EVERY CONTROL HAS A RULE AND EVERY RULE HAS A CONTROL — the journal timeline's dead-click
-  // prohibition, applied to the map. A label pointing at an id with no styling behind it
-  // looks exactly like one that works.
-  for (const id of group.filter((x) => x !== "sel-all")) {
-    assert.ok(html.includes(`<label for="${id}"`), `#${id} has no control that selects it`);
-    assert.ok(html.includes(`#${id}:checked`), `#${id} is selectable and changes nothing`);
+  // EVERY CONTROL LANDS ON SOMETHING — the journal timeline's dead-click prohibition,
+  // applied to the map. A control that highlights nothing looks exactly like one that works.
+  for (const s of new Set(syms)) {
+    assert.ok(owns.includes(s), `${s} is selectable and has no owner line to reveal`);
   }
-  for (const m of html.matchAll(/<label for="([og]-[^"]+)"/g)) {
-    assert.ok(group.includes(m[1]), `a label points at #${m[1]}, which is in no selection group`);
+  for (const o of new Set(orgs)) {
+    assert.ok(dirs.has(o), `an organ control points at ${o}, which is no roster row`);
+  }
+  // …and every guard the figure drew is a control in BOTH places: the row and the chip.
+  for (const g of ["requireAuth", "serveJson", "verifySession", "ghostGuard"]) {
+    assert.ok(syms.filter((s) => s === g).length >= 1, `${g} must be selectable`);
   }
 
-  // ORGAN → ITS GUARDS IN THE PICTURE. Selecting `entry` lights the two crossings it owns.
-  assert.match(html, /#o-_:checked ~ \.figure \.cx-requireAuth,#o-_:checked ~ \.figure \.cx-serveJson\{opacity:1\}/);
-  // GUARD → ITS ORGAN. Selecting `verifySession` marks auth's row AND reveals the sentence.
-  assert.match(html, /#g-verifySession:checked ~ \.own-verifySession\{display:block\}/);
-  assert.match(html, /#g-verifySession:checked ~ \.roster \.org-shared_auth\{/);
-  assert.match(html, /<p class="own own-verifySession">.*<b>auth<\/b> <span class="dim">owns this crossing/);
-  // …and a guard nobody owns says that instead, rather than marking an arbitrary row.
-  assert.match(html, /<p class="own own-ghostGuard">.*no organ owns this crossing/);
-  assert.doesNotMatch(html, /#g-ghostGuard:checked ~ \.roster \.org-/);
+  // GUARD → ITS ORGAN. The row carries the owning component's DIRECTORY, which is the id the
+  // roster keys its own rows by — a label would be ambiguous the day two components share one.
+  assert.match(html, /<g class="cx" data-sym="verifySession" data-owner="shared\/auth"/);
+  assert.match(html, /<p class="own" data-own="verifySession">.*<b>auth<\/b> <span class="dim">owns this crossing/);
+  // …and a guard nobody owns says that instead, rather than being attributed to a row.
+  assert.match(html, /<p class="own" data-own="ghostGuard">.*no organ owns this crossing/);
+  assert.doesNotMatch(html, /data-sym="ghostGuard" data-owner=/);
 
   // THE HIGHLIGHT IS NOT COLOUR. The rest fades (a tone, which greyscale keeps) and the
   // selected guard gains a drawn RING — either alone survives a black-and-white printer.
-  assert.match(html, /#map:has\(\.msel:checked\) \.cx \{ opacity: \.13; \}/);
+  assert.match(html, /\.figure\.sel \.cx, \.figure\.sel \.bandh \{ opacity: \.22; \}/);
   assert.match(html, /class="ring"/);
-  // AND PRINT REOPENS EVERYTHING: paper has no selection state.
-  assert.match(html, /#map:has\(\.msel:checked\) \.cx \{ opacity: 1 !important; \}/);
+  assert.match(html, /\.cx\.on \.ring \{ display: block; \}/);
+
+  // THE SCRIPT SELECTS AND DOES NOTHING ELSE. It must not build the page, read a clock, or
+  // reach anywhere: those are the properties "no script" used to buy, and they are the ones
+  // worth keeping now that the rule itself is gone.
+  const js = html.slice(html.indexOf("<script>"), html.indexOf("</script>"));
+  assert.ok(js.includes("addEventListener"), "the interaction is real listeners on real elements");
+  for (const banned of [/innerHTML/, /document\.write/, /Date\b/, /localStorage/, /\bfetch\b/]) {
+    assert.doesNotMatch(js, banned, `the selection script must not use ${banned.source}`);
+  }
 });
 
-test("RENDER — THREE TABS, one visible, each linkable by hash, and no script anywhere", () => {
+test("RENDER — THREE TABS, one visible, each linkable by hash, and none of it scripted", () => {
   const html = renderIndex(modelWith());
   for (const id of ["map", "journal", "trajectory"]) {
     assert.match(html, new RegExp(`<section class="view" id="${id}">`), `${id} is a section, addressable as #${id}`);
@@ -705,7 +811,13 @@ test("RENDER — THREE TABS, one visible, each linkable by hash, and no script a
   assert.match(html, /\.view:target \{ display: block; \}/);
   assert.match(html, /body:not\(:has\(\.view:target\)\) #map \{ display: block; \}/,
     "with no hash the Map is the default — the tab state has to exist before the first click");
-  assert.doesNotMatch(html, /<script/i, "the switching is :target and checkboxes: this is a document, not an application");
+  // THE TABS STAY SCRIPTLESS even though script is now allowed. `:target` IS a linkable tab
+  // and it costs the layout nothing, so moving it into the script would buy exactly nothing
+  // and would lose the hash. The script's whole job is selection; it must not touch these.
+  const js = html.slice(html.indexOf("<script>"), html.indexOf("</script>"));
+  for (const t of ["#map", "#journal", "#trajectory", "display"]) {
+    assert.ok(!js.includes(t), `tab switching stays in CSS: the script must not mention ${t}`);
+  }
 });
 
 test("RENDER — every openable mark has a rule, and every rule has a mark: no dead clicks", () => {
