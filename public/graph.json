@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-03 04:28Z",
+  "generatedAt": "2026-08-03 04:42Z",
   "root": "coherence",
   "absRoot": "/Users/daniloc/Documents/Development/coherence",
   "nodes": [
@@ -1840,7 +1840,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/index-model.ts",
-      "line": 814,
+      "line": 823,
       "prose": "THE JOURNAL VIEW — `blocked` first, then open conjectures, then decisions; settled work\ncollapses to counts.\n\nNEWS FIRST WITHIN EACH SECTION, and this is the whole behavioural point: a three-day-old\nimpasse the reader has already seen is not news however severe it is, so it sinks below\nthe entries written inside the frame rather than being dropped (it is still standing, and\na standing impasse that vanished from the page would be worse than one that scrolled)."
     },
     {
@@ -1850,7 +1850,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/index-model.ts",
-      "line": 857,
+      "line": 866,
       "prose": "`coherence log`'s structural ledger, as data rather than as printed lines."
     },
     {
@@ -1860,7 +1860,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/index-model.ts",
-      "line": 878,
+      "line": 887,
       "prose": "What the CLI hands the model builder: the reader's frame override, and the run stamp\n (so the model owns no clock of its own and the render is a pure function of it)."
     },
     {
@@ -1870,7 +1870,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/index-model.ts",
-      "line": 893,
+      "line": 902,
       "prose": "BUILD THE MODEL. Every history read is INDIVIDUALLY guarded and individually reported:\na project with no git is a perfectly ordinary consumer (a shallow CI clone, a source\nexport), and one unreadable source must cost that source's section, never the page. An\n`Unrunnable` thrown by the structural diff is caught HERE rather than at the CLI's total\nhandler for exactly that reason — the CLI's handler is the right answer for a command\nwhose whole job needs history, and the wrong one for a page with three views."
     },
     {

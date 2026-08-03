@@ -14,6 +14,53 @@ evidence inside that record.
 
 ---
 
+## v0.26.0 — the harness runs the gates it ships, and the figure stops lying under a cap
+
+**COHERENCE RAN 2 OF THE 7 GATES IT SHIPS.** Third instance of one pattern in a
+day: v0.21.0 shipped as *"the harness stops exempting itself"* after self-claims
+were found anchor-only; `harness.spec.md` was then found never to have claimed
+`typechecks`, so `verify` never ran the typecheck command that was configured.
+This is the rest — `mass`, `conventions`, `lint-sinks` and `atlas` are now
+configured, pinned and in CI (0.49 / 0.30 / 0.25 / 0.38s, per-push).
+
+`contracts` is **NOT APPLICABLE and says so**. Declaring a single unit made the
+gate print `✓ every cross-artifact shared file is covered` over a population empty
+by construction — 0 of 0 rendering as 0 of 500, in the repo that spent a day
+killing exactly that. Left unset, reasoned in the journal, because an unadopted
+gate and an inapplicable one must not look alike.
+
+`floor.ts:42` prescribed *"a `measures` dimension in config.mass whose command
+counts the population"* as the mitigation for gradual N→1 collapse. It now exists
+— `graph-components` and `graph-claims`, DERIVED rather than read from the
+committed artifact, since a probe reading `public/graph.json` would pin the
+collapse as no-change. Verified by staging the defect it describes.
+
+**ADOPTION FOUND WHAT ADOPTION FINDS.** `testDir: "test"` substring-matched
+`src/run-named-test.ts` and `src/test-batch.ts` — two modules deliberately moved
+INSIDE the evidence perimeter — while `sources: ["src"]` meant the real test tree
+was never scanned at all. So `conventions`' totality-test set was those two
+misclassified files, and **the ORACLE grade was structurally unreachable in this
+repo**. Also: four independent `esc` implementations, one escaping `&<>` but not
+`"`, repaired before naming `esc` in `sinks.safeHtml` — a whitelist on a NAME is
+defined by its weakest copy.
+
+**THE FIGURE WAS DROPPING ITS MOST IMPORTANT EDGE.** Crossings sorted DESCENDING
+by tier, so the single enshrined crossing sorted last and was first in line for
+the 16-crossing cap; the diagram was then built from the survivors and the SPINE
+IS DERIVED FROM WHAT IT IS GIVEN. On a consuming project that grew to 18
+crossings, `OwnedScope` vanished and the spine lost a stage. Sort is now
+ascending, and the figure is **not capped at all**: a truncated list is honest —
+it says "and 4 more" — but a truncated diagram draws a shape while omitting the
+part that would change it. The table below it may cap; the figure draws
+everything or it misleads.
+
+Found only because the harness self-hosted an atlas and the figure finally had a
+second real shape to fail on.
+
+656 tests. `verify` 29/29 green. Four newly adopted gates green.
+
+---
+
 ## v0.25.0 — the Index: a picture a human can read
 
 Coherence began because LLM development accelerated code change and made it

@@ -1,9 +1,9 @@
 {
   "project": "coherence",
   "intent": "The repository-level reading surface: configuration, package contract, generated maps, and the authored explanation of why the harness exists.",
-  "generatedAt": "2026-08-03 04:28Z",
+  "generatedAt": "2026-08-03 04:42Z",
   "head": {
-    "commit": "e137a25",
+    "commit": "680fc55",
     "dirty": true
   },
   "frame": {
@@ -11,7 +11,7 @@
     "ref": "e137a25",
     "commit": "e137a25",
     "at": "2026-08-03T00:05:54-04:00",
-    "commits": 0,
+    "commits": 1,
     "why": "the HEAD this Index recorded the last time it ran — literally since you last looked."
   },
   "sources": [
@@ -24,23 +24,23 @@
       "name": ".coherence/status.json — verify",
       "ok": true,
       "detail": "29 claim verdict(s), 0 failure(s), tier full",
-      "at": "2026-08-03T04:26:07.488Z",
+      "at": "2026-08-03T04:31:01.420Z",
       "commit": "e137a25",
-      "stale": false
+      "stale": true
     },
     {
       "name": ".coherence/status.json — atlas",
       "ok": true,
       "detail": "17 crossing(s) graded",
-      "at": "2026-08-03T04:28:18.659Z",
+      "at": "2026-08-03T04:31:03.162Z",
       "commit": "e137a25",
-      "stale": false
+      "stale": true
     },
     {
       "name": "git history",
       "ok": true,
-      "detail": "95 concern-carrying commit(s) in the last 200, touching 187 path(s)",
-      "commit": "e137a25"
+      "detail": "96 concern-carrying commit(s) in the last 200, touching 194 path(s)",
+      "commit": "680fc55"
     },
     {
       "name": ".coherence/decisions",
@@ -81,7 +81,7 @@
           "vacuityRefusal"
         ],
         "files": 51,
-        "lines": 15909,
+        "lines": 15918,
         "accountedFiles": 3,
         "claims": 20,
         "gates": 14,
@@ -189,7 +189,7 @@
           "verb": "guard",
           "oracle": "testMatch — a runner exiting 0 with no matching output FAILS (the renamed-test trap)",
           "grade": "C",
-          "verdict": "pass",
+          "verdict": "stale",
           "crossing": null,
           "reliants": 0,
           "witnessed": true
@@ -201,7 +201,7 @@
           "verb": "guard",
           "oracle": "RATCHET — a declared invariant with no anchoring boundary fails coverage",
           "grade": "C",
-          "verdict": "pass",
+          "verdict": "stale",
           "crossing": null,
           "reliants": 0,
           "witnessed": true
@@ -213,7 +213,7 @@
           "verb": "guard",
           "oracle": "runner contract — a name that exists nowhere exits nonzero (the vanished oracle cannot pass)",
           "grade": "C",
-          "verdict": "pass",
+          "verdict": "stale",
           "crossing": null,
           "reliants": 0,
           "witnessed": true
@@ -225,7 +225,7 @@
           "verb": "guard",
           "oracle": "merge — a skip never clobbers a real verdict; the old verdict rides through with its own stamp",
           "grade": "C",
-          "verdict": "pass",
+          "verdict": "stale",
           "crossing": null,
           "reliants": 0,
           "witnessed": true
@@ -237,7 +237,7 @@
           "verb": "guard",
           "oracle": "match — ZERO matching tests is its OWN state: the vanished oracle, named as such",
           "grade": "C",
-          "verdict": "pass",
+          "verdict": "stale",
           "crossing": null,
           "reliants": 0,
           "witnessed": true
@@ -249,7 +249,7 @@
           "verb": "guard",
           "oracle": "META-ORACLE — a `via test` boundary whose oracle loops a LITERAL fails",
           "grade": "C",
-          "verdict": "pass",
+          "verdict": "stale",
           "crossing": null,
           "reliants": 0,
           "witnessed": true
@@ -261,7 +261,7 @@
           "verb": "guard",
           "oracle": "hooks — generated wiring uses the low-cost entrypoint and observes writes",
           "grade": "C",
-          "verdict": "pass",
+          "verdict": "stale",
           "crossing": null,
           "reliants": 0,
           "witnessed": false
@@ -273,7 +273,7 @@
           "verb": "guard",
           "oracle": "FLOOR — an empty derivation against a remembered surface REFUSES, never reports coherent",
           "grade": "C",
-          "verdict": "pass",
+          "verdict": "stale",
           "crossing": null,
           "reliants": 0,
           "witnessed": true
@@ -285,7 +285,7 @@
           "verb": "guard",
           "oracle": "audit — retracted decisions disappear and only broken strong leases fail a check",
           "grade": "C",
-          "verdict": "pass",
+          "verdict": "stale",
           "crossing": null,
           "reliants": 0,
           "witnessed": true
@@ -297,7 +297,7 @@
           "verb": "guard",
           "oracle": "mass — a renamed component keeps its pin; growth and novelty are never absorbed",
           "grade": "C",
-          "verdict": "pass",
+          "verdict": "stale",
           "crossing": null,
           "reliants": 0,
           "witnessed": true
@@ -309,7 +309,7 @@
           "verb": "guard",
           "oracle": "calibration reports coverage, outside reads, and defect rates by prediction misses",
           "grade": "C",
-          "verdict": "pass",
+          "verdict": "stale",
           "crossing": null,
           "reliants": 0,
           "witnessed": true
@@ -321,7 +321,7 @@
           "verb": "guard",
           "oracle": "sinks — a moved file keeps its baselined identity and a genuinely new site still fails",
           "grade": "C",
-          "verdict": "pass",
+          "verdict": "stale",
           "crossing": null,
           "reliants": 0,
           "witnessed": true
@@ -333,7 +333,7 @@
           "verb": "guard",
           "oracle": "only a zero-anchor alarm without attestation needs a decision",
           "grade": "C",
-          "verdict": "pass",
+          "verdict": "stale",
           "crossing": null,
           "reliants": 0,
           "witnessed": true
@@ -345,7 +345,7 @@
           "verb": "guard",
           "oracle": "renderContext — byte-stable for the same inputs and names every approximation",
           "grade": "C",
-          "verdict": "pass",
+          "verdict": "stale",
           "crossing": null,
           "reliants": 0,
           "witnessed": false
@@ -365,36 +365,6 @@
     },
     "crossings": {
       "shown": [
-        {
-          "sym": "buildGraph",
-          "from": "project-source",
-          "to": "derived-model",
-          "tier": 3,
-          "security": true,
-          "present": true,
-          "heat": 0.10526315789473684,
-          "owner": "Harness core"
-        },
-        {
-          "sym": "loadConfig",
-          "from": "project-source",
-          "to": "shell",
-          "tier": 3,
-          "security": true,
-          "present": true,
-          "heat": 0.042105263157894736,
-          "owner": "Harness core"
-        },
-        {
-          "sym": "readJsonOrRefuse",
-          "from": "record",
-          "to": "derived-model",
-          "tier": 3,
-          "security": true,
-          "present": true,
-          "heat": 0.042105263157894736,
-          "owner": "Harness core"
-        },
         {
           "sym": "runVerify",
           "from": "derived-model",
@@ -524,14 +494,54 @@
           "present": true,
           "heat": 0.010526315789473684,
           "owner": "Harness core"
+        },
+        {
+          "sym": "signal",
+          "from": "project-source",
+          "to": "verdict",
+          "tier": 2,
+          "security": false,
+          "present": true,
+          "heat": 0.010526315789473684,
+          "owner": "Harness core"
+        },
+        {
+          "sym": "buildGraph",
+          "from": "project-source",
+          "to": "derived-model",
+          "tier": 3,
+          "security": true,
+          "present": true,
+          "heat": 0.10526315789473684,
+          "owner": "Harness core"
+        },
+        {
+          "sym": "loadConfig",
+          "from": "project-source",
+          "to": "shell",
+          "tier": 3,
+          "security": true,
+          "present": true,
+          "heat": 0.042105263157894736,
+          "owner": "Harness core"
+        },
+        {
+          "sym": "readJsonOrRefuse",
+          "from": "record",
+          "to": "derived-model",
+          "tier": 3,
+          "security": true,
+          "present": true,
+          "heat": 0.042105263157894736,
+          "owner": "Harness core"
         }
       ],
-      "withheld": 1,
+      "withheld": 0,
       "total": 17
     },
     "atlas": {
-      "at": "2026-08-03T04:28:18.659Z",
-      "stale": false,
+      "at": "2026-08-03T04:31:03.162Z",
+      "stale": true,
       "tiers": {
         "enshrined": 0,
         "checked": 14,
@@ -614,8 +624,8 @@
         "key": "unvisited",
         "label": "unvisited",
         "what": "paths recent work keeps touching that the graph does not own — no closure can be computed for them, so every read-cost figure here excludes them",
-        "dark": 91,
-        "total": 187,
+        "dark": 98,
+        "total": 194,
         "unit": "paths touched in the concern band",
         "worst": {
           "shown": [
@@ -628,8 +638,8 @@
             ".coherence/decisions/a0d10da06384ede58.jsonl",
             ".coherence/decisions/a338a2b8769208685.jsonl"
           ],
-          "withheld": 83,
-          "total": 91
+          "withheld": 90,
+          "total": 98
         }
       }
     ]
@@ -2827,8 +2837,8 @@
     },
     "structuralWhy": null,
     "loc": {
-      "added": 22,
-      "deleted": 1
+      "added": 33,
+      "deleted": 3
     },
     "mass": null,
     "drift": {

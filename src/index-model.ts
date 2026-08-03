@@ -748,8 +748,13 @@ export function buildMap(
         owner: o.owner, ...(o.owner === null ? { ownerWhy: o.why } : {}),
       };
     })
+    // ASCENDING by tier — the STRONGEST crossing leads. It sorted descending, which put
+    // the single enshrined crossing LAST and therefore first in line for any cap: on a
+    // project that grew to 18 crossings the tier-1 `OwnedScope` edge was silently dropped
+    // and the spine was then derived from what survived, losing a stage. A cap that eats
+    // the most important row first is worse than no cap.
     .sort((x, y) =>
-      y.tier - x.tier
+      x.tier - y.tier
       || Number(y.security) - Number(x.security)
       || (y.heat ?? -1) - (x.heat ?? -1)
       || x.sym.localeCompare(y.sym));
@@ -759,7 +764,11 @@ export function buildMap(
     zones: promise.zones.map((z) => ({ name: z.name, intent: z.intent, inside: z.inside })),
     gates: capList(gateRows, CAPS.gates),
     gatesClean, gatesTotal, grades,
-    crossings: capList(crossings, CAPS.crossings),
+    // NOT CAPPED, deliberately. A truncated LIST is honest — it says "and 4 more". A
+    // truncated DIAGRAM is a lie: it draws a shape and omits the part that would change
+    // it, and the spine here is DERIVED from the crossings it is given. The table below
+    // the figure is a list and may cap; the figure draws everything or it misleads.
+    crossings: capList(crossings, crossings.length),
     atlas: a ? {
       at: a.at, stale: !!(head && a.commit && a.commit !== head),
       tiers: a.tiers, drift: a.drift.length, dangling: a.dangling.length,
