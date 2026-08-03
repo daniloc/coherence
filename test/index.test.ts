@@ -600,13 +600,22 @@ test("DIAGRAM — the three classes are told apart by TONE and GEOMETRY, and sup
 
   // SUPPLY IS NOT A LINE AT ALL. Drawing `config → public-web` as an arrow in the path
   // asserts a sequence that does not exist, and asserting it is what made the last two
-  // figures say nothing. It gets a strip, a tint and a sentence.
+  // figures say nothing. And it is no longer a BAND either: two accessors read by one
+  // stage do not earn the figure's leading band — it is a FOOTNOTE under the figure, in
+  // the figure's own vocabulary, and the figure leads with the spine.
   assert.equal(svg.split('<g class="cx"').slice(1).some((g) => g.includes('data-sym="envStr"')), false,
     "an ambient read must not be drawn as a run or a riser");
   assert.match(fig, /data-sym="envStr"[^>]*>[\s\S]{0,200}?read by public-web/,
     "…it says where it is read instead");
   assert.match(fig, />supply</);
-  assert.match(html, /deliberately not an arrow/, "and the legend says so, in those words");
+  assert.match(html, /deliberately not an arrow/, "and the footnote says so, in those words");
+  assert.doesNotMatch(fig, /class="bh"><span class="bn">supply/,
+    "supply is a footnote, never a band head — the figure leads with the spine");
+  const fno = fig.indexOf('<div class="fnote"');
+  assert.ok(fno > -1 && fno > fig.indexOf("</svg>") && fno < fig.indexOf('<div class="leg"'),
+    "the footnote sits under the lattice and above the legend");
+  assert.ok(fig.indexOf('>spine<') < fig.indexOf('>resources<'),
+    "the first band a reader meets is the spine — the story, not the exception");
 
   // THE ONE ENSHRINED CROSSING DOMINATES: solid where thirteen others are broken, at full
   // strength, with its name in bold. A page whose rarest guarantee is its hardest line to
@@ -647,7 +656,64 @@ test("DIAGRAM — a stranger can trace the request: stages in order, and the gua
   // two stages and four guards; duplicating the box would turn one shared thing into several,
   // which is the fact this band exists to state.
   assert.equal((fig.match(/>storage</g) ?? []).length, 1);
-  assert.equal((fig.match(/<div class="fbox"/g) ?? []).length, 5, "four resources and one ambient source");
+  assert.equal((fig.match(/<div class="fbox"/g) ?? []).length, 4,
+    "four resources — the ambient source is a footnote, not a box");
+});
+
+test("DIAGRAM — reaches group BY SINK: one lane, one landing, and a tap square per guard", () => {
+  // THE BARCODE THIS UNDOES: eight reaches used to be eight near-identical full-width rows,
+  // ~500px of wire between the band head and the first box it named, and the stage a reach
+  // left from was only recoverable by tracing a hairline. The band's real grouping is BY
+  // SINK — `storage` reached from two stages by four guards is ONE lane with four taps —
+  // so that is what is asserted: the geometry of the lane, not the prose about it.
+  const html = renderIndex(modelWith({
+    map: { ...modelWith().map, crossings: capList(HOIST, CAPS.crossings) },
+  }));
+  const svg = html.slice(html.indexOf("<svg"), html.indexOf("</svg>"));
+
+  // EVERY REACH IS A TAP — a drop ending in a filled square — and every drop lands on one
+  // of exactly four lane y's: four sinks, four lanes, however many guards feed them.
+  const drops = svg.split('<g class="cx"').slice(1)
+    .map((g) => /<path d="M([\d.]+),[\d.]+ V([\d.]+)"[^/]*\/><rect /.exec(g))
+    .filter((m): m is RegExpExecArray => m !== null)
+    .map((m) => ({ x: Number(m[1]), laneY: Number(m[2]) }));
+  assert.equal(drops.length, 8, "eight reaches, eight taps");
+  assert.equal(new Set(drops.map((d) => d.laneY)).size, 4, "four sinks, four lanes — never a row per reach");
+  assert.equal((svg.match(/<rect /g) ?? []).length, 8, "the square is the tap mark, one per guard");
+
+  // TAPS NEVER SUPERIMPOSE. Three guards from `public-web` to `storage` are three parallel
+  // drops two units apart, not one wire wearing three names.
+  assert.equal(new Set(drops.map((d) => `${d.x}:${d.laneY}`)).size, 8, "no two taps share a point");
+
+  // ONE LANDING PER LANE. `Patient` and `serveJson` both land on `public-egress`; the old
+  // figure drew two arrowheads on one x, which disclosed less than it drew. The lane is
+  // drawn once and lands once — arrowheads = promotions + sinks, never + reaches.
+  const heads = (svg.match(/<path d="M[\d.]+,[\d.]+ L[^"]+Z"/g) ?? []).length;
+  assert.equal(heads, 4 + 4, "4 promotion heads + 4 lane heads — a guard adds a tap, not a landing");
+
+  // …and the legend explains the one mark it used to leave unexplained.
+  assert.match(html, /tap — a guard joins its resource's lane here/,
+    "the tap square is legended, in the figure's own vocabulary");
+});
+
+test("FOOTNOTE — many supply crossings degrade to the withheld idiom, never a paragraph", () => {
+  // Small on purpose: the whole list must survive CAPS.crossings, or the cap — not the
+  // footnote — would be what shortened the supply line.
+  const many = [
+    xing({ sym: "api", from: "browser-client", to: "public-web", heat: 0.5 }),
+    xing({ sym: "requireAuth", from: "public-web", to: "authed-user", heat: 0.2 }),
+    ...Array.from({ length: 9 }, (_, i) =>
+      xing({ sym: `env${i}`, from: "config", to: "public-web", heat: 0.001 * (i + 1) })),
+  ];
+  const html = renderIndex(modelWith({
+    map: { ...modelWith().map, crossings: capList(many, CAPS.crossings) },
+  }));
+  const fn = /<div class="fnote">([\s\S]*?)<\/div><div class="leg">/.exec(html);
+  assert.ok(fn, "the footnote renders");
+  assert.equal((fn![1].match(/data-sym="env\d"/g) ?? []).length, 6,
+    "the line lists the cap and no more");
+  assert.match(fn![1], /… 3 more not shown \(9 in total\)/,
+    "the tail is stated — a shortened list that looks complete is the defect this harness hunts");
 });
 
 test("DIAGRAM — the figure is on a MODULAR GRID and routes orthogonally, with no diagonal", () => {

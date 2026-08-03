@@ -222,10 +222,10 @@ export interface MapReading {
    *  every chokepoint managing that same promotion — two guards on one crossing are two
    *  parallel lanes, not one arrow with two names. */
   promotions: { from: string; to: string; skip: boolean; guards: IndexCrossing[] }[];
-  /** Resource grabs, grouped by the sink they land on (which is why the labels above a
-   *  resource box form one left-aligned column). */
+  /** Resource grabs, grouped by the sink they land on (which is why each sink draws as
+   *  ONE lane with a tap per guard, never as a row per grab). */
   reaches: { c: IndexCrossing; stage: string; sink: string }[];
-  /** Sinks in left-to-right placement order. */
+  /** Sinks in lane order, top to bottom. */
   sinks: string[];
   /** Ambient sources and what they inject. Never drawn as a step. */
   supply: { source: string; guards: IndexCrossing[] }[];
@@ -322,8 +322,8 @@ export function readMap(cs: readonly IndexCrossing[]): MapReading {
     .sort((a, b) => a.i - b.i || a.j - b.j)
     .map(({ from, to, skip, guards }) => ({ from, to, skip, guards }));
 
-  // SINKS ARE ORDERED BY THE STAGE THAT GRABS THEM, latest-reaching last, so the resource
-  // band reads left-to-right in the same direction as the spine above it.
+  // SINKS ARE ORDERED BY THE STAGE THAT GRABS THEM, latest-reaching last, so the lanes
+  // read top-to-bottom in the same direction as the spine reads left-to-right above them.
   const stageIdx = (sink: string, pick: (xs: number[]) => number) =>
     pick(reachOf.get(sink)!.map((c) => at.get(c.from)!));
   const sinks = [...reachOf.keys()].sort((a, b) =>
@@ -387,36 +387,29 @@ function diagram(cs: readonly IndexCrossing[], comps: readonly IndexComponent[])
 
   // ── THE COLUMN TRACKS. Nothing here is tuned to a project: every box column is as wide
   // as the longest region name, every spine gutter as wide as the longest guard that runs
-  // through one (plus its security diamond). SINKS ARE QUANTISED TO COLUMNS — under the
-  // latest stage that grabs them, pushed right only past an occupied column — so a
-  // resource's box, its reach labels and its drop all share ONE column edge instead of each
-  // finding its own x, which is where most of the 42 stray left edges came from.
-  const boxed = [...r.spine, ...r.sinks, ...r.supply.map((s) => s.source)];
+  // through one (plus its security diamond). THE SINKS SHARE ONE RAIL — a single box column
+  // past the last stage, one sink per row. The old layout quantised each sink to a column
+  // under the stage that grabbed it and hung every reach on a full-width row of its own;
+  // at eight reaches that band was already a barcode of near-identical dashed rows, ~500px
+  // of wire between the band head and the first box it named. Grouping BY SINK instead
+  // puts each box beside the lane that feeds it, so the head sits on real content.
+  const boxed = [...r.spine, ...r.sinks];
   const BOX_W = snap2(Math.max(...boxed.map((n) => textW(n))) + 2 * U);
   const promoW = r.promotions.filter((p) => !p.skip).flatMap((p) => p.guards)
     .map((c) => textW(nameOf(c)) + (c.security ? 2 * U : 0));
   const GUT = Math.max(6 * U, snap2(Math.max(0, ...promoW) + 3 * U));
 
   const idxOf = new Map(r.spine.map((s, i) => [s, i]));
-  const sinkCol = new Map<string, number>();
-  let cur = -1;
-  for (const s of r.sinks) {
-    const want = Math.max(...r.reaches.filter((x) => x.sink === s).map((x) => idxOf.get(x.stage)!));
-    cur = Math.max(want, cur + 1);
-    sinkCol.set(s, cur);
-  }
-  const nCols = Math.max(r.spine.length, r.sinks.length ? Math.max(...sinkCol.values()) + 1 : 1);
+  const railCol = r.spine.length;
+  const nCols = r.spine.length + (r.sinks.length ? 1 : 0);
   const colTracks: number[] = [];
   for (let i = 0; i < nCols; i++) {
-    // Between stages the separator is a GUTTER (a promotion runs through it); past the last
-    // stage it is only a GAP — sizing those trailing separators like gutters would spread
-    // the resource band with room no guard will ever use.
+    // Between stages the separator is a GUTTER (a promotion runs through it); before the
+    // rail it is only a GAP — sizing it like a gutter would push every resource box away
+    // from the lanes that feed it with room no guard will ever use.
     if (i > 0) colTracks.push(i < r.spine.length ? GUT : SEP);
     colTracks.push(BOX_W);
   }
-  // An ambient strip beside a single-column lattice would leave its labels no track to
-  // live in, so the degenerate shape gets one.
-  if (r.supply.length && nCols === 1) colTracks.push(GUT);
   const colLeft: number[] = [];
   { let x = 0; colTracks.forEach((t, i) => { if (i % 2 === 0) colLeft.push(x); x += t; }); }
   const width = colTracks.reduce((a, b) => a + b, 0);
@@ -482,26 +475,6 @@ function diagram(cs: readonly IndexCrossing[], comps: readonly IndexComponent[])
   const glCls = (c: IndexCrossing, promo: boolean) =>
     `gl${promo ? " pr" : ""}${c.tier === 1 ? " t1" : ""}${broken(c) ? " bad" : ""}`;
 
-  // ── SUPPLY: A STRIP, NOT A PATH ─────────────────────────────────────────────────────
-  // The one thing this figure refuses to draw as an arrow. `config → public-web` as a line
-  // in the path asserts a sequence, and there is none: it is read wherever it is read.
-  if (r.supply.length) {
-    bh(row(HEAD_H), "supply", "ambient — reaches the path, and is not a step in it");
-    const flatFrom = row(U);
-    for (const s of r.supply) {
-      const first = rowH.length + 1;
-      for (const c of s.guards) {
-        cell(row(WROW), nCols > 1 ? "2 / -1" : "2 / 3", `${glCls(c, false)} srow gut`,
-          lbl(c) + `<span class="lg dim">${esc(`read by ${c.to}`)}</span>`, attrsOf(c, "supply"));
-      }
-      cells.push(`<div class="fbox" style="grid-row:${first} / ${rowH.length + 1};grid-column:1;align-self:center;height:${Math.min(BOX_H, s.guards.length * WROW)}px">${esc(s.source)}</div>`);
-    }
-    // The tint that marks the band ambient. It is the one non-positioned cell, so it paints
-    // UNDER the wire overlay instead of over it.
-    cells.push(`<div class="flat" style="grid-row:${flatFrom} / ${rowH.length + 1};grid-column:1 / -1"></div>`);
-    row(SEP);
-  }
-
   // ── THE SPINE ───────────────────────────────────────────────────────────────────────
   bh(row(HEAD_H), "spine",
     r.spine.length > 1
@@ -550,41 +523,66 @@ function diagram(cs: readonly IndexCrossing[], comps: readonly IndexComponent[])
     });
   }
 
-  // ── THE RESOURCES ───────────────────────────────────────────────────────────────────
-  // A reach drops out of its stage, runs to the resource, and stops. The resource box is
-  // drawn ONCE however many stages grab it — duplicating it would turn one shared thing into
-  // several, which is the fact this band exists to state.
+  // ── THE RESOURCES: ONE LANE PER SINK ────────────────────────────────────────────────
+  // The last layout gave every reach a full-width row of its own — eight near-identical
+  // dashed rows whose origin stage was only recoverable by tracing a hairline vertical, a
+  // barcode at eight and worse at twenty. The grouping the band actually states is BY SINK:
+  // `storage` reached from two stages by four guards is ONE lane with four taps, not four
+  // scattered rows. So each sink gets one lane, its box at the end of it on the shared
+  // rail, and each guard is a TAP — a vertical drop from its stage, in the guard's own
+  // tier/heat treatment, joining the lane at a filled square. The lane itself is drawn
+  // once, hairline, with ONE arrowhead at the box: the lane lands once, so drawing a
+  // landing per guard (two arrowheads superimposed at one x, as `Patient` + `serveJson`
+  // used to land on `public-egress`) disclosed less than it drew.
+  //
+  // Guards from the SAME stage stagger their taps two units apart — coincident drops would
+  // draw three crossings as one wire — and their labels stack above the lane, top label on
+  // the leftmost tap, so the cascade reads down-right in tap order.
   if (r.sinks.length) {
     row(SEP);
     bh(row(HEAD_H), "resources",
-      "grabbed at a stage and reached no further — a resource box is drawn once, however many stages hold it");
+      "one lane per resource, and a tap per guard — the box is drawn once, the taps say which stages hold it");
     row(2 * U);
-    const reachRows = r.reaches.map(() => row(WROW));
-    row(U);
-    const rSink = row(BOX_H);
-    const sinkTop = topOf(rSink);
-    for (const s of r.sinks) cell(rSink, gcol(sinkCol.get(s)!), "fbox", esc(s));
-    // ONE BUS PER STAGE, from the box down to the last lane that leaves it: the vertical is
-    // what says "everything on these lanes is held by THIS stage".
-    const lastLane = new Map<string, number>();
-    r.reaches.forEach((x, i) => lastLane.set(x.stage, i));
-    for (const [stage, i] of lastLane) {
-      wires.push(`<path d="M${busX(idxOf.get(stage)!)},${boxBot} V${topOf(reachRows[i]) + WIRE_Y}" stroke="var(--dim)" stroke-width="1" fill="none"/>`);
+    const railX = colLeft[railCol];
+    // Tap x per guard: per stage, centred offsets in lane order (r.reaches is already in
+    // (sink, rank) order, so a deeper lane's drop never sits left of a shallower label).
+    const byStage = new Map<string, { c: IndexCrossing; sink: string }[]>();
+    for (const x of r.reaches) (byStage.get(x.stage) ?? byStage.set(x.stage, []).get(x.stage)!).push(x);
+    const tapX = new Map<IndexCrossing, number>();
+    for (const [stage, xs] of byStage) {
+      xs.forEach((x, k) => tapX.set(x.c, busX(idxOf.get(stage)!) + (k - (xs.length - 1) / 2) * 2 * U));
     }
-    r.reaches.forEach((x, i) => {
-      const c = x.c, y = topOf(reachRows[i]) + WIRE_Y, st = strokeOf(c, false), tone = toneOf(c, false);
-      const a = busX(idxOf.get(x.stage)!), b = colLeft[sinkCol.get(x.sink)!] + U;
-      wires.push(`<g class="cx"${symAttrs(c)}>`
-        + `<line x1="${a}" y1="${y}" x2="${b}" y2="${y}" ${st}/>`
-        + `<path d="M${b},${y} V${sinkTop}" ${st}/>`
-        + headY(b, sinkTop, 1, tone)
-        + `<rect x="${a - U / 2}" y="${y - U / 2}" width="${U}" height="${U}" fill="${tone}"/></g>`);
-      // The label's text starts ON the sink's own column edge — the same padding the box
-      // text wears — so the guards landing on a resource read as one left-aligned column
-      // above it. The full-width cell is the hit area, the old pointer-events rect as HTML.
-      cell(reachRows[i], "1 / -1", `${glCls(c, false)} wl`,
-        `<span style="padding-left:${b}px">${lbl(c)}</span>`, attrsOf(c, "reach"));
-    });
+    for (const s of r.sinks) {
+      const xs = r.reaches.filter((x) => x.sink === s);
+      const perStage = new Map<string, number>();
+      for (const x of xs) perStage.set(x.stage, (perStage.get(x.stage) ?? 0) + 1);
+      // LABELS LIVE ABOVE THE BOX ROW, never inside it. Sharing the box row read as a
+      // saving and cost a border: a label whose text reached the rail punched its knockout
+      // through the box's own outline, and every top-slot label sat pressed against the
+      // box above it. The wire stays on the box's centre line — the same doctrine as the
+      // spine, so a lane enters its box the way a promotion enters a stage.
+      const stack = Math.max(...perStage.values());
+      const slots = Array.from({ length: stack }, () => row(2 * U));
+      const boxRow = row(BOX_H);
+      const laneY = topOf(boxRow) + BOX_H / 2;
+      cell(boxRow, gcol(railCol), "fbox", esc(s));
+      wires.push(`<line x1="${Math.min(...xs.map((x) => tapX.get(x.c)!))}" y1="${laneY}" x2="${railX}" y2="${laneY}" stroke="var(--dim)" stroke-width="1" fill="none"/>`
+        + headX(railX, laneY, 1, "var(--dim)"));
+      const seen = new Map<string, number>();
+      for (const x of xs) {
+        const k = seen.get(x.stage) ?? 0;
+        seen.set(x.stage, k + 1);
+        const c = x.c, a = tapX.get(c)!, st = strokeOf(c, false), tone = toneOf(c, false);
+        wires.push(`<g class="cx"${symAttrs(c)}>`
+          + `<path d="M${a},${boxBot} V${laneY}" ${st}/>`
+          + `<rect x="${a - U / 2}" y="${laneY - U / 2}" width="${U}" height="${U}" fill="${tone}"/></g>`);
+        // A stage with fewer guards than the deepest stack keeps its labels CLOSEST to the
+        // lane — the bottom slots — so a lone tap's name never floats rows above its wire.
+        cell(slots[stack - perStage.get(x.stage)! + k], "1 / -1", `${glCls(c, false)} wl rl`,
+          `<span style="padding-left:${a + U}px">${lbl(c)}</span>`, attrsOf(c, "reach"));
+      }
+      row(U);
+    }
   }
 
   // ── THE ASIDE ───────────────────────────────────────────────────────────────────────
@@ -614,8 +612,16 @@ function diagram(cs: readonly IndexCrossing[], comps: readonly IndexComponent[])
   const item = (sample: string, text: string) =>
     leg.push(`<div class="li"><span class="ls">${sample}</span><span class="lg dim">${esc(text)}</span></div>`);
   if (r.promotions.length) item(sam(lrule(4, "var(--fg)", "")), "promotion — a trust stage change, and the line to follow");
-  if (r.reaches.length) item(sam(lrule(1.5, "var(--dim)", "")), "reach — a resource grabbed there, going no further");
-  if (r.supply.length) item(`<span class="flat-s"></span>`, "supply — ambient, and deliberately not an arrow");
+  if (r.reaches.length) {
+    item(sam(lrule(1.5, "var(--dim)", "")), "reach — a resource grabbed there, going no further");
+    // THE TAP, the one mark this legend used to leave unexplained: the filled square is a
+    // JOIN, and its absence is the other half of the encoding — a wire that crosses a lane
+    // without one is passing through, not feeding it.
+    item(sam(`<line x1="0" y1="16" x2="48" y2="16" stroke="var(--dim)" stroke-width="1"/>`
+      + `<path d="M24,2 V16" stroke="var(--dim)" stroke-width="1.5" stroke-dasharray="7 4" fill="none"/>`
+      + `<rect x="20" y="12" width="8" height="8" fill="var(--dim)"/>`),
+    "tap — a guard joins its resource's lane here; a wire crossing without a square feeds nothing");
+  }
   for (const t of [...new Set(cs.map((c) => c.tier))].sort()) {
     const n = tierCount.get(t)!;
     item(sam(lrule(t === 1 ? 3 : 1.5, `var(--${t === 1 ? "fg" : "dim"})`, DASH[t] ?? DASH[3])),
@@ -631,12 +637,43 @@ function diagram(cs: readonly IndexCrossing[], comps: readonly IndexComponent[])
       + (heats.length < cs.length ? " (hairline = unrecorded, not cold)" : ""));
   }
 
+  // ── SUPPLY: A FOOTNOTE, NOT A BAND ────────────────────────────────────────────────────
+  // Still the one class this figure refuses to draw as an arrow — `config → public-web` as
+  // a line in the path asserts a sequence that does not exist. But it used to LEAD the
+  // figure as a full band with a tinted region and a boxed node, so a reader met "ambient,
+  // deliberately not an arrow" before they had seen an arrow. Two accessors read by one
+  // stage do not earn that. It is now one line under the figure, in the figure's own
+  // vocabulary, and the figure leads with the SPINE — which is the story. Each accessor is
+  // still the same selectable label it was in the band, so nothing became undiscoverable.
+  //
+  // WHERE A PROJECT HAS MANY SUPPLY CROSSINGS the line does not grow into a paragraph: each
+  // supplier lists its strongest-then-hottest accessors up to the cap and states the
+  // withheld tail — the same idiom every capped list on this page uses.
+  const SUPPLY_CAP = 6;
+  const fnote = r.supply.length
+    ? `<div class="fnote">${r.supply.map((s, i) => {
+      const shown = s.guards.slice(0, SUPPLY_CAP);
+      const byTo = new Map<string, IndexCrossing[]>();
+      for (const c of shown) (byTo.get(c.to) ?? byTo.set(c.to, []).get(c.to)!).push(c);
+      const parts = [...byTo.entries()].map(([to, gs]) =>
+        gs.map((c) => `<span class="${glCls(c, false)}"${attrsOf(c, "supply")}>${lbl(c)}</span>`).join(`<span class="dim">·</span> `)
+        + ` <span class="dim">read by ${esc(to)}</span>`);
+      const held = s.guards.length - shown.length;
+      return `<div class="fnr"><span class="bn">${i === 0 ? "supply" : ""}</span>`
+        + `<span class="lg"><b>${esc(s.source)}</b> <span class="dim">— ambient, deliberately not an arrow:</span> `
+        + parts.join(` <span class="dim">·</span> `)
+        + (held ? ` <span class="dim">… ${held} more not shown (${s.guards.length} in total)</span>` : "")
+        + `</span></div>`;
+    }).join("")}</div>`
+    : "";
+
   // The wire overlay and the cells resolve their geometry from the SAME track lists — the
   // grid templates below and the viewBox above are two spellings of one prefix-sum. `--pz`
   // is the print scale: paper cannot scroll, so the lattice zooms to a page there and
   // nowhere else.
-  const svg = `<svg class="wires" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" role="img" aria-label="the trust spine, its resources and its ambient supply">${wires.join("")}</svg>`;
+  const svg = `<svg class="wires" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" role="img" aria-label="the trust spine and its resources">${wires.join("")}</svg>`;
   const html = `<div class="fgrid" style="grid-template-columns:${colTracks.map((t) => `${t}px`).join(" ")};grid-template-rows:${rowH.map((t) => `${t}px`).join(" ")};width:${width}px;--pz:${Math.min(1, 720 / width).toFixed(3)}">${svg}${cells.join("")}</div>`
+    + fnote
     + `<div class="leg">${leg.join("")}</div>`;
   return { html, w: width, reading: r };
 }
@@ -1147,7 +1184,7 @@ const STYLE = `
 :root {
   color-scheme: light dark;
   --bg: #fbfbfa; --fg: #17191d; --dim: #6a7078; --rule: rgba(0,0,0,.16);
-  --warn: #8a5300; --alarm: #a3161d; --flat: rgba(0,0,0,.035);
+  --warn: #8a5300; --alarm: #a3161d;
   /* THE BASE UNIT, and the three type sizes. There is no fourth: weight and tone carry
      every other distinction, which is the only way monospace stays a lattice. */
   --u: 8px;
@@ -1158,7 +1195,7 @@ const STYLE = `
 }
 @media (prefers-color-scheme: dark) {
   :root { --bg: #0e0f11; --fg: #d6d9de; --dim: #868d97; --rule: rgba(255,255,255,.17);
-          --warn: #cf9a37; --alarm: #e2726b; --flat: rgba(255,255,255,.05); }
+          --warn: #cf9a37; --alarm: #e2726b; }
 }
 * { box-sizing: border-box; }
 body {
@@ -1234,12 +1271,14 @@ body:has(#trajectory:target) .tabs a[href="#trajectory"] { color: var(--fg); bor
 .figure { margin: calc(2*var(--u)) 0 calc(4*var(--u)); overflow-x: auto; }
 .fgrid { position: relative; display: grid; }
 .fgrid .wires { position: absolute; left: 0; top: 0; }
-/* Cells are positioned so they paint ABOVE the wire overlay; the supply tint is the one
-   deliberate exception — static, so it stays UNDER the wires. */
+/* Cells are positioned so they paint ABOVE the wire overlay. */
 .fgrid > div { position: relative; min-width: 0; }
-.fgrid > .flat { position: static; background: var(--flat); }
 .bh { display: grid; grid-template-columns: var(--notex) 1fr; align-items: baseline;
       border-top: 1px solid var(--fg); padding-top: calc(var(--u)/2); white-space: nowrap; }
+/* The note KNOCKS OUT the drops that cross its head row — same idiom as a wire label. The
+   background hugs the text (justify-self), so the wires stay continuous either side of it
+   instead of breaking across the whole band width. */
+.bh .lg { background: var(--bg); justify-self: start; padding-right: 6px; }
 .bn { font-size: var(--t3); font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
 .lg { font-size: var(--t3); }
 /* Box text and reach labels share ONE stop per column: border + padding = the base unit,
@@ -1258,10 +1297,15 @@ body:has(#trajectory:target) .tabs a[href="#trajectory"] { color: var(--fg); bor
 .gl.t1 .lbl { font-weight: 700; }
 .gl.gut { padding-left: calc(2*var(--u)); }
 .gl.l0 { align-self: start; padding-top: 2px; }
-/* Supply and aside rows are LINES OF TEXT, centred by their line box — not flex, so the
-   label and its note stay inline-level and add no layout edges of their own. No wire ever
-   crosses these rows, so their labels carry no knockout: a background here would punch a
-   page-coloured pill through the supply tint. */
+/* REACH LABELS SHARE ROWS — two full-width cells on one grid row would fight for every
+   click, so the cell yields the pointer and only the label text takes it. The cell keeps
+   the tab stop; a click anywhere else falls through to the wire below, which carries the
+   same data-sym. */
+.gl.rl { pointer-events: none; }
+.gl.rl .lbl { pointer-events: auto; }
+/* Aside rows are LINES OF TEXT, centred by their line box — not flex, so the label and
+   its note stay inline-level and add no layout edges of their own. No wire ever crosses
+   these rows, so their labels carry no knockout. */
 .gl.srow { line-height: calc(4*var(--u)); }
 .gl.srow .lbl { background: none; }
 .gl.srow .lg { margin-left: calc(2*var(--u)); }
@@ -1271,13 +1315,20 @@ body:has(#trajectory:target) .tabs a[href="#trajectory"] { color: var(--fg); bor
    NAME sits on the same column stop as an unguarded one, and the mark reads as a bullet
    in the gutter instead of pushing its name off the lattice. */
 .gl .lbl.sec { margin-left: -19px; }
+/* ── the supply footnote: the band, demoted. Same two columns as a band head, so the word
+   SUPPLY sits on the figure's left rail and the sentence starts on the note line every
+   band note and legend caption shares. The labels in it are the same selectable controls
+   they were as a band — only their altitude changed. */
+.fnote { margin-top: calc(2*var(--u)); display: grid; row-gap: var(--u); }
+.fnr { display: grid; grid-template-columns: var(--notex) 1fr; align-items: baseline; }
+/* In running text the security diamond cannot HANG — the pull-left that aligns a guarded
+   name to a lattice column would overlap the word before it here. */
+.fnote .gl .lbl.sec { margin-left: -4px; }
 /* ── the legend: the same two columns as a band head, one sample edge, one caption edge */
 .leg { margin-top: calc(3*var(--u)); display: grid; row-gap: var(--u); }
 .li { display: grid; grid-template-columns: var(--notex) 1fr; align-items: center; }
 .li .ls { display: block; }
 .li svg { display: block; }
-.flat-s { display: block; width: 48px; height: 16px; background: var(--flat);
-          border: 1px solid var(--rule); }
 /* A DEGENERACY IS A SENTENCE, not a missing picture: a cyclic region graph or a spine one
    stage long says so here, in the reader's way, immediately under the figure it explains. */
 .degen { margin: var(--u) 0 0; font-size: var(--t2); max-width: 88ch; }
@@ -1448,7 +1499,7 @@ footer { margin-top: calc(7*var(--u)); padding-top: calc(2*var(--u)); border-top
       greyscale test a test of one tab. Everything opens; nothing is lost to a fold. ──── */
 @media print {
   :root { --bg: #fff; --fg: #000; --dim: #444; --rule: rgba(0,0,0,.35); --warn: #000; --alarm: #000;
-          --flat: rgba(0,0,0,.06); --t1: 11px; --t2: 10px; --t3: 9px; }
+          --t1: 11px; --t2: 10px; --t3: 9px; }
   main { max-width: none; }
   .view, .panel, .detail .d, .own { display: block !important; }
   .view { page-break-before: always; }
