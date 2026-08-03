@@ -237,7 +237,11 @@ export const COMMANDS: Command[] = [
 
   // ── reference ────────────────────────────────────────────────────────────────────────
   { name: "phrasebook", group: "reference", summary: "print the claim-form table straight from the `CLAIM_FORMS` registry" },
-  { name: "hooks", group: "reference", usage: "[--check]", summary: "print the journal-instruction hook block; `--check` asks whether it has ever FIRED" },
+  {
+    name: "hooks", group: "reference",
+    usage: "[status|install|uninstall|print] [--check] [--json]",
+    summary: "the lifecycle control — converge on one canonical, runnable shared hook bundle",
+  },
   { name: "hook", group: "reference", usage: "<event>", summary: "the hook BODY, invoked by the harness rather than by you" },
 ];
 

@@ -24,7 +24,7 @@ import {
   derivedSessionId, slug, compactJournal, planCompaction, COMPACT_QUIET_MS,
   LABEL_SOFT_MAX,
 } from "../src/decisions.ts";
-import { checkHooks, printHooks, stopFeedbackActive } from "../src/hooks.ts";
+import { printHooks, stopFeedbackActive } from "../src/hooks.ts";
 import { runCaptured, cleanup } from "./_helpers.ts";
 import type { Config } from "../src/types.ts";
 
@@ -174,42 +174,6 @@ test("sessions — a session is named by its WORK, not by the header the hook wr
   await rm(cfg.root, { recursive: true, force: true });
 });
 
-// ── is the hook actually firing? ─────────────────────────────────────────────────
-
-test("hooks --check — CONFIGURED BUT NEVER FIRED is its own verdict, not silence", async () => {
-  // The failure this exists for: the settings block present, `coherence hook` emitting
-  // correct JSON by hand, and the subagent receiving NOTHING. No error anywhere. A
-  // mechanism that looks installed and does nothing is the defect this repo hunts.
-  const cfg = await root();
-  await mkdir(join(cfg.root, ".claude"), { recursive: true });
-  await writeFile(join(cfg.root, ".claude", "settings.json"), JSON.stringify({
-    hooks: { SubagentStart: [{ hooks: [{ type: "command", command: "npx coherence hook SubagentStart" }] }] },
-  }));
-  // Entries exist, but every one was logged by hand — no session header from a hook.
-  appendDecision(cfg, { kind: "decision", chose: "X", because: "-", session: newSessionId(), now: T(1) });
-
-  const { code, out } = await runCaptured(() => Promise.resolve(checkHooks(cfg)));
-  assert.equal(code, 1, "configured-but-dead must be nonzero — it is a broken install");
-  assert.match(out, /sessions OPENED BY A HOOK: 0/);
-  assert.match(out, /CONFIGURED BUT NEVER FIRED/);
-  assert.match(out, /PostToolUse hook that touches a file/, "must say how to prove it, not just that it failed");
-  await rm(cfg.root, { recursive: true, force: true });
-});
-
-test("hooks --check — a hook-opened session is the tell that it IS firing", async () => {
-  const cfg = await root();
-  await mkdir(join(cfg.root, ".claude"), { recursive: true });
-  await writeFile(join(cfg.root, ".claude", "settings.json"), JSON.stringify({
-    hooks: { SubagentStart: [{ hooks: [{ type: "command", command: "node ./src/hook-cli.ts SubagentStart" }] }] },
-  }));
-  const opened = openSession(cfg, { session: "agent-abc", now: T(0) });
-  assert.equal(opened.session, "agent-abc", "the host id must address journal and tool trace alike");
-  const { code, out } = await runCaptured(() => Promise.resolve(checkHooks(cfg)));
-  assert.equal(code, 0);
-  assert.match(out, /FIRING\. 1 session\(s\)/);
-  await rm(cfg.root, { recursive: true, force: true });
-});
-
 test("hooks — generated wiring uses the low-cost entrypoint and observes writes", async () => {
   const cfg = await root();
   const { out } = await runCaptured(async () => { printHooks(cfg); return 0; });
@@ -220,15 +184,6 @@ test("hooks — generated wiring uses the low-cost entrypoint and observes write
   assert.equal(stopFeedbackActive({ stop_hook_active: true }), true);
   assert.equal(stopFeedbackActive({ stop_hook_active: false }), false);
   await cleanup(cfg.root);
-});
-
-test("hooks --check — no configuration at all is a different verdict from a dead one", async () => {
-  const cfg = await root();
-  const { code, out } = await runCaptured(() => Promise.resolve(checkHooks(cfg)));
-  assert.equal(code, 1);
-  assert.match(out, /hooks configured: NONE/);
-  assert.ok(!/NEVER FIRED/.test(out), "not-installed and installed-but-dead need different fixes");
-  await rm(cfg.root, { recursive: true, force: true });
 });
 
 test("render — markdown NESTS the detail lines instead of making them sibling bullets", async () => {

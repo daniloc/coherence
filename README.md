@@ -257,7 +257,7 @@ Add it as a git dependency. npm clones the repo and runs `prepare` (which builds
 ```jsonc
 // package.json
 "devDependencies": {
-  "coherence-harness": "github:daniloc/coherence"   // or "github:daniloc/coherence#v0.1.0"
+  "coherence-harness": "github:daniloc/coherence"   // pin the release tag you have qualified
 }
 ```
 
@@ -271,7 +271,8 @@ Then add scripts that call the bin:
 "scripts": {
   "coherence:graph":  "coherence graph",
   "coherence:docs":   "coherence docs",
-  "coherence:verify": "coherence verify"
+  "coherence:verify": "coherence verify",
+  "coherence:hooks-check": "coherence hooks --check"
 }
 ```
 
@@ -289,6 +290,85 @@ Add `coherence.config.json` to the project root. Minimal:
   "testMatch": "[1-9][0-9]* passed"
 }
 ```
+
+### Adopt the lifecycle control
+
+Do this after `npm install` and after `coherence.config.json` is in its final
+directory. Run the commands from that directory—the **coherence root**, where the
+consuming `package.json` installed `coherence-harness`. `npx` below resolves that
+project-local dependency; no global installation is assumed.
+
+1. **Name the Claude project root when it differs.** The Claude project root is the
+   directory the agent host opens and whose `.claude/settings.json` owns project hooks.
+   For the ordinary single-root layout, omit `claudeProjectRoot` (its default is `"."`).
+   If Claude opens the repository root while coherence is installed in `app/`, put this
+   in `app/coherence.config.json` *before* installing the hook:
+
+   ```json
+   {
+     "claudeProjectRoot": ".."
+   }
+   ```
+
+2. **Converge the control ON.** Do not author a repository-specific command or paste a
+   near-equivalent hook block:
+
+   ```sh
+   npx coherence hooks install
+   ```
+
+   Installation migrates recognized older coherence commands out of both shared and
+   local settings, preserves unrelated settings and hooks, and publishes exactly one
+   shared five-event bundle. Every repository receives the same command:
+
+   ```sh
+   "$CLAUDE_PROJECT_DIR/.claude/coherence-hook" EVENT
+   ```
+
+   Layout is carried separately by `.claude/coherence-root`. If installation reports a
+   missing lifecycle target, stop: either dependencies were not installed in the
+   coherence root or the selected coherence release predates the `coherence-hook` bin.
+   Fix the dependency before editing Claude settings.
+
+3. **Commit the complete control.** Track all three Claude-root artifacts produced or
+   updated by the installer:
+
+   - `.claude/settings.json`
+   - `.claude/coherence-hook`
+   - `.claude/coherence-root`
+
+   Also commit `coherence.config.json`. In a nested layout these files deliberately live
+   at different levels: the config/package in the coherence root, the three control
+   files in the Claude project root. `.claude/settings.local.json` is not part of the
+   shared control; the installer only removes recognized competing coherence actions
+   from it.
+
+4. **Accept one binary reading.** This is the adoption gate and is suitable for CI:
+
+   ```sh
+   npx coherence hooks --check
+   # or: npm run coherence:hooks-check
+   ```
+
+   Exit `0` means the singular canonical bundle, launcher, root mapping, and runnable
+   target are all present. Exit `1` means absent/noncanonical; exit `2` means the checker
+   could not answer safely (for example, invalid settings). A partial block, duplicate,
+   legacy spelling, competing local action, drifted launcher, or missing target is OFF.
+
+5. **Observe the field separately.** Start a fresh Claude session or subagent, then run:
+
+   ```sh
+   npx coherence hooks status
+   ```
+
+   `status` shows whether a hook-opened session has ever been observed, but history is
+   telemetry—not the control bit. A newly installed runnable hook is present before its
+   first firing, and yesterday's firing cannot redeem wiring removed today.
+
+`npx coherence hooks print` renders the canonical settings, launcher, and mapping for
+inspection. It is not the preferred installer. The launcher and mapping paths are
+coherence-owned: `install` repairs drift at those names, while `uninstall` removes them
+only if their bytes still prove coherence ownership.
 
 Full (every field the `Config` interface in `src/types.ts` accepts; defaults from
 `src/config.ts`):
@@ -309,6 +389,7 @@ Full (every field the `Config` interface in `src/types.ts` accepts; defaults fro
   "language": "typescript",
   "platform": "cloudflare",
   "claudeMdPath": "../CLAUDE.md",
+  "claudeProjectRoot": "..",
   "dictionary": "dictionary",
   "sources": ["src"],
   "testDir": "__tests__",
@@ -342,6 +423,7 @@ Full (every field the `Config` interface in `src/types.ts` accepts; defaults fro
 | `platform` | `null` | Platform adapter key, or null. |
 | `components` | unset | Sub-component overrides for `decompose`/`drift` co-change analysis ONLY (globs relative to root; first match wins). The spec graph, verify, and coverage are untouched. |
 | `claudeMdPath` | `"CLAUDE.md"` | Path to the CLAUDE.md whose fenced block `coherence claude` owns. May be `../`-relative to escape the coherence root (repo-root CLAUDE.md above a sub-package). |
+| `claudeProjectRoot` | `"."` | Path from the coherence root to the Claude project root whose `.claude/settings.json` owns lifecycle hooks. Set `".."` when coherence/package.json lives in a sub-project but Claude opens at the repository root. The installed launcher remains identical; `.claude/coherence-root` carries the relative address back. |
 | `dictionary` | `"dictionary"` | Dir (relative to the coherence root) holding the pattern dictionary — one `<Word>.md` per word. A `conforms to <Word>` claim expands the word's commitments against the declaring component. A project with no such dir simply has no words (see "The dictionary" below). |
 | `sources` | `[entryDir]` | Dirs the `lint-sinks`/`conventions` scans are scoped to — keep generated/vendored trees out. |
 | `testDir` | `"__tests__"` | Path substring identifying test files for the ratchet scans. |
@@ -824,19 +906,40 @@ The journal is the third option: each agent emits a line per decision **as it ma
 it**, and you read the merged result.
 
 ```sh
-coherence hooks           # print the .claude/settings.json block + what agents get told
-coherence hooks --check   # has it ever actually FIRED?
+coherence hooks install   # set the lifecycle control ON in .claude/settings.json
+coherence hooks status    # show structural state, launcher readiness, and runtime evidence
+coherence hooks --check   # binary gate: is the complete canonical control runnable?
+coherence hooks uninstall # set it OFF without touching unrelated settings or hooks
 ```
 
-**Run `--check`.** The first real test of the hook path failed silently: the settings
-block was present, `coherence hook SubagentStart` emitted correct JSON when run by
-hand, and the subagent received nothing at all — no error, no warning. Some embedded
-and SDK-hosted harnesses do not run project hooks. `--check` reads the tell: a
-hook-opened session writes a `session` header record, so *entries but zero
-hook-opened sessions* means the hook is dead, and it says so with the throwaway
-`PostToolUse` test that proves it either way. **The journal itself needs no hook** —
-`coherence decide` is a plain command; without the hook you put the instruction in
-each agent's brief instead.
+The hook is a **control value**, not a family of similar snippets. Printing, installing,
+and checking all use the same five-event structure and byte-exact commands. `--check`
+answers one question only: is the complete shared control present and runnable? That means
+exactly one canonical group per event in project settings, no competing coherence action
+in local settings, the stable `.claude/coherence-hook` launcher, the correct root mapping,
+and a runnable package target. A partial block, an older spelling, a duplicate, and a
+command under the wrong matcher are off; unrelated hooks may coexist. `install` converges
+older coherence-emitted spellings and is byte-idempotent.
+
+`.claude/coherence-hook` and `.claude/coherence-root` are coherence-owned control files.
+`install` atomically repairs drift or collisions at those exact names; do not place unrelated
+content there. `uninstall` is deliberately conservative: it removes either file only while
+its bytes are still canonical, so an operator edit made after installation is never deleted.
+
+The settings command and launcher are identical in every repository. Layout is data:
+`.claude/coherence-root` is `.` in a single-root project and e.g. `app` when Claude opens
+one directory above coherence. Declare that host directory with `claudeProjectRoot` in
+`coherence.config.json`; this avoids turning each monorepo layout into a new hook spelling.
+
+**Current readiness and historical observation are different facts.** The first real test of the hook path
+failed silently: the settings block existed, the command emitted correct JSON by hand,
+and the subagent received nothing. `status` therefore shows every current prerequisite
+(wiring, launcher, mapping, target) and the historical count of hook-opened sessions.
+Current readiness determines the bit; history never does. Old activity cannot redeem a
+hook removed today, and a newly installed runnable hook is present before its first
+session. **The journal itself needs no hook** — `coherence
+decide` is a plain command; without a running hook you put the instruction in each
+agent's brief instead.
 
 The block `coherence hooks` prints carries **five** event names. `SubagentStart` and
 `SessionStart` do the same job at two scales: each OPENS a session — the only place that
@@ -1436,7 +1539,7 @@ any is in **In detail** below — that half is authored, and does not cover all 
 **Reference and plumbing**
 
 - `coherence phrasebook` — print the claim-form table straight from the `CLAIM_FORMS` registry
-- `coherence hooks [--check]` — print the journal-instruction hook block; `--check` asks whether it has ever FIRED
+- `coherence hooks [status|install|uninstall|print] [--check] [--json]` — the lifecycle control — converge on one canonical, runnable shared hook bundle
 - `coherence hook <event>` — the hook BODY, invoked by the harness rather than by you
 
 <!-- coherence:commands:end -->
@@ -1792,11 +1895,12 @@ any is in **In detail** below — that half is authored, and does not cover all 
   relying party rather than the author, answering *what may be assumed here, and on whose
   evidence*, which is the trust-side reading of the ladder above. It embeds live grades, so it is always regenerated — there is no
   `--check` for it.
-- `coherence hooks [--check]` — print the `.claude/settings.json` block that injects the
-  journal instructions into every agent at startup; `--check` answers whether it has ever
-  actually FIRED, because a dead hook is silent. The block also traces explicit read/write
-  paths at `PostToolUse` and emits the patch signal plus calibration snapshot at Stop.
-  `coherence-hook <event>` is the dependency-light lifecycle body; `coherence hook
+- `coherence hooks [status|install|uninstall|print] [--check] [--json]` — the lifecycle
+  control. One canonical five-event bundle and stable launcher are shared by the printer,
+  installer, and structural checker; `--check` exits on the complete runnable control.
+  `status` keeps its structural parts and observed firing visible as separate facts. The block traces explicit
+  read/write paths at `PostToolUse` and emits the patch signal plus calibration snapshot at
+  Stop. `coherence-hook <event>` is the dependency-light lifecycle body; `coherence hook
   <event>` remains the general-CLI spelling.
 - `coherence why-lint` — the **`## why` discipline**, two advisory checks against the
   graph the harness already holds:

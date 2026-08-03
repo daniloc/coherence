@@ -1,0 +1,17 @@
+#!/bin/sh
+set -eu
+
+claude_root=${CLAUDE_PROJECT_DIR:-$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)}
+IFS= read -r coherence_rel < "$claude_root/.claude/coherence-root"
+coherence_root=$(CDPATH= cd -- "$claude_root/$coherence_rel" && pwd -P)
+cd "$coherence_root"
+export COHERENCE_PROJECT_ROOT="$coherence_root"
+
+if [ -x "$coherence_root/node_modules/.bin/coherence-hook" ]; then
+  exec "$coherence_root/node_modules/.bin/coherence-hook" "$@"
+fi
+if [ -f "$coherence_root/src/hook-cli.ts" ]; then
+  exec node "$coherence_root/src/hook-cli.ts" "$@"
+fi
+printf '%s\n' "coherence hook target missing under $coherence_root" >&2
+exit 127

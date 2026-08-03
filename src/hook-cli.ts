@@ -9,5 +9,9 @@ if (!event) {
   console.error("usage: coherence-hook <event>");
   process.exitCode = 2;
 } else {
-  process.exitCode = await runHook(await loadConfig(process.cwd()), event);
+  // The stable Claude-side launcher resolves the (possibly nested) coherence root and
+  // passes it explicitly. Direct/manual invocations retain the older host-root/cwd fallbacks.
+  process.exitCode = await runHook(await loadConfig(
+    process.env.COHERENCE_PROJECT_ROOT ?? process.env.CLAUDE_PROJECT_DIR ?? process.cwd(),
+  ), event);
 }

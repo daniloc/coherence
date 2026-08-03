@@ -22,9 +22,11 @@ rendering, and journaling remain independently addressable modules beneath this 
 - a skipped run never clobbers an oracle's recorded verdict
 - a named oracle that no test runs cannot pass
 - an empty derivation against a remembered surface refuses, never passes
+- lifecycle hook presence is one canonical runnable bit
 
 ## refutations
 
+- lifecycle hook presence is one canonical runnable bit: loosened `inspectLifecycleHook` so `present` ignored `wiringPresent` and trusted only valid JSON plus the launcher (2026-08-03) — full verify named this claim as the sole red, `claims: 30 · 29 green · 1 red`; the guard's duplicate-canonical-group fixture observed the laundered `true`. Restored. This is the dangerous direction: a checker that accepts two firing paths is not a binary control, only a substring detector with a nicer report.
 - pinned mass follows a value-conserving rename but never absorbs growth: mutated `reconcileMass` in BOTH directions (2026-07-31) and full verify reds the claim by name each time. (a) `const hit = undefined` — the pre-fix behaviour where a rename never absorbs: `claims: 27 · 26 green · 1 red`, the H1-rename phase failing on strictEqual (a one-line spec rename read as growth again). (b) dropped the VALUE from the move-invariant address so any same-family vanished pin absorbs any new name — the laundering direction: same `27 · 26 green · 1 red`, the renamed-AND-grown phase failing on match (the growth rode in under the rename and the guard caught the missing NEW-dimension report). Restored, back to 27/27. As with the sinks reconciler, (b) is the direction that matters: a rename-forgiver that cannot fail is a growth ratchet that deleted itself.
 - reviewed risk sites survive relocation but never duplication: mutated `reconcile` in BOTH directions and the guard reds each time. (a) `const from = undefined` — the pre-fix behaviour where the path is part of a site's identity: `claims: 23 · 22 green · 1 red`, the moved file reported as new risk. (b) absorb from every baselined address instead of only vanished ones, without consuming the pool — plain content-addressing: same `1 red`, the copied sink waved through. Restored, back to 23/23. The loosening direction is the one that matters: a fix for a false alarm that cannot fail (b) is a fix that deleted the ratchet.
 - cached decisions expose structurally expired premises: gutted `auditPremiseLeases` to return `{entries: [], expired: [], checked: 0}` unconditionally — the SAME mutation that left the tree "✓ coherent" while the claim carried no oracle. With the guard wired it reds by name: `claims: 22 · 21 green · 1 red`, `✗ 1 coherence failure(s)`. Restored, back to 22/22. The other four claims now execute (137ms, 135ms and siblings in the holding-cost block) but have not yet been individually mutated — that is the next increment, not a claim made here.
@@ -60,6 +62,7 @@ rendering, and journaling remain independently addressable modules beneath this 
 - boundary "a skipped run never clobbers an oracle's recorded verdict" at recordVerify via guard "merge — a skip never clobbers a real verdict; the old verdict rides through with its own stamp"
 - boundary "a named oracle that no test runs cannot pass" at runNamedTest via guard "runner contract — a name that exists nowhere exits nonzero (the vanished oracle cannot pass)"
 - boundary "an empty derivation against a remembered surface refuses, never passes" at vacuityRefusal via guard "FLOOR — an empty derivation against a remembered surface REFUSES, never reports coherent"
+- boundary "lifecycle hook presence is one canonical runnable bit" at inspectLifecycleHook via guard "control — presence is the complete canonical bundle, never a partial or lookalike"
 
 ## why
 
@@ -149,6 +152,14 @@ its claims is still a node someone can red, while a component the walk never dis
 leaves nothing behind to notice, so an N→1 slide reads as N ordinary prunings. Pinning the
 population as a mass dimension is the honest answer there, because the question it settles
 is not whether anything survived but whether as much survived as last time.
+
+**lifecycle hook presence is one canonical runnable bit.** The control surface cannot
+create a field if every repository is free to carry a merely similar—or silently dead—
+hook. Printing, installation, and inspection therefore share one five-event value and
+one stable launcher. Presence means exactly one shared copy, no competing local or legacy
+path, a correct declared root mapping, and a runnable target. Unrelated hooks may coexist.
+Historical journal activity is reported beside this bit but can neither redeem current
+absence nor erase current presence.
 
 (The import claims above separately prove that the composition root still reaches the
 configuration loader, graph derivation, verifier, spec walker, and journal.)

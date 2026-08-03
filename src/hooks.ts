@@ -19,6 +19,11 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { readJournal, openSession, resolve } from "./decisions.ts";
+import {
+  canonicalLifecycleHookSettings, inspectLifecycleHook, setLifecycleHook,
+  LIFECYCLE_HOOK_SCRIPT, lifecycleRootMapping, resolveClaudeProjectRoot,
+  type LifecycleHookInspection,
+} from "./control.ts";
 import type { Config } from "./types.ts";
 
 /** Use the source entrypoint only while this repository dogfoods itself. Consumers get
@@ -211,84 +216,98 @@ function readStdin(): Promise<string> {
   });
 }
 
-/** `coherence hooks --check` — IS THE HOOK ACTUALLY FIRING?
- *
- *  This exists because the first real test of the hook path failed SILENTLY: the
- *  settings block was present and well-formed, `coherence hook SubagentStart` emitted
- *  correct JSON when run by hand, and the subagent received nothing at all. No error,
- *  no warning — the mechanism looked installed and did nothing, which is the exact
- *  defect this project's doctrine names ("the readFidelity guard reported green for
- *  hours while gating nothing").
- *
- *  The tell is structural: a hook-opened session writes a `session` header record. If
- *  the journal has decisions but ZERO hook-opened sessions, every entry was logged by
- *  an agent that was told to by hand, and the hook is not running. */
-export function checkHooks(cfg: Config): number {
-  const settings = join(cfg.root, ".claude", "settings.json");
-  const local = join(cfg.root, ".claude", "settings.local.json");
-  const configured: string[] = [];
-  for (const f of [settings, local]) {
-    if (!existsSync(f)) continue;
-    try {
-      const j = JSON.parse(readFileSync(f, "utf8"));
-      for (const ev of Object.keys(j?.hooks ?? {})) {
-        const cmds = JSON.stringify(j.hooks[ev]);
-        // Accept the general CLI and the dedicated low-cost hook entrypoint, installed
-        // or source-local. They all reach `runHook`; spelling must not hide a live hook.
-        if (/(?:\bcoherence\s+hook\b|\bcoherence-hook\b|src\/(?:cli|hook-cli)\.ts\b)/.test(cmds)) {
-          configured.push(`${ev} (${f.endsWith("local.json") ? "local" : "project"})`);
-        }
-      }
-    } catch { console.log(`  ! ${f} is not valid JSON`); }
-  }
+export interface HookStatus {
+  control: LifecycleHookInspection;
+  observation: { sessionsOpenedByHook: number; journalEntries: number; sessions: number };
+}
+
+/** Structural control state and historical runtime evidence are adjacent, never fused. */
+export function hookStatus(cfg: Config): HookStatus {
+  const control = inspectLifecycleHook(cfg);
   const { records, sessions } = readJournal(cfg);
   const opened = records.filter((r) => r.kind === "session");
   const entries = records.length - opened.length;
+  return {
+    control,
+    observation: { sessionsOpenedByHook: opened.length, journalEntries: entries, sessions: sessions.length },
+  };
+}
 
-  console.log(`hooks configured: ${configured.length ? configured.join(", ") : "NONE"}`);
-  console.log(`journal: ${entries} entr${entries === 1 ? "y" : "ies"} across ${sessions.length} session(s)`);
-  console.log(`sessions OPENED BY A HOOK: ${opened.length}`);
-  console.log("");
+function printHookStatus(status: HookStatus, json = false): void {
+  if (json) { console.log(JSON.stringify(status, null, 2)); return; }
+  const { control, observation } = status;
+  console.log(`lifecycle hook: ${!control.valid ? "UNKNOWN" : control.present ? "PRESENT" : "ABSENT"}`);
+  console.log(`shared wiring: ${control.wiringPresent ? "PRESENT" : "ABSENT"}`);
+  if (control.scopes.length) console.log(`canonical scope(s): ${control.scopes.join(" + ")}`);
+  for (const file of control.files) {
+    if (!file.exists) console.log(`${file.scope}: no settings file`);
+    else if (!file.valid) console.log(`${file.scope}: INVALID — ${file.error ?? "unreadable settings"}`);
+    else if (file.complete) console.log(`${file.scope}: canonical five-event bundle present`);
+    else if (file.missingEvents.length) console.log(`${file.scope}: INCOMPLETE — missing ${file.missingEvents.join(", ")}`);
+    else if (file.matchedEvents.length) console.log(`${file.scope}: NONCANONICAL — duplicate or competing coherence actions`);
+    else console.log(`${file.scope}: canonical bundle absent`);
+  }
+  console.log(`launcher: ${control.launcher.present ? "READY" : "NOT READY"} (${control.launcher.path})`);
+  if (!control.launcher.canonical) console.log(`  script: ${control.launcher.exists ? "DRIFTED" : "MISSING"}`);
+  if (!control.launcher.mappingPresent) console.log(`  root mapping: ${control.launcher.mappingActual === undefined ? "MISSING" : "DRIFTED"} (expected ${control.launcher.mappingExpected})`);
+  console.log(`  target: ${control.launcher.targetPresent ? control.launcher.targetKind.toUpperCase() : "MISSING"} (${control.launcher.targetPath})`);
+  console.log(`runtime observation: ${observation.sessionsOpenedByHook
+    ? `OBSERVED — ${observation.sessionsOpenedByHook} session(s) opened by a hook`
+    : "UNOBSERVED — no hook-opened session is recorded"}`);
+  console.log(`journal: ${observation.journalEntries} entr${observation.journalEntries === 1 ? "y" : "ies"} across ${observation.sessions} session(s)`);
+  for (const warning of control.warnings) console.log(`warning: ${warning}`);
+}
 
-  if (!configured.length) {
-    console.log("The hook is not configured. Run `coherence hooks` and paste the block.");
-    return 1;
+/** `coherence hooks status` — report the switch and the observation beside it. */
+export function reportHooks(cfg: Config, json = false): number {
+  const status = hookStatus(cfg);
+  printHookStatus(status, json);
+  return status.control.valid ? 0 : 2;
+}
+
+/** `coherence hooks --check` — the binary current-control gate. Observation never redeems absence. */
+export function checkHooks(cfg: Config, json = false): number {
+  const status = hookStatus(cfg);
+  printHookStatus(status, json);
+  if (!status.control.valid) return 2;
+  return status.control.present ? 0 : 1;
+}
+
+export async function installHooks(cfg: Config, json = false): Promise<number> {
+  const result = await setLifecycleHook(cfg, true);
+  if (result.errors.length) {
+    if (json) console.log(JSON.stringify({ errors: result.errors, control: result.inspection }, null, 2));
+    else for (const error of result.errors) console.error(`cannot install lifecycle hook: ${error}`);
+    return 2;
   }
-  if (opened.length === 0) {
-    console.log([
-      "CONFIGURED BUT NEVER FIRED. The settings block is present and no hook has ever",
-      "opened a session. Either no agent has started since you added it, or this harness",
-      "is not running project hooks at all — some embedded/SDK hosts do not. Verify with a",
-      "throwaway PostToolUse hook that touches a file, then run any tool: if the file does",
-      "not appear, no project hook runs here and agents must be told to log in their brief.",
-      "",
-      "The journal still works: `coherence decide` is a plain command and needs no hook.",
-    ].join("\n"));
-    return 1;
+  if (!json) console.log(result.changed.length ? "installed lifecycle hook in shared project settings" : "lifecycle hook already installed");
+  const status = hookStatus(cfg);
+  printHookStatus(status, json);
+  return status.control.present ? 0 : 1;
+}
+
+export async function uninstallHooks(cfg: Config, json = false): Promise<number> {
+  const result = await setLifecycleHook(cfg, false);
+  if (result.errors.length) {
+    if (json) console.log(JSON.stringify({ errors: result.errors, control: result.inspection }, null, 2));
+    else for (const error of result.errors) console.error(`cannot uninstall lifecycle hook: ${error}`);
+    return 2;
   }
-  console.log(`FIRING. ${opened.length} session(s) were opened by the hook.`);
-  return 0;
+  if (!json) console.log(result.changed.length ? "uninstalled lifecycle hook" : "lifecycle hook already absent");
+  const status = hookStatus(cfg);
+  printHookStatus(status, json);
+  return status.control.valid && !status.control.present ? 0 : 1;
 }
 
 /** `coherence hooks` — print the block to paste into .claude/settings.json, plus the
  *  instruction text so a reader can see what agents will actually be told. */
 export function printHooks(cfg: Config): void {
-  const hook = '"${CLAUDE_PROJECT_DIR}/node_modules/.bin/coherence-hook"';
-  const block = {
-    hooks: {
-      SubagentStart: [{ hooks: [{ type: "command", command: `${hook} SubagentStart` }] }],
-      SessionStart: [{ hooks: [{ type: "command", command: `${hook} SessionStart` }] }],
-      SubagentStop: [{ hooks: [{ type: "command", command: `${hook} SubagentStop` }] }],
-      Stop: [{ hooks: [{ type: "command", command: `${hook} Stop` }] }],
-      PostToolUse: [{
-        matcher: "Read|Grep|Glob|Write|Edit|MultiEdit|NotebookEdit",
-        hooks: [{ type: "command", command: `${hook} PostToolUse` }],
-      }],
-    },
-  };
-  console.log("Paste into .claude/settings.json (merge with any existing `hooks` key),");
-  console.log("then run `coherence hooks --check` to confirm it actually FIRES:\n");
+  const block = canonicalLifecycleHookSettings();
+  const claudeRoot = resolveClaudeProjectRoot(cfg);
+  console.log(`Canonical control for ${claudeRoot}. Prefer \`coherence hooks install\`; it preserves unrelated hooks.`);
+  console.log("The settings value, stable launcher, and root mapping are:\n");
   console.log(JSON.stringify(block, null, 2));
+  console.log(`\n--- .claude/coherence-hook ---\n${LIFECYCLE_HOOK_SCRIPT}--- .claude/coherence-root ---\n${lifecycleRootMapping(cfg)}`);
   console.log(`
 SubagentStart / SessionStart inject the instruction below into the agent's context.
 PostToolUse records explicit file reads and writes for per-agent economy calibration; it
@@ -309,5 +328,4 @@ because the agent that saw it is gone.
 --- what each agent is told (with a fresh session id per agent) ----------------
 ${agentInstructions("s-<minted per agent>")}
 -------------------------------------------------------------------------------`);
-  void cfg;
 }

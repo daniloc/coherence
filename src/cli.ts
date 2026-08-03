@@ -35,7 +35,7 @@ import { readSurface, vacuityRefusal, Unrunnable } from "./floor.ts";
 import { CLAIM_FORMS, loadDictionary } from "./phrasebook.ts";
 import { appendDecision, renderJournal, readJournal, resolvableConjecture, compactJournal } from "./decisions.ts";
 import { recordObservation, formatObserved } from "./observed.ts";
-import { printHooks, checkHooks, runHook } from "./hooks.ts";
+import { printHooks, reportHooks, checkHooks, installHooks, uninstallHooks, runHook } from "./hooks.ts";
 import { redundancy } from "./redundancy.ts";
 import { prose } from "./prose.ts";
 import { economy } from "./economy.ts";
@@ -517,9 +517,34 @@ if (cmd === "graph") {
   console.log(text);
   await exit(0);
 } else if (cmd === "hooks") {
-  if (check) await exit(checkHooks(cfg));
-  printHooks(cfg);
-  await exit(0);
+  // The first control interface. `--check` remains the terse gate spelling; status keeps
+  // the installation bit and runtime observation visible without conflating them.
+  const json = argv.includes("--json");
+  const action = check ? "check" : (positional[0] ?? "print");
+  const allowed = new Map<string, Set<string>>([
+    ["check", new Set(["--check", "--json"])],
+    ["status", new Set(["--json"])],
+    ["install", new Set(["--json"])],
+    ["uninstall", new Set(["--json"])],
+    ["print", new Set()],
+  ]);
+  const usage = "usage: coherence hooks [status|install|uninstall|print] [--check] [--json]";
+  const badFlags = argv.filter((arg) => arg.startsWith("--") && !allowed.get(action)?.has(arg));
+  const badShape = !allowed.has(action)
+    || (action === "check" && !check)
+    || positional.length > 1
+    || (check && positional.length > 0);
+  if (badShape || badFlags.length) {
+    const message = badFlags.length ? `unsupported flag(s) for hooks ${action}: ${badFlags.join(", ")}` : `invalid hooks action: ${positional.join(" ") || action}`;
+    if (json) console.log(JSON.stringify({ error: message, usage }, null, 2));
+    else { console.error(message); console.error(usage); }
+    await exit(2);
+  }
+  if (action === "check") await exit(checkHooks(cfg, json));
+  if (action === "status") await exit(reportHooks(cfg, json));
+  if (action === "install") await exit(await installHooks(cfg, json));
+  if (action === "uninstall") await exit(await uninstallHooks(cfg, json));
+  if (action === "print") { printHooks(cfg); await exit(0); }
 } else if (cmd === "hook") {
   // The hook BODY, so nothing has to be written to disk or kept in sync with a script.
   await exit(await runHook(cfg, positional[0] ?? ""));
