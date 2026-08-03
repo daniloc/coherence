@@ -14,6 +14,67 @@ evidence inside that record.
 
 ---
 
+## v0.25.0 — the Index: a picture a human can read
+
+Coherence began because LLM development accelerated code change and made it
+opaque. Everything since has served the AGENT — claims, gates, journals,
+advisories. This release serves the HUMAN, and it took five rejected attempts to
+find out what that means.
+
+**`coherence index`** emits `_index.html` + `index.json`: three tabs, one visible
+at a time, and no `<script>` in the first four builds (tabs are `:target`,
+disclosure is checkbox siblings). MAP is the structures and their guards, JOURNAL
+is a timeline of what agents decided with `blocked` loudest, TRAJECTORY is what
+moved at the level of the abstraction — never a commit list. On a 25-commit frame
+of the consuming project, +2762/−1441 lines of code reduce to **three
+architectural facts**. That ratio is the whole thesis.
+
+**THE FIGURE TOOK FIVE TRIES AND THE FAILURES ARE THE LESSON.** A dense spec
+sheet ("it teaches nothing, it structures nothing, it's an assault"). A layered
+DAG that told a story and aligned with nothing. A matrix that aligned perfectly
+and said nothing — because one row per crossing destroys the only thing the DAG
+had, a path you can trace. Each brief specified FORM and never once said what the
+picture must ASSERT, so each attempt maximised the axis named and spent the one
+that wasn't.
+
+What finally worked came from noticing the data was wrong, not the drawing: **the
+atlas has one relation type doing three jobs.** Classified by graph degree —
+sources, regions that are both origin and destination, and sinks — three classes
+fall out and the picture composes itself:
+
+  · **SPINE** — trust promotions, a path you can trace end to end
+  · **RESOURCES** — reaches that terminate, one lane per sink with a tap per
+    guard, so "who holds storage?" is read off adjacency instead of traced
+  · **SUPPLY** — ambient environment, a footnote, deliberately NOT an arrow
+
+A reader can now trace a request and name the guard at every promotion. That is
+the acceptance test that replaced "is it aligned".
+
+**ONE LATTICE.** The figure was a hand-computed pixel coordinate system living
+beside a CSS document — two systems, hand-synced, drifting. Now the boxes are
+HTML grid items and SVG draws connectors only, every coordinate a prefix-sum of
+the same track arrays the grid templates print from. The failures that ate four
+rounds — node widths varying with label length, captions 8px off, a column
+overflowing — were all hand-computed text metrics, and they are now impossible
+rather than avoided.
+
+**Also here:** the organ roster, because component `intent` lines are the best
+human-written prose in any project and were buried behind a click; ordered
+perimeter-first by crossings owned. `never-red` findings rank by whether a
+refutation would teach anything, after the first real `--raise` spent its
+three-question budget on `README.md exists at root`. And the count-its-instances
+instruction in the hook block, because a mechanism with no subjects is a finding,
+not a feature.
+
+**Degradations are stated, never filled:** no atlas reading says the perimeter is
+UNREAD rather than borrowing a sentence a measured project earns; a cyclic region
+graph says its entry is the longest path found, not where a request begins; tied
+sources say the entry is a coin toss.
+
+656 tests. `verify` 29/29 green.
+
+---
+
 ## v0.24.1 — the evidence layer is typechecked, and the harness claims it
 
 `tsc --noEmit` reported clean on this repo while a test file referenced a
