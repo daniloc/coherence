@@ -1,16 +1,16 @@
 {
   "project": "coherence",
   "intent": "The repository-level reading surface: configuration, package contract, generated maps, and the authored explanation of why the harness exists.",
-  "generatedAt": "2026-08-02 23:40Z",
+  "generatedAt": "2026-08-03 01:27Z",
   "head": {
-    "commit": "e2833ce",
+    "commit": "e351490",
     "dirty": true
   },
   "frame": {
     "kind": "cursor",
-    "ref": "e2833ce",
-    "commit": "e2833ce",
-    "at": "2026-08-02T18:51:00-04:00",
+    "ref": "e351490",
+    "commit": "e351490",
+    "at": "2026-08-02T19:40:55-04:00",
     "commits": 0,
     "why": "the HEAD this Index recorded the last time it ran — literally since you last looked."
   },
@@ -24,8 +24,8 @@
       "name": ".coherence/status.json — verify",
       "ok": true,
       "detail": "29 claim verdict(s), 0 failure(s), tier full",
-      "at": "2026-08-02T23:39:57.200Z",
-      "commit": "e2833ce",
+      "at": "2026-08-03T01:20:45.594Z",
+      "commit": "e351490",
       "stale": false
     },
     {
@@ -37,19 +37,19 @@
     {
       "name": "git history",
       "ok": true,
-      "detail": "90 concern-carrying commit(s) in the last 200, touching 173 path(s)",
-      "commit": "e2833ce"
+      "detail": "91 concern-carrying commit(s) in the last 200, touching 174 path(s)",
+      "commit": "e351490"
     },
     {
       "name": ".coherence/decisions",
       "ok": true,
-      "detail": "255 record(s) across 43 session(s)"
+      "detail": "261 record(s) across 44 session(s)"
     },
     {
-      "name": "structural diff vs e2833ce",
+      "name": "structural diff vs e351490",
       "ok": true,
       "detail": "0 structural change(s), 0 loss(es)",
-      "commit": "e2833ce"
+      "commit": "e351490"
     }
   ],
   "map": {
@@ -87,7 +87,7 @@
         "zone": null,
         "guards": [],
         "files": 51,
-        "lines": 15508,
+        "lines": 15757,
         "accountedFiles": 3,
         "claims": 20,
         "gates": 14,
@@ -102,7 +102,7 @@
         "invariants": 14,
         "anchored": 14,
         "witnessed": 12,
-        "symbols": 442,
+        "symbols": 444,
         "undocumented": 166,
         "naked": 0
       },
@@ -139,7 +139,7 @@
         "zone": null,
         "guards": [],
         "files": 42,
-        "lines": 11081,
+        "lines": 11215,
         "accountedFiles": 4,
         "claims": 4,
         "gates": 0,
@@ -393,7 +393,7 @@
         "label": "undocumented",
         "what": "symbols with no docblock — meaning a reader has to derive from the body",
         "dark": 171,
-        "total": 454,
+        "total": 456,
         "unit": "symbols",
         "worst": {
           "shown": [
@@ -414,8 +414,8 @@
         "key": "unvisited",
         "label": "unvisited",
         "what": "paths recent work keeps touching that the graph does not own — no closure can be computed for them, so every read-cost figure here excludes them",
-        "dark": 77,
-        "total": 173,
+        "dark": 78,
+        "total": 174,
         "unit": "paths touched in the concern band",
         "worst": {
           "shown": [
@@ -423,13 +423,13 @@
             ".coherence/decisions/3e2c9d10-82b3-4627-a861-555b53d9777d.jsonl",
             ".coherence/decisions/a0822697df6f0b473.jsonl",
             ".coherence/decisions/a0d10da06384ede58.jsonl",
+            ".coherence/decisions/a4b6a56fedc8782e8.jsonl",
             ".coherence/decisions/a52046bd2cb7efc4e.jsonl",
             ".coherence/decisions/a873312c333faa81d.jsonl",
-            ".coherence/decisions/a87bc84c1ac9f42ee.jsonl",
-            ".coherence/decisions/a8b60c168b5c96b86.jsonl"
+            ".coherence/decisions/a87bc84c1ac9f42ee.jsonl"
           ],
-          "withheld": 69,
-          "total": 77
+          "withheld": 70,
+          "total": 78
         }
       }
     ]
@@ -584,6 +584,24 @@
     "open": {
       "shown": [
         {
+          "id": "d-93abae1b",
+          "kind": "conjecture",
+          "at": "2026-08-03T01:27:01.048Z",
+          "agent": "general-purpose",
+          "session": "a533f8eeb80afb7f8",
+          "commit": "e351490",
+          "chose": "atlas.transitions should carry an explicit `kind` (promotion | reach | supply) instead of the figure inferring it from graph degree",
+          "because": "",
+          "over": [],
+          "couldBe": [
+            "the instrument is wrong — the thing that PRODUCED this number, not the thing it describes",
+            "the degree inference is right on every project and the field would be pure redundancy — measured on hoist it reproduces all 14 crossings with zero corrections, and it self-corrects when the shape changes",
+            "the inference is right on hoist only because hoist's regions happen to have clean degrees; a project where a resource is ALSO a stage for some other flow would be misclassified and could not be corrected without the field"
+          ],
+          "discriminatedBy": "run readMap over the atlas of three more projects and count crossings whose inferred kind an author would dispute. Zero disputes on all three: do not add the field. One or more: the field earns its config surface, and the inference becomes the default rather than the only answer",
+          "news": true
+        },
+        {
           "id": "d-759f7107",
           "kind": "conjecture",
           "at": "2026-08-02T23:37:23.891Z",
@@ -598,7 +616,7 @@
             "tier-1 (enshrined) requires a via-guard the atlas can only infer in narrow cases, so the grade is an artifact of what the instrument can see"
           ],
           "discriminatedBy": "count enshrined crossings across several dogfooded projects; if tier-1 is ~1 everywhere regardless of codebase, it is the instrument, and the diagram should encode something with variance instead",
-          "news": true
+          "news": false
         },
         {
           "id": "d-85b1bcd9",
@@ -743,31 +761,97 @@
           ],
           "discriminatedBy": "extract path/symbol tokens from every --because in hoist's 160-entry journal, resolve each against the current graph, and hand-classify the hits: if a meaningful fraction are genuinely rotted (not just moved-but-equivalent), the advisory is real; if it is mostly noise or only ever finds the one case we already know, it is not worth building",
           "news": false
-        },
-        {
-          "id": "d-8bc76a8c",
-          "kind": "conjecture",
-          "at": "2026-07-31T14:40:31.175Z",
-          "agent": "main",
-          "session": "s-adcd72be1a20",
-          "commit": "cd9be5f",
-          "chose": "the genetics frame predicts two instruments coherence lacks: (1) LOCALIZED growth-without-anchoring — a component whose mass grows while its claim count stays flat is the software analogue of a tumor (local fitness, global lethality), which the existing repo-wide novelty-vs-anchor advisory cannot localize; (2) GERMLINE vs SOMATIC gate stratification — an edit to the harness propagates to every consumer while an edit to a consumer dies with it, so harness-side gates should be strictly stronger than consumer-side ones, and an unpinned consumer (the posthog/context-mill pattern: one release reshapes the whole fleet's field) is germline editing without a checkpoint",
-          "because": "",
-          "over": [],
-          "couldBe": [
-            "the instrument is wrong — the thing that PRODUCED this number, not the thing it describes",
-            "both are real and cheap: (1) is mass dims joined against per-component claim counts, already both in status.json; (2) is a policy plus a release-side check that no consumer resolves a floating ref",
-            "(1) is noise on a young repo where mass legitimately outruns claims during exploration, and would fire constantly on any greenfield component"
-          ],
-          "discriminatedBy": "compute mass-delta vs claim-delta per component over the last N commits on hoist and this repo; if the ratio flags components a human agrees are under-anchored (and stays quiet on ones they agree are fine), it is an instrument; if it flags everything young, it needs a maturity gate before it can ship",
-          "news": false
         }
       ],
-      "withheld": 7,
-      "total": 17
+      "withheld": 8,
+      "total": 18
     },
     "decisions": {
       "shown": [
+        {
+          "id": "d-3589287d",
+          "kind": "decision",
+          "at": "2026-08-03T01:27:12.776Z",
+          "agent": "general-purpose",
+          "session": "a533f8eeb80afb7f8",
+          "commit": "e351490",
+          "chose": "the figure's organ BANDS are gone; organ ownership survives only as data-owner + the roster",
+          "because": "organs cut ACROSS the spine — on hoist six components own crossings in three different classes, so an organ band over a spine picture is a bounding box around scattered things. The join is not lost: clicking an organ still lights its guards wherever they landed (verified in a browser: shared/auth lights verifySession + 3 reaches), and the ORGAN ROSTER below the figure is unchanged",
+          "over": [
+            "keeping the matrix's contiguous per-organ row bands"
+          ],
+          "couldBe": [],
+          "discriminatedBy": "",
+          "news": true
+        },
+        {
+          "id": "d-236c6368",
+          "kind": "decision",
+          "at": "2026-08-03T01:27:11.647Z",
+          "agent": "general-purpose",
+          "session": "a533f8eeb80afb7f8",
+          "commit": "e351490",
+          "chose": "resource boxes are drawn ONCE and shared, and the reach lanes are grouped by SINK rather than by stage",
+          "because": "grouping by sink puts every guard landing on a resource in one left-aligned column directly above its box — the drop x, the label x and the box's own name x are ONE alignment line. Grouping by stage zigzagged the labels across four x positions for no gain; duplicating the box would turn one shared thing into several, which is the fact the band exists to state (storage is reached by 4 guards from 2 stages)",
+          "over": [
+            "grouping lanes by the stage that grabs them",
+            "drawing a resource box under each stage that reaches it"
+          ],
+          "couldBe": [],
+          "discriminatedBy": "",
+          "news": true
+        },
+        {
+          "id": "d-192b0a91",
+          "kind": "decision",
+          "at": "2026-08-03T01:24:46.382Z",
+          "agent": "general-purpose",
+          "session": "a533f8eeb80afb7f8",
+          "commit": "e351490",
+          "chose": "left-edge count is at PARITY (42 new vs 39 old, same instrument; the brief quoted 43), not reduced — and I stopped chasing it",
+          "because": "measured: 20 of the page's 42 edges are the roster and masthead and are identical in both figures; of the figure's 22, EIGHTEEN are nine boxes each contributing a border edge and a name edge. Boxes are what the arrows point at and what makes a stage a stage — the matrix scored better precisely because it drew none. Alignment was never the defect; the brief says so itself",
+          "over": [
+            "cutting the region-box outlines, which would have bought 6 edges",
+            "snapping resource boxes to the stage lattice, which costs 300px of width and buys 1"
+          ],
+          "couldBe": [],
+          "discriminatedBy": "",
+          "news": true
+        },
+        {
+          "id": "d-28c6aaf4",
+          "kind": "decision",
+          "at": "2026-08-03T01:08:57.538Z",
+          "agent": "general-purpose",
+          "session": "a533f8eeb80afb7f8",
+          "commit": "e351490",
+          "chose": "break the entry tie on total heat along the path, not on path length",
+          "because": "the brief asserted config takes a 'shorter path'; measuring it, both sources reach the same depth. Heat is the honest discriminator — the entry is where traffic actually enters: api heat 0.089 vs envStr 0.0064, a 14x gap. Re-run: jq '.map.crossings.shown[]|select(.from==\"config\" or .from==\"browser-client\")' docs/coherence/index.json",
+          "over": [
+            "path length alone (it TIES on hoist: browser-client and config both reach patient in 4 stages)",
+            "declaring the first source in spec order the entry"
+          ],
+          "couldBe": [],
+          "discriminatedBy": "",
+          "news": true
+        },
+        {
+          "id": "d-e994764c",
+          "kind": "decision",
+          "at": "2026-08-03T01:08:49.175Z",
+          "agent": "general-purpose",
+          "session": "a533f8eeb80afb7f8",
+          "commit": "e351490",
+          "chose": "the MAP figure splits the atlas's ONE relation into three drawn classes — promotion (a spine step), reach (a resource grab that terminates), supply (an ambient source that is not a step) — derived from graph degree: SOURCE=never a destination, SPINE=both, SINK=never an origin; the spine is the longest simple path from the source with the most heat",
+          "because": "measured on hoist: 4 promotions + 8 reaches + 2 supply = 14, all accounted. The classification is INFERRED from degree, not recorded — honest but derived; the config proposal is journaled separately",
+          "over": [
+            "one arrow type for all fourteen crossings (the layered DAG and the matrix both did this, and both were rejected: a reader cannot tell a step from a grab)",
+            "adding an explicit `kind` to atlas.transitions in this pass"
+          ],
+          "couldBe": [],
+          "discriminatedBy": "",
+          "news": true
+        },
         {
           "id": "d-904ad0c0",
           "kind": "decision",
@@ -782,7 +866,7 @@
           ],
           "couldBe": [],
           "discriminatedBy": "",
-          "news": true
+          "news": false
         },
         {
           "id": "d-c87d30eb",
@@ -798,7 +882,7 @@
           ],
           "couldBe": [],
           "discriminatedBy": "",
-          "news": true
+          "news": false
         },
         {
           "id": "d-7573ea9c",
@@ -814,7 +898,7 @@
           ],
           "couldBe": [],
           "discriminatedBy": "",
-          "news": true
+          "news": false
         },
         {
           "id": "d-fef2d033",
@@ -831,7 +915,7 @@
           ],
           "couldBe": [],
           "discriminatedBy": "",
-          "news": true
+          "news": false
         },
         {
           "id": "d-dfaaa05d",
@@ -849,93 +933,10 @@
           "couldBe": [],
           "discriminatedBy": "",
           "news": false
-        },
-        {
-          "id": "d-1ca55d4b",
-          "kind": "decision",
-          "at": "2026-08-02T22:48:09.127Z",
-          "agent": "general-purpose",
-          "session": "aa305d879a391c483",
-          "commit": "b347169",
-          "chose": "the roster's order key is the OWNED-CROSSING COUNT on a stable sort, so spec-tree order survives inside each band",
-          "because": "on hoist it yields hoist-chat 5, auth 4, env 2, then web/Patient/model at 1, then the 8 interior in spec-tree order — reading down IS reading how much of the trust perimeter each organ holds. A stable sort on one key means the split is the ONLY thing this reorders, so the components drill table's long-standing order is not silently rewritten too",
-          "over": [
-            "alphabetical (orders by an accident of naming)",
-            "a hard two-band partition that re-sorts each band by label"
-          ],
-          "couldBe": [],
-          "discriminatedBy": "",
-          "news": false
-        },
-        {
-          "id": "d-1a23aa09",
-          "kind": "decision",
-          "at": "2026-08-02T22:34:17.754Z",
-          "agent": "general-purpose",
-          "session": "aa305d879a391c483",
-          "commit": "b347169",
-          "chose": "roster/diagram selection is ONE radio group over organs AND guards, with absolutely-positioned HTML <label> hotspots overlaying the SVG's already-computed label plates",
-          "because": "the diagram already computes each guard label's rect (lx, ly, lw, LABEL_H) to place it; reusing those numbers as overlay coordinates costs no new derivation, and <label for> is the only no-script way to make an arrow clickable since <label> is not valid inside SVG",
-          "over": [
-            "SVG <a xlink:href> + :target (collides with the tab mechanism, which is also :target)",
-            "checkbox-per-organ (multi-select makes 'dim the rest' meaningless)",
-            "clicking only roster chips (that is one direction, and the brief asked for both)"
-          ],
-          "couldBe": [],
-          "discriminatedBy": "",
-          "news": false
-        },
-        {
-          "id": "d-dcbb589c",
-          "kind": "decision",
-          "at": "2026-08-02T22:34:13.421Z",
-          "agent": "general-purpose",
-          "session": "aa305d879a391c483",
-          "commit": "b347169",
-          "chose": "the perimeter/interior split is UNREAD, not 0/N, when no atlas record exists — measured: coherence's own project has 4 components and NO atlas reading at all",
-          "because": "query: jq '.atlas' .coherence/status.json → null here, while hoist has 14 crossings. Saying '0 own a crossing' when nothing was read is green-by-absence in the exact shape floor.ts exists to refuse. The roster reads mp.atlas === null and mp.crossings.total === 0 as two DIFFERENT sentences",
-          "over": [
-            "printing '4 of 4 components own no crossing' on a project with no atlas"
-          ],
-          "couldBe": [],
-          "discriminatedBy": "",
-          "news": false
-        },
-        {
-          "id": "d-061e717c",
-          "kind": "decision",
-          "at": "2026-08-02T22:34:06.454Z",
-          "agent": "general-purpose",
-          "session": "aa305d879a391c483",
-          "commit": "b347169",
-          "chose": "join guard→organ through the graph's OWN file→component parent chain (fileParent), not a longest-prefix match on the symbol's path",
-          "because": "measured both on hoist: 14/14 crossings resolve to the same owner either way (requireAuth/OwnedScope/enforceQuota/deleteCredential/serveJson→hoist-chat, 4→auth, 2→env, api→web, Patient→Patient, runWithRetry→model). The graph ALREADY assigns every file to a component via node.parent and buildMap already reads it for symbolsByDir; prefix matching would be a SECOND spelling of component ownership — index-model.ts's rule 1 forbids exactly that",
-          "over": [
-            "re-implementing longest-matching-dir-prefix over component dirs, as the brief described the join"
-          ],
-          "couldBe": [],
-          "discriminatedBy": "",
-          "news": false
-        },
-        {
-          "id": "d-afec9036",
-          "kind": "decision",
-          "at": "2026-08-01T22:03:30.667Z",
-          "agent": "general-purpose",
-          "session": "a8b60c168b5c96b86",
-          "commit": "b347169",
-          "chose": "index.json grew from 55KB to 85KB on hoist and the page from 61KB to 102KB, and that is accepted",
-          "because": "MEASURED: the growth is journal.marks (182 text-free records, ~15KB) plus the SVG and one CSS rule per revealable entry. The page it replaced was 61KB of wall that went unread; a 102KB page where 5 objects paint first is cheaper to READ, which is the only cost this artifact is judged on. Named here so the next agent measures before assuming the marks array is the thing to cut.",
-          "over": [
-            "trimming marks to the framed window only, which would make the timeline's axis a function of the frame instead of the record"
-          ],
-          "couldBe": [],
-          "discriminatedBy": "",
-          "news": false
         }
       ],
-      "withheld": 169,
-      "total": 179
+      "withheld": 174,
+      "total": 184
     },
     "marks": [
       {
@@ -1699,7 +1700,7 @@
         "lane": "open",
         "at": "2026-07-31T14:40:31.175Z",
         "news": false,
-        "shown": true
+        "shown": false
       },
       {
         "id": "d-e45dbe0f",
@@ -2308,35 +2309,35 @@
         "lane": "decision",
         "at": "2026-08-01T22:03:30.667Z",
         "news": false,
-        "shown": true
+        "shown": false
       },
       {
         "id": "d-061e717c",
         "lane": "decision",
         "at": "2026-08-02T22:34:06.454Z",
         "news": false,
-        "shown": true
+        "shown": false
       },
       {
         "id": "d-dcbb589c",
         "lane": "decision",
         "at": "2026-08-02T22:34:13.421Z",
         "news": false,
-        "shown": true
+        "shown": false
       },
       {
         "id": "d-1a23aa09",
         "lane": "decision",
         "at": "2026-08-02T22:34:17.754Z",
         "news": false,
-        "shown": true
+        "shown": false
       },
       {
         "id": "d-1ca55d4b",
         "lane": "decision",
         "at": "2026-08-02T22:48:09.127Z",
         "news": false,
-        "shown": true
+        "shown": false
       },
       {
         "id": "d-dfaaa05d",
@@ -2349,34 +2350,76 @@
         "id": "d-fef2d033",
         "lane": "decision",
         "at": "2026-08-02T23:13:47.482Z",
-        "news": true,
+        "news": false,
         "shown": true
       },
       {
         "id": "d-7573ea9c",
         "lane": "decision",
         "at": "2026-08-02T23:34:29.506Z",
-        "news": true,
+        "news": false,
         "shown": true
       },
       {
         "id": "d-759f7107",
         "lane": "open",
         "at": "2026-08-02T23:37:23.891Z",
-        "news": true,
+        "news": false,
         "shown": true
       },
       {
         "id": "d-c87d30eb",
         "lane": "decision",
         "at": "2026-08-02T23:37:35.757Z",
-        "news": true,
+        "news": false,
         "shown": true
       },
       {
         "id": "d-904ad0c0",
         "lane": "decision",
         "at": "2026-08-02T23:37:36.924Z",
+        "news": false,
+        "shown": true
+      },
+      {
+        "id": "d-e994764c",
+        "lane": "decision",
+        "at": "2026-08-03T01:08:49.175Z",
+        "news": true,
+        "shown": true
+      },
+      {
+        "id": "d-28c6aaf4",
+        "lane": "decision",
+        "at": "2026-08-03T01:08:57.538Z",
+        "news": true,
+        "shown": true
+      },
+      {
+        "id": "d-192b0a91",
+        "lane": "decision",
+        "at": "2026-08-03T01:24:46.382Z",
+        "news": true,
+        "shown": true
+      },
+      {
+        "id": "d-93abae1b",
+        "lane": "open",
+        "at": "2026-08-03T01:27:01.048Z",
+        "news": true,
+        "shown": true
+      },
+      {
+        "id": "d-236c6368",
+        "lane": "decision",
+        "at": "2026-08-03T01:27:11.647Z",
+        "news": true,
+        "shown": true
+      },
+      {
+        "id": "d-3589287d",
+        "lane": "decision",
+        "at": "2026-08-03T01:27:12.776Z",
         "news": true,
         "shown": true
       }
@@ -2389,16 +2432,16 @@
     },
     "totals": {
       "blocked": 10,
-      "open": 17,
-      "decisions": 179,
-      "records": 255,
-      "sessions": 43,
+      "open": 18,
+      "decisions": 184,
+      "records": 261,
+      "sessions": 44,
       "unreadable": 0
     },
     "news": {
       "blocked": 0,
       "open": 1,
-      "decisions": 4
+      "decisions": 5
     }
   },
   "trajectory": {
@@ -2444,8 +2487,8 @@
     },
     "structuralWhy": null,
     "loc": {
-      "added": 684,
-      "deleted": 431
+      "added": 699,
+      "deleted": 316
     },
     "mass": {
       "at": "2026-07-31T17:56:23.525Z",

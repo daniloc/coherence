@@ -126,37 +126,46 @@ function sourcesTable(sources: SourceRead[]): string {
     <tbody>${sources.map(row).join("")}</tbody></table>`;
 }
 
-// ── I. THE MAP, AS A MATRIX SCHEMATIC ─────────────────────────────────────────────────
+// ── I. THE MAP, AS A SPINE YOU CAN TRACE ──────────────────────────────────────────────
 //
-// EVERY CROSSING GETS ITS OWN ROW. Regions are the COLUMNS — vertical bus bars in layer
-// order, `browser-client → public-web → authed-user → {patient, storage, meter} →
-// {public-egress, model-provider}` on the project this was built against, so left-to-right
-// is still the direction trust travels. A crossing is one horizontal run on its own row,
-// from its source bar to its target bar. Nothing here is derived: `from`, `to`, `sym`,
-// `tier`, `security`, `present`, `heat` and `owner` are all fields the atlas record and the
-// spec tree already filed, and the ONLY computed thing is where to put them.
+// TWO REWRITES WERE REJECTED BEFORE THIS ONE, and neither failed at rendering. The first
+// was a layered box-and-arrow DAG; the second a matrix, one crossing per row, perfectly
+// aligned. The verdict on the matrix was "it's just a bunch of lines — what does it even
+// mean that config connects to public-web? it reveals nothing." That is the real defect and
+// it is in the DATA MODEL, not the layout: `atlas.transitions` has ONE relation type doing
+// THREE different jobs, and both pictures drew all three as identical arrows. A reader could
+// not tell a STEP from a GRAB, so there was nothing to trace.
 //
-// ── WHY THIS AND NOT A BOX-AND-ARROW DAG ──────────────────────────────────────────────
+// ── THE THREE JOBS, AND HOW THEY ARE TOLD APART ───────────────────────────────────────
 //
-// The previous layout was regions-as-boxes with arrows between them, and it could not hold
-// four things at once: uniform nodes, even gutters, orthogonal routing, and CLUSTERING BY
-// ORGAN. Organs cut ACROSS the region layering — on the project this was built against six
-// components own fourteen crossings whose region pairs share no grouping at all — so an
-// organ bracket over a layered picture is a bounding box around scattered labels.
+// Classify every region by its degree in the crossing graph:
+//     SOURCE  never a destination     SPINE  both an origin and a destination
+//     SINK    never an origin
+// The SPINE is the longest simple path from a source; ties on length break on the total
+// HEAT along the path, because the entry is where traffic actually enters. Then every
+// crossing is exactly one of:
 //
-// One row per crossing fixes all four by construction:
-//   · ROWS GROUP BY ORGAN CONTIGUOUSLY, in the roster's own order, so the two objects on
-//     this tab read down in the same sequence and a band is a plain run of rows.
-//   · A RUN CANNOT BE OBSTRUCTED. The old layout needed reserved lanes for layer-skipping
-//     crossings, and four of them ended up as dashed rails under the figure whose risers
-//     coincided — they read as attached to nothing. A row belongs to one crossing, so its
-//     endpoints are always visibly its own.
-//   · EVERY GUARD NAME LANDS ON ONE VERTICAL ALIGNMENT LINE, which is the thing a greedy
-//     collision-avoiding label placer can never give you.
+//   PROMOTION  both ends on the spine, forwards. A request is promoted from one trust stage
+//              to the next BY A NAMED GUARD. This is the line the eye follows.
+//   REACH      from a spine stage to a region off the spine. A resource grabbed at that
+//              stage. It TERMINATES — reaches do not compose, so they hang below the spine
+//              and end on a resource box drawn ONCE and shared.
+//   SUPPLY     from a source that is NOT the entry. Ambient environment injected sideways.
+//              IT IS NOT DRAWN AS AN ARROW AT ALL. Drawing `config → public-web` as an arrow
+//              in the path asserts a sequence that does not exist, and asserting it is
+//              precisely what made the last two figures say nothing.
+//   ASIDE      whatever those three cannot hold — a back edge, a self-loop, a chain hanging
+//              off a sink. It is listed, and the figure says why it could not be placed.
 //
-// The layering relaxation is still bounded by the region count, so a CYCLE in the crossing
-// graph terminates with an honest (if arbitrary) column order rather than hanging: a cyclic
-// trust graph is a real shape.
+// The three classes separate by TONE and GEOMETRY, not by hue: a promotion runs along the
+// spine's own centre line in `--fg`; a reach drops orthogonally into the resource band in
+// `--dim`; supply has no line. Tier stays LINE TREATMENT, heat stays LINE WEIGHT, security
+// stays a drawn diamond — so all of it still survives a greyscale printer.
+//
+// THIS SPLIT IS DERIVED, NOT RECORDED. The atlas does not carry a `kind`, so the figure
+// infers it from degree. That is honest and it is also the reason a project whose trust
+// graph is cyclic, or has no spine at all, gets a SENTENCE saying so rather than a picture
+// that implies an order nobody declared. Every degenerate shape below states itself.
 
 /** THE BASE UNIT of the whole page. Every x, y, width, height, gutter and row in this
  *  figure is a multiple of it; so is the page's vertical rhythm. Text baselines sit at the
@@ -168,10 +177,12 @@ const FS = 10.5;
 /** Monospace advance as a fraction of font-size. Slightly over the 0.6 of the faces in the
  *  stack, so a reserved column is never narrower than the text in it. */
 const CH = 0.61;
-const ROW = 3 * U, BAND_H = 3 * U, HEAD_H = 3 * U, LEG_H = 5 * U;
-/** Widths snap to TWO units, so a column's centre line — where its bus bar runs — is itself
- *  on the grid rather than at a half unit. */
+const ROW = 3 * U, BOX_H = 4 * U, HEAD_H = 3 * U;
+/** Widths snap to TWO units, so a box's centre line — where its bus drops — is itself on the
+ *  grid rather than at a half unit. */
 const snap2 = (n: number) => Math.ceil(n / (2 * U)) * 2 * U;
+/** The one column every band head's note starts in — three bands, ONE alignment line. */
+const NOTE_X = 12 * U;
 
 const textW = (s: string, fs: number = FS) => s.length * fs * CH;
 
@@ -180,234 +191,445 @@ const textW = (s: string, fs: number = FS) => s.length * fs * CH;
 const DASH: Record<number, string> = { 1: "", 2: "7 4", 3: "1.5 3" };
 const TIER_NAME: Record<number, string> = { 1: "enshrined", 2: "totality-checked", 3: "convention" };
 
-/** An arrowhead as a filled triangle, apex on the target, pointing along ±x only — this
- *  figure has no diagonal in it. Drawn rather than `marker-end` so it inherits the edge's
- *  own colour without a marker definition per colour. */
-function head(x: number, y: number, dir: 1 | -1, fill: string): string {
-  const b = x - dir * U;
-  return `<path d="M${x},${y} L${b},${y - 4} L${b},${y + 4} Z" fill="${fill}"/>`;
-}
+/** An arrowhead as a filled triangle, apex on the target. Drawn rather than `marker-end` so
+ *  it inherits the edge's own colour without a marker definition per colour. */
+const headX = (x: number, y: number, dir: 1 | -1, fill: string) =>
+  `<path d="M${x},${y} L${x - dir * U},${y - 4} L${x - dir * U},${y + 4} Z" fill="${fill}"/>`;
+const headY = (x: number, y: number, dir: 1 | -1, fill: string) =>
+  `<path d="M${x},${y} L${x - 4},${y - dir * U} L${x + 4},${y - dir * U} Z" fill="${fill}"/>`;
 
 /** THE SECURITY MARK — a drawn diamond, never a hue, so it survives a greyscale printer.
- *  One shape, used on the row and once again in the legend. */
+ *  One shape, used on a crossing and once again in the legend. */
 const diamond = (x: number, y: number, fill: string) =>
   `<path d="M${x},${y} l4.5,-4.5 l4.5,4.5 l-4.5,4.5 Z" fill="${fill}"/>`;
 
-/** ONE ORGAN'S STRETCH OF THE PERIMETER: a contiguous run of rows, in the roster's order.
- *  `dir` is the component directory — the id the roster keys its own row by, so selecting a
- *  band and selecting a roster row are the same act. Null when nothing owns these. */
-interface Band { label: string; dir: string | null; rows: IndexCrossing[] }
+/** THE READING the figure draws: which crossings are steps, which are grabs, which are
+ *  ambient, and — where the shape does not support the reading — the sentence that says so.
+ *  Exported because it is the claim being made, and a claim ought to be testable without
+ *  parsing an SVG. */
+export interface MapReading {
+  /** Every region named by a crossing, in first-appearance order. */
+  regions: string[];
+  /** The traceable path: ordered trust stages, entry first. Empty only when there are no
+   *  crossings at all. */
+  spine: string[];
+  /** One entry per ORDERED PAIR of spine stages that is crossed, in spine order. `guards` is
+   *  every chokepoint managing that same promotion — two guards on one crossing are two
+   *  parallel lanes, not one arrow with two names. */
+  promotions: { from: string; to: string; skip: boolean; guards: IndexCrossing[] }[];
+  /** Resource grabs, grouped by the sink they land on (which is why the labels above a
+   *  resource box form one left-aligned column). */
+  reaches: { c: IndexCrossing; stage: string; sink: string }[];
+  /** Sinks in left-to-right placement order. */
+  sinks: string[];
+  /** Ambient sources and what they inject. Never drawn as a step. */
+  supply: { source: string; guards: IndexCrossing[] }[];
+  /** What the three bands cannot hold. Drawn as a list, never silently dropped. */
+  aside: IndexCrossing[];
+  /** One line per way this project's shape does not fit the reading. Rendered verbatim. */
+  notes: string[];
+}
+
+/** Strongest first, then hottest — so the one enshrined crossing leads its lane group and a
+ *  reader meets the guarantee before the volume. */
+const rank = (a: IndexCrossing, b: IndexCrossing) =>
+  a.tier - b.tier || (b.heat ?? -1) - (a.heat ?? -1) || a.sym.localeCompare(b.sym);
+
 /**
- * THE DIAGRAM. Returns null when there is no crossing data at all — the caller then says
- * so in one line rather than drawing an empty frame, because a picture of nothing is the
- * green-by-absence this page exists to refuse.
+ * THE DERIVATION. A pure function of the crossing list — no config, no heuristic on names.
  *
- * `comps` is the roster's own component list, already ordered perimeter-first. It is here
- * ONLY to fix the band order: the figure and the roster must read down in the same
- * sequence, and deriving a second order from the crossings would be a second spelling of
- * the same fact.
+ * The spine search is an exhaustive longest-SIMPLE-path walk, which is exponential in the
+ * worst case, so it runs on a fixed step budget. A budget that runs out does not hang and
+ * does not lie: it keeps the longest path it found and says in a note that the spine is a
+ * lower bound. On any region graph of a size a human would read, the budget is never touched.
  */
-function diagram(cs: readonly IndexCrossing[], comps: readonly IndexComponent[]):
-  { svg: string; regions: string[]; w: number; h: number } | null {
-  if (!cs.length) return null;
-
-  // ── THE ROWS, GROUPED INTO ORGAN BANDS ──────────────────────────────────────────────
-  // Band order is the roster's. WITHIN a band the strongest tier leads and heat breaks the
-  // rest, so the one enshrined crossing on a project sits at the top of its organ's stretch
-  // instead of being lost among thirteen checked ones.
-  const owned = new Map<string, IndexCrossing[]>();
-  for (const c of cs) {
-    const k = c.owner ?? "";
-    (owned.get(k) ?? owned.set(k, []).get(k)!).push(c);
-  }
-  const rank = (a: IndexCrossing, b: IndexCrossing) =>
-    a.tier - b.tier || (b.heat ?? -1) - (a.heat ?? -1) || a.sym.localeCompare(b.sym);
-
-  const bands: Band[] = [];
-  for (const comp of comps) {
-    const rows = owned.get(comp.label);
-    if (!rows?.length) continue;
-    owned.delete(comp.label);          // two components may share a label; the first claims it
-    bands.push({ label: comp.label, dir: comp.dir, rows: [...rows].sort(rank) });
-  }
-  // WHATEVER IS LEFT IS UNOWNED, and it gets a band that says so rather than being folded
-  // into somebody else's stretch — the roster's rule about inventing an owner, drawn.
-  const orphans = [...owned.values()].flat().sort(rank);
-  if (orphans.length) bands.push({ label: "no organ owns these", dir: null, rows: orphans });
-
-  const rowOf = new Map<IndexCrossing, number>();
-  bands.flatMap((b) => b.rows).forEach((c, i) => rowOf.set(c, i));
-  // A ROW CARRIES ITS ORGAN'S DIRECTORY, not its label — that is the id the roster keys its
-  // own rows by, and two components may share a label while no two share a directory.
-  const dirOf = new Map<IndexCrossing, string | null>();
-  for (const b of bands) for (const c of b.rows) dirOf.set(c, b.dir);
-
-  // ── THE COLUMNS ─────────────────────────────────────────────────────────────────────
-  // Layer = longest path from a source, relaxed at most |regions| times: a DAG converges
-  // long before that, and a cycle stops at the bound instead of looping forever.
+export function readMap(cs: readonly IndexCrossing[]): MapReading {
   const regions: string[] = [];
   for (const c of cs) for (const r of [c.from, c.to]) if (!regions.includes(r)) regions.push(r);
 
-  const layer = new Map(regions.map((r) => [r, 0]));
-  for (let it = 0; it < regions.length; it++) {
-    let moved = false;
-    for (const c of cs) {
-      if (c.from === c.to) continue;
-      const a = layer.get(c.from)!, b = layer.get(c.to)!;
-      if (b <= a) { layer.set(c.to, a + 1); moved = true; }
-    }
-    if (!moved) break;
+  const out = new Map<string, string[]>(regions.map((r) => [r, []]));
+  const indeg = new Map<string, number>(regions.map((r) => [r, 0]));
+  for (const c of cs) {
+    if (c.from === c.to) continue;                       // a self-loop is not a step anywhere
+    const o = out.get(c.from)!;
+    if (!o.includes(c.to)) { o.push(c.to); indeg.set(c.to, indeg.get(c.to)! + 1); }
   }
-  const depth = Math.max(...regions.map((r) => layer.get(r)!)) + 1;
+  const heatBetween = (a: string, b: string) =>
+    cs.reduce((s, c) => (c.from === a && c.to === b ? s + (c.heat ?? 0) : s), 0);
 
-  // WITHIN a layer, order by the mean row of the crossings that touch the region, so a
-  // column sits beside the rows that use it and the runs stay short. Ties break on the
-  // name: the page is a PURE FUNCTION of the model, and an order that depended on anything
-  // else would make it not one.
-  const meanRow = (r: string) => {
-    const rs = cs.filter((c) => c.from === r || c.to === r).map((c) => rowOf.get(c)!);
-    return rs.length ? rs.reduce((a, b) => a + b, 0) / rs.length : 0;
+  const sources = regions.filter((r) => indeg.get(r) === 0);
+  const notes: string[] = [];
+
+  // ── THE SPINE ───────────────────────────────────────────────────────────────────────
+  let budget = 40_000;
+  const longestFrom = (start: string) => {
+    let bestPath: string[] = [], bestHeat = 0;
+    const path: string[] = [], seen = new Set<string>();
+    const walk = (r: string, heat: number) => {
+      if (budget-- <= 0) return;
+      path.push(r); seen.add(r);
+      if (path.length > bestPath.length || (path.length === bestPath.length && heat > bestHeat)) {
+        bestPath = [...path]; bestHeat = heat;
+      }
+      // A SINK CANNOT BE A STAGE. The longest path in the raw graph always ends by falling
+      // into a resource — on the project this was built against that made `public-egress` a
+      // trust stage and `Patient` a promotion, which is exactly the confusion between a step
+      // and a grab this figure exists to undo. A stage is a region that is BOTH an origin
+      // and a destination; the walk may only extend through those.
+      for (const n of [...out.get(r)!].sort()) if (!seen.has(n) && out.get(n)!.length) walk(n, heat + heatBetween(r, n));
+      path.pop(); seen.delete(r);
+    };
+    walk(start, 0);
+    return { path: bestPath, heat: bestHeat };
   };
-  const cols: string[] = [];
-  for (let j = 0; j < depth; j++) {
-    cols.push(...regions.filter((r) => layer.get(r) === j)
-      .map((r) => ({ r, k: meanRow(r) }))
-      .sort((a, b) => a.k - b.k || a.r.localeCompare(b.r)).map((z) => z.r));
-  }
-  const colAt = new Map(cols.map((r, i) => [r, i]));
 
-  // ── THE LATTICE ─────────────────────────────────────────────────────────────────────
-  // Two reserved columns and then N region columns of ONE width. Every number below is a
-  // multiple of the base unit, and none of them is tuned to a project: the guard column is
-  // as wide as the longest guard name, the region pitch as wide as the longest region name.
+  // WITH NO SOURCE AT ALL every region is reached from another — a cycle — and there is no
+  // entry to start from. The walk still runs, from every region, and the page says the start
+  // was chosen rather than found.
+  const cyclic = regions.length > 0 && sources.length === 0;
+  const starts = sources.length ? sources : [...regions].sort();
+  const cands = starts.map((s) => ({ s, ...longestFrom(s) }))
+    .sort((a, b) => b.path.length - a.path.length || b.heat - a.heat || a.s.localeCompare(b.s));
+  const spine = cands[0]?.path ?? [];
+  const at = new Map(spine.map((r, i) => [r, i]));
+
+  // ── THE CLASSIFICATION ──────────────────────────────────────────────────────────────
+  const ambient = new Set(sources.filter((r) => r !== spine[0]));
+  const promo = new Map<string, IndexCrossing[]>();
+  const reachOf = new Map<string, IndexCrossing[]>();     // sink → its grabs
+  const supplyOf = new Map<string, IndexCrossing[]>();
+  const aside: IndexCrossing[] = [];
+  for (const c of cs) {
+    const i = at.get(c.from), j = at.get(c.to);
+    const put = (m: Map<string, IndexCrossing[]>, k: string) =>
+      (m.get(k) ?? m.set(k, []).get(k)!).push(c);
+    if (ambient.has(c.from)) put(supplyOf, c.from);
+    else if (i !== undefined && j !== undefined && j > i) put(promo, `${i}:${j}`);
+    else if (i !== undefined && j === undefined) put(reachOf, c.to);
+    else aside.push(c);
+  }
+
+  const promotions = [...promo.entries()]
+    .map(([k, guards]) => {
+      const [i, j] = k.split(":").map(Number);
+      return { from: spine[i], to: spine[j], skip: j > i + 1, i, j, guards: [...guards].sort(rank) };
+    })
+    .sort((a, b) => a.i - b.i || a.j - b.j)
+    .map(({ from, to, skip, guards }) => ({ from, to, skip, guards }));
+
+  // SINKS ARE ORDERED BY THE STAGE THAT GRABS THEM, latest-reaching last, so the resource
+  // band reads left-to-right in the same direction as the spine above it.
+  const stageIdx = (sink: string, pick: (xs: number[]) => number) =>
+    pick(reachOf.get(sink)!.map((c) => at.get(c.from)!));
+  const sinks = [...reachOf.keys()].sort((a, b) =>
+    stageIdx(a, (xs) => Math.max(...xs)) - stageIdx(b, (xs) => Math.max(...xs))
+    || stageIdx(a, (xs) => xs.reduce((s, x) => s + x, 0) / xs.length)
+     - stageIdx(b, (xs) => xs.reduce((s, x) => s + x, 0) / xs.length)
+    || a.localeCompare(b));
+  const reaches = sinks.flatMap((sink) =>
+    [...reachOf.get(sink)!].sort(rank).map((c) => ({ c, stage: c.from, sink })));
+
+  const supply = [...supplyOf.entries()].sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([source, guards]) => ({ source, guards: [...guards].sort(rank) }));
+
+  // ── WHERE THE READING DOES NOT FIT, THE PAGE SAYS SO ────────────────────────────────
+  if (cyclic) {
+    notes.push(`No region is a pure source: every one of these ${regions.length} is reached from another, so this trust graph is CYCLIC and has no entry. The spine below starts at ${spine[0]} because it is the longest path found, not because a request begins there.`);
+  }
+  const tied = cands.filter((c) =>
+    c.path.length === cands[0].path.length && c.heat === cands[0].heat);
+  if (tied.length > 1) {
+    notes.push(`${tied.length} sources tie on both path length and heat (${tied.map((t) => t.s).join(", ")}). ${spine[0]} was taken alphabetically — the entry here is a coin toss, not a reading.`);
+  }
+  if (spine.length === 1) {
+    notes.push(`NOTHING IS PROMOTED. No crossing leaves ${spine[0]} for a region that leads anywhere else, so the spine is one stage long and every crossing on this project terminates. That is a real shape, not a missing measurement.`);
+  }
+  if (budget <= 0) {
+    notes.push(`The spine search hit its step budget on this region graph, so the path drawn is the longest one FOUND and a longer one may exist. Nothing else on the figure is affected.`);
+  }
+  if (aside.length) {
+    notes.push(`${aside.length} crossing(s) are on neither the spine nor an ambient source — a back edge, a self-loop, or a chain hanging off a resource. They are listed under ASIDE rather than folded into a band that would misdescribe them.`);
+  }
+  return { regions, spine, promotions, reaches, sinks, supply, aside, notes };
+}
+
+/** A band's chrome: a rule across the figure, a name, and a count. Three redundant markers
+ *  for one division, because the tint is the one that does not survive a bad printer. */
+function bandHead(y: number, w: number, label: string, note: string): string {
+  return `<path d="M0,${y} H${w}" stroke="var(--fg)" stroke-width="1" fill="none"/>`
+    + `<g class="bandh"><text x="${U}" y="${y + 2 * U}" class="bn">${esc(label)}</text>`
+    + `<text x="${NOTE_X}" y="${y + 2 * U}" class="lg dim">${esc(note)}</text></g>`;
+}
+
+/**
+ * THE DIAGRAM. Returns null when there is no crossing data at all — the caller then says so
+ * in one line rather than drawing an empty frame, because a picture of nothing is the
+ * green-by-absence this page exists to refuse.
+ */
+function diagram(cs: readonly IndexCrossing[], comps: readonly IndexComponent[]):
+  { svg: string; w: number; h: number; reading: MapReading } | null {
+  if (!cs.length) return null;
+  const r = readMap(cs);
+
+  // ── THE LATTICE. Nothing here is tuned to a project: a box is as wide as the longest
+  // region name, a gutter as wide as the longest guard that runs through one.
   const nameOf = (c: IndexCrossing) => c.present ? c.sym : `${c.sym} DANGLING`;
-  const GUARD_W = snap2(Math.max(...cs.map((c) => textW(nameOf(c)))) + 6 * U);
-  const COL_W = snap2(Math.max(...cols.map((r) => textW(r))) + 2 * U);
-  const x0 = U + GUARD_W;                       // left edge of the region field
-  const width = x0 + cols.length * COL_W + U;
-  const barX = (r: string) => x0 + colAt.get(r)! * COL_W + COL_W / 2;
+  // A crossing carries its organ's DIRECTORY, not its label — that is the id the roster keys
+  // its own rows by, and two components may share a label while no two share a directory.
+  const dirByLabel = new Map<string, string>();
+  for (const c of comps) if (!dirByLabel.has(c.label)) dirByLabel.set(c.label, c.dir);
+  const boxed = [...r.spine, ...r.sinks, ...r.supply.map((s) => s.source)];
+  const BOX_W = snap2(Math.max(...boxed.map((n) => textW(n))) + 2 * U);
+  const promoW = r.promotions.flatMap((p) => p.guards).map((c) => textW(nameOf(c)));
+  // THE GUTTER holds the longest guard that runs through one, PLUS the space its security
+  // diamond takes — sized without it, a marked name overhangs into the next stage's column.
+  const GUT = Math.max(6 * U, snap2(Math.max(0, ...promoW) + 6 * U));
+  const PITCH = BOX_W + GUT;
+  const stageL = (i: number) => i * PITCH;                       // a stage box's left edge
+  const stageX = (i: number) => i * PITCH + BOX_W / 2;           // …and its centre, the bus
+  const idxOf = new Map(r.spine.map((s, i) => [s, i]));
 
-  const yTop = U + HEAD_H + U;
-  let yCur = yTop;
-  const bandY = new Map<Band, number>();
-  for (const b of bands) { bandY.set(b, yCur); yCur += BAND_H + b.rows.length * ROW; }
-  const fieldEnd = yCur;
-  const height = fieldEnd + U + LEG_H;
-  const rowY = (c: IndexCrossing) => {
-    const b = bands.find((x) => x.rows.includes(c))!;
-    return bandY.get(b)! + BAND_H + b.rows.indexOf(c) * ROW + ROW / 2;
-  };
+  // SINKS SIT UNDER THE STAGE THAT GRABS THEM, pushed right only far enough not to overlap.
+  // The reach's label and its drop share one x — the sink box's own text edge — so the
+  // guards landing on a resource read as one left-aligned column above it.
+  const sinkX = new Map<string, number>();
+  let cursor = -Infinity;
+  for (const s of r.sinks) {
+    const want = stageX(Math.max(...r.reaches.filter((x) => x.sink === s).map((x) => idxOf.get(x.stage)!)));
+    cursor = Math.max(want, cursor + BOX_W + 2 * U);
+    sinkX.set(s, cursor);
+  }
+  const dropX = (s: string) => sinkX.get(s)! - BOX_W / 2 + U;
+  const width = Math.max(
+    r.spine.length ? stageL(r.spine.length - 1) + BOX_W : 0,
+    ...[...sinkX.values()].map((x) => x + BOX_W / 2),
+    40 * U);
+
+  // ── THE VERTICAL. Three bands, top to bottom, each only as tall as its contents.
+  const supplyY = 0;
+  const supplyH = r.supply.length
+    ? HEAD_H + U + r.supply.reduce((n, s) => n + Math.max(BOX_H, s.guards.length * ROW), 0) + U : 0;
+
+  const spineY = supplyY + supplyH;
+  // Lane 0 is the box centre line, so the spine reads as ONE unbroken run; a second guard on
+  // the same promotion hangs below it as a visibly parallel alternate, and a stage-SKIPPING
+  // promotion goes below all of those, clear of every box.
+  const adjLanes = Math.max(1, ...r.promotions.filter((p) => !p.skip).map((p) => p.guards.length));
+  const skipCount = r.promotions.filter((p) => p.skip).reduce((n, p) => n + p.guards.length, 0);
+  const laneMax = adjLanes - 1 + skipCount;
+  const boxTop = spineY + HEAD_H;
+  const centreY = boxTop + BOX_H / 2;
+  const laneY = (k: number) => centreY + k * ROW;
+  const spineH = HEAD_H + BOX_H + (laneMax ? laneMax * ROW + U : 0) + U;
+
+  const resY = spineY + spineH;
+  const reachTop = resY + HEAD_H + U;   // clear of the band head's own baseline
+  const reachY = (i: number) => reachTop + i * ROW + ROW / 2;
+  const sinkTop = r.reaches.length ? reachY(r.reaches.length - 1) + ROW / 2 + U : reachTop;
+  const resH = r.sinks.length ? HEAD_H + U + r.reaches.length * ROW + U + BOX_H + U : 0;
+
+  const asideY = resY + resH;
+  const asideH = r.aside.length ? HEAD_H + U + r.aside.length * ROW + U : 0;
+  const legY = asideY + asideH + U;
 
   // ── THE ENCODINGS ───────────────────────────────────────────────────────────────────
   // HEAT IS LINE WEIGHT and it has to be SEEN. A linear map of a range whose ends differ by
-  // sixty-fold puts every cold crossing inside a pixel of every other, which is how a
-  // declared encoding becomes an inert one; the exponent spreads the bottom of the range
-  // where all the crossings actually are. Anchored at 1 so an unrecorded heat is a hairline
-  // and is legended as unrecorded rather than cold.
+  // sixty-fold puts every cold crossing inside a pixel of every other; the exponent spreads
+  // the bottom of the range, where the crossings actually are. Anchored at 1 so an
+  // unrecorded heat is a hairline and is legended as unrecorded rather than cold. A
+  // PROMOTION then draws two units heavier than a reach at the same heat — the class is the
+  // constant, the heat is the slope, and neither reading destroys the other.
   const heats = cs.map((c) => c.heat).filter((h): h is number => h !== null);
   const maxHeat = Math.max(0, ...heats);
-  const weight = (h: number | null) =>
-    h === null || maxHeat <= 0 ? 1 : +(1 + 4 * Math.pow(h / maxHeat, 0.6)).toFixed(2);
-  // TIER IS TONE AND TREATMENT TOGETHER, and the rare tier is the loud one. An enshrined
-  // crossing draws solid at full strength with its name in bold; everything weaker draws
-  // broken and dim. Thirteen dashed lines against one solid one is the reading — the
-  // previous spelling made the field of dashes the default and the strongest crossing the
-  // thing you had to hunt for.
-  const colourOf = (c: IndexCrossing) =>
-    !c.present || (c.tier === 3 && c.security) ? "var(--alarm)" : c.tier === 1 ? "var(--fg)" : "var(--dim)";
+  const weight = (h: number | null, promo = false) =>
+    +((h === null || maxHeat <= 0 ? 1 : 1 + 3 * Math.pow(h / maxHeat, 0.6)) + (promo ? 2 : 0)).toFixed(2);
+  // TONE IS THE CLASS: a promotion is the figure's own line and draws at full strength; a
+  // reach is subordinate and draws dim. A broken chokepoint overrides both.
+  const broken = (c: IndexCrossing) => !c.present || (c.tier === 3 && c.security);
+  const toneOf = (c: IndexCrossing, promo: boolean) =>
+    broken(c) ? "var(--alarm)" : promo ? "var(--fg)" : "var(--dim)";
+  const strokeOf = (c: IndexCrossing, promo: boolean) => {
+    const d = DASH[c.tier] ?? DASH[3];
+    return `stroke="${toneOf(c, promo)}" stroke-width="${weight(c.heat, promo)}"`
+      + `${d ? ` stroke-dasharray="${d}"` : ""} fill="none"`;
+  };
+  // A LABEL KNOCKS OUT WHAT IT CROSSES. Reach labels sit above their own run and a run may
+  // pass under another stage's bus; a name interrupted by a hairline is a name misread.
+  const label = (x: number, y: number, c: IndexCrossing, promo: boolean) => {
+    const t = nameOf(c);
+    const cls = `gn${promo ? " pr" : ""}${c.tier === 1 ? " t1" : ""}${broken(c) ? " bad" : ""}`;
+    return `<rect class="knock" x="${x - 4}" y="${y - 20}" width="${snap2(textW(t))}" height="12"/>`
+      + `<text x="${x}" y="${y - U}" class="${cls}">${esc(t)}</text>`;
+  };
+  /** THE SELECTION RING — a drawn box around the guard's name, hidden until selected. A MARK,
+   *  not a hue, so a selection survives a black-and-white printer. */
+  const ring = (x: number, y: number, c: IndexCrossing) =>
+    `<rect class="ring" x="${x - U}" y="${y - 20}" width="${snap2(textW(nameOf(c)) + 2 * U)}" height="${2 * U}" fill="none" stroke="var(--fg)" stroke-width="1.5"/>`;
+  /** One crossing is one selectable object, whatever shape it took. */
+  const cx = (c: IndexCrossing, kind: string, body: string) => {
+    const dir = c.owner === null ? undefined : dirByLabel.get(c.owner);
+    const heat = c.heat === null ? "heat unrecorded" : `heat ${(c.heat * 100).toFixed(1)}%`;
+    return `<g class="cx" data-sym="${esc(c.sym)}"${dir ? ` data-owner="${esc(dir)}"` : ""} tabindex="0" role="button">`
+      + `<title>${esc(`${nameOf(c)} — ${kind}: ${c.from} to ${c.to}, ${TIER_NAME[c.tier] ?? `tier-${c.tier}`}${c.security ? ", security" : ""}, ${heat}`)}</title>`
+      + body + `</g>`;
+  };
 
-  // ── THE DRAWING ─────────────────────────────────────────────────────────────────────
-  const tints: string[] = [], bars: string[] = [], heads: string[] = [], rows: string[] = [];
+  const chrome: string[] = [], groups: string[] = [];
 
-  // Region columns: a bus bar the full height of the row field, and the region's name over
-  // it. The bar is what lets the eye drop from a name to any row without a ruler.
-  for (const r of cols) {
-    const x = barX(r);
-    bars.push(`<path d="M${x},${yTop - U} V${fieldEnd}" stroke="var(--rule)" stroke-width="1" fill="none"/>`);
-    heads.push(`<text x="${x}" y="${U + HEAD_H - U}" class="rn" text-anchor="middle">${esc(r)}</text>`);
+  // ── SUPPLY: A STRIP, NOT A PATH ─────────────────────────────────────────────────────
+  // The one thing this figure refuses to draw as an arrow. `config → public-web` as a line
+  // in the path asserts a sequence, and there is none: it is read wherever it is read.
+  if (r.supply.length) {
+    chrome.push(`<rect x="0" y="${supplyY + HEAD_H}" width="${width}" height="${supplyH - HEAD_H}" fill="var(--flat)"/>`);
+    chrome.push(bandHead(supplyY, width, "supply", `ambient — reaches the path, and is not a step in it`));
+    let y = supplyY + HEAD_H + U;
+    for (const s of r.supply) {
+      const h = Math.max(BOX_H, s.guards.length * ROW);
+      chrome.push(`<rect x="0" y="${y}" width="${BOX_W}" height="${BOX_H}" fill="none" stroke="var(--dim)" stroke-width="1"/>`
+        + `<text x="${U}" y="${y + BOX_H / 2 + 4}" class="rn dim">${esc(s.source)}</text>`);
+      s.guards.forEach((c, k) => {
+        const gy = y + k * ROW + ROW / 2 + 4;
+        const gx = BOX_W + 2 * U;
+        groups.push(cx(c, "supply", (c.security ? diamond(gx, gy - 4, toneOf(c, false)) : "")
+          + `<text x="${gx + 3 * U}" y="${gy}" class="gn${c.tier === 1 ? " t1" : ""}${broken(c) ? " bad" : ""}">${esc(nameOf(c))}</text>`
+          + `<text x="${gx + 3 * U + snap2(textW(nameOf(c)) + 2 * U)}" y="${gy}" class="lg dim">${esc(`read by ${c.to}`)}</text>`
+          + ring(gx + 3 * U, gy + U, c)
+          + `<rect x="0" y="${gy - 2 * U}" width="${width}" height="${ROW}" fill="none" pointer-events="all"/>`));
+      });
+      y += h;
+    }
   }
-  heads.push(`<path d="M0,${yTop - U} H${width}" stroke="var(--fg)" stroke-width="1" fill="none"/>`);
 
-  bands.forEach((b, i) => {
-    const y = bandY.get(b)!, h = BAND_H + b.rows.length * ROW;
-    // THE BAND IS A TINT, A RULE AND A NAME — three redundant markers, because the tint is
-    // the one that does not survive a bad printer.
-    if (i % 2 === 1) tints.push(`<rect x="0" y="${y}" width="${width}" height="${h}" fill="var(--flat)"/>`);
-    tints.push(`<path d="M0,${y} H${width}" stroke="var(--rule)" stroke-width="1" fill="none"/>`);
-    const sel = b.dir === null ? "" : ` data-org="${esc(b.dir)}" tabindex="0" role="button"`;
-    tints.push(`<g class="bandh"${sel}>`
-      + `<rect x="0" y="${y}" width="${width}" height="${BAND_H}" fill="none" pointer-events="all"/>`
-      + `<text x="${U}" y="${y + 2 * U}" class="bn">${esc(b.label)}</text>`
-      + `<text x="${x0 - 2 * U}" y="${y + 2 * U}" class="dim" text-anchor="end">${b.rows.length}</text></g>`);
+  // ── THE SPINE ───────────────────────────────────────────────────────────────────────
+  chrome.push(bandHead(spineY, width, "spine",
+    r.spine.length > 1
+      ? `a request enters at ${r.spine[0]} and is promoted rightward by a named guard`
+      : `one stage — nothing here is promoted anywhere`));
+  r.spine.forEach((s, i) => {
+    chrome.push(`<rect x="${stageL(i)}" y="${boxTop}" width="${BOX_W}" height="${BOX_H}" fill="none" stroke="var(--fg)" stroke-width="1.5"/>`
+      + `<text x="${stageL(i) + U}" y="${centreY + 4}" class="rn">${esc(s)}</text>`);
   });
 
-  for (const c of cs) {
-    const y = rowY(c), col = colourOf(c), w = weight(c.heat), dash = DASH[c.tier] ?? DASH[3];
-    const stroke = `stroke="${col}" stroke-width="${w}"${dash ? ` stroke-dasharray="${dash}"` : ""} fill="none"`;
-    const a = barX(c.from), b = barX(c.to);
-    const g: string[] = [];
+  let skipLane = adjLanes;
+  for (const p of r.promotions) {
+    const i = idxOf.get(p.from)!, j = idxOf.get(p.to)!;
+    p.guards.forEach((c, k) => {
+      const st = strokeOf(c, true), tone = toneOf(c, true);
+      if (!p.skip) {
+        // THE STEP ITSELF, on the box centre line when it is the first guard on this
+        // promotion — which is what makes the spine one continuous run rather than N arrows.
+        const y = laneY(k), a = stageL(i) + BOX_W, b = stageL(j);
+        groups.push(cx(c, "promotion",
+          (k ? `<path d="M${a},${centreY} V${y}" ${st}/>` : "")
+          + `<line x1="${a}" y1="${y}" x2="${b}" y2="${y}" ${st}/>`
+          + headX(b, y, 1, tone)
+          + (c.security ? diamond(a + U, y - 4, tone) : "")
+          + label(a + (c.security ? 4 * U : U), y, c, true) + ring(a + (c.security ? 4 * U : U), y, c)
+          + `<rect x="${a}" y="${y - ROW / 2}" width="${b - a}" height="${ROW}" fill="none" pointer-events="all"/>`));
+      } else {
+        // A STAGE-SKIPPING PROMOTION is a bypass: it leaves its stage, runs below every box
+        // it passes, and lands on the one it reaches. It is still a step, so it is still
+        // drawn at full strength — it just cannot ride the centre line.
+        const y = laneY(skipLane++), a = stageX(i), b = stageL(j) + U;
+        groups.push(cx(c, "promotion (skips a stage)",
+          `<path d="M${a},${boxTop + BOX_H} V${y} H${b} V${boxTop + BOX_H + U}" ${st}/>`
+          + headY(b, boxTop + BOX_H, -1, tone)
+          + (c.security ? diamond(a + U, y - 4, tone) : "")
+          + label(a + (c.security ? 4 * U : U), y, c, true) + ring(a + (c.security ? 4 * U : U), y, c)
+          + `<rect x="${Math.min(a, b)}" y="${y - ROW / 2}" width="${Math.abs(b - a)}" height="${ROW}" fill="none" pointer-events="all"/>`));
+      }
+    });
+  }
 
-    // THE RUN. Horizontal, on the row's own centre line, from source bar to target bar — a
-    // filled square where it leaves, an arrowhead where it lands. A crossing that ends where
-    // it began cannot be a run, so it draws the smallest orthogonal loop that closes.
-    if (c.from === c.to) {
-      g.push(`<path d="M${a},${y} h${2 * U} v${U} h${-2 * U}" ${stroke}/>`, head(a, y + U, -1, col));
-    } else {
-      g.push(`<line x1="${a}" y1="${y}" x2="${b}" y2="${y}" ${stroke}/>`, head(b, y, b > a ? 1 : -1, col));
+  // ── THE RESOURCES ───────────────────────────────────────────────────────────────────
+  // A reach drops out of its stage, runs to the resource, and stops. The resource box is
+  // drawn ONCE however many stages grab it — duplicating it would turn one shared thing into
+  // several, which is the fact this band exists to state.
+  if (r.sinks.length) {
+    chrome.push(bandHead(resY, width, "resources",
+      `grabbed at a stage and reached no further — a resource box is drawn once, however many stages hold it`));
+    for (const s of r.sinks) {
+      const x = sinkX.get(s)! - BOX_W / 2;
+      chrome.push(`<rect x="${x}" y="${sinkTop}" width="${BOX_W}" height="${BOX_H}" fill="none" stroke="var(--dim)" stroke-width="1"/>`
+        + `<text x="${x + U}" y="${sinkTop + BOX_H / 2 + 4}" class="rn dim">${esc(s)}</text>`);
     }
-    g.push(`<rect x="${a - U / 2}" y="${y - U / 2}" width="${U}" height="${U}" fill="${col}"/>`);
-    // THE LEADER ties the name column to the run. Without it the two halves of a row are
-    // two objects a reader has to join by eye, which is the complaint this layout answers.
-    // EVERY LEADER STARTS AT ONE X, not at the end of its own name: a ragged set of start
-    // points is a second, accidental alignment line running down the middle of the figure.
-    g.push(`<path d="M${x0 - 2 * U},${y} H${a - U}" stroke="var(--rule)" stroke-width="1" stroke-dasharray="1 3" fill="none"/>`);
-    if (c.security) g.push(diamond(U + 4, y, col));
-    g.push(`<text x="${4 * U}" y="${y + 4}" class="gn${c.tier === 1 ? " t1" : ""}" fill="${c.present ? col : "var(--alarm)"}">${esc(nameOf(c))}</text>`);
-    // THE SELECTION RING — a drawn box around the guard's name, hidden until selected. It is
-    // a MARK, not a hue, so a selection survives a black-and-white printer and a reader who
-    // cannot separate the four palette values.
-    g.push(`<rect class="ring" x="${U / 2}" y="${y - U}" width="${GUARD_W}" height="${2 * U}" fill="none" stroke="var(--fg)" stroke-width="1.5"/>`);
-    // …and the whole row is the hit area. A row IS the crossing here, so anything narrower
-    // would be a target the picture does not draw.
-    g.push(`<rect x="0" y="${y - ROW / 2}" width="${width}" height="${ROW}" fill="none" pointer-events="all"/>`);
-    const heat = c.heat === null ? "heat unrecorded" : `heat ${(c.heat * 100).toFixed(1)}%`;
-    rows.push(`<g class="cx" data-sym="${esc(c.sym)}"${dirOf.get(c) ? ` data-owner="${esc(dirOf.get(c)!)}"` : ""} tabindex="0" role="button">`
-      + `<title>${esc(`${nameOf(c)} — ${c.from} → ${c.to}, ${TIER_NAME[c.tier] ?? `tier-${c.tier}`}${c.security ? ", security" : ""}, ${heat}`)}</title>`
-      + g.join("") + `</g>`);
+    // ONE BUS PER STAGE, from the box down to the last lane that leaves it: the vertical is
+    // what says "everything on these lanes is held by THIS stage".
+    const lastLane = new Map<string, number>();
+    r.reaches.forEach((x, i) => lastLane.set(x.stage, i));
+    for (const [stage, i] of lastLane) {
+      chrome.push(`<path d="M${stageX(idxOf.get(stage)!)},${boxTop + BOX_H} V${reachY(i)}" stroke="var(--dim)" stroke-width="1" fill="none"/>`);
+    }
+    r.reaches.forEach((x, i) => {
+      const c = x.c, y = reachY(i), st = strokeOf(c, false), tone = toneOf(c, false);
+      const a = stageX(idxOf.get(x.stage)!), b = dropX(x.sink);
+      groups.push(cx(c, "reach",
+        `<line x1="${a}" y1="${y}" x2="${b}" y2="${y}" ${st}/>`
+        + `<path d="M${b},${y} V${sinkTop}" ${st}/>`
+        + headY(b, sinkTop, 1, tone)
+        + `<rect x="${a - U / 2}" y="${y - U / 2}" width="${U}" height="${U}" fill="${tone}"/>`
+        + (c.security ? diamond(b - U - 4, y - 4, tone) : "")
+        + label(b, y, c, false) + ring(b, y, c)
+        + `<rect x="0" y="${y - ROW / 2}" width="${width}" height="${ROW}" fill="none" pointer-events="all"/>`));
+    });
   }
 
-  // ── THE LEGEND. It only names what is on the page: a treatment with no subjects here
-  // would be teaching a vocabulary this project does not use. The heat scale prints its own
-  // ENDPOINTS, so the reader can check the encoding against the crossings table instead of
-  // taking "line weight = heat" on faith.
-  const leg: string[] = [];
-  let lx = U, ly = fieldEnd + U + 2 * U;
-  const sample = (draw: (x: number) => string, label: string, w: number) => {
-    if (lx + w + textW(label) + 3 * U > width) { lx = U; ly += 2 * U; }
-    leg.push(draw(lx), `<text x="${lx + w + U}" y="${ly + 4}" class="lg dim">${esc(label)}</text>`);
-    lx += Math.ceil((w + U + textW(label) + 3 * U) / U) * U;
-  };
-  for (const t of [...new Set(cs.map((c) => c.tier))].sort()) {
-    const nm = TIER_NAME[t] ?? `tier-${t}`;
-    sample((x) => `<line x1="${x}" y1="${ly}" x2="${x + 3 * U}" y2="${ly}" stroke="var(--${t === 1 ? "fg" : "dim"})" stroke-width="${t === 1 ? 3 : 1.5}"${DASH[t] ? ` stroke-dasharray="${DASH[t]}"` : ""}/>`,
-      `${nm}${t === 1 ? " — drawn solid and at full strength" : ""}`, 3 * U);
+  // ── THE ASIDE ───────────────────────────────────────────────────────────────────────
+  if (r.aside.length) {
+    chrome.push(bandHead(asideY, width, "aside",
+      `on neither the spine nor an ambient source — listed, never dropped`));
+    r.aside.forEach((c, k) => {
+      const y = asideY + HEAD_H + U + k * ROW + ROW / 2 + 4;
+      groups.push(cx(c, "unplaced", (c.security ? diamond(U, y - 4, toneOf(c, false)) : "")
+        + `<text x="${4 * U}" y="${y}" class="gn${broken(c) ? " bad" : ""}">${esc(nameOf(c))}</text>`
+        + `<text x="${4 * U + snap2(textW(nameOf(c)) + 2 * U)}" y="${y}" class="lg dim">${esc(`${c.from} to ${c.to}`)}</text>`
+        + ring(4 * U, y + U, c)
+        + `<rect x="0" y="${y - 2 * U}" width="${width}" height="${ROW}" fill="none" pointer-events="all"/>`));
+    });
   }
-  if (cs.some((c) => c.security)) sample((x) => diamond(x + 4, ly, "var(--fg)"), "security crossing", 2 * U);
+
+  // ── THE LEGEND. It names only what is on the page: a treatment with no subjects here
+  // would be teaching a vocabulary this project does not use. The heat scale prints its own
+  // ENDPOINTS, so the reader can check the encoding against the crossings table rather than
+  // taking "line weight = heat" on faith.
+  // IT IS A GRID, NOT A FLOW. Packing legend items end to end put every label at its own x
+  // and cost the page six alignment lines for nine words — a legend that teaches the
+  // encodings while breaking the one rule the figure is built on. Two fixed columns, one
+  // sample edge and one label edge, however many items there turn out to be.
+  const leg: string[] = [];
+  const items: { draw: (x: number, y: number) => string; text: string; w: number }[] = [];
+  const sample = (draw: (x: number, y: number) => string, text: string, w: number) =>
+    void items.push({ draw, text, w });
+  const rule = (x: number, y: number, w: number, tone: string, d: string) =>
+    `<line x1="${x}" y1="${y}" x2="${x + 4 * U}" y2="${y}" stroke="${tone}" stroke-width="${w}"${d ? ` stroke-dasharray="${d}"` : ""}/>`;
+  if (r.promotions.length) sample((x, y) => rule(x, y, 4, "var(--fg)", ""), "promotion — a trust stage change, and the line to follow", 4 * U);
+  if (r.reaches.length) sample((x, y) => rule(x, y, 1.5, "var(--dim)", ""), "reach — a resource grabbed there, going no further", 4 * U);
+  if (r.supply.length) sample((x, y) => `<rect x="${x}" y="${y - 2 * U}" width="${4 * U}" height="${2 * U}" fill="var(--flat)" stroke="var(--rule)"/>`, "supply — ambient, and deliberately not an arrow", 4 * U);
+  for (const t of [...new Set(cs.map((c) => c.tier))].sort()) {
+    sample((x, y) => rule(x, y, t === 1 ? 3 : 1.5, `var(--${t === 1 ? "fg" : "dim"})`, DASH[t] ?? DASH[3]),
+      `${TIER_NAME[t] ?? `tier-${t}`}${t === 1 ? " — drawn solid and at full strength" : ""}`, 4 * U);
+  }
+  if (cs.some((c) => c.security)) sample((x, y) => diamond(x + 4, y, "var(--fg)"), "security crossing", 2 * U);
   if (!heats.length) {
-    sample((x) => `<line x1="${x}" y1="${ly}" x2="${x + 3 * U}" y2="${ly}" stroke="var(--dim)" stroke-width="1"/>`,
-      "line weight — heat UNRECORDED, every line is a hairline for that reason", 3 * U);
+    sample((x, y) => rule(x, y, 1, "var(--dim)", ""), "line weight — heat UNRECORDED, every line is a hairline for that reason", 4 * U);
   } else {
     const lo = Math.min(...heats), hi = Math.max(...heats);
-    sample((x) => [lo, (lo + hi) / 2, hi].map((h, i) =>
-      `<line x1="${x}" y1="${ly - U + i * U}" x2="${x + 3 * U}" y2="${ly - U + i * U}" stroke="var(--dim)" stroke-width="${weight(h)}"/>`).join(""),
+    sample((x, y) => [lo, (lo + hi) / 2, hi].map((h, i) => rule(x, y - U + i * U, weight(h), "var(--dim)", "")).join(""),
       `line weight = change heat, ${(lo * 100).toFixed(1)}% to ${(hi * 100).toFixed(1)}%`
-      + (heats.length < cs.length ? " (hairline = unrecorded, not cold)" : ""), 3 * U);
+      + (heats.length < cs.length ? " (hairline = unrecorded, not cold)" : ""), 4 * U);
   }
-  const legH = ly + 2 * U - height;
+  const LEG_W = snap2(Math.max(...items.map((i) => i.w + textW(i.text))) + 4 * U);
+  const legCols = Math.max(1, Math.floor(width / LEG_W));
+  const legRows = Math.ceil(items.length / legCols);
+  items.forEach((it, i) => {
+    const x = (i % legCols) * LEG_W, y = legY + 2 * U + Math.floor(i / legCols) * 3 * U;
+    leg.push(it.draw(x, y), `<text x="${x + 6 * U}" y="${y + 4}" class="lg dim">${esc(it.text)}</text>`);
+  });
+  const height = legY + 2 * U + legRows * 3 * U;
 
-  const svg = `<svg viewBox="0 0 ${width} ${height + Math.max(0, legH)}" width="${width}" height="${height + Math.max(0, legH)}" role="img" aria-label="crossings diagram">`
-    + tints.join("") + bars.join("") + heads.join("") + rows.join("") + leg.join("") + `</svg>`;
-  return { svg, regions, w: width, h: height + Math.max(0, legH) };
+  const svg = `<svg viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" role="img" aria-label="the trust spine, its resources and its ambient supply">`
+    + chrome.join("") + groups.join("") + leg.join("") + `</svg>`;
+  return { svg, w: width, h: height, reading: r };
 }
 
 // ── the MAP's drill-downs ─────────────────────────────────────────────────────────────
@@ -644,11 +866,21 @@ function mapTab(m: IndexModel): string {
       ? "The atlas record holds no crossings, so there are no regions to draw and none are invented."
       : "No atlas reading is recorded here — the shape is UNREAD, not absent."}${mp.zones.length ? "" : " No <code>## zones</code> are declared either."}</p>`;
 
-  // ONE SUMMARY LINE. Everything else on this tab is behind a term in the strip below it.
+  // ONE SUMMARY LINE, and its first clause is THE ACCOUNTING: the three classes and their
+  // sum. It is there so a reader can check that the split dropped nothing — a picture that
+  // silently loses a crossing to a class it does not draw is the failure mode of the whole
+  // idea, and this is the one number that catches it.
   const bits: string[] = [];
   if (d) {
-    bits.push(`<b>${d.regions.length}</b> region(s)`);
-    bits.push(`<b>${mp.crossings.shown.length}</b>${mp.crossings.withheld ? ` of ${mp.crossings.total}` : ""} crossing(s) drawn`);
+    const r = d.reading;
+    const parts = [
+      r.promotions.reduce((n, p) => n + p.guards.length, 0) && `<b>${r.promotions.reduce((n, p) => n + p.guards.length, 0)}</b> promotion(s)`,
+      r.reaches.length && `<b>${r.reaches.length}</b> reach(es)`,
+      r.supply.reduce((n, s) => n + s.guards.length, 0) && `<b>${r.supply.reduce((n, s) => n + s.guards.length, 0)}</b> supply`,
+      r.aside.length && `<span class="warn">! <b>${r.aside.length}</b> aside</span>`,
+    ].filter(Boolean) as string[];
+    bits.push(`${parts.join(" + ")} = <b>${mp.crossings.shown.length}</b>${mp.crossings.withheld ? ` of ${mp.crossings.total}` : ""} crossing(s) drawn`);
+    bits.push(`<b>${r.regions.length}</b> region(s), <b>${r.spine.length}</b> on the spine`);
   }
   if (a) {
     bits.push(`${a.tiers.enshrined} enshrined / ${a.tiers.checked} checked / ${a.tiers.convention} convention`);
@@ -669,9 +901,15 @@ function mapTab(m: IndexModel): string {
   // caption on the picture above it, and a page with a seven-object budget does not spend
   // one of them on instructions.
   const hint = d
-    ? ` <span class="dim">·</span> <span class="dim">click a row, a band or an organ below</span> <span class="clear" data-clear tabindex="0" role="button">show all</span>`
+    ? ` <span class="dim">·</span> <span class="dim">click a guard or an organ below</span> <span class="clear" data-clear tabindex="0" role="button">show all</span>`
     : "";
-  const summary = `<p class="sum">${bits.join(" <span class=\"dim\">·</span> ")}${hint}</p>`;
+  // WHERE THE SHAPE DOES NOT FIT THE READING, THE PAGE SAYS SO IN ONE LINE rather than
+  // drawing something that implies an order nobody declared. A cyclic region graph, sources
+  // that tie, a spine one stage long: each states itself here and the figure above stops
+  // pretending. This is the whole reason the split is allowed to be an inference.
+  const degen = d && d.reading.notes.length
+    ? `<p class="degen warn">${d.reading.notes.map((n) => `<span>${esc(n)}</span>`).join("")}</p>` : "";
+  const summary = `<p class="sum">${bits.join(" <span class=\"dim\">·</span> ")}${hint}</p>${degen}`;
 
   const strip = tog("comp", "components", String(mp.components.length))
     + tog("gates", "gates", mp.gates.total ? `${mp.gates.total} of ${mp.gatesTotal} listed` : String(mp.gatesTotal),
@@ -974,9 +1212,20 @@ body:has(#trajectory:target) .tabs a[href="#trajectory"] { color: var(--fg); bor
 svg text { font: 400 10.5px ui-monospace, SFMono-Regular, Menlo, monospace; fill: var(--fg); }
 svg text.rn { font-weight: 700; letter-spacing: .04em; }
 svg text.bn { font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
+/* THE CLASS IS THE TONE. A promotion is the spine's own line and prints at full strength; a
+   reach, a supply and an aside are subordinate and print dim. Both survive greyscale, which
+   is why the distinction is tone and geometry rather than hue. */
 svg text.gn { fill: var(--dim); }
+svg text.gn.pr { fill: var(--fg); }
+svg text.gn.bad { fill: var(--alarm); }
 svg text.gn.t1 { font-weight: 700; }
 svg text.dim, svg text.lg { fill: var(--dim); }
+svg .knock { fill: var(--bg); }
+/* A DEGENERACY IS A SENTENCE, not a missing picture: a cyclic region graph or a spine one
+   stage long says so here, in the reader's way, immediately under the figure it explains. */
+.degen { margin: var(--u) 0 0; font-size: var(--t2); max-width: 88ch; }
+.degen span { display: block; border-left: 3px solid var(--warn); padding-left: calc(2*var(--u));
+              margin-bottom: var(--u); }
 .sum { border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule);
        padding: var(--u) 0; margin: 0; font-size: var(--t2); }
 .clear { cursor: pointer; user-select: none; border: 1px solid var(--rule); padding: 0 var(--u);
@@ -986,12 +1235,12 @@ svg text.dim, svg text.lg { fill: var(--dim); }
    THE HIGHLIGHT IS NOT COLOUR: the unselected rows fade (a TONE change, which is what
    greyscale preserves) and the selected one gains a drawn RING around its name. Either one
    alone would survive a black-and-white printer; the pair is unmistakable. */
-.cx, .bandh, .chip, .oname[data-org], .clear { cursor: pointer; }
+.cx, .chip, .oname[data-org], .clear { cursor: pointer; }
 .cx .ring { display: none; }
 .cx.on .ring { display: block; }
 .figure.sel .cx, .figure.sel .bandh { opacity: .22; }
 .figure.sel .cx.on, .figure.sel .bandh.on { opacity: 1; }
-.cx:focus-visible, .bandh:focus-visible { outline: 1px solid var(--fg); }
+.cx:focus-visible { outline: 1px solid var(--fg); }
 .chip:focus-visible, .oname:focus-visible, .clear:focus-visible { outline: 1px solid var(--fg); outline-offset: 2px; }
 .own { display: none; border-left: 3px solid var(--fg); padding-left: calc(2*var(--u));
        margin: var(--u) 0 0; font-size: var(--t2); }

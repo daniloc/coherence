@@ -15,7 +15,7 @@
   footer { color: var(--dim); font-size: .8rem; margin-top: 2rem; }
 </style></head><body>
   <h1>coherence</h1><p class="lede">The repository-level reading surface: configuration, package contract, generated maps, and the authored explanation of why the harness exists.</p>
-  <p style="color:var(--dim);font-size:.85rem">4 components · 96 files · 454 symbols</p>
+  <p style="color:var(--dim);font-size:.85rem">4 components · 96 files · 456 symbols</p>
   <section class="card"><h2>Coherence <span class="path">.</span></h2>
       <p class="intent">The repository-level reading surface: configuration, package contract, generated maps, and the authored explanation of why the harness exists.</p>
       <div class="why"><span class="wl">why</span> An agent should encounter the project's purpose and its ownership seams before source detail. The project hook wiring also records which repository reads informed a change and which decisions survived it. Keeping coordination separate from implementation makes that first read small while still checking that every deeper entry point is reachable. This spec once claimed five files existed at root; three were pruned rather than dressed up, because a root claim earns its line only when the failure it detects would otherwise be SILENT. `package.json`, `README.md`, and `src/cli.ts` fail loudly on their own — npm, the reader, and the CLI itself all scream within seconds of their absence — so claiming them was green weight that could never turn red for an interesting reason (the Known-limits section calls that spec "coherent and worthless"). The two claims kept are the ones whose absence the system absorbs without a sound: `loadConfig` falls back to defaults when `coherence.config.json` is missing (verify would silently run with no test runner, no serial pin, and the wrong testMatch), and a missing `.claude/settings.json` kills the journal hooks with no error at all — the exact silent-death mode `coherence hooks --check` exists to detect. Fewer claims, honestly scoped, is the trade this harness teaches; making its own root spec take it is the least it owes.</div>
@@ -139,5 +139,5 @@
    ├─ vacuity.test.ts
    ├─ verify.test.ts
    └─ why-lint.test.ts</pre><p style="color:var(--dim);font-size:.85rem">● marks a node (a folder with a <code>*.spec.md</code>).</p></section>
-  <footer>Generated at <span id="stamp">2026-08-02 23:40Z</span> — do not edit; run the harness.</footer>
+  <footer>Generated at <span id="stamp">2026-08-03 01:27Z</span> — do not edit; run the harness.</footer>
 </body></html>

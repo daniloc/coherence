@@ -32,7 +32,7 @@ import {
   capList, CAPS, resolveFrame, darknesses, buildJournal, buildMap, structuralView,
   INDEX_HTML, INDEX_JSON, crossingOwners, type IndexModel, type IndexCrossing,
 } from "../src/index-model.ts";
-import { renderIndex, formatIndexSummary } from "../src/render-index.ts";
+import { renderIndex, formatIndexSummary, readMap } from "../src/render-index.ts";
 import { assemblePromiseModel } from "../src/promise.ts";
 import { diffGraphs } from "../src/structural.ts";
 import { _resetEvolutionMemo } from "../src/evolution.ts";
@@ -467,14 +467,6 @@ test("RENDER — the withheld tail appears in the page, never a silent truncatio
   assert.match(html, new RegExp(`${CAPS.blocked + 3} in total`));
 });
 
-// ── the MAP as a DIAGRAM ──────────────────────────────────────────────────────────────
-//
-// THE PAGE THIS REPLACED was a wall of tables, and the verdict on it was that it taught
-// nothing. The reference now is the Prius energy monitor: three boxes and the arrows
-// between them explain a drivetrain with no documentation at all. These assert that the
-// picture actually CARRIES the four things it claims to encode — and that each of them
-// survives greyscale, which is the only reason they are shape and weight rather than hue.
-
 const xing = (o: Partial<IndexCrossing> & { sym: string; from: string; to: string }): IndexCrossing =>
   ({ tier: 2, security: false, present: true, heat: 0.1, owner: null, ...o });
 
@@ -488,58 +480,159 @@ const cxRows = (svg: string) => svg.split('<g class="cx"').slice(1);
 const widths = (svg: string) =>
   cxRows(svg).map((g) => Number(/stroke-width="([\d.]+)"/.exec(g)![1]));
 
-test("DIAGRAM — regions are columns, every crossing is its OWN row, and the guard names it", () => {
-  const crossings = [
-    xing({ sym: "requireAuth", from: "public-web", to: "authed-user", security: true, heat: 0.9 }),
-    xing({ sym: "OwnedScope", from: "authed-user", to: "patient", tier: 1, security: true, heat: 0.2 }),
-    xing({ sym: "runWithRetry", from: "patient", to: "model-provider", heat: 0.02 }),
-  ];
+// ── the MAP as a SPINE ────────────────────────────────────────────────────────────────
+//
+// TWO PICTURES WERE REJECTED BEFORE THIS ONE and neither failed at rendering — a layered
+// DAG, then a matrix. The verdict on the matrix was "it's just a bunch of lines; what does
+// it even mean that config connects to public-web?" The defect was that ONE relation type
+// was doing THREE jobs and both figures drew all three as identical arrows, so a step and a
+// grab looked the same and there was nothing to trace.
+//
+// So the thing under test is no longer "is it aligned". It is: CAN A READER TRACE A REQUEST
+// END TO END AND NAME THE GUARD AT EACH PROMOTION — and does the split account for every
+// crossing, so nothing is quietly lost to a class the figure does not draw.
+
+/** THE PROJECT THIS WAS BUILT AGAINST, as its atlas actually records it: two sources, three
+ *  spine stages, four resources, and one enshrined crossing. Every count below is measured
+ *  from `docs/coherence/index.json` on that project, not invented for the test. */
+const HOIST: IndexCrossing[] = [
+  xing({ sym: "api", from: "browser-client", to: "public-web", security: true, heat: 0.089, owner: "web" }),
+  xing({ sym: "requireAuth", from: "public-web", to: "authed-user", security: true, heat: 0.172, owner: "hoist-chat" }),
+  xing({ sym: "verifySession", from: "public-web", to: "authed-user", security: true, heat: 0.013, owner: "auth" }),
+  xing({ sym: "OwnedScope", from: "authed-user", to: "patient", tier: 1, security: true, heat: 0.172, owner: "hoist-chat" }),
+  xing({ sym: "consumeChallenge", from: "public-web", to: "storage", security: true, heat: 0.019, owner: "auth" }),
+  xing({ sym: "userForAssertion", from: "public-web", to: "storage", security: true, heat: 0.019, owner: "auth" }),
+  xing({ sym: "credentialInsert", from: "public-web", to: "storage", security: true, heat: 0.019, owner: "auth" }),
+  xing({ sym: "deleteCredential", from: "authed-user", to: "storage", security: true, heat: 0.172, owner: "hoist-chat" }),
+  xing({ sym: "enforceQuota", from: "authed-user", to: "meter", security: true, heat: 0.172, owner: "hoist-chat" }),
+  xing({ sym: "serveJson", from: "authed-user", to: "public-egress", heat: 0.172, owner: "hoist-chat" }),
+  xing({ sym: "Patient", from: "patient", to: "public-egress", security: true, heat: 0.357, owner: "Patient" }),
+  xing({ sym: "runWithRetry", from: "patient", to: "model-provider", heat: 0.108, owner: "model" }),
+  xing({ sym: "envStr", from: "config", to: "public-web", security: true, heat: 0.006, owner: "env" }),
+  xing({ sym: "envInt", from: "config", to: "public-web", security: true, heat: 0.006, owner: "env" }),
+];
+
+test("READING — the ONE relation splits into three by DEGREE, and every crossing lands in one", () => {
+  const r = readMap(HOIST);
+
+  // THE SPINE IS THE TRACE. A stage is a region that is BOTH an origin and a destination;
+  // the entry is the source the traffic actually enters by. `public-egress` is reached from
+  // two stages and leads nowhere, so it is a RESOURCE — the longest raw path would have
+  // ended there and made `Patient` a promotion, which is the exact confusion this undoes.
+  assert.deepEqual(r.spine, ["browser-client", "public-web", "authed-user", "patient"]);
+  assert.deepEqual(r.promotions.map((p) => [p.from, p.to, p.guards.map((c) => c.sym)]), [
+    ["browser-client", "public-web", ["api"]],
+    ["public-web", "authed-user", ["requireAuth", "verifySession"]],
+    ["authed-user", "patient", ["OwnedScope"]],
+  ]);
+  // TWO GUARDS ON ONE PROMOTION ARE TWO LANES, not one arrow wearing two names: each keeps
+  // its own tier, its own heat and its own selectable identity.
+  assert.equal(r.promotions[1].guards.length, 2);
+
+  assert.deepEqual(r.sinks, ["storage", "meter", "public-egress", "model-provider"]);
+  assert.deepEqual(r.supply.map((s) => [s.source, s.guards.map((c) => c.sym)]),
+    [["config", ["envInt", "envStr"]]]);
+
+  // THE ACCOUNTING. 4 promotions + 8 reaches + 2 supply = 14, and nothing is aside. A split
+  // that silently drops a crossing into a class the figure does not draw is the failure mode
+  // of the whole idea, so the sum is asserted, not the parts alone.
+  const promo = r.promotions.reduce((n, p) => n + p.guards.length, 0);
+  assert.equal(promo, 4);
+  assert.equal(r.reaches.length, 8);
+  assert.equal(r.supply.reduce((n, s) => n + s.guards.length, 0), 2);
+  const amb = r.supply.reduce((n, s) => n + s.guards.length, 0);
+  assert.equal(promo + r.reaches.length + amb + r.aside.length, HOIST.length);
+  assert.deepEqual(r.aside, []);
+  assert.deepEqual(r.notes, [], "this shape fits the reading exactly, so it claims no degeneracy");
+});
+
+test("READING — sources that TIE on path length break on HEAT: the entry is where traffic enters", () => {
+  // THE MEASUREMENT THAT SURPRISED. `config` was assumed to take a SHORTER path than
+  // `browser-client`; it does not — both reach `patient` in four stages, so length alone
+  // leaves the entry a coin toss. Heat is the honest discriminator: `api` carries 8.9% of
+  // the change in the frame and `envStr` 0.6%, a fourteen-fold gap.
+  const r = readMap(HOIST);
+  assert.equal(r.spine[0], "browser-client");
+  assert.ok(r.supply.some((s) => s.source === "config"),
+    "the loser of the tie is AMBIENT — it is not a step, and must not be drawn as one");
+
+  // Flip the heats and the entry flips with them: the rule is the data's, not the name's.
+  const flipped = HOIST.map((c) => c.sym === "api" ? { ...c, heat: 0.001 }
+    : c.sym === "envStr" ? { ...c, heat: 0.9 } : c);
+  assert.equal(readMap(flipped).spine[0], "config");
+});
+
+test("DIAGRAM — the three classes are told apart by TONE and GEOMETRY, and supply is no arrow", () => {
   const html = renderIndex(modelWith({
-    map: { ...modelWith().map, crossings: capList(crossings, CAPS.crossings) },
+    map: { ...modelWith().map, crossings: capList(HOIST, CAPS.crossings) },
   }));
   const svg = html.slice(html.indexOf("<svg"), html.indexOf("</svg>"));
-  assert.ok(svg.length > 500, "an empty <svg> would satisfy every assertion below");
+  assert.ok(svg.length > 1000, "an empty <svg> would satisfy every assertion below");
+  assert.equal((svg.match(/<g class="cx"/g) ?? []).length, HOIST.length,
+    "one selectable group per crossing — every crossing is drawn, whatever class it landed in");
 
-  // Every region heads a column and every crossing takes a row. The count is the point: a
-  // diagram that silently drops an edge is worse than a table that lists it.
-  for (const r of ["public-web", "authed-user", "patient", "model-provider"]) {
-    assert.match(svg, new RegExp(`>${r}</text>`), `region ${r} must head a column`);
-  }
-  for (const c of crossings) assert.match(svg, new RegExp(`>${c.sym}</text>`), `${c.sym} must name its row`);
-  assert.equal((svg.match(/<g class="cx"/g) ?? []).length, crossings.length,
-    "one group per crossing — the row IS the crossing, and it is one selectable object");
+  const of = (sym: string) => svg.split('<g class="cx"').slice(1)
+    .find((g) => g.includes(`data-sym="${sym}"`))!;
 
-  // HEAT IS LINE WEIGHT, and it has to be SEEN. The order of the widths is the order of the
-  // heats, and the SPREAD is wide enough to read: an encoding whose extremes differ by a
-  // fifth of a pixel is a declared encoding, not a working one.
-  const w = widths(svg).slice(0, 3);
-  assert.ok(w[0] > w[1] && w[1] > w[2], `heat must order the line weights, got ${w.join(",")}`);
-  assert.ok(w[0] - w[2] > 2, `the hottest and coldest must differ visibly, got ${w[2]} vs ${w[0]}`);
+  // A PROMOTION is the figure's own line: full strength, and heavier than a reach carrying
+  // the SAME heat. `deleteCredential` and `requireAuth` both read 17.2%, so the difference
+  // between them is the class and nothing else.
+  const wOf = (sym: string) => Number(/stroke-width="([\d.]+)"/.exec(of(sym))![1]);
+  assert.match(of("requireAuth"), /stroke="var\(--fg\)"/, "a promotion draws at full strength");
+  assert.match(of("deleteCredential"), /stroke="var\(--dim\)"/, "…and a reach is subordinate");
+  assert.ok(wOf("requireAuth") > wOf("deleteCredential") + 1.5,
+    `same heat, different class: ${wOf("requireAuth")} vs ${wOf("deleteCredential")}`);
+  // …and heat still orders WITHIN a class, so the class constant did not eat the encoding.
+  assert.ok(wOf("Patient") > wOf("consumeChallenge"), "heat still orders reaches");
 
-  // TIER IS TREATMENT AND TONE TOGETHER, and the RARE tier is the loud one: tier-1
-  // (enshrined) draws solid, at full strength, with its name in bold. A page whose only
-  // enshrined crossing is the hardest one to see has the encoding backwards.
-  const lines = cxRows(svg).map((g) => /<line [^>]*>/.exec(g)![0]);
-  assert.equal(lines.length, 3, "one run per crossing, in the model's own order");
-  assert.doesNotMatch(lines[1], /stroke-dasharray/,
-    "the ENSHRINED crossing draws solid — a distinction that vanishes in greyscale was never encoded");
-  assert.match(lines[1], /stroke="var\(--fg\)"/, "…and at full strength");
-  assert.match(lines[0], /stroke-dasharray="7 4"/, "a totality-checked crossing draws dashed");
-  assert.match(lines[0], /stroke="var\(--dim\)"/, "…and dimmer than the enshrined one");
-  assert.match(svg, /class="gn t1"/, "the enshrined crossing's name is the bold one");
+  // SUPPLY IS NOT A LINE AT ALL. Drawing `config → public-web` as an arrow in the path
+  // asserts a sequence that does not exist, and asserting it is what made the last two
+  // figures say nothing. It gets a strip, a tint and a sentence.
+  assert.doesNotMatch(of("envStr"), /<line|<path d="M[\d.]+,[\d.]+ [VH]/,
+    "an ambient read must not be drawn as a run or a riser");
+  assert.match(of("envStr"), />read by public-web</, "…it says where it is read instead");
+  assert.match(svg, />supply</);
+  assert.match(svg, /deliberately not an arrow/, "and the legend says so, in those words");
 
-  // SECURITY IS A DRAWN MARK. Two security crossings plus the legend's sample = three.
-  assert.equal((svg.match(/l4\.5,-4\.5 l4\.5,4\.5 l-4\.5,4\.5 Z/g) ?? []).length, 3,
-    "a security crossing carries a shape, so it survives a black-and-white printer");
+  // THE ONE ENSHRINED CROSSING DOMINATES: solid where thirteen others are broken, at full
+  // strength, with its name in bold. A page whose rarest guarantee is its hardest line to
+  // find has the encoding backwards.
+  assert.doesNotMatch(of("OwnedScope"), /stroke-dasharray/);
+  assert.match(of("OwnedScope"), /class="gn pr t1"/);
+  assert.match(of("requireAuth"), /stroke-dasharray="7 4"/, "a totality-checked crossing draws broken");
+});
 
-  // AND THE LEGEND ONLY NAMES WHAT IS ON THE PAGE. `convention` has no subjects in this
-  // fixture, so teaching the word here would be teaching a vocabulary the data does not use.
-  assert.match(svg, />enshrined/);
-  assert.match(svg, />totality-checked</);
-  assert.doesNotMatch(svg, />convention</);
-  // The heat legend prints its own ENDPOINTS, so "line weight = heat" is checkable against
-  // the crossings table rather than taken on faith.
-  assert.match(svg, /line weight = change heat, 2\.0% to 90\.0%/);
+test("DIAGRAM — a stranger can trace the request: stages in order, and the guard on each step", () => {
+  // THE ACCEPTANCE TEST, as far as a string comparison can carry it. The trace a reader
+  // reads off the picture is: the stage boxes left to right, and the guard names on the runs
+  // between them. Both are recovered here from the SVG alone, in the order the geometry puts
+  // them in — nothing is read from the model.
+  const html = renderIndex(modelWith({
+    map: { ...modelWith().map, crossings: capList(HOIST, CAPS.crossings) },
+  }));
+  const svg = html.slice(html.indexOf("<svg"), html.indexOf("</svg>"));
+
+  // The stage boxes, recovered by their x: a region name in a box on the spine's own row.
+  const boxTop = Number(/<rect x="0" y="(\d+)" width="\d+" height="32" fill="none" stroke="var\(--fg\)"/.exec(svg)![1]);
+  const stages = [...svg.matchAll(new RegExp(`<rect x="(\\d+)" y="${boxTop}"[^>]*stroke="var\\(--fg\\)"[^>]*/><text x="\\d+" y="\\d+" class="rn">([^<]+)<`, "g"))]
+    .map((m) => ({ x: Number(m[1]), name: m[2] })).sort((a, b) => a.x - b.x);
+  assert.deepEqual(stages.map((s) => s.name),
+    ["browser-client", "public-web", "authed-user", "patient"]);
+
+  // The guard on each step, recovered from the runs BETWEEN those boxes, left to right.
+  const runs = svg.split('<g class="cx"').slice(1)
+    .map((g) => ({ g, m: /<line x1="(\d+)" y1="(\d+)"/.exec(g) }))
+    .filter((r) => r.m && /class="gn pr/.test(r.g))
+    .map((r) => ({ x: Number(r.m![1]), sym: /data-sym="([^"]+)"/.exec(r.g)![1] }))
+    .sort((a, b) => a.x - b.x);
+  assert.deepEqual(runs.map((r) => r.sym), ["api", "requireAuth", "verifySession", "OwnedScope"],
+    "the promotions read off the picture, in the order the eye meets them");
+
+  // AND A RESOURCE BOX IS DRAWN ONCE, however many stages hold it. `storage` is reached from
+  // two stages and four guards; duplicating the box would turn one shared thing into several,
+  // which is the fact this band exists to state.
+  assert.equal((svg.match(/>storage</g) ?? []).length, 1);
+  assert.equal((svg.match(/class="rn dim">/g) ?? []).length, 5, "four resources and one ambient source");
 });
 
 test("DIAGRAM — the figure is on a MODULAR GRID and routes orthogonally, with no diagonal", () => {
@@ -547,10 +640,8 @@ test("DIAGRAM — the figure is on a MODULAR GRID and routes orthogonally, with 
   // matter of taste here, it is arithmetic: if every coordinate is a multiple of one unit
   // then everything lines up with everything, and if one is not, something floats.
   const crossings = [
-    xing({ sym: "requireAuth", from: "public-web", to: "authed-user", security: true, heat: 0.9 }),
-    xing({ sym: "OwnedScope", from: "authed-user", to: "patient", tier: 1, heat: 0.2 }),
-    xing({ sym: "skipsALayer", from: "public-web", to: "patient", heat: 0.5 }),
-    xing({ sym: "runWithRetry", from: "patient", to: "model-provider", heat: 0.02 }),
+    ...HOIST,
+    xing({ sym: "skipsAStage", from: "browser-client", to: "authed-user", heat: 0.5 }),
   ];
   const html = renderIndex(modelWith({
     map: { ...modelWith().map, crossings: capList(crossings, CAPS.crossings) },
@@ -559,24 +650,84 @@ test("DIAGRAM — the figure is on a MODULAR GRID and routes orthogonally, with 
 
   // EVERY RUN IS HORIZONTAL. y1 === y2 on every line in the figure, so there is no diagonal
   // anywhere — which is what lets a row be read across without the eye tracking a slope.
-  const runs = cxRows(svg).map((g) => /<line x1="([\d.]+)" y1="([\d.]+)" x2="([\d.]+)" y2="([\d.]+)"/.exec(g)!);
-  assert.equal(runs.length, crossings.length);
-  for (const r of runs) assert.equal(r[2], r[4], `a crossing run must be horizontal, got ${r[0]}`);
+  for (const m of svg.matchAll(/<line x1="([\d.]+)" y1="([\d.]+)" x2="([\d.]+)" y2="([\d.]+)"/g)) {
+    assert.equal(m[2], m[4], `every run is horizontal; this one is not: ${m[0]}`);
+  }
+  // …and every vertical is a pure V or an H turn in a `d`, never a diagonal L.
+  for (const m of svg.matchAll(/\bd="([^"]+)"/g)) {
+    assert.doesNotMatch(m[1], / L-?[\d.]+,-?[\d.]+ L-?[\d.]+,-?[\d.]+ L/, `a routed path bent diagonally: ${m[1]}`);
+  }
 
-  // AND A LAYER-SKIPPING CROSSING IS NOT SPECIAL. It was the old layout's reserved-lane case
-  // and the reason four rails ended up floating under the figure attached to nothing; on a
-  // row of its own it is the same object as every other row, and its run visibly joins its
-  // two endpoints — it spans more than one column pitch and still starts and ends on a bar.
-  const skip = cxRows(svg).find((g) => g.includes(">skipsALayer<"))!;
-  const [, sx1, , sx2] = /<line x1="([\d.]+)" y1="([\d.]+)" x2="([\d.]+)"/.exec(skip)!;
-  const bars = [...svg.matchAll(/<path d="M([\d.]+),[\d.]+ V/g)].map((m) => m[1]);
-  assert.ok(bars.includes(sx1) && bars.includes(sx2),
-    `a routed crossing must START and END on a region bar, got ${sx1} → ${sx2} of ${bars.join(",")}`);
+  // A STAGE-SKIPPING PROMOTION IS STILL A PROMOTION. It cannot ride the centre line, so it
+  // runs below every box it passes and lands on the one it reaches — drawn at full strength,
+  // because a bypass is a step whether or not it is convenient to draw.
+  const skip = svg.split('<g class="cx"').slice(1).find((g) => g.includes('data-sym="skipsAStage"'))!;
+  assert.match(skip, /skips a stage/, "the tooltip says what it is");
+  assert.match(skip, /class="gn pr/, "…and it is still drawn as a promotion");
 
   // ON THE GRID. Half units are allowed for one thing only — the text baseline, which is
   // where a 10.5px face centres in a 24px row — so the tolerance is 4, not 8.
   const off = coords(svg).filter((n) => n % 4 !== 0);
   assert.deepEqual(off, [], `every coordinate is a multiple of the base unit; these are not: ${off.join(",")}`);
+});
+
+test("DIAGRAM — where the shape has NO spine, the page says so instead of drawing one", () => {
+  // THE DEGENERATE SHAPES, each of which would otherwise get a picture asserting an order
+  // nobody declared. The split is DERIVED from graph degree — it is not recorded anywhere —
+  // so every case where the derivation does not fit has to state itself in a sentence.
+
+  // ONE STAGE. Nothing leaves the entry for a region that leads anywhere else, so every
+  // crossing terminates. That is a real shape, not a missing measurement.
+  const flat = readMap([
+    xing({ sym: "a", from: "door", to: "disk" }),
+    xing({ sym: "b", from: "door", to: "log" }),
+  ]);
+  assert.deepEqual(flat.spine, ["door"]);
+  assert.deepEqual(flat.promotions, []);
+  assert.equal(flat.reaches.length, 2);
+  assert.ok(flat.notes.some((n) => /NOTHING IS PROMOTED/.test(n)), flat.notes.join(" | "));
+
+  // A CYCLE. Every region is reached from another, so there is no source and no entry; the
+  // walk still returns a path and the page says the start was CHOSEN, not found.
+  const cyc = readMap([
+    xing({ sym: "aToB", from: "a", to: "b" }),
+    xing({ sym: "bToC", from: "b", to: "c" }),
+    xing({ sym: "cToA", from: "c", to: "a" }),
+  ]);
+  assert.equal(cyc.spine.length, 3, "a cyclic trust graph is a REAL shape and still draws");
+  assert.ok(cyc.notes.some((n) => /CYCLIC/.test(n)), cyc.notes.join(" | "));
+
+  // SOURCES THAT TIE ON EVERYTHING. The entry is then a coin toss and must not read as a
+  // reading — this is the case the heat rule cannot separate.
+  const tie = readMap([
+    xing({ sym: "l", from: "left", to: "hub", heat: 0.5 }),
+    xing({ sym: "r", from: "right", to: "hub", heat: 0.5 }),
+    xing({ sym: "h", from: "hub", to: "disk", heat: 0.5 }),
+  ]);
+  assert.ok(tie.notes.some((n) => /coin toss/.test(n)), tie.notes.join(" | "));
+
+  // A SELF-LOOP and a BACK EDGE belong to no band. They are listed under ASIDE with a
+  // sentence, never folded into a band that would misdescribe them and never dropped.
+  const odd = readMap([
+    xing({ sym: "in", from: "door", to: "hall" }),
+    xing({ sym: "onward", from: "hall", to: "room" }),
+    xing({ sym: "back", from: "room", to: "hall" }),
+    xing({ sym: "self", from: "hall", to: "hall", tier: 3, present: false }),
+  ]);
+  assert.deepEqual(odd.aside.map((c) => c.sym).sort(), ["back", "self"]);
+  assert.ok(odd.notes.some((n) => /ASIDE/.test(n)), odd.notes.join(" | "));
+
+  // …and all four of those sentences reach the page, under the figure they explain.
+  const html = renderIndex(modelWith({
+    map: { ...modelWith().map, crossings: capList([
+      xing({ sym: "in", from: "door", to: "hall" }),
+      xing({ sym: "self", from: "hall", to: "hall", tier: 3, present: false }),
+    ], CAPS.crossings) },
+  }));
+  assert.match(html, /class="degen warn"/);
+  assert.match(html, /NOTHING IS PROMOTED/);
+  assert.match(html, />aside</, "the unplaced crossing is drawn in a band that names itself");
+  assert.match(html, />self DANGLING</, "a chokepoint no longer in source says so on its own label");
 });
 
 test("DIAGRAM — with no crossings the Map SAYS SO; it never draws an empty frame", () => {
@@ -587,23 +738,6 @@ test("DIAGRAM — with no crossings the Map SAYS SO; it never draws an empty fra
     "unread and absent are different facts and the tab must not merge them");
 });
 
-test("DIAGRAM — a CYCLE in the region graph terminates, and every crossing is still drawn", () => {
-  // The layering is a longest-path relaxation, which does not converge on a cycle. It is
-  // bounded by the region count instead of guarded by a DAG check, because a cyclic trust
-  // graph is a REAL shape: the diagram must draw something honest for it, not refuse.
-  const crossings = [
-    xing({ sym: "aToB", from: "a", to: "b" }),
-    xing({ sym: "bToC", from: "b", to: "c" }),
-    xing({ sym: "cToA", from: "c", to: "a" }),
-    xing({ sym: "selfA", from: "a", to: "a", tier: 3, present: false }),
-  ];
-  const html = renderIndex(modelWith({
-    map: { ...modelWith().map, crossings: capList(crossings, CAPS.crossings) },
-  }));
-  for (const c of crossings) assert.match(html, new RegExp(`>${c.sym}`), `${c.sym} must survive the cycle`);
-  assert.match(html, />selfA DANGLING</, "a chokepoint no longer in source says so on its own arrow");
-  assert.match(html, /stroke-dasharray="1.5 3"/, "a convention-tier crossing draws dotted");
-});
 
 // ── the page: three tabs, one visible, and no dead reveals ────────────────────────────
 
