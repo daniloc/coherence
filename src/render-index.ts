@@ -167,22 +167,25 @@ function sourcesTable(sources: SourceRead[]): string {
 // graph is cyclic, or has no spine at all, gets a SENTENCE saying so rather than a picture
 // that implies an order nobody declared. Every degenerate shape below states itself.
 
-/** THE BASE UNIT of the whole page. Every x, y, width, height, gutter and row in this
- *  figure is a multiple of it; so is the page's vertical rhythm. Text baselines sit at the
- *  half unit, which is where a 10.5px face centres in a 24px row. */
+/** THE BASE UNIT of the whole page. Every column track, row track and wire offset in the
+ *  figure is a multiple of it; so is the page's vertical rhythm. */
 const U = 8;
 /** ONE type size inside the figure — the page's `--t3`. Weight and tone carry every other
  *  distinction, which is what keeps the whole document to three sizes. */
 const FS = 10.5;
 /** Monospace advance as a fraction of font-size. Slightly over the 0.6 of the faces in the
- *  stack, so a reserved column is never narrower than the text in it. */
+ *  stack, so a reserved column is never narrower than the text in it. USED FOR TRACK SIZING
+ *  ONLY: since the substrate became a CSS grid, a mis-estimate here degrades to a label
+ *  overflowing its fixed cell (which the browser paints legibly over the knockout) instead
+ *  of shifting every coordinate downstream of it — the drift the old all-SVG figure had. */
 const CH = 0.61;
-const ROW = 3 * U, BOX_H = 4 * U, HEAD_H = 3 * U;
+/** The vertical rhythm: a band head, a stage/resource box, one wire row, and where the wire
+ *  crosses that row (label above, clearance below). All multiples of U, so every connector
+ *  endpoint the SVG emits lands on the same lattice the CSS tracks are cut from. */
+const HEAD_H = 3 * U, BOX_H = 6 * U, WROW = 4 * U, WIRE_Y = 3 * U, SEP = 3 * U;
 /** Widths snap to TWO units, so a box's centre line — where its bus drops — is itself on the
  *  grid rather than at a half unit. */
 const snap2 = (n: number) => Math.ceil(n / (2 * U)) * 2 * U;
-/** The one column every band head's note starts in — three bands, ONE alignment line. */
-const NOTE_X = 12 * U;
 
 const textW = (s: string, fs: number = FS) => s.length * fs * CH;
 
@@ -199,9 +202,11 @@ const headY = (x: number, y: number, dir: 1 | -1, fill: string) =>
   `<path d="M${x},${y} L${x - 4},${y - dir * U} L${x + 4},${y - dir * U} Z" fill="${fill}"/>`;
 
 /** THE SECURITY MARK — a drawn diamond, never a hue, so it survives a greyscale printer.
- *  One shape, used on a crossing and once again in the legend. */
-const diamond = (x: number, y: number, fill: string) =>
-  `<path d="M${x},${y} l4.5,-4.5 l4.5,4.5 l-4.5,4.5 Z" fill="${fill}"/>`;
+ *  One shape, worn by a crossing's label and once again in the legend. It is a `::before`
+ *  on the `sec` class (a rotated square in `currentColor`): TEXT-LEVEL ink, like a glyph —
+ *  it rides the label, inherits its tone (a broken security crossing's diamond goes alarm
+ *  with it), and adds no layout edge of its own to the lattice. */
+const SEC = "sec";
 
 /** THE READING the figure draws: which crossings are steps, which are grabs, which are
  *  ambient, and — where the shape does not support the reading — the sentence that says so.
@@ -353,84 +358,88 @@ export function readMap(cs: readonly IndexCrossing[]): MapReading {
   return { regions, spine, promotions, reaches, sinks, supply, aside, notes };
 }
 
-/** A band's chrome: a rule across the figure, a name, and a count. Three redundant markers
- *  for one division, because the tint is the one that does not survive a bad printer. */
-function bandHead(y: number, w: number, label: string, note: string): string {
-  return `<path d="M0,${y} H${w}" stroke="var(--fg)" stroke-width="1" fill="none"/>`
-    + `<g class="bandh"><text x="${U}" y="${y + 2 * U}" class="bn">${esc(label)}</text>`
-    + `<text x="${NOTE_X}" y="${y + 2 * U}" class="lg dim">${esc(note)}</text></g>`;
-}
-
 /**
  * THE DIAGRAM. Returns null when there is no crossing data at all — the caller then says so
  * in one line rather than drawing an empty frame, because a picture of nothing is the
  * green-by-absence this page exists to refuse.
+ *
+ * ── THE SUBSTRATE, AND THE FAILURE IT REPLACED ────────────────────────────────────────
+ * This used to be one hand-computed SVG: every box, label and caption at a pixel x derived
+ * from this file's own text-width estimate, beside a roster laid out by CSS — two
+ * coordinate systems, hand-synced, and every review found them drifted (node widths varying
+ * with label length, captions 8px off the figures they named, 42 distinct left edges on one
+ * tab at full width). The substrate is now ONE LATTICE: a fixed-track CSS grid whose track
+ * list is emitted here, once. Boxes and labels are HTML grid items — the browser measures
+ * the text, sets the baselines and paints any overflow harmlessly over the knockout — and
+ * the SVG draws CONNECTORS ONLY, as an absolutely-positioned overlay whose coordinates are
+ * prefix-sums of the SAME track list. There is no second coordinate system left to drift.
  */
 function diagram(cs: readonly IndexCrossing[], comps: readonly IndexComponent[]):
-  { svg: string; w: number; h: number; reading: MapReading } | null {
+  { html: string; w: number; reading: MapReading } | null {
   if (!cs.length) return null;
   const r = readMap(cs);
 
-  // ── THE LATTICE. Nothing here is tuned to a project: a box is as wide as the longest
-  // region name, a gutter as wide as the longest guard that runs through one.
   const nameOf = (c: IndexCrossing) => c.present ? c.sym : `${c.sym} DANGLING`;
   // A crossing carries its organ's DIRECTORY, not its label — that is the id the roster keys
   // its own rows by, and two components may share a label while no two share a directory.
   const dirByLabel = new Map<string, string>();
   for (const c of comps) if (!dirByLabel.has(c.label)) dirByLabel.set(c.label, c.dir);
+
+  // ── THE COLUMN TRACKS. Nothing here is tuned to a project: every box column is as wide
+  // as the longest region name, every spine gutter as wide as the longest guard that runs
+  // through one (plus its security diamond). SINKS ARE QUANTISED TO COLUMNS — under the
+  // latest stage that grabs them, pushed right only past an occupied column — so a
+  // resource's box, its reach labels and its drop all share ONE column edge instead of each
+  // finding its own x, which is where most of the 42 stray left edges came from.
   const boxed = [...r.spine, ...r.sinks, ...r.supply.map((s) => s.source)];
   const BOX_W = snap2(Math.max(...boxed.map((n) => textW(n))) + 2 * U);
-  const promoW = r.promotions.flatMap((p) => p.guards).map((c) => textW(nameOf(c)));
-  // THE GUTTER holds the longest guard that runs through one, PLUS the space its security
-  // diamond takes — sized without it, a marked name overhangs into the next stage's column.
-  const GUT = Math.max(6 * U, snap2(Math.max(0, ...promoW) + 6 * U));
-  const PITCH = BOX_W + GUT;
-  const stageL = (i: number) => i * PITCH;                       // a stage box's left edge
-  const stageX = (i: number) => i * PITCH + BOX_W / 2;           // …and its centre, the bus
+  const promoW = r.promotions.filter((p) => !p.skip).flatMap((p) => p.guards)
+    .map((c) => textW(nameOf(c)) + (c.security ? 2 * U : 0));
+  const GUT = Math.max(6 * U, snap2(Math.max(0, ...promoW) + 3 * U));
+
   const idxOf = new Map(r.spine.map((s, i) => [s, i]));
-
-  // SINKS SIT UNDER THE STAGE THAT GRABS THEM, pushed right only far enough not to overlap.
-  // The reach's label and its drop share one x — the sink box's own text edge — so the
-  // guards landing on a resource read as one left-aligned column above it.
-  const sinkX = new Map<string, number>();
-  let cursor = -Infinity;
+  const sinkCol = new Map<string, number>();
+  let cur = -1;
   for (const s of r.sinks) {
-    const want = stageX(Math.max(...r.reaches.filter((x) => x.sink === s).map((x) => idxOf.get(x.stage)!)));
-    cursor = Math.max(want, cursor + BOX_W + 2 * U);
-    sinkX.set(s, cursor);
+    const want = Math.max(...r.reaches.filter((x) => x.sink === s).map((x) => idxOf.get(x.stage)!));
+    cur = Math.max(want, cur + 1);
+    sinkCol.set(s, cur);
   }
-  const dropX = (s: string) => sinkX.get(s)! - BOX_W / 2 + U;
-  const width = Math.max(
-    r.spine.length ? stageL(r.spine.length - 1) + BOX_W : 0,
-    ...[...sinkX.values()].map((x) => x + BOX_W / 2),
-    40 * U);
+  const nCols = Math.max(r.spine.length, r.sinks.length ? Math.max(...sinkCol.values()) + 1 : 1);
+  const colTracks: number[] = [];
+  for (let i = 0; i < nCols; i++) {
+    // Between stages the separator is a GUTTER (a promotion runs through it); past the last
+    // stage it is only a GAP — sizing those trailing separators like gutters would spread
+    // the resource band with room no guard will ever use.
+    if (i > 0) colTracks.push(i < r.spine.length ? GUT : SEP);
+    colTracks.push(BOX_W);
+  }
+  // An ambient strip beside a single-column lattice would leave its labels no track to
+  // live in, so the degenerate shape gets one.
+  if (r.supply.length && nCols === 1) colTracks.push(GUT);
+  const colLeft: number[] = [];
+  { let x = 0; colTracks.forEach((t, i) => { if (i % 2 === 0) colLeft.push(x); x += t; }); }
+  const width = colTracks.reduce((a, b) => a + b, 0);
+  const busX = (i: number) => colLeft[i] + BOX_W / 2;
+  /** Box column i's 1-based grid line — the one translation between lattice and CSS. */
+  const gcol = (i: number) => 2 * i + 1;
 
-  // ── THE VERTICAL. Three bands, top to bottom, each only as tall as its contents.
-  const supplyY = 0;
-  const supplyH = r.supply.length
-    ? HEAD_H + U + r.supply.reduce((n, s) => n + Math.max(BOX_H, s.guards.length * ROW), 0) + U : 0;
+  // ── THE ROW TRACKS, appended band by band. `topOf` is the same prefix-sum the grid
+  // resolves its own tracks to, which is what entitles the SVG overlay to draw at these
+  // y's without ever measuring the rendered page.
+  const rowH: number[] = [];
+  const row = (h: number) => { rowH.push(h); return rowH.length; };
+  const topOf = (ri: number) => rowH.slice(0, ri - 1).reduce((a, b) => a + b, 0);
 
-  const spineY = supplyY + supplyH;
-  // Lane 0 is the box centre line, so the spine reads as ONE unbroken run; a second guard on
-  // the same promotion hangs below it as a visibly parallel alternate, and a stage-SKIPPING
-  // promotion goes below all of those, clear of every box.
-  const adjLanes = Math.max(1, ...r.promotions.filter((p) => !p.skip).map((p) => p.guards.length));
-  const skipCount = r.promotions.filter((p) => p.skip).reduce((n, p) => n + p.guards.length, 0);
-  const laneMax = adjLanes - 1 + skipCount;
-  const boxTop = spineY + HEAD_H;
-  const centreY = boxTop + BOX_H / 2;
-  const laneY = (k: number) => centreY + k * ROW;
-  const spineH = HEAD_H + BOX_H + (laneMax ? laneMax * ROW + U : 0) + U;
-
-  const resY = spineY + spineH;
-  const reachTop = resY + HEAD_H + U;   // clear of the band head's own baseline
-  const reachY = (i: number) => reachTop + i * ROW + ROW / 2;
-  const sinkTop = r.reaches.length ? reachY(r.reaches.length - 1) + ROW / 2 + U : reachTop;
-  const resH = r.sinks.length ? HEAD_H + U + r.reaches.length * ROW + U + BOX_H + U : 0;
-
-  const asideY = resY + resH;
-  const asideH = r.aside.length ? HEAD_H + U + r.aside.length * ROW + U : 0;
-  const legY = asideY + asideH + U;
+  const cells: string[] = [];
+  const wires: string[] = [];
+  const cell = (ri: number | string, ci: number | string, cls: string, body: string, extra = "") =>
+    cells.push(`<div class="${cls}" style="grid-row:${ri};grid-column:${ci}"${extra}>${body}</div>`);
+  /** A band's chrome: a rule across the figure, a name, a note — one grid row, and the
+   *  note column is a stylesheet constant (`--notex`) shared with the legend, so three
+   *  band notes and every legend caption sit on ONE alignment line. */
+  const bh = (ri: number, label: string, note: string) =>
+    cell(ri, "1 / -1", "bh", `<span class="bn">${esc(label)}</span><span class="lg dim">${esc(note)}</span>`);
 
   // ── THE ENCODINGS ───────────────────────────────────────────────────────────────────
   // HEAT IS LINE WEIGHT and it has to be SEEN. A linear map of a range whose ends differ by
@@ -453,64 +462,65 @@ function diagram(cs: readonly IndexCrossing[], comps: readonly IndexComponent[])
     return `stroke="${toneOf(c, promo)}" stroke-width="${weight(c.heat, promo)}"`
       + `${d ? ` stroke-dasharray="${d}"` : ""} fill="none"`;
   };
-  // A LABEL KNOCKS OUT WHAT IT CROSSES. Reach labels sit above their own run and a run may
-  // pass under another stage's bus; a name interrupted by a hairline is a name misread.
-  const label = (x: number, y: number, c: IndexCrossing, promo: boolean) => {
-    const t = nameOf(c);
-    const cls = `gn${promo ? " pr" : ""}${c.tier === 1 ? " t1" : ""}${broken(c) ? " bad" : ""}`;
-    return `<rect class="knock" x="${x - 4}" y="${y - 20}" width="${snap2(textW(t))}" height="12"/>`
-      + `<text x="${x}" y="${y - U}" class="${cls}">${esc(t)}</text>`;
-  };
-  /** THE SELECTION RING — a drawn box around the guard's name, hidden until selected. A MARK,
-   *  not a hue, so a selection survives a black-and-white printer. */
-  const ring = (x: number, y: number, c: IndexCrossing) =>
-    `<rect class="ring" x="${x - U}" y="${y - 20}" width="${snap2(textW(nameOf(c)) + 2 * U)}" height="${2 * U}" fill="none" stroke="var(--fg)" stroke-width="1.5"/>`;
-  /** One crossing is one selectable object, whatever shape it took. */
-  const cx = (c: IndexCrossing, kind: string, body: string) => {
+  /** The selection pair — `data-sym` lights this crossing, `data-owner` ties it to its
+   *  organ's roster row. BOTH the label and the wire carry it (an organ selection must
+   *  light its wires, not only its label texts); only the LABEL is the focusable control,
+   *  which is what keeps one crossing one tab stop instead of two. */
+  const symAttrs = (c: IndexCrossing) => {
     const dir = c.owner === null ? undefined : dirByLabel.get(c.owner);
-    const heat = c.heat === null ? "heat unrecorded" : `heat ${(c.heat * 100).toFixed(1)}%`;
-    return `<g class="cx" data-sym="${esc(c.sym)}"${dir ? ` data-owner="${esc(dir)}"` : ""} tabindex="0" role="button">`
-      + `<title>${esc(`${nameOf(c)} — ${kind}: ${c.from} to ${c.to}, ${TIER_NAME[c.tier] ?? `tier-${c.tier}`}${c.security ? ", security" : ""}, ${heat}`)}</title>`
-      + body + `</g>`;
+    return ` data-sym="${esc(c.sym)}"${dir ? ` data-owner="${esc(dir)}"` : ""}`;
   };
-
-  const chrome: string[] = [], groups: string[] = [];
+  const attrsOf = (c: IndexCrossing, kind: string) => {
+    const heat = c.heat === null ? "heat unrecorded" : `heat ${(c.heat * 100).toFixed(1)}%`;
+    const title = `${nameOf(c)} — ${kind}: ${c.from} to ${c.to}, ${TIER_NAME[c.tier] ?? `tier-${c.tier}`}${c.security ? ", security" : ""}, ${heat}`;
+    return `${symAttrs(c)} tabindex="0" role="button" title="${esc(title)}"`;
+  };
+  // A LABEL KNOCKS OUT WHAT IT CROSSES — its `.lbl` span carries the page background, so a
+  // run passing under another stage's drop never strikes through a name. The browser sizes
+  // the knockout to the text; the old hand-computed `knock` rects are gone by construction.
+  const lbl = (c: IndexCrossing) => `<span class="lbl${c.security ? ` ${SEC}` : ""}">${esc(nameOf(c))}</span>`;
+  const glCls = (c: IndexCrossing, promo: boolean) =>
+    `gl${promo ? " pr" : ""}${c.tier === 1 ? " t1" : ""}${broken(c) ? " bad" : ""}`;
 
   // ── SUPPLY: A STRIP, NOT A PATH ─────────────────────────────────────────────────────
   // The one thing this figure refuses to draw as an arrow. `config → public-web` as a line
   // in the path asserts a sequence, and there is none: it is read wherever it is read.
   if (r.supply.length) {
-    chrome.push(`<rect x="0" y="${supplyY + HEAD_H}" width="${width}" height="${supplyH - HEAD_H}" fill="var(--flat)"/>`);
-    chrome.push(bandHead(supplyY, width, "supply", `ambient — reaches the path, and is not a step in it`));
-    let y = supplyY + HEAD_H + U;
+    bh(row(HEAD_H), "supply", "ambient — reaches the path, and is not a step in it");
+    const flatFrom = row(U);
     for (const s of r.supply) {
-      const h = Math.max(BOX_H, s.guards.length * ROW);
-      chrome.push(`<rect x="0" y="${y}" width="${BOX_W}" height="${BOX_H}" fill="none" stroke="var(--dim)" stroke-width="1"/>`
-        + `<text x="${U}" y="${y + BOX_H / 2 + 4}" class="rn dim">${esc(s.source)}</text>`);
-      s.guards.forEach((c, k) => {
-        const gy = y + k * ROW + ROW / 2 + 4;
-        const gx = BOX_W + 2 * U;
-        groups.push(cx(c, "supply", (c.security ? diamond(gx, gy - 4, toneOf(c, false)) : "")
-          + `<text x="${gx + 3 * U}" y="${gy}" class="gn${c.tier === 1 ? " t1" : ""}${broken(c) ? " bad" : ""}">${esc(nameOf(c))}</text>`
-          + `<text x="${gx + 3 * U + snap2(textW(nameOf(c)) + 2 * U)}" y="${gy}" class="lg dim">${esc(`read by ${c.to}`)}</text>`
-          + ring(gx + 3 * U, gy + U, c)
-          + `<rect x="0" y="${gy - 2 * U}" width="${width}" height="${ROW}" fill="none" pointer-events="all"/>`));
-      });
-      y += h;
+      const first = rowH.length + 1;
+      for (const c of s.guards) {
+        cell(row(WROW), nCols > 1 ? "2 / -1" : "2 / 3", `${glCls(c, false)} srow gut`,
+          lbl(c) + `<span class="lg dim">${esc(`read by ${c.to}`)}</span>`, attrsOf(c, "supply"));
+      }
+      cells.push(`<div class="fbox" style="grid-row:${first} / ${rowH.length + 1};grid-column:1;align-self:center;height:${Math.min(BOX_H, s.guards.length * WROW)}px">${esc(s.source)}</div>`);
     }
+    // The tint that marks the band ambient. It is the one non-positioned cell, so it paints
+    // UNDER the wire overlay instead of over it.
+    cells.push(`<div class="flat" style="grid-row:${flatFrom} / ${rowH.length + 1};grid-column:1 / -1"></div>`);
+    row(SEP);
   }
 
   // ── THE SPINE ───────────────────────────────────────────────────────────────────────
-  chrome.push(bandHead(spineY, width, "spine",
+  bh(row(HEAD_H), "spine",
     r.spine.length > 1
       ? `a request enters at ${r.spine[0]} and is promoted rightward by a named guard`
-      : `one stage — nothing here is promoted anywhere`));
-  r.spine.forEach((s, i) => {
-    chrome.push(`<rect x="${stageL(i)}" y="${boxTop}" width="${BOX_W}" height="${BOX_H}" fill="none" stroke="var(--fg)" stroke-width="1.5"/>`
-      + `<text x="${stageL(i) + U}" y="${centreY + 4}" class="rn">${esc(s)}</text>`);
-  });
+      : `one stage — nothing here is promoted anywhere`);
+  row(2 * U);
+  const rStage = row(BOX_H);
+  r.spine.forEach((s, i) => cell(rStage, gcol(i), "fbox stage", esc(s)));
+  const stageTop = topOf(rStage), centreY = stageTop + BOX_H / 2, boxBot = stageTop + BOX_H;
 
-  let skipLane = adjLanes;
+  // Lane 0 is the box centre line, so the spine reads as ONE unbroken run; a second guard on
+  // the same promotion gets a wire row of its own below, visibly parallel, and a
+  // stage-SKIPPING promotion goes below all of those, clear of every box.
+  const adjLanes = Math.max(1, ...r.promotions.filter((p) => !p.skip).map((p) => p.guards.length));
+  const laneRows = Array.from({ length: adjLanes - 1 }, () => row(WROW));
+  const skipRows = r.promotions.filter((p) => p.skip).flatMap((p) => p.guards.map(() => row(WROW)));
+  const laneWireY = (k: number) => k === 0 ? centreY : topOf(laneRows[k - 1]) + WIRE_Y;
+
+  let skipIdx = 0;
   for (const p of r.promotions) {
     const i = idxOf.get(p.from)!, j = idxOf.get(p.to)!;
     p.guards.forEach((c, k) => {
@@ -518,25 +528,24 @@ function diagram(cs: readonly IndexCrossing[], comps: readonly IndexComponent[])
       if (!p.skip) {
         // THE STEP ITSELF, on the box centre line when it is the first guard on this
         // promotion — which is what makes the spine one continuous run rather than N arrows.
-        const y = laneY(k), a = stageL(i) + BOX_W, b = stageL(j);
-        groups.push(cx(c, "promotion",
-          (k ? `<path d="M${a},${centreY} V${y}" ${st}/>` : "")
+        const y = laneWireY(k), a = colLeft[i] + BOX_W, b = colLeft[j];
+        wires.push(`<g class="cx"${symAttrs(c)}>`
+          + (k ? `<path d="M${a},${centreY} V${y}" ${st}/>` : "")
           + `<line x1="${a}" y1="${y}" x2="${b}" y2="${y}" ${st}/>`
-          + headX(b, y, 1, tone)
-          + (c.security ? diamond(a + U, y - 4, tone) : "")
-          + label(a + (c.security ? 4 * U : U), y, c, true) + ring(a + (c.security ? 4 * U : U), y, c)
-          + `<rect x="${a}" y="${y - ROW / 2}" width="${b - a}" height="${ROW}" fill="none" pointer-events="all"/>`));
+          + headX(b, y, 1, tone) + `</g>`);
+        cell(k === 0 ? rStage : laneRows[k - 1], 2 * i + 2, `${glCls(c, true)} gut${k === 0 ? " l0" : " wl"}`,
+          lbl(c), attrsOf(c, "promotion"));
       } else {
         // A STAGE-SKIPPING PROMOTION is a bypass: it leaves its stage, runs below every box
         // it passes, and lands on the one it reaches. It is still a step, so it is still
         // drawn at full strength — it just cannot ride the centre line.
-        const y = laneY(skipLane++), a = stageX(i), b = stageL(j) + U;
-        groups.push(cx(c, "promotion (skips a stage)",
-          `<path d="M${a},${boxTop + BOX_H} V${y} H${b} V${boxTop + BOX_H + U}" ${st}/>`
-          + headY(b, boxTop + BOX_H, -1, tone)
-          + (c.security ? diamond(a + U, y - 4, tone) : "")
-          + label(a + (c.security ? 4 * U : U), y, c, true) + ring(a + (c.security ? 4 * U : U), y, c)
-          + `<rect x="${Math.min(a, b)}" y="${y - ROW / 2}" width="${Math.abs(b - a)}" height="${ROW}" fill="none" pointer-events="all"/>`));
+        const y = topOf(skipRows[skipIdx++]) + WIRE_Y;
+        const a = busX(i), b = colLeft[j] + U;
+        wires.push(`<g class="cx"${symAttrs(c)}>`
+          + `<path d="M${a},${boxBot} V${y} H${b} V${boxBot + U}" ${st}/>`
+          + headY(b, boxBot, -1, tone) + `</g>`);
+        cell(skipRows[skipIdx - 1], `${gcol(i)} / ${gcol(j) + 1}`, `${glCls(c, true)} wl`,
+          `<span style="padding-left:${BOX_W / 2 + 2 * U}px">${lbl(c)}</span>`, attrsOf(c, "promotion (skips a stage)"));
       }
     });
   }
@@ -546,90 +555,90 @@ function diagram(cs: readonly IndexCrossing[], comps: readonly IndexComponent[])
   // drawn ONCE however many stages grab it — duplicating it would turn one shared thing into
   // several, which is the fact this band exists to state.
   if (r.sinks.length) {
-    chrome.push(bandHead(resY, width, "resources",
-      `grabbed at a stage and reached no further — a resource box is drawn once, however many stages hold it`));
-    for (const s of r.sinks) {
-      const x = sinkX.get(s)! - BOX_W / 2;
-      chrome.push(`<rect x="${x}" y="${sinkTop}" width="${BOX_W}" height="${BOX_H}" fill="none" stroke="var(--dim)" stroke-width="1"/>`
-        + `<text x="${x + U}" y="${sinkTop + BOX_H / 2 + 4}" class="rn dim">${esc(s)}</text>`);
-    }
+    row(SEP);
+    bh(row(HEAD_H), "resources",
+      "grabbed at a stage and reached no further — a resource box is drawn once, however many stages hold it");
+    row(2 * U);
+    const reachRows = r.reaches.map(() => row(WROW));
+    row(U);
+    const rSink = row(BOX_H);
+    const sinkTop = topOf(rSink);
+    for (const s of r.sinks) cell(rSink, gcol(sinkCol.get(s)!), "fbox", esc(s));
     // ONE BUS PER STAGE, from the box down to the last lane that leaves it: the vertical is
     // what says "everything on these lanes is held by THIS stage".
     const lastLane = new Map<string, number>();
     r.reaches.forEach((x, i) => lastLane.set(x.stage, i));
     for (const [stage, i] of lastLane) {
-      chrome.push(`<path d="M${stageX(idxOf.get(stage)!)},${boxTop + BOX_H} V${reachY(i)}" stroke="var(--dim)" stroke-width="1" fill="none"/>`);
+      wires.push(`<path d="M${busX(idxOf.get(stage)!)},${boxBot} V${topOf(reachRows[i]) + WIRE_Y}" stroke="var(--dim)" stroke-width="1" fill="none"/>`);
     }
     r.reaches.forEach((x, i) => {
-      const c = x.c, y = reachY(i), st = strokeOf(c, false), tone = toneOf(c, false);
-      const a = stageX(idxOf.get(x.stage)!), b = dropX(x.sink);
-      groups.push(cx(c, "reach",
-        `<line x1="${a}" y1="${y}" x2="${b}" y2="${y}" ${st}/>`
+      const c = x.c, y = topOf(reachRows[i]) + WIRE_Y, st = strokeOf(c, false), tone = toneOf(c, false);
+      const a = busX(idxOf.get(x.stage)!), b = colLeft[sinkCol.get(x.sink)!] + U;
+      wires.push(`<g class="cx"${symAttrs(c)}>`
+        + `<line x1="${a}" y1="${y}" x2="${b}" y2="${y}" ${st}/>`
         + `<path d="M${b},${y} V${sinkTop}" ${st}/>`
         + headY(b, sinkTop, 1, tone)
-        + `<rect x="${a - U / 2}" y="${y - U / 2}" width="${U}" height="${U}" fill="${tone}"/>`
-        + (c.security ? diamond(b - U - 4, y - 4, tone) : "")
-        + label(b, y, c, false) + ring(b, y, c)
-        + `<rect x="0" y="${y - ROW / 2}" width="${width}" height="${ROW}" fill="none" pointer-events="all"/>`));
+        + `<rect x="${a - U / 2}" y="${y - U / 2}" width="${U}" height="${U}" fill="${tone}"/></g>`);
+      // The label's text starts ON the sink's own column edge — the same padding the box
+      // text wears — so the guards landing on a resource read as one left-aligned column
+      // above it. The full-width cell is the hit area, the old pointer-events rect as HTML.
+      cell(reachRows[i], "1 / -1", `${glCls(c, false)} wl`,
+        `<span style="padding-left:${b}px">${lbl(c)}</span>`, attrsOf(c, "reach"));
     });
   }
 
   // ── THE ASIDE ───────────────────────────────────────────────────────────────────────
   if (r.aside.length) {
-    chrome.push(bandHead(asideY, width, "aside",
-      `on neither the spine nor an ambient source — listed, never dropped`));
-    r.aside.forEach((c, k) => {
-      const y = asideY + HEAD_H + U + k * ROW + ROW / 2 + 4;
-      groups.push(cx(c, "unplaced", (c.security ? diamond(U, y - 4, toneOf(c, false)) : "")
-        + `<text x="${4 * U}" y="${y}" class="gn${broken(c) ? " bad" : ""}">${esc(nameOf(c))}</text>`
-        + `<text x="${4 * U + snap2(textW(nameOf(c)) + 2 * U)}" y="${y}" class="lg dim">${esc(`${c.from} to ${c.to}`)}</text>`
-        + ring(4 * U, y + U, c)
-        + `<rect x="0" y="${y - 2 * U}" width="${width}" height="${ROW}" fill="none" pointer-events="all"/>`));
-    });
+    row(SEP);
+    bh(row(HEAD_H), "aside", "on neither the spine nor an ambient source — listed, never dropped");
+    row(U);
+    for (const c of r.aside) {
+      cell(row(WROW), "1 / -1", `${glCls(c, false)} srow`,
+        lbl(c) + `<span class="lg dim">${esc(`${c.from} to ${c.to}`)}</span>`, attrsOf(c, "unplaced"));
+    }
   }
+  const height = rowH.reduce((a, b) => a + b, 0);
 
   // ── THE LEGEND. It names only what is on the page: a treatment with no subjects here
   // would be teaching a vocabulary this project does not use. The heat scale prints its own
   // ENDPOINTS, so the reader can check the encoding against the crossings table rather than
-  // taking "line weight = heat" on faith.
-  // IT IS A GRID, NOT A FLOW. Packing legend items end to end put every label at its own x
-  // and cost the page six alignment lines for nine words — a legend that teaches the
-  // encodings while breaking the one rule the figure is built on. Two fixed columns, one
-  // sample edge and one label edge, however many items there turn out to be.
+  // taking "line weight = heat" on faith. AND IT CARRIES THE TIER COUNTS: the legend is
+  // where the tier line-treatments are explained, so the number of crossings at each tier
+  // belongs on the same line — one home, not a legend here and a summary repeating it above.
+  const tierCount = new Map<number, number>();
+  for (const c of cs) tierCount.set(c.tier, (tierCount.get(c.tier) ?? 0) + 1);
   const leg: string[] = [];
-  const items: { draw: (x: number, y: number) => string; text: string; w: number }[] = [];
-  const sample = (draw: (x: number, y: number) => string, text: string, w: number) =>
-    void items.push({ draw, text, w });
-  const rule = (x: number, y: number, w: number, tone: string, d: string) =>
-    `<line x1="${x}" y1="${y}" x2="${x + 4 * U}" y2="${y}" stroke="${tone}" stroke-width="${w}"${d ? ` stroke-dasharray="${d}"` : ""}/>`;
-  if (r.promotions.length) sample((x, y) => rule(x, y, 4, "var(--fg)", ""), "promotion — a trust stage change, and the line to follow", 4 * U);
-  if (r.reaches.length) sample((x, y) => rule(x, y, 1.5, "var(--dim)", ""), "reach — a resource grabbed there, going no further", 4 * U);
-  if (r.supply.length) sample((x, y) => `<rect x="${x}" y="${y - 2 * U}" width="${4 * U}" height="${2 * U}" fill="var(--flat)" stroke="var(--rule)"/>`, "supply — ambient, and deliberately not an arrow", 4 * U);
+  const sam = (inner: string) => `<svg viewBox="0 0 48 24" width="48" height="24" aria-hidden="true">${inner}</svg>`;
+  const lrule = (w: number, tone: string, d: string, y = 12) =>
+    `<line x1="0" y1="${y}" x2="48" y2="${y}" stroke="${tone}" stroke-width="${w}"${d ? ` stroke-dasharray="${d}"` : ""}/>`;
+  const item = (sample: string, text: string) =>
+    leg.push(`<div class="li"><span class="ls">${sample}</span><span class="lg dim">${esc(text)}</span></div>`);
+  if (r.promotions.length) item(sam(lrule(4, "var(--fg)", "")), "promotion — a trust stage change, and the line to follow");
+  if (r.reaches.length) item(sam(lrule(1.5, "var(--dim)", "")), "reach — a resource grabbed there, going no further");
+  if (r.supply.length) item(`<span class="flat-s"></span>`, "supply — ambient, and deliberately not an arrow");
   for (const t of [...new Set(cs.map((c) => c.tier))].sort()) {
-    sample((x, y) => rule(x, y, t === 1 ? 3 : 1.5, `var(--${t === 1 ? "fg" : "dim"})`, DASH[t] ?? DASH[3]),
-      `${TIER_NAME[t] ?? `tier-${t}`}${t === 1 ? " — drawn solid and at full strength" : ""}`, 4 * U);
+    const n = tierCount.get(t)!;
+    item(sam(lrule(t === 1 ? 3 : 1.5, `var(--${t === 1 ? "fg" : "dim"})`, DASH[t] ?? DASH[3])),
+      `${TIER_NAME[t] ?? `tier-${t}`} — ${n} crossing${n === 1 ? "" : "s"}${t === 1 ? ", drawn solid and at full strength" : ""}`);
   }
-  if (cs.some((c) => c.security)) sample((x, y) => diamond(x + 4, y, "var(--fg)"), "security crossing", 2 * U);
+  if (cs.some((c) => c.security)) item(`<span class="${SEC}"></span>`, "security crossing");
   if (!heats.length) {
-    sample((x, y) => rule(x, y, 1, "var(--dim)", ""), "line weight — heat UNRECORDED, every line is a hairline for that reason", 4 * U);
+    item(sam(lrule(1, "var(--dim)", "")), "line weight — heat UNRECORDED, every line is a hairline for that reason");
   } else {
     const lo = Math.min(...heats), hi = Math.max(...heats);
-    sample((x, y) => [lo, (lo + hi) / 2, hi].map((h, i) => rule(x, y - U + i * U, weight(h), "var(--dim)", "")).join(""),
+    item(sam([lo, (lo + hi) / 2, hi].map((h, i) => lrule(weight(h), "var(--dim)", "", 4 + i * 8)).join("")),
       `line weight = change heat, ${(lo * 100).toFixed(1)}% to ${(hi * 100).toFixed(1)}%`
-      + (heats.length < cs.length ? " (hairline = unrecorded, not cold)" : ""), 4 * U);
+      + (heats.length < cs.length ? " (hairline = unrecorded, not cold)" : ""));
   }
-  const LEG_W = snap2(Math.max(...items.map((i) => i.w + textW(i.text))) + 4 * U);
-  const legCols = Math.max(1, Math.floor(width / LEG_W));
-  const legRows = Math.ceil(items.length / legCols);
-  items.forEach((it, i) => {
-    const x = (i % legCols) * LEG_W, y = legY + 2 * U + Math.floor(i / legCols) * 3 * U;
-    leg.push(it.draw(x, y), `<text x="${x + 6 * U}" y="${y + 4}" class="lg dim">${esc(it.text)}</text>`);
-  });
-  const height = legY + 2 * U + legRows * 3 * U;
 
-  const svg = `<svg viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" role="img" aria-label="the trust spine, its resources and its ambient supply">`
-    + chrome.join("") + groups.join("") + leg.join("") + `</svg>`;
-  return { svg, w: width, h: height, reading: r };
+  // The wire overlay and the cells resolve their geometry from the SAME track lists — the
+  // grid templates below and the viewBox above are two spellings of one prefix-sum. `--pz`
+  // is the print scale: paper cannot scroll, so the lattice zooms to a page there and
+  // nowhere else.
+  const svg = `<svg class="wires" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" role="img" aria-label="the trust spine, its resources and its ambient supply">${wires.join("")}</svg>`;
+  const html = `<div class="fgrid" style="grid-template-columns:${colTracks.map((t) => `${t}px`).join(" ")};grid-template-rows:${rowH.map((t) => `${t}px`).join(" ")};width:${width}px;--pz:${Math.min(1, 720 / width).toFixed(3)}">${svg}${cells.join("")}</div>`
+    + `<div class="leg">${leg.join("")}</div>`;
+  return { html, w: width, reading: r };
 }
 
 // ── the MAP's drill-downs ─────────────────────────────────────────────────────────────
@@ -856,52 +865,62 @@ function mapTab(m: IndexModel): string {
   const d = diagram(mp.crossings.shown, mp.components);
   const a = mp.atlas;
 
-  // THE FIGURE SCALES. It is emitted at its natural width and capped there, but it is free
-  // to shrink to the column — which is only possible now that the hit areas are the SVG's
-  // own elements. The old absolutely-positioned overlay pinned the picture to one pixel
-  // size, and that is the layout constraint the script bought its way out of.
+  // THE FIGURE RIDES ITS OWN LATTICE and scrolls in its own container when it must —
+  // never scaled down, because a label that shrinks with the column stops being readable
+  // exactly when the figure gets interesting.
   const figure = d
-    ? `<div class="figure" style="--fw:${d.w}px">${d.svg}</div>`
+    ? `<div class="figure">${d.html}</div>`
     : `<p class="none"><b>NO CROSSING DIAGRAM.</b> ${a
       ? "The atlas record holds no crossings, so there are no regions to draw and none are invented."
       : "No atlas reading is recorded here — the shape is UNREAD, not absent."}${mp.zones.length ? "" : " No <code>## zones</code> are declared either."}</p>`;
 
-  // ONE SUMMARY LINE, and its first clause is THE ACCOUNTING: the three classes and their
-  // sum. It is there so a reader can check that the split dropped nothing — a picture that
-  // silently loses a crossing to a class it does not draw is the failure mode of the whole
-  // idea, and this is the one number that catches it.
-  const bits: string[] = [];
+  // ── THE STRIP. This used to be ONE SENTENCE — six unrelated readings concatenated with
+  // middle dots, which could neither wrap nor align, and rewording it never helped because
+  // prose was the wrong material. Now: label/value pairs on uniform column stops, tabular
+  // figures, real plurals (`14 crossings`, never `14 crossing(s)`). Its first four cells
+  // are still THE ACCOUNTING — promotions + reaches + supply = crossings drawn — so a
+  // reader can check the split dropped nothing, which is the one number that catches the
+  // failure mode of the whole idea. The tier histogram lives in the legend beside the line
+  // treatments it explains; provenance is the masthead badge and is not repeated here; and
+  // HEALTH IS SILENT AT ZERO — "no dangling, drift or over-claim" printed on every run is
+  // wallpaper, invisible the one time it matters. Only the non-zero readings print, marked.
+  const stats: string[] = [];
+  const stat = (v: string, l: string, sev: Sev = "quiet") =>
+    stats.push(`<div class="stat"><span class="sv${sev === "quiet" ? "" : ` ${sev}`}">${MARK[sev] ? `${MARK[sev]} ` : ""}${v}</span><span class="sl dim">${esc(l)}</span></div>`);
   if (d) {
     const r = d.reading;
-    const parts = [
-      r.promotions.reduce((n, p) => n + p.guards.length, 0) && `<b>${r.promotions.reduce((n, p) => n + p.guards.length, 0)}</b> promotion(s)`,
-      r.reaches.length && `<b>${r.reaches.length}</b> reach(es)`,
-      r.supply.reduce((n, s) => n + s.guards.length, 0) && `<b>${r.supply.reduce((n, s) => n + s.guards.length, 0)}</b> supply`,
-      r.aside.length && `<span class="warn">! <b>${r.aside.length}</b> aside</span>`,
-    ].filter(Boolean) as string[];
-    bits.push(`${parts.join(" + ")} = <b>${mp.crossings.shown.length}</b>${mp.crossings.withheld ? ` of ${mp.crossings.total}` : ""} crossing(s) drawn`);
-    bits.push(`<b>${r.regions.length}</b> region(s), <b>${r.spine.length}</b> on the spine`);
+    const promo = r.promotions.reduce((n, p) => n + p.guards.length, 0);
+    const amb = r.supply.reduce((n, s) => n + s.guards.length, 0);
+    stat(String(promo), promo === 1 ? "promotion" : "promotions");
+    stat(String(r.reaches.length), r.reaches.length === 1 ? "reach" : "reaches");
+    stat(String(amb), "supply");
+    if (r.aside.length) stat(String(r.aside.length), "aside", "warn");
+    stat(`${mp.crossings.shown.length}${mp.crossings.withheld ? ` <span class="dim">of ${mp.crossings.total}</span>` : ""}`,
+      mp.crossings.shown.length === 1 ? "crossing drawn" : "crossings drawn");
+    stat(String(r.regions.length), r.regions.length === 1 ? "region" : "regions");
+    stat(String(r.spine.length), r.spine.length === 1 ? "spine stage" : "spine stages");
+  } else {
+    // WITH NO PICTURE THERE IS STILL A STRIP. A blank between two rules would be a reading
+    // withheld, which is the shape this page refuses everywhere else.
+    stat(String(mp.components.length), mp.components.length === 1 ? "component" : "components");
+    stat(String(mp.gatesTotal), mp.gatesTotal === 1 ? "gate" : "gates");
+    stat(String(mp.crossings.total), mp.crossings.total === 1 ? "crossing recorded" : "crossings recorded");
   }
   if (a) {
-    bits.push(`${a.tiers.enshrined} enshrined / ${a.tiers.checked} checked / ${a.tiers.convention} convention`);
-    const bad = [
-      a.dangling && `<span class="alarm">!! ${a.dangling} dangling</span>`,
-      a.drift && `<span class="warn">! ${a.drift} drift</span>`,
-      a.overclaimed && `<span class="alarm">!! ${a.overclaimed} over-claimed</span>`,
-      a.tier3Security.length && `<span class="alarm">!! ${a.tier3Security.length} unmanaged security crossing(s)</span>`,
-      a.hazards.length && `<span class="warn">! ${a.hazards.length} inference hazard(s)</span>`,
-    ].filter(Boolean) as string[];
-    bits.push(bad.length ? bad.join(" · ") : "no dangling, drift or over-claim");
-    bits.push(`<span class="dim">read ${day(a.at)}</span>${a.stale ? ' <span class="warn">! stale</span>' : ""}`);
+    if (a.dangling) stat(String(a.dangling), "dangling", "alarm");
+    if (a.drift) stat(String(a.drift), "drift", "warn");
+    if (a.overclaimed) stat(String(a.overclaimed), "over-claimed", "alarm");
+    if (a.tier3Security.length) stat(String(a.tier3Security.length),
+      a.tier3Security.length === 1 ? "unmanaged security crossing" : "unmanaged security crossings", "alarm");
+    if (a.hazards.length) stat(String(a.hazards.length),
+      a.hazards.length === 1 ? "inference hazard" : "inference hazards", "warn");
   }
-  // WITH NO PICTURE THERE IS STILL A SUMMARY. An empty rule between two rules would be a
-  // blank where a reading belongs, which is the shape this page refuses everywhere else.
-  if (!d) bits.push(`<b>${mp.components.length}</b> component(s) <span class="dim">·</span> <b>${mp.gatesTotal}</b> gate(s) <span class="dim">·</span> <b>${mp.crossings.total}</b> crossing(s) recorded`);
-  // THE SELECTION HINT RIDES THE SUMMARY LINE rather than taking a line of its own. It is a
-  // caption on the picture above it, and a page with a seven-object budget does not spend
-  // one of them on instructions.
-  const hint = d
-    ? ` <span class="dim">·</span> <span class="dim">click a guard or an organ below</span> <span class="clear" data-clear tabindex="0" role="button">show all</span>`
+  // `show all` HAS A PLACE — the strip's last stop — instead of hanging off a sentence. It
+  // wakes to full tone only while a selection is active, the one time it has work to do.
+  // The words-as-caption hint is gone with the sentence: the guard labels, chips and organ
+  // names are visibly interactive instead (cursor, hover underline, focus ring).
+  const clear = d
+    ? `<div class="stat"><span class="clear" data-clear tabindex="0" role="button">show all</span></div>`
     : "";
   // WHERE THE SHAPE DOES NOT FIT THE READING, THE PAGE SAYS SO IN ONE LINE rather than
   // drawing something that implies an order nobody declared. A cyclic region graph, sources
@@ -909,7 +928,7 @@ function mapTab(m: IndexModel): string {
   // pretending. This is the whole reason the split is allowed to be an inference.
   const degen = d && d.reading.notes.length
     ? `<p class="degen warn">${d.reading.notes.map((n) => `<span>${esc(n)}</span>`).join("")}</p>` : "";
-  const summary = `<p class="sum">${bits.join(" <span class=\"dim\">·</span> ")}${hint}</p>${degen}`;
+  const summary = `<div class="strip">${stats.join("")}${clear}</div>${degen}`;
 
   const strip = tog("comp", "components", String(mp.components.length))
     + tog("gates", "gates", mp.gates.total ? `${mp.gates.total} of ${mp.gatesTotal} listed` : String(mp.gatesTotal),
@@ -1133,6 +1152,9 @@ const STYLE = `
      every other distinction, which is the only way monospace stays a lattice. */
   --u: 8px;
   --t1: 15px; --t2: 12.5px; --t3: 10.5px;
+  /* THE NOTE COLUMN: the one x every band-head note and every legend caption starts in.
+     Three bands and a legend, ONE alignment line. */
+  --notex: calc(12*var(--u));
 }
 @media (prefers-color-scheme: dark) {
   :root { --bg: #0e0f11; --fg: #d6d9de; --dim: #868d97; --rule: rgba(255,255,255,.17);
@@ -1204,23 +1226,58 @@ body:has(#trajectory:target) .tabs a[href="#trajectory"] { color: var(--fg); bor
 #x-zones:checked ~ .term[for="x-zones"]::after, #x-rec:checked ~ .term[for="x-rec"]::after,
 #x-note:checked ~ .term[for="x-note"]::after { content: " \\25BE"; }
 
-/* ── the figure ─────────────────────────────────────────────────────────────────────────
-   IT SCALES. The SVG is emitted at its natural width and never drawn wider, but it is free
-   to shrink to the column — which the pixel-positioned hotspot overlay used to forbid. */
-.figure { margin: 0 0 calc(2*var(--u)); }
-.figure svg { display: block; width: 100%; height: auto; max-width: var(--fw); }
-svg text { font: 400 10.5px ui-monospace, SFMono-Regular, Menlo, monospace; fill: var(--fg); }
-svg text.rn { font-weight: 700; letter-spacing: .04em; }
-svg text.bn { font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
-/* THE CLASS IS THE TONE. A promotion is the spine's own line and prints at full strength; a
-   reach, a supply and an aside are subordinate and print dim. Both survive greyscale, which
-   is why the distinction is tone and geometry rather than hue. */
-svg text.gn { fill: var(--dim); }
-svg text.gn.pr { fill: var(--fg); }
-svg text.gn.bad { fill: var(--alarm); }
-svg text.gn.t1 { font-weight: 700; }
-svg text.dim, svg text.lg { fill: var(--dim); }
-svg .knock { fill: var(--bg); }
+/* ── the figure: ONE LATTICE ─────────────────────────────────────────────────────────────
+   The boxes and labels are HTML items on a fixed-track CSS grid; the SVG draws CONNECTORS
+   ONLY, absolutely positioned over the same tracks. Both take their geometry from the one
+   track list the render emits, so there is no second coordinate system to drift — and the
+   browser, not this file, measures the text and sets the baselines. */
+.figure { margin: calc(2*var(--u)) 0 calc(4*var(--u)); overflow-x: auto; }
+.fgrid { position: relative; display: grid; }
+.fgrid .wires { position: absolute; left: 0; top: 0; }
+/* Cells are positioned so they paint ABOVE the wire overlay; the supply tint is the one
+   deliberate exception — static, so it stays UNDER the wires. */
+.fgrid > div { position: relative; min-width: 0; }
+.fgrid > .flat { position: static; background: var(--flat); }
+.bh { display: grid; grid-template-columns: var(--notex) 1fr; align-items: baseline;
+      border-top: 1px solid var(--fg); padding-top: calc(var(--u)/2); white-space: nowrap; }
+.bn { font-size: var(--t3); font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
+.lg { font-size: var(--t3); }
+/* Box text and reach labels share ONE stop per column: border + padding = the base unit,
+   whatever the border's weight. */
+.fbox { border: 1px solid var(--dim); color: var(--dim); display: flex; align-items: center;
+        padding: 0 calc(var(--u) - 1px); font-size: var(--t3); font-weight: 700;
+        white-space: nowrap; letter-spacing: .04em; }
+.fbox.stage { border: 1.5px solid var(--fg); color: var(--fg); padding: 0 calc(var(--u) - 1.5px); }
+/* THE GUARD LABELS. The tone IS the class: a promotion is the spine's own line and prints
+   at full strength; a reach, a supply and an aside are subordinate and print dim. A broken
+   chokepoint overrides both. All of it survives greyscale, which hue would not. */
+.gl { font-size: var(--t3); line-height: calc(2*var(--u)); white-space: nowrap; cursor: pointer; }
+.gl .lbl { color: var(--dim); background: var(--bg); padding: 1px 6px 1px 4px; margin-left: -4px; }
+.gl.pr .lbl { color: var(--fg); }
+.gl.bad .lbl { color: var(--alarm); }
+.gl.t1 .lbl { font-weight: 700; }
+.gl.gut { padding-left: calc(2*var(--u)); }
+.gl.l0 { align-self: start; padding-top: 2px; }
+/* Supply and aside rows are LINES OF TEXT, centred by their line box — not flex, so the
+   label and its note stay inline-level and add no layout edges of their own. No wire ever
+   crosses these rows, so their labels carry no knockout: a background here would punch a
+   page-coloured pill through the supply tint. */
+.gl.srow { line-height: calc(4*var(--u)); }
+.gl.srow .lbl { background: none; }
+.gl.srow .lg { margin-left: calc(2*var(--u)); }
+.sec::before { content: ""; display: inline-block; width: 7px; height: 7px;
+               background: currentColor; transform: rotate(45deg); margin: 0 6px 1px 2px; }
+/* The diamond HANGS — the label pulls left by exactly the mark's footprint, so a guarded
+   NAME sits on the same column stop as an unguarded one, and the mark reads as a bullet
+   in the gutter instead of pushing its name off the lattice. */
+.gl .lbl.sec { margin-left: -19px; }
+/* ── the legend: the same two columns as a band head, one sample edge, one caption edge */
+.leg { margin-top: calc(3*var(--u)); display: grid; row-gap: var(--u); }
+.li { display: grid; grid-template-columns: var(--notex) 1fr; align-items: center; }
+.li .ls { display: block; }
+.li svg { display: block; }
+.flat-s { display: block; width: 48px; height: 16px; background: var(--flat);
+          border: 1px solid var(--rule); }
 /* A DEGENERACY IS A SENTENCE, not a missing picture: a cyclic region graph or a spine one
    stage long says so here, in the reader's way, immediately under the figure it explains. */
 .degen { margin: var(--u) 0 0; font-size: var(--t2); max-width: 88ch; }
@@ -1228,19 +1285,38 @@ svg .knock { fill: var(--bg); }
               margin-bottom: var(--u); }
 .sum { border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule);
        padding: var(--u) 0; margin: 0; font-size: var(--t2); }
-.clear { cursor: pointer; user-select: none; border: 1px solid var(--rule); padding: 0 var(--u);
-         margin-left: var(--u); }
+/* ── the strip: the summary as READINGS ON COLUMN STOPS, never a sentence ──────────────
+   Uniform tracks, so every value and every caption starts on the same stops row after row;
+   health cells appear ONLY non-zero, in their own severity. */
+.strip { display: grid; grid-template-columns: repeat(auto-fill, minmax(calc(17*var(--u)), 1fr));
+         gap: calc(2*var(--u)) calc(3*var(--u)); align-items: baseline;
+         border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule);
+         padding: calc(2*var(--u)) 0; margin: 0 0 calc(3*var(--u)); }
+.stat { display: grid; row-gap: 2px; justify-items: start; }
+.sv { font-size: var(--t1); font-weight: 700; font-variant-numeric: tabular-nums; }
+.sv.warn { color: var(--warn); }
+.sv.alarm { color: var(--alarm); }
+.sl { font-size: var(--t3); letter-spacing: .08em; text-transform: uppercase; }
+.clear { cursor: pointer; user-select: none; border: 1px solid var(--rule); color: var(--dim);
+         padding: 2px var(--u); font-size: var(--t3); letter-spacing: .08em;
+         text-transform: uppercase; }
+/* The control wakes when there is a selection to clear — the one time it has work to do. */
+.figure.sel ~ .strip .clear { color: var(--fg); border-color: var(--fg); }
 
 /* ── SELECTION: real listeners on the real elements ─────────────────────────────────────
-   THE HIGHLIGHT IS NOT COLOUR: the unselected rows fade (a TONE change, which is what
+   THE HIGHLIGHT IS NOT COLOUR: the unselected crossings fade (a TONE change, which is what
    greyscale preserves) and the selected one gains a drawn RING around its name. Either one
-   alone would survive a black-and-white printer; the pair is unmistakable. */
-.cx, .chip, .oname[data-org], .clear { cursor: pointer; }
-.cx .ring { display: none; }
-.cx.on .ring { display: block; }
-.figure.sel .cx, .figure.sel .bandh { opacity: .22; }
-.figure.sel .cx.on, .figure.sel .bandh.on { opacity: 1; }
-.cx:focus-visible { outline: 1px solid var(--fg); }
+   alone would survive a black-and-white printer; the pair is unmistakable. And the controls
+   LOOK like controls — cursor, hover underline, focus ring — which is what let the "click a
+   guard" caption be deleted rather than reworded. */
+.chip, .oname[data-org], .clear { cursor: pointer; }
+.figure.sel .cx, .figure.sel .gl, .figure.sel .bh { opacity: .22; }
+.figure.sel .cx.on, .figure.sel .gl.on { opacity: 1; }
+.gl.on .lbl { outline: 1.5px solid var(--fg); outline-offset: 2px; }
+.gl:hover .lbl { text-decoration: underline; text-underline-offset: 3px; }
+.oname[data-org]:hover { text-decoration-color: var(--fg); }
+.chip:not(.held):hover { border-color: var(--fg); }
+.gl:focus-visible { outline: 1px solid var(--fg); }
 .chip:focus-visible, .oname:focus-visible, .clear:focus-visible { outline: 1px solid var(--fg); outline-offset: 2px; }
 .own { display: none; border-left: 3px solid var(--fg); padding-left: calc(2*var(--u));
        margin: var(--u) 0 0; font-size: var(--t2); }
@@ -1252,8 +1328,8 @@ svg .knock { fill: var(--bg); }
    the same width on every row rather than the width of whatever landed in them. The
    sentence is the exception and it is deliberate: an intent line in a 20ch cell wraps to
    four words and stops being prose, so it takes its own grid row at its own measure. */
-.roster { margin-top: calc(3*var(--u)); }
-.band { margin-bottom: calc(3*var(--u)); }
+.roster { margin-top: calc(4*var(--u)); }
+.band { margin-bottom: calc(4*var(--u)); }
 .bhead, .org {
   display: grid;
   grid-template-columns: 3ch minmax(14ch, max-content) 1fr max-content;
@@ -1271,7 +1347,7 @@ svg .knock { fill: var(--bg); }
    which pushes a right-aligned caption off the column of figures it is naming. */
 .bhead .onum { color: var(--dim); letter-spacing: 0; }
 .bhead .ct { font-weight: 400; color: var(--dim); }
-.org { border-left: 3px solid transparent; padding: calc(2*var(--u)) 0 calc(2*var(--u)) calc(2*var(--u));
+.org { border-left: 3px solid transparent; padding: calc(3*var(--u)) 0 calc(3*var(--u)) calc(2*var(--u));
        margin-left: calc(-2*var(--u) - 3px); border-bottom: 1px solid var(--rule); row-gap: var(--u); }
 .org:last-of-type { border-bottom: 0; }
 .org.on { border-left-color: var(--fg); }
@@ -1377,13 +1453,16 @@ footer { margin-top: calc(7*var(--u)); padding-top: calc(2*var(--u)); border-top
   .view, .panel, .detail .d, .own { display: block !important; }
   .view { page-break-before: always; }
   .tabs, .term, .badge, .clear { display: none; }
-  .figure svg { max-width: 100%; height: auto; }
+  /* Paper cannot scroll, so the lattice ZOOMS to the page — html and wires together, one
+     scale, because they are one coordinate system. --pz is emitted per figure. */
+  .figure { overflow: visible; }
+  .fgrid { zoom: var(--pz, 1); }
   .hint { display: none; }
   /* A SELECTION IS SCREEN STATE, and paper has none: every crossing comes back to full
      weight and every owner line prints, so the paper copy is the whole document however
      the reader left the screen. */
-  .figure.sel .cx, .figure.sel .bandh { opacity: 1 !important; }
-  .cx .ring { display: none !important; }
+  .figure.sel .cx, .figure.sel .gl, .figure.sel .bh { opacity: 1 !important; }
+  .gl.on .lbl { outline: none !important; }
   .org, .band { break-inside: avoid; }
 }
 `;
@@ -1420,10 +1499,11 @@ const SCRIPT = `
         : sym !== null ? el.getAttribute("data-sym") === sym : own !== null && own === dir);
     });
     // A GUARD SELECTS ITS ORGAN'S ROW TOO — that is the second direction of the join, and
-    // the roster row is the only place the organ's sentence lives.
+    // the roster row is the only place the organ's sentence lives. The owner is read off
+    // the guard's LABEL: the wires carry data-sym alone, and only the label knows its organ.
     var ownerDir = dir;
     if (sym !== null) {
-      var g = map.querySelector('.cx[data-sym="' + CSS.escape(sym) + '"]');
+      var g = map.querySelector('[data-owner][data-sym="' + CSS.escape(sym) + '"]');
       ownerDir = g ? g.getAttribute("data-owner") : null;
     }
     map.querySelectorAll(".org").forEach(function (el) {

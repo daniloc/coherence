@@ -431,8 +431,10 @@ test("RENDER — PRINT still works: every tab opens, and the screen's selection 
   assert.match(print, /\.view, \.panel, \.detail \.d, \.own \{ display: block !important; \}/,
     "every tab, every panel and every revealed sentence opens on paper");
   assert.match(print, /page-break-before: always/, "one tab per page, not three run together");
-  assert.match(print, /\.figure\.sel \.cx, \.figure\.sel \.bandh \{ opacity: 1 !important; \}/,
+  assert.match(print, /\.figure\.sel \.cx, \.figure\.sel \.gl, \.figure\.sel \.bh \{ opacity: 1 !important; \}/,
     "a selection is screen state: paper gets the whole figure back");
+  assert.match(print, /\.gl\.on \.lbl \{ outline: none !important; \}/,
+    "…and the selection ring does not print either");
   assert.match(print, /--warn: #000; --alarm: #000/,
     "the palette collapses to black on paper, which is what makes the MARKS load-bearing");
 });
@@ -567,12 +569,23 @@ test("DIAGRAM — the three classes are told apart by TONE and GEOMETRY, and sup
     map: { ...modelWith().map, crossings: capList(HOIST, CAPS.crossings) },
   }));
   const svg = html.slice(html.indexOf("<svg"), html.indexOf("</svg>"));
-  assert.ok(svg.length > 1000, "an empty <svg> would satisfy every assertion below");
-  assert.equal((svg.match(/<g class="cx"/g) ?? []).length, HOIST.length,
-    "one selectable group per crossing — every crossing is drawn, whatever class it landed in");
+  assert.ok(svg.length > 500, "an empty wire overlay would satisfy every assertion below");
+
+  // ONE WIRE GROUP PER DRAWN CONNECTOR — the promotions and the reaches. Supply is the
+  // class with NO connector, which is the whole point: a label, a tint, and no line.
+  assert.equal((svg.match(/<g class="cx"/g) ?? []).length, 12, "4 promotions + 8 reaches draw wires");
+  // …and EVERY crossing, supply included, is exactly one selectable label on the lattice.
+  const fig = html.slice(html.indexOf('<div class="figure"'), html.indexOf('<div class="strip"'));
+  for (const c of HOIST) {
+    const ambient = c.from === "config";
+    assert.equal((fig.match(new RegExp(`data-sym="${c.sym}"`, "g")) ?? []).length, ambient ? 1 : 2,
+      `${c.sym} must be one control (label) plus its wire — except ambient, which has NO wire`);
+  }
 
   const of = (sym: string) => svg.split('<g class="cx"').slice(1)
     .find((g) => g.includes(`data-sym="${sym}"`))!;
+  const lblOf = (sym: string) =>
+    new RegExp(`<div class="([^"]*)"[^>]*data-sym="${sym}"`).exec(fig)![1];
 
   // A PROMOTION is the figure's own line: full strength, and heavier than a reach carrying
   // the SAME heat. `deleteCredential` and `requireAuth` both read 17.2%, so the difference
@@ -588,17 +601,18 @@ test("DIAGRAM — the three classes are told apart by TONE and GEOMETRY, and sup
   // SUPPLY IS NOT A LINE AT ALL. Drawing `config → public-web` as an arrow in the path
   // asserts a sequence that does not exist, and asserting it is what made the last two
   // figures say nothing. It gets a strip, a tint and a sentence.
-  assert.doesNotMatch(of("envStr"), /<line|<path d="M[\d.]+,[\d.]+ [VH]/,
+  assert.equal(svg.split('<g class="cx"').slice(1).some((g) => g.includes('data-sym="envStr"')), false,
     "an ambient read must not be drawn as a run or a riser");
-  assert.match(of("envStr"), />read by public-web</, "…it says where it is read instead");
-  assert.match(svg, />supply</);
-  assert.match(svg, /deliberately not an arrow/, "and the legend says so, in those words");
+  assert.match(fig, /data-sym="envStr"[^>]*>[\s\S]{0,200}?read by public-web/,
+    "…it says where it is read instead");
+  assert.match(fig, />supply</);
+  assert.match(html, /deliberately not an arrow/, "and the legend says so, in those words");
 
   // THE ONE ENSHRINED CROSSING DOMINATES: solid where thirteen others are broken, at full
   // strength, with its name in bold. A page whose rarest guarantee is its hardest line to
   // find has the encoding backwards.
   assert.doesNotMatch(of("OwnedScope"), /stroke-dasharray/);
-  assert.match(of("OwnedScope"), /class="gn pr t1"/);
+  assert.match(lblOf("OwnedScope"), /gl pr t1/);
   assert.match(of("requireAuth"), /stroke-dasharray="7 4"/, "a totality-checked crossing draws broken");
 });
 
@@ -611,18 +625,19 @@ test("DIAGRAM — a stranger can trace the request: stages in order, and the gua
     map: { ...modelWith().map, crossings: capList(HOIST, CAPS.crossings) },
   }));
   const svg = html.slice(html.indexOf("<svg"), html.indexOf("</svg>"));
+  const fig = html.slice(html.indexOf('<div class="figure"'), html.indexOf('<div class="strip"'));
 
-  // The stage boxes, recovered by their x: a region name in a box on the spine's own row.
-  const boxTop = Number(/<rect x="0" y="(\d+)" width="\d+" height="32" fill="none" stroke="var\(--fg\)"/.exec(svg)![1]);
-  const stages = [...svg.matchAll(new RegExp(`<rect x="(\\d+)" y="${boxTop}"[^>]*stroke="var\\(--fg\\)"[^>]*/><text x="\\d+" y="\\d+" class="rn">([^<]+)<`, "g"))]
-    .map((m) => ({ x: Number(m[1]), name: m[2] })).sort((a, b) => a.x - b.x);
+  // The stage boxes, recovered by their COLUMN — the lattice's own order, left to right.
+  const stages = [...fig.matchAll(/<div class="fbox stage" style="grid-row:\d+;grid-column:(\d+)">([^<]+)<\/div>/g)]
+    .map((m) => ({ col: Number(m[1]), name: m[2] })).sort((a, b) => a.col - b.col);
   assert.deepEqual(stages.map((s) => s.name),
     ["browser-client", "public-web", "authed-user", "patient"]);
 
-  // The guard on each step, recovered from the runs BETWEEN those boxes, left to right.
+  // The guard on each step, recovered from the full-strength RUNS between those boxes,
+  // left to right — read off the wire overlay alone, nothing from the model.
   const runs = svg.split('<g class="cx"').slice(1)
     .map((g) => ({ g, m: /<line x1="(\d+)" y1="(\d+)"/.exec(g) }))
-    .filter((r) => r.m && /class="gn pr/.test(r.g))
+    .filter((r) => r.m && /stroke="var\(--fg\)"/.test(r.g))
     .map((r) => ({ x: Number(r.m![1]), sym: /data-sym="([^"]+)"/.exec(r.g)![1] }))
     .sort((a, b) => a.x - b.x);
   assert.deepEqual(runs.map((r) => r.sym), ["api", "requireAuth", "verifySession", "OwnedScope"],
@@ -631,8 +646,8 @@ test("DIAGRAM — a stranger can trace the request: stages in order, and the gua
   // AND A RESOURCE BOX IS DRAWN ONCE, however many stages hold it. `storage` is reached from
   // two stages and four guards; duplicating the box would turn one shared thing into several,
   // which is the fact this band exists to state.
-  assert.equal((svg.match(/>storage</g) ?? []).length, 1);
-  assert.equal((svg.match(/class="rn dim">/g) ?? []).length, 5, "four resources and one ambient source");
+  assert.equal((fig.match(/>storage</g) ?? []).length, 1);
+  assert.equal((fig.match(/<div class="fbox"/g) ?? []).length, 5, "four resources and one ambient source");
 });
 
 test("DIAGRAM — the figure is on a MODULAR GRID and routes orthogonally, with no diagonal", () => {
@@ -661,9 +676,11 @@ test("DIAGRAM — the figure is on a MODULAR GRID and routes orthogonally, with 
   // A STAGE-SKIPPING PROMOTION IS STILL A PROMOTION. It cannot ride the centre line, so it
   // runs below every box it passes and lands on the one it reaches — drawn at full strength,
   // because a bypass is a step whether or not it is convenient to draw.
-  const skip = svg.split('<g class="cx"').slice(1).find((g) => g.includes('data-sym="skipsAStage"'))!;
-  assert.match(skip, /skips a stage/, "the tooltip says what it is");
-  assert.match(skip, /class="gn pr/, "…and it is still drawn as a promotion");
+  const skipWire = svg.split('<g class="cx"').slice(1).find((g) => g.includes('data-sym="skipsAStage"'))!;
+  assert.match(skipWire, /stroke="var\(--fg\)"/, "the bypass wire draws at full strength");
+  const skipLbl = /<div class="([^"]*)"[^>]*data-sym="skipsAStage"[^>]*title="([^"]*)"/.exec(html)!;
+  assert.match(skipLbl[2], /skips a stage/, "the tooltip says what it is");
+  assert.match(skipLbl[1], /gl pr/, "…and it is still labelled as a promotion");
 
   // ON THE GRID. Half units are allowed for one thing only — the text baseline, which is
   // where a 10.5px face centres in a 24px row — so the tolerance is 4, not 8.
@@ -728,6 +745,48 @@ test("DIAGRAM — where the shape has NO spine, the page says so instead of draw
   assert.match(html, /NOTHING IS PROMOTED/);
   assert.match(html, />aside</, "the unplaced crossing is drawn in a band that names itself");
   assert.match(html, />self DANGLING</, "a chokepoint no longer in source says so on its own label");
+});
+
+test("DIAGRAM — ONE LATTICE: the CSS tracks and the SVG overlay are the same prefix-sums", () => {
+  // P2'S WHOLE CLAIM. The boxes live on a CSS grid and the wires on an SVG overlay; if the
+  // two ever took their geometry from different places they would drift apart exactly the
+  // way the two hand-synced coordinate systems this replaced did. So: the overlay's viewBox
+  // must BE the track lists' sums, and every track a multiple of the base unit.
+  const html = renderIndex(modelWith({
+    map: { ...modelWith().map, crossings: capList(HOIST, CAPS.crossings) },
+  }));
+  const m = /grid-template-columns:([^;]+);grid-template-rows:([^;]+);width:(\d+)px/.exec(html)!;
+  const cols = m[1].trim().split(" ").map((t) => Number(t.replace("px", "")));
+  const rows = m[2].trim().split(" ").map((t) => Number(t.replace("px", "")));
+  const vb = /viewBox="0 0 (\d+) (\d+)" width="\1" height="\2"/.exec(html)!;
+  assert.equal(cols.reduce((a, b) => a + b, 0), Number(vb[1]), "the overlay's width IS the column tracks' sum");
+  assert.equal(rows.reduce((a, b) => a + b, 0), Number(vb[2]), "the overlay's height IS the row tracks' sum");
+  assert.equal(Number(m[3]), Number(vb[1]), "the grid pins its own width to the same sum");
+  for (const t of [...cols, ...rows]) assert.equal(t % 4, 0, `every track is on the base grid: ${t}`);
+});
+
+test("STRIP — the summary is readings on stops: real plurals, and HEALTH IS SILENT AT ZERO", () => {
+  // The sentence this replaced concatenated six readings with middle dots, hedged every
+  // plural with `(s)`, and printed "no dangling, drift or over-claim" on every clean run —
+  // wallpaper that would be invisible the one time it mattered.
+  const html = renderIndex(modelWith({
+    map: { ...modelWith().map, crossings: capList(HOIST, CAPS.crossings) },
+  }));
+  const strip = html.slice(html.indexOf('<div class="strip"'), html.indexOf('<p class="own"'));
+  assert.match(strip, /<span class="sv">14<\/span><span class="sl dim">crossings drawn<\/span>/);
+  assert.match(strip, /<span class="sv">4<\/span><span class="sl dim">promotions<\/span>/);
+  assert.doesNotMatch(strip, /\(s\)/, "a count prints its real plural, never a hedge");
+  assert.doesNotMatch(strip, /no dangling/, "health at zero prints NOTHING, not a reassurance");
+  // With an atlas whose readings are non-zero, exactly the non-zero ones appear — marked.
+  const withAtlas = renderIndex(modelWith({ map: organFixture() }));
+  const s2 = withAtlas.slice(withAtlas.indexOf('<div class="strip"'), withAtlas.indexOf('<div class="roster"'));
+  assert.match(s2, /<span class="sv alarm">!! 1<\/span><span class="sl dim">dangling<\/span>/);
+  assert.doesNotMatch(s2, /over-claimed|inference hazard/, "a zero reading earns no cell");
+  // The tier counts live in the LEGEND, beside the line treatments they explain — one home.
+  assert.match(html, /enshrined — 1 crossing, drawn solid and at full strength/);
+  assert.match(html, /totality-checked — 13 crossings/);
+  const map = html.slice(html.indexOf('id="map"'), html.indexOf('id="journal"'));
+  assert.doesNotMatch(map, /className="sum"|class="sum"/, "the Map carries no summary sentence at all");
 });
 
 test("DIAGRAM — with no crossings the Map SAYS SO; it never draws an empty frame", () => {
@@ -909,19 +968,22 @@ test("ROSTER — selection works BOTH ways, and no control points at nothing", (
     assert.ok(syms.filter((s) => s === g).length >= 1, `${g} must be selectable`);
   }
 
-  // GUARD → ITS ORGAN. The row carries the owning component's DIRECTORY, which is the id the
-  // roster keys its own rows by — a label would be ambiguous the day two components share one.
-  assert.match(html, /<g class="cx" data-sym="verifySession" data-owner="shared\/auth"/);
+  // GUARD → ITS ORGAN. The label carries the owning component's DIRECTORY, which is the id
+  // the roster keys its own rows by — a label would be ambiguous the day two components
+  // share one. The wire carries `data-sym` alone; ownership lives on the control.
+  assert.match(html, /<div class="[^"]*gl[^"]*"[^>]*data-sym="verifySession" data-owner="shared\/auth"/);
   assert.match(html, /<p class="own" data-own="verifySession">.*<b>auth<\/b> <span class="dim">owns this crossing/);
   // …and a guard nobody owns says that instead, rather than being attributed to a row.
   assert.match(html, /<p class="own" data-own="ghostGuard">.*no organ owns this crossing/);
   assert.doesNotMatch(html, /data-sym="ghostGuard" data-owner=/);
 
   // THE HIGHLIGHT IS NOT COLOUR. The rest fades (a tone, which greyscale keeps) and the
-  // selected guard gains a drawn RING — either alone survives a black-and-white printer.
-  assert.match(html, /\.figure\.sel \.cx, \.figure\.sel \.bandh \{ opacity: \.22; \}/);
-  assert.match(html, /class="ring"/);
-  assert.match(html, /\.cx\.on \.ring \{ display: block; \}/);
+  // selected guard's name gains a drawn RING — either alone survives a black-and-white
+  // printer. And the controls LOOK like controls, which is what replaced the caption.
+  assert.match(html, /\.figure\.sel \.cx, \.figure\.sel \.gl, \.figure\.sel \.bh \{ opacity: \.22; \}/);
+  assert.match(html, /\.gl\.on \.lbl \{ outline: 1\.5px solid var\(--fg\)/);
+  assert.match(html, /\.gl:hover \.lbl \{ text-decoration: underline/,
+    "a control that does not look interactive needs a caption; this page deleted the caption");
 
   // THE SCRIPT SELECTS AND DOES NOTHING ELSE. It must not build the page, read a clock, or
   // reach anywhere: those are the properties "no script" used to buy, and they are the ones
