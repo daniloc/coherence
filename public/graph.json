@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-03 05:51Z",
+  "generatedAt": "2026-08-03 14:12Z",
   "root": "coherence",
   "absRoot": "/Users/daniloc/Documents/Development/coherence",
   "nodes": [
@@ -1342,6 +1342,95 @@
       "line": 95
     },
     {
+      "id": "f:src/due.ts",
+      "parent": "c:src",
+      "label": "due.ts",
+      "kind": "file",
+      "sub": "src/due.ts",
+      "path": "src/due.ts",
+      "prose": "due.ts — WHICH INSTRUMENTS THE TREE HAS OUTRUN, counted in commits.\n\n── THE FINDING ───────────────────────────────────────────────────────────────────────\n\n`.coherence/status.json` stamps every section with the commit that produced it, and\nnothing ever reads those stamps back to ask whether they are still current. Measured\nacross two projects the day this was written:\n\n    coherence   verify 1 · atlas 2 · mass 2 · economy 45 · drift 45\n    hoist       verify 1 · atlas 1 · mass 11 · economy 28   (full tier: 9)\n\nFive sections on two repos, four of them tens of commits behind a tree that moved every\nday. Nobody was ignoring the tool; nobody was being told.\n\n── COMMITS, NOT CLOCK, AND THAT IS THE WHOLE MEASUREMENT ────────────────────────────\n\nA repo nobody touched is neglecting nothing. `economy` last run three weeks ago is\nperfect health on a frozen tree and an emergency on this one, and wall-clock cannot\ntell those apart — it reports the same \"3 weeks\" for both. NEGLECT IS THE TREE MOVING\nWHILE THE INSTRUMENT DID NOT, so the unit is commits landed since the recorded run, and\na quiet week is silent by construction rather than by a special case.\n\n── WHY THIS PRINTS AN IMPERATIVE INSTEAD OF AN ADVISORY ─────────────────────────────\n\nTranscript archaeology over 234MB found NO recorded instance of a printed advisory\ncausing action: `--raise` was invoked four times ever, and 89 of 89 never-red findings\nwere never asked about. What demonstrably moves an agent is the SessionStart\ninstruction block — its journal imperative produced hundreds of entries in days, and\nits `DOUBT THE INSTRUMENT` paragraph propagated to a consuming project verbatim. So the\nreading ships in the channel with the only demonstrated hit rate, as a section of an\nexisting block rather than as a new command: three commands were evicted this week for\nhaving no invocations, and a fourth nobody runs would be the same mistake with a longer\nhelp string.\n\nThat channel is also the widest blast radius in this repo — the block reaches every\nadopting project on repin, and it already carries three imperatives. A fourth that\nfired on every session would dilute all four. SILENCE WHEN NOTHING IS DUE IS THEREFORE\nNOT A POLISH ITEM; it is the condition on which this is allowed to exist at all, and it\nis why the thresholds below err toward saying nothing.\n\n── IT NEVER WRITES AND IT NEVER GATES ───────────────────────────────────────────────\n\nEvery function here reads: the run record, and `git rev-list --count`. Nothing is\nrecorded about having reported, no \"last nagged at\" stamp, no journal entry. `d-738d7116`\nalready settled that a surprising write is how a mechanism gets switched off wholesale\nrather than tuned, and a SessionStart hook that mutated the repo as a side effect of\nstarting a session is the purest available form of that mistake. A build that fails\nbecause you have not run something often enough gets deleted, so this returns text and\nno exit code — `runHook` returns 0 whatever this says.\n\n── DECLINING IS JOURNALED, AND THAT IS THE LOAD-BEARING HALF ────────────────────────\n\nThe emitted text names `coherence blocked` because without it a DEFERRED item and a\nNEGLECTED one are identical forever: both read as \"45 commits\" next session and the one\nafter. `blocked` is what lets the next reader tell \"nobody looked\" from \"we looked and\ndecided not to\" — the same absent-vs-unreadable distinction that runs through this whole\ncodebase (floor.ts's refusal, status.ts's skip-never-clobbers, `dismiss` vs `resolved`).\nThe reading itself is deliberately NOT suppressed by a `blocked` entry: suppression\nwould need a stored key, the key would need to survive rewording, and a stale\nsuppression is a silence nobody can see. The journal entry is for the human reading the\ntimeline, not for this printer."
+    },
+    {
+      "id": "s:src/due.ts#DUE_AFTER",
+      "parent": "f:src/due.ts",
+      "label": "DUE_AFTER",
+      "kind": "symbol",
+      "sub": "const",
+      "path": "src/due.ts",
+      "line": 80,
+      "prose": "HOW MANY COMMITS BEFORE A RECORDED RUN STOPS BEING CURRENT.\n\nThere is no measurement that fixes this number, so it is chosen against the failure\nmode rather than against the data. Both dogfood repos commit 8–39 times on an active\nday, so ten is roughly half a working day of motion — long enough that the tree has\ngenuinely changed underneath the verdict, short enough to still be this session's\nproblem. The observed split sat at 1·1·2·2 (current) against 9·11·28·45·45 (stale),\nso ten lands inside the gap rather than through a cluster.\n\nErring HIGH is the safe direction: a threshold too low prints on every session, and a\nsection of this block that always prints costs the other three their attention."
+    },
+    {
+      "id": "s:src/due.ts#DUE_CAP",
+      "parent": "f:src/due.ts",
+      "label": "DUE_CAP",
+      "kind": "symbol",
+      "sub": "const",
+      "path": "src/due.ts",
+      "line": 88,
+      "prose": "THE CAP, and the reason is raise.ts's verbatim: a floor is a precision knob and a repo\n can sit above it any number of times, so the bound that does not depend on tuning is a\n hard count. Three, because the block this joins already carries three imperatives and a\n fourth section longer than them would invert the priority of the whole block. What is\n over the cap is NEVER silent — `formatDue` names the count and the sections, because a\n truncated list that looks complete is the defect this harness exists to hunt."
+    },
+    {
+      "id": "s:src/due.ts#DueItem",
+      "parent": "f:src/due.ts",
+      "label": "DueItem",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/due.ts",
+      "line": 94,
+      "prose": "One instrument the tree has outrun. `commits` is what ordered it; `why` is the clause\n that makes it actionable, and it differs per reading (a section that has not run at all\n says something different from one that runs constantly in a tier that skips the\n oracles)."
+    },
+    {
+      "id": "s:src/due.ts#DueReading",
+      "parent": "f:src/due.ts",
+      "label": "DueReading",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/due.ts",
+      "line": 103,
+      "prose": "ONE READING OF THE RUN RECORD against the tree that has moved since — everything\n `formatDue` needs, including the two things it must not have to assume: what was\n withheld by the cap, and how much of the tool this reading cannot see at all."
+    },
+    {
+      "id": "s:src/due.ts#commitsSince",
+      "parent": "f:src/due.ts",
+      "label": "commitsSince",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/due.ts",
+      "line": 131,
+      "prose": "Commits landed since `commit`, or null when the distance cannot be established.\n\nNULL IS A REAL ANSWER HERE. `git rev-list A..HEAD` exits non-zero when A is not an\nobject in this repository — after a rebase, in a shallow clone, or when a status record\ntravelled between checkouts — and coercing that to 0 would report the most neglected\npossible section as perfectly current. Absent must not read as green; that is the defect\nthis file's own hook block spends a paragraph on."
+    },
+    {
+      "id": "s:src/due.ts#commitsSinceTime",
+      "parent": "f:src/due.ts",
+      "label": "commitsSinceTime",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/due.ts",
+      "line": 149,
+      "prose": "Commits landed since an instant. Used ONLY for the tier reading, because `lastFullAt`\nand `lastFastAt` are timestamps — the record stamps one commit per section, not one per\ntier, so there is no hash to diff from.\n\nThis is an APPROXIMATION and is named as one wherever it is reported: `--since` filters\non COMMITTER date, which a rebase rewrites, so a rebased branch can under-count. It is\nstill the honest unit — commits, not elapsed days — and the alternative (widening the\nrecord to stamp a commit per tier) is a schema change on every adopting project to\nsharpen a number that is already directionally right."
+    },
+    {
+      "id": "s:src/due.ts#readDue",
+      "parent": "f:src/due.ts",
+      "label": "readDue",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/due.ts",
+      "line": 182,
+      "prose": "READ THE RECORD AND ASK WHAT THE TREE HAS OUTRUN. Pure of writes; safe to call from a\nhook, which is the only caller that matters.\n\nA SECTION THAT HAS NEVER RUN IS SILENT. An absent section is ambiguous three ways —\nnever ran, does not record, or is not applicable to this project — and reporting the\nfirst would fire forever on every consuming project with no reason to run `drift`. The\ndefinition being implemented presupposes an instrument that moved once: neglect is the\ntree moving while the instrument did not. Never-having-run is UNADOPTION, a different\nfinding, and one this reading has no evidence about."
+    },
+    {
+      "id": "s:src/due.ts#formatDue",
+      "parent": "f:src/due.ts",
+      "label": "formatDue",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/due.ts",
+      "line": 246,
+      "prose": "THE EMITTED SECTION, or nothing at all.\n\nReturns `[]` when nothing is due — the caller appends nothing, and the block it joins is\nbyte-identical to what it was before this shipped. That is the contract the whole\nfeature rests on."
+    },
+    {
       "id": "f:src/economy.ts",
       "parent": "c:src",
       "label": "economy.ts",
@@ -1707,7 +1796,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 42,
+      "line": 43,
       "prose": "The text every agent is handed at startup. Short on purpose: it is paid for by\n every agent on every job, and an instruction nobody finishes reading is a comment."
     },
     {
@@ -1717,7 +1806,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 95,
+      "line": 96,
       "prose": "A Stop feedback turn stops again. Hosts mark that second pass so a non-blocking nudge\ncan be emitted exactly once instead of accidentally becoming an eight-turn gate."
     },
     {
@@ -1727,7 +1816,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 104,
+      "line": 105,
       "prose": "`coherence hook <event>` — the hook body itself, so nothing has to be written to\n disk or kept in sync with a script file. Reads the event payload on stdin (unused\n today, but hooks are fed JSON and ignoring it silently would be rude to the next\n person who needs a field from it) and prints the documented output shape."
     },
     {
@@ -1737,7 +1826,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 160,
+      "line": 177,
       "prose": "What an agent is told as it finishes. Split out of `runHook` so it is reachable\n without a stdin pipe — the hook body drains stdin, and a report you can only observe\n by feeding a process is a report nobody tests."
     },
     {
@@ -1747,7 +1836,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/hooks.ts",
-      "line": 219
+      "line": 236
     },
     {
       "id": "s:src/hooks.ts#hookStatus",
@@ -1756,7 +1845,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 225,
+      "line": 242,
       "prose": "Structural control state and historical runtime evidence are adjacent, never fused."
     },
     {
@@ -1766,7 +1855,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 262,
+      "line": 279,
       "prose": "`coherence hooks status` — report the switch and the observation beside it."
     },
     {
@@ -1776,7 +1865,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 269,
+      "line": 286,
       "prose": "`coherence hooks --check` — the binary current-control gate. Observation never redeems absence."
     },
     {
@@ -1786,7 +1875,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 276
+      "line": 293
     },
     {
       "id": "s:src/hooks.ts#uninstallHooks",
@@ -1795,7 +1884,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 289
+      "line": 306
     },
     {
       "id": "s:src/hooks.ts#printHooks",
@@ -1804,7 +1893,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 304,
+      "line": 321,
       "prose": "`coherence hooks` — print the block to paste into .claude/settings.json, plus the\n instruction text so a reader can see what agents will actually be told."
     },
     {
@@ -5406,6 +5495,15 @@
       "prose": "dictionary.test.ts — the `conforms to <Word>` claim macro. A word is a CONTRACT grown\nfrom the project's own code: an intent + a commitment list, one `<Word>.md` per word.\n`conforms to <Word>` expands the commitments against the DECLARING component (same node\ndir, same anchoring) and aggregates. The load-bearing properties, each pinned below:\n  - pass/fail aggregation (all green → pass; any red → fail naming the first failure)\n  - a missing/unparseable word file is RED (the verb was recognized — not a dialect gap)\n  - a commitment matching no claim form is RED (inside a word, a typo is not a silent skip)\n  - `conforms to` cycles are detected and go RED\n  - a `boundary` commitment ANCHORS its invariant on the declaring component (coverage)\n  - PROPAGATION: editing a word flips every conforming component on the next verify\n  - a project with no dictionary is unaffected (overview render unchanged)"
     },
     {
+      "id": "f:test/due.test.ts",
+      "parent": "c:test",
+      "label": "due.test.ts",
+      "kind": "file",
+      "sub": "test/due.test.ts",
+      "path": "test/due.test.ts",
+      "prose": "due.test.ts — the work-order reading: which instruments the tree has outrun.\n\nThe tests that matter here are the NEGATIVE ones. This section joins the block that\nreaches every adopting project on repin, so the property worth defending is that it says\nNOTHING almost all of the time — a section that fires on every session costs the three\nimperatives beside it their attention, and none of the positive cases are worth that.\nHence: silence on a current repo, silence on a section that never ran, silence on a\ndistance that cannot be counted, and silence on a quiet tree no matter how old the run."
+    },
+    {
       "id": "f:test/economy.test.ts",
       "parent": "c:test",
       "label": "economy.test.ts",
@@ -6356,6 +6454,30 @@
       "kind": "imports"
     },
     {
+      "id": "f:src/due.ts->x:node:child_process:imports",
+      "source": "f:src/due.ts",
+      "target": "x:node:child_process",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/due.ts->f:src/status.ts:imports",
+      "source": "f:src/due.ts",
+      "target": "f:src/status.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/due.ts->f:src/commands.ts:imports",
+      "source": "f:src/due.ts",
+      "target": "f:src/commands.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/due.ts->f:src/types.ts:imports",
+      "source": "f:src/due.ts",
+      "target": "f:src/types.ts",
+      "kind": "imports"
+    },
+    {
       "id": "f:src/economy.ts->x:node:path:imports",
       "source": "f:src/economy.ts",
       "target": "x:node:path",
@@ -6491,6 +6613,12 @@
       "id": "f:src/hooks.ts->f:src/control.ts:imports",
       "source": "f:src/hooks.ts",
       "target": "f:src/control.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/hooks.ts->f:src/due.ts:imports",
+      "source": "f:src/hooks.ts",
+      "target": "f:src/due.ts",
       "kind": "imports"
     },
     {
@@ -8146,6 +8274,66 @@
     {
       "id": "f:test/dictionary.test.ts->f:test/_helpers.ts:imports",
       "source": "f:test/dictionary.test.ts",
+      "target": "f:test/_helpers.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/due.test.ts->x:node:test:imports",
+      "source": "f:test/due.test.ts",
+      "target": "x:node:test",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/due.test.ts->x:node:assert/strict:imports",
+      "source": "f:test/due.test.ts",
+      "target": "x:node:assert/strict",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/due.test.ts->x:node:fs/promises:imports",
+      "source": "f:test/due.test.ts",
+      "target": "x:node:fs/promises",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/due.test.ts->x:node:fs:imports",
+      "source": "f:test/due.test.ts",
+      "target": "x:node:fs",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/due.test.ts->x:node:child_process:imports",
+      "source": "f:test/due.test.ts",
+      "target": "x:node:child_process",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/due.test.ts->x:node:path:imports",
+      "source": "f:test/due.test.ts",
+      "target": "x:node:path",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/due.test.ts->f:src/due.ts:imports",
+      "source": "f:test/due.test.ts",
+      "target": "f:src/due.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/due.test.ts->f:src/commands.ts:imports",
+      "source": "f:test/due.test.ts",
+      "target": "f:src/commands.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/due.test.ts->f:src/hooks.ts:imports",
+      "source": "f:test/due.test.ts",
+      "target": "f:src/hooks.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/due.test.ts->f:test/_helpers.ts:imports",
+      "source": "f:test/due.test.ts",
       "target": "f:test/_helpers.ts",
       "kind": "imports"
     },

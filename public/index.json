@@ -1,16 +1,16 @@
 {
   "project": "coherence",
   "intent": "The repository-level reading surface: configuration, package contract, generated maps, and the authored explanation of why the harness exists.",
-  "generatedAt": "2026-08-03 05:50Z",
+  "generatedAt": "2026-08-03 14:12Z",
   "head": {
-    "commit": "f49fd3c",
+    "commit": "5271e42",
     "dirty": true
   },
   "frame": {
     "kind": "cursor",
-    "ref": "680fc55",
-    "commit": "680fc55",
-    "at": "2026-08-03T00:31:22-04:00",
+    "ref": "f49fd3c",
+    "commit": "f49fd3c",
+    "at": "2026-08-03T01:47:32-04:00",
     "commits": 2,
     "why": "the HEAD this Index recorded the last time it ran — literally since you last looked."
   },
@@ -18,40 +18,40 @@
     {
       "name": "graph",
       "ok": true,
-      "detail": "4 component(s), 30 claim(s), 98 file(s) derived from the spec tree"
+      "detail": "4 component(s), 30 claim(s), 100 file(s) derived from the spec tree"
     },
     {
       "name": ".coherence/status.json — verify",
       "ok": true,
       "detail": "30 claim verdict(s), 0 failure(s), tier full",
-      "at": "2026-08-03T05:49:33.746Z",
+      "at": "2026-08-03T05:50:56.468Z",
       "commit": "f49fd3c",
-      "stale": false
+      "stale": true
     },
     {
       "name": ".coherence/status.json — atlas",
       "ok": true,
       "detail": "18 crossing(s) graded",
-      "at": "2026-08-03T05:50:21.800Z",
+      "at": "2026-08-03T05:50:58.301Z",
       "commit": "f49fd3c",
-      "stale": false
+      "stale": true
     },
     {
       "name": "git history",
       "ok": true,
-      "detail": "98 concern-carrying commit(s) in the last 200, touching 198 path(s)",
-      "commit": "f49fd3c"
+      "detail": "100 concern-carrying commit(s) in the last 200, touching 202 path(s)",
+      "commit": "5271e42"
     },
     {
       "name": ".coherence/decisions",
       "ok": true,
-      "detail": "294 record(s) across 57 session(s)"
+      "detail": "300 record(s) across 59 session(s)"
     },
     {
-      "name": "structural diff vs 680fc55",
+      "name": "structural diff vs f49fd3c",
       "ok": true,
-      "detail": "2 structural change(s), 0 loss(es)",
-      "commit": "680fc55"
+      "detail": "0 structural change(s), 0 loss(es)",
+      "commit": "f49fd3c"
     }
   ],
   "map": {
@@ -81,8 +81,8 @@
           "signal",
           "vacuityRefusal"
         ],
-        "files": 52,
-        "lines": 16463,
+        "files": 53,
+        "lines": 16761,
         "accountedFiles": 3,
         "claims": 21,
         "gates": 15,
@@ -97,7 +97,7 @@
         "invariants": 15,
         "anchored": 15,
         "witnessed": 13,
-        "symbols": 466,
+        "symbols": 474,
         "undocumented": 181,
         "naked": 0
       },
@@ -159,8 +159,8 @@
         "intent": "Exercises the harness through focused unit contracts and end-to-end fixtures built from the same public data shapes that consuming repositories use.",
         "zone": null,
         "guards": [],
-        "files": 43,
-        "lines": 11737,
+        "files": 44,
+        "lines": 11961,
         "accountedFiles": 4,
         "claims": 4,
         "gates": 0,
@@ -190,7 +190,7 @@
           "verb": "guard",
           "oracle": "testMatch — a runner exiting 0 with no matching output FAILS (the renamed-test trap)",
           "grade": "C",
-          "verdict": "pass",
+          "verdict": "stale",
           "crossing": null,
           "reliants": 0,
           "witnessed": true
@@ -202,7 +202,7 @@
           "verb": "guard",
           "oracle": "RATCHET — a declared invariant with no anchoring boundary fails coverage",
           "grade": "C",
-          "verdict": "pass",
+          "verdict": "stale",
           "crossing": null,
           "reliants": 0,
           "witnessed": true
@@ -214,7 +214,7 @@
           "verb": "guard",
           "oracle": "runner contract — a name that exists nowhere exits nonzero (the vanished oracle cannot pass)",
           "grade": "C",
-          "verdict": "pass",
+          "verdict": "stale",
           "crossing": null,
           "reliants": 0,
           "witnessed": true
@@ -226,7 +226,7 @@
           "verb": "guard",
           "oracle": "merge — a skip never clobbers a real verdict; the old verdict rides through with its own stamp",
           "grade": "C",
-          "verdict": "pass",
+          "verdict": "stale",
           "crossing": null,
           "reliants": 0,
           "witnessed": true
@@ -238,7 +238,7 @@
           "verb": "guard",
           "oracle": "match — ZERO matching tests is its OWN state: the vanished oracle, named as such",
           "grade": "C",
-          "verdict": "pass",
+          "verdict": "stale",
           "crossing": null,
           "reliants": 0,
           "witnessed": true
@@ -250,7 +250,7 @@
           "verb": "guard",
           "oracle": "META-ORACLE — a `via test` boundary whose oracle loops a LITERAL fails",
           "grade": "C",
-          "verdict": "pass",
+          "verdict": "stale",
           "crossing": null,
           "reliants": 0,
           "witnessed": true
@@ -262,7 +262,7 @@
           "verb": "guard",
           "oracle": "hooks — generated wiring uses the low-cost entrypoint and observes writes",
           "grade": "C",
-          "verdict": "pass",
+          "verdict": "stale",
           "crossing": null,
           "reliants": 0,
           "witnessed": false
@@ -274,7 +274,7 @@
           "verb": "guard",
           "oracle": "FLOOR — an empty derivation against a remembered surface REFUSES, never reports coherent",
           "grade": "C",
-          "verdict": "pass",
+          "verdict": "stale",
           "crossing": null,
           "reliants": 0,
           "witnessed": true
@@ -286,7 +286,7 @@
           "verb": "guard",
           "oracle": "audit — retracted decisions disappear and only broken strong leases fail a check",
           "grade": "C",
-          "verdict": "pass",
+          "verdict": "stale",
           "crossing": null,
           "reliants": 0,
           "witnessed": true
@@ -298,7 +298,7 @@
           "verb": "guard",
           "oracle": "control — presence is the complete canonical bundle, never a partial or lookalike",
           "grade": "C",
-          "verdict": "pass",
+          "verdict": "stale",
           "crossing": null,
           "reliants": 0,
           "witnessed": true
@@ -310,7 +310,7 @@
           "verb": "guard",
           "oracle": "mass — a renamed component keeps its pin; growth and novelty are never absorbed",
           "grade": "C",
-          "verdict": "pass",
+          "verdict": "stale",
           "crossing": null,
           "reliants": 0,
           "witnessed": true
@@ -322,7 +322,7 @@
           "verb": "guard",
           "oracle": "calibration reports coverage, outside reads, and defect rates by prediction misses",
           "grade": "C",
-          "verdict": "pass",
+          "verdict": "stale",
           "crossing": null,
           "reliants": 0,
           "witnessed": true
@@ -334,7 +334,7 @@
           "verb": "guard",
           "oracle": "sinks — a moved file keeps its baselined identity and a genuinely new site still fails",
           "grade": "C",
-          "verdict": "pass",
+          "verdict": "stale",
           "crossing": null,
           "reliants": 0,
           "witnessed": true
@@ -346,7 +346,7 @@
           "verb": "guard",
           "oracle": "only a zero-anchor alarm without attestation needs a decision",
           "grade": "C",
-          "verdict": "pass",
+          "verdict": "stale",
           "crossing": null,
           "reliants": 0,
           "witnessed": true
@@ -358,7 +358,7 @@
           "verb": "guard",
           "oracle": "renderContext — byte-stable for the same inputs and names every approximation",
           "grade": "C",
-          "verdict": "pass",
+          "verdict": "stale",
           "crossing": null,
           "reliants": 0,
           "witnessed": false
@@ -563,8 +563,8 @@
       "total": 18
     },
     "atlas": {
-      "at": "2026-08-03T05:50:21.800Z",
-      "stale": false,
+      "at": "2026-08-03T05:50:58.301Z",
+      "stale": true,
       "tiers": {
         "enshrined": 0,
         "checked": 15,
@@ -603,8 +603,8 @@
         "key": "unclaimed",
         "label": "unclaimed",
         "what": "files no claim names — code inside the map that nothing in the spec points at",
-        "dark": 88,
-        "total": 98,
+        "dark": 90,
+        "total": 100,
         "unit": "files in the graph",
         "worst": {
           "shown": [
@@ -617,8 +617,8 @@
             "src/contracts.ts",
             "src/control.ts"
           ],
-          "withheld": 80,
-          "total": 88
+          "withheld": 82,
+          "total": 90
         }
       },
       {
@@ -626,7 +626,7 @@
         "label": "undocumented",
         "what": "symbols with no docblock — meaning a reader has to derive from the body",
         "dark": 186,
-        "total": 478,
+        "total": 486,
         "unit": "symbols",
         "worst": {
           "shown": [
@@ -647,8 +647,8 @@
         "key": "unvisited",
         "label": "unvisited",
         "what": "paths recent work keeps touching that the graph does not own — no closure can be computed for them, so every read-cost figure here excludes them",
-        "dark": 100,
-        "total": 198,
+        "dark": 102,
+        "total": 202,
         "unit": "paths touched in the concern band",
         "worst": {
           "shown": [
@@ -661,8 +661,8 @@
             ".coherence/decisions/97e93ceb-c6a8-47ee-afc1-d4b0e9579cfe.jsonl",
             ".coherence/decisions/a0822697df6f0b473.jsonl"
           ],
-          "withheld": 92,
-          "total": 100
+          "withheld": 94,
+          "total": 102
         }
       }
     ]
@@ -1033,6 +1033,87 @@
           "news": true
         },
         {
+          "id": "d-e3b208f1",
+          "kind": "decision",
+          "at": "2026-08-03T05:44:48.457Z",
+          "agent": "general-purpose",
+          "session": "acf1a604e64155621",
+          "commit": "1162dae",
+          "chose": "531 lines (2 files, 8 symbols) buys the run record a READER — the first thing that reads status.json's provenance stamps back",
+          "because": "every section of .coherence/status.json has stamped its own commit since v0.10, and nothing ever asked whether those stamps were still current. Measured today: coherence economy 45 commits behind and drift 45; hoist economy 28 and mass 11. src/due.ts (307 lines) is the reading, test/due.test.ts (224) is 14 tests of which 8 are NEGATIVE — the property being bought is SILENCE on a current tree, because this text joins the SessionStart block that reaches every adopting project on repin. Growth is in Harness core (+307) and Executable contracts (+224), which is the ratio a mechanism whose main risk is firing too often should have",
+          "over": [
+            "leaving the stamps unread and the neglect invisible"
+          ],
+          "couldBe": [],
+          "discriminatedBy": "",
+          "news": false
+        },
+        {
+          "id": "d-54c1e4be",
+          "kind": "decision",
+          "at": "2026-08-03T05:44:37.063Z",
+          "agent": "general-purpose",
+          "session": "acf1a604e64155621",
+          "commit": "1162dae",
+          "chose": "baseline due.ts's two html-value sink rows rather than reword the emitted text",
+          "because": "lint-sinks' html-value heuristic fires on interpolation near angle brackets; due.ts:264 is TERMINAL PROSE handed to an agent's context, never rendered as HTML, and the identical construction in hooks.ts's agentInstructions is already baselined for the same reason (3 hooks.ts rows in public/sinks-baseline.json). Rewording to appease the heuristic would degrade the instruction — the placeholder convention is what the other three imperatives in the same block use — for zero safety",
+          "over": [
+            "removing the `\"<what you did not do>\"` angle-bracket placeholders so the heuristic stops matching"
+          ],
+          "couldBe": [],
+          "discriminatedBy": "",
+          "news": false
+        },
+        {
+          "id": "d-5cf52b94",
+          "kind": "decision",
+          "at": "2026-08-03T05:38:13.800Z",
+          "agent": "general-purpose",
+          "session": "acf1a604e64155621",
+          "commit": "1162dae",
+          "chose": "append the due section at the hook's emit site, keeping agentInstructions() a pure clock-free function",
+          "because": "agentInstructions is printed verbatim by `coherence hooks` (hooks.ts:310) and asserted byte-wise by test/conjecture.test.ts. Making it git-dependent would make `coherence hooks` output vary by repo state and by day — the exact hazard commands.ts documents at 'NO TIMESTAMP IN THE RENDERED BLOCK, on purpose … every normalization a freshness gate needs is a hole in that gate'. Composing at the emit site keeps the pure function pure and the impure reading isolated and separately testable",
+          "over": [
+            "adding the section inside agentInstructions()"
+          ],
+          "couldBe": [],
+          "discriminatedBy": "",
+          "news": false
+        },
+        {
+          "id": "d-05d2dc8a",
+          "kind": "decision",
+          "at": "2026-08-03T05:38:13.548Z",
+          "agent": "general-purpose",
+          "session": "acf1a604e64155621",
+          "commit": "1162dae",
+          "chose": "a section that has NEVER run is silent — only a section with a recorded run can be reported stale",
+          "because": "an absent section is ambiguous three ways: never ran, does not record, or not applicable to this project. Reporting the first would fire permanently and non-actionably on every consuming project that has no reason to run drift or economy — dilution of the highest-traffic block, the one failure mode the brief names as fatal. It also collapses into the unadopted-gates reading I already declined for being unrepresentable. Neglect as defined is 'the tree moved while the instrument did not' — that presupposes the instrument moved once. Never-ran is unadoption, a different finding with no signal here",
+          "over": [
+            "reporting 'economy has never run' for absent status.json sections"
+          ],
+          "couldBe": [],
+          "discriminatedBy": "",
+          "news": false
+        },
+        {
+          "id": "d-0d697d90",
+          "kind": "decision",
+          "at": "2026-08-03T05:36:46.496Z",
+          "agent": "general-purpose",
+          "session": "acf1a604e64155621",
+          "commit": "1162dae",
+          "chose": "build ONLY the neglect reading (commits-since-last-run) as a SessionStart section — not the unwired-input reading, not the gate-adoption reading",
+          "because": "re-measured all three after today's fixes, per BEFORE YOU ADD A CONCEPT COUNT ITS INSTANCES. NEGLECT has plural subjects on both repos: coherence economy 45 commits / drift 45 (mass 2, atlas 2, verify 1); hoist economy 28 / mass 11 / full-tier 9 (verify 1, atlas 1). UNWIRED INPUTS now has ZERO subjects: hoist .coherence/read-traces/ holds a2875153efa060fa7.jsonl (2733 bytes) and coherence holds one trace + one calibration sample, so the condition the reading would detect no longer exists anywhere — it was a one-shot config bug, fixed, and a detector for it would fire never. UNADOPTED GATES is not representable: coherence is 6-of-7 with contracts reasoned N/A, and there is no config key distinguishing 'not adopted' from 'reasoned not applicable', so on any consuming project it would fire permanently and non-actionably — the dilution the brief forbids. QUERY to re-run: for each status.json section, `git rev-list --count <section.commit>..HEAD`; for unwired inputs, `ls .coherence/read-traces`",
+          "over": [
+            "a three-reading 'coherence work is due' section covering neglect + unwired inputs + unadopted gates",
+            "a new `coherence due` command"
+          ],
+          "couldBe": [],
+          "discriminatedBy": "",
+          "news": false
+        },
+        {
           "id": "d-2a349553",
           "kind": "decision",
           "at": "2026-08-03T04:28:10.873Z",
@@ -1097,93 +1178,10 @@
           "couldBe": [],
           "discriminatedBy": "",
           "news": false
-        },
-        {
-          "id": "d-9270c88e",
-          "kind": "decision",
-          "at": "2026-08-03T04:20:05.710Z",
-          "agent": "general-purpose",
-          "session": "a6d04728c29bbfb0d",
-          "commit": "e137a25",
-          "chose": "chart coherence's atlas over EVIDENCE trust domains (project-source · derived-model · shell · record · verdict · reading-surface), not over network/authz zones",
-          "because": "the atlas's semantics are 'trust domains + chokepoints that RE-ESTABLISH the destination's invariant', and coherence's scarce resource is not privilege but WARRANT: what a gate is permitted to say. All 14 spec boundary chokepoints land as crossings with zero non-transitions — the whole codebase is the seam between a repo and a verdict — and the charting immediately paid: 3 tier-3 SECURITY crossings with no boundary claim at all (buildGraph, loadConfig, readJsonOrRefuse), the three ingress doors nothing in the spec governs.",
-          "over": [
-            "declaring the atlas not-applicable because coherence has no attacker and no network",
-            "charting the source tree's own module layers, which would restate the graph"
-          ],
-          "couldBe": [],
-          "discriminatedBy": "",
-          "news": false
-        },
-        {
-          "id": "d-42ee4863",
-          "kind": "decision",
-          "at": "2026-08-03T04:19:54.033Z",
-          "agent": "general-purpose",
-          "session": "a6d04728c29bbfb0d",
-          "commit": "e137a25",
-          "chose": "fix sources=[src,test] + testDir='test/' — adopting the atlas exposed that the sidecar scan was reading the wrong population",
-          "because": "MEASURED: scanSources splits by `rel.includes(testDir)`, so testDir='test' matched src/run-named-test.ts and src/test-batch.ts — two modules deliberately moved INSIDE the evidence perimeter — and pushed them out of the scanned `src`. atlas graded runNamedTest DANGLING for it. Worse, sources=['src'] meant the real test tree was never scanned at all, so conventions' totalityTests set was those two misclassified files: the ORACLE grade was structurally unreachable in this repo, and every guard could only ever come back CONVENTION or single. Now src=54 / test=42 (was 52 / 2).",
-          "over": [
-            "keeping sources=[src], testDir='test' and marking runNamedTest knownPending to make atlas --check green"
-          ],
-          "couldBe": [],
-          "discriminatedBy": "",
-          "news": false
-        },
-        {
-          "id": "d-fc10eeec",
-          "kind": "decision",
-          "at": "2026-08-03T04:11:23.544Z",
-          "agent": "general-purpose",
-          "session": "a6d04728c29bbfb0d",
-          "commit": "e137a25",
-          "chose": "adopt the five unadopted gates one at a time, and where a gate does not apply say so IN THE CONFIG rather than leaving it unconfigured",
-          "because": "measured: mass/conventions/lint-sinks all exit 2 with no baseline (fail-closed, honest), but atlas and contracts exit 0 when unconfigured — so an inapplicable gate and an unadopted one are INDISTINGUISHABLE for exactly the two gates that were never adopted. That asymmetry is the finding's mechanism, not an incidental.",
-          "over": [
-            "wiring all five into CI to get seven checkmarks",
-            "leaving atlas/contracts silently unconfigured, which is what made this invisible"
-          ],
-          "couldBe": [],
-          "discriminatedBy": "",
-          "news": false
-        },
-        {
-          "id": "d-4fa938b2",
-          "kind": "decision",
-          "at": "2026-08-03T03:40:14.363Z",
-          "agent": "general-purpose",
-          "session": "a7c019196de0e5880",
-          "commit": "d69d637",
-          "chose": "supply demoted to a one-line footnote under the figure, capped at 6 accessors per source with the withheld-tail idiom",
-          "because": "measured: hoist has 1 supplier with 2 accessors and coherence has none, so a leading band spent the figure's first band on the exception; the cap names what many-crossing projects degrade to, as the author asked",
-          "over": [
-            "keeping the supply legend item and tinted band",
-            "an uncapped footnote line that grows with the project"
-          ],
-          "couldBe": [],
-          "discriminatedBy": "",
-          "news": false
-        },
-        {
-          "id": "d-17965e2a",
-          "kind": "decision",
-          "at": "2026-08-03T03:40:04.047Z",
-          "agent": "general-purpose",
-          "session": "a7c019196de0e5880",
-          "commit": "d69d637",
-          "chose": "guards sharing a (stage, sink) pair stagger their taps two units apart with labels cascading down-right in tap order",
-          "because": "three crossings drawn as one coincident wire is the same looks-like-one-landing lie the arrowhead fix removes — the stagger costs 16px and keeps count disclosure",
-          "over": [
-            "one shared tap per (stage, sink) with a label stack above it"
-          ],
-          "couldBe": [],
-          "discriminatedBy": "",
-          "news": false
         }
       ],
-      "withheld": 191,
-      "total": 201
+      "withheld": 196,
+      "total": 206
     },
     "marks": [
       {
@@ -2724,35 +2722,35 @@
         "lane": "decision",
         "at": "2026-08-03T03:40:04.047Z",
         "news": false,
-        "shown": true
+        "shown": false
       },
       {
         "id": "d-4fa938b2",
         "lane": "decision",
         "at": "2026-08-03T03:40:14.363Z",
         "news": false,
-        "shown": true
+        "shown": false
       },
       {
         "id": "d-fc10eeec",
         "lane": "decision",
         "at": "2026-08-03T04:11:23.544Z",
         "news": false,
-        "shown": true
+        "shown": false
       },
       {
         "id": "d-42ee4863",
         "lane": "decision",
         "at": "2026-08-03T04:19:54.033Z",
         "news": false,
-        "shown": true
+        "shown": false
       },
       {
         "id": "d-9270c88e",
         "lane": "decision",
         "at": "2026-08-03T04:20:05.710Z",
         "news": false,
-        "shown": true
+        "shown": false
       },
       {
         "id": "d-8149793b",
@@ -2797,6 +2795,41 @@
         "shown": true
       },
       {
+        "id": "d-0d697d90",
+        "lane": "decision",
+        "at": "2026-08-03T05:36:46.496Z",
+        "news": false,
+        "shown": true
+      },
+      {
+        "id": "d-05d2dc8a",
+        "lane": "decision",
+        "at": "2026-08-03T05:38:13.548Z",
+        "news": false,
+        "shown": true
+      },
+      {
+        "id": "d-5cf52b94",
+        "lane": "decision",
+        "at": "2026-08-03T05:38:13.800Z",
+        "news": false,
+        "shown": true
+      },
+      {
+        "id": "d-54c1e4be",
+        "lane": "decision",
+        "at": "2026-08-03T05:44:37.063Z",
+        "news": false,
+        "shown": true
+      },
+      {
+        "id": "d-e3b208f1",
+        "lane": "decision",
+        "at": "2026-08-03T05:44:48.457Z",
+        "news": false,
+        "shown": true
+      },
+      {
         "id": "d-67ba8ed4",
         "lane": "decision",
         "at": "2026-08-03T05:50:39.153Z",
@@ -2813,9 +2846,9 @@
     "totals": {
       "blocked": 11,
       "open": 19,
-      "decisions": 201,
-      "records": 294,
-      "sessions": 57,
+      "decisions": 206,
+      "records": 300,
+      "sessions": 59,
       "unreadable": 0
     },
     "news": {
@@ -2837,14 +2870,9 @@
         "total": 0
       },
       "invAdded": {
-        "shown": [
-          {
-            "comp": "Harness core",
-            "inv": "lifecycle hook presence is one canonical runnable bit"
-          }
-        ],
+        "shown": [],
         "withheld": 0,
-        "total": 1
+        "total": 0
       },
       "invRemoved": {
         "shown": [],
@@ -2852,16 +2880,9 @@
         "total": 0
       },
       "boundaryAdded": {
-        "shown": [
-          {
-            "comp": "Harness core",
-            "inv": "lifecycle hook presence is one canonical runnable bit",
-            "chokepoint": "inspectLifecycleHook",
-            "oracle": "control — presence is the complete canonical bundle, never a partial or lookalike"
-          }
-        ],
+        "shown": [],
         "withheld": 0,
-        "total": 1
+        "total": 0
       },
       "boundaryRemoved": {
         "shown": [],
@@ -2873,20 +2894,14 @@
         "withheld": 0,
         "total": 0
       },
-      "claimDelta": [
-        {
-          "comp": "Coherence",
-          "added": 1,
-          "removed": 1
-        }
-      ],
-      "changes": 2,
+      "claimDelta": [],
+      "changes": 0,
       "losses": 0
     },
     "structuralWhy": null,
     "loc": {
-      "added": 1068,
-      "deleted": 120
+      "added": 523,
+      "deleted": 1
     },
     "mass": null,
     "drift": {
