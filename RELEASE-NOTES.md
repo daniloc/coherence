@@ -14,6 +14,45 @@ evidence inside that record.
 
 ---
 
+## v0.27.0 — the lifecycle control is installed, not instructed
+
+Until now the hook wiring was PROSE a human copied into `settings.json`. That is
+exactly how it fails, measured today in a consuming project: `PostToolUse` was
+bound to one repo-local script on `Edit|Write`, coherence's own hook was never
+added, and `recordHookReads` therefore never ran — so `calibrate` sat implemented
+with **zero input for the life of the feature**, and nothing anywhere said so. Not
+under-used. Never once wired.
+
+`coherence hooks install` publishes one canonical five-event bundle. Every
+repository receives the identical command — `"$CLAUDE_PROJECT_DIR/.claude/coherence-hook" EVENT`
+— and layout is carried separately by `.claude/coherence-root`, because Claude's
+project root, coherence's config root and the npm package root are not necessarily
+the same directory. `claudeProjectRoot` in the config addresses the nested case.
+
+**The control bit is true only when the whole path is singular, canonical and
+runnable.** A half-wired hook reads as FALSE, not as absent — and `hooks status`
+reports the runtime observation separately, so a project whose bundle is missing
+while sessions are demonstrably being opened says both things at once instead of
+picking the flattering one. Installation migrates recognized older coherence
+actions out of shared and local settings and preserves unrelated hooks.
+
+The claim guarding it carries its own refutation, and it is the instructive kind:
+`inspectLifecycleHook` was loosened so `present` ignored `wiringPresent` and
+trusted only valid JSON plus the launcher. Full verify named it as the sole red,
+and the duplicate-canonical-group fixture observed the laundered `true`. **A
+checker that accepts two firing paths is not a binary control — it is a substring
+detector with a nicer report.**
+
+Also charted `inspectLifecycleHook` as `project-source → verdict`: Claude's own
+settings file is agent-authored text that decides which processes the host spawns,
+and the control bit is a verdict about it.
+
+664 tests. `verify` 30/30 green, and all six adopted gates green — `mass` and
+`conventions` re-pinned for the new surface, with what the mass buys recorded
+rather than banked silently.
+
+---
+
 ## v0.26.0 — the harness runs the gates it ships, and the figure stops lying under a cap
 
 **COHERENCE RAN 2 OF THE 7 GATES IT SHIPS.** Third instance of one pattern in a

@@ -1,11 +1,23 @@
 [
   {
+    "name": "canonicalAction",
+    "sites": 2
+  },
+  {
+    "name": "canonicalGroup",
+    "sites": 3
+  },
+  {
     "name": "hasRunner",
     "sites": 3
   },
   {
     "name": "isDocumented",
     "sites": 4
+  },
+  {
+    "name": "isObject",
+    "sites": 11
   },
   {
     "name": "isOutsideBand",

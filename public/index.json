@@ -1,57 +1,57 @@
 {
   "project": "coherence",
   "intent": "The repository-level reading surface: configuration, package contract, generated maps, and the authored explanation of why the harness exists.",
-  "generatedAt": "2026-08-03 04:42Z",
+  "generatedAt": "2026-08-03 05:50Z",
   "head": {
-    "commit": "680fc55",
+    "commit": "f49fd3c",
     "dirty": true
   },
   "frame": {
     "kind": "cursor",
-    "ref": "e137a25",
-    "commit": "e137a25",
-    "at": "2026-08-03T00:05:54-04:00",
-    "commits": 1,
+    "ref": "680fc55",
+    "commit": "680fc55",
+    "at": "2026-08-03T00:31:22-04:00",
+    "commits": 2,
     "why": "the HEAD this Index recorded the last time it ran — literally since you last looked."
   },
   "sources": [
     {
       "name": "graph",
       "ok": true,
-      "detail": "4 component(s), 29 claim(s), 96 file(s) derived from the spec tree"
+      "detail": "4 component(s), 30 claim(s), 98 file(s) derived from the spec tree"
     },
     {
       "name": ".coherence/status.json — verify",
       "ok": true,
-      "detail": "29 claim verdict(s), 0 failure(s), tier full",
-      "at": "2026-08-03T04:31:01.420Z",
-      "commit": "e137a25",
-      "stale": true
+      "detail": "30 claim verdict(s), 0 failure(s), tier full",
+      "at": "2026-08-03T05:49:33.746Z",
+      "commit": "f49fd3c",
+      "stale": false
     },
     {
       "name": ".coherence/status.json — atlas",
       "ok": true,
-      "detail": "17 crossing(s) graded",
-      "at": "2026-08-03T04:31:03.162Z",
-      "commit": "e137a25",
-      "stale": true
+      "detail": "18 crossing(s) graded",
+      "at": "2026-08-03T05:50:21.800Z",
+      "commit": "f49fd3c",
+      "stale": false
     },
     {
       "name": "git history",
       "ok": true,
-      "detail": "96 concern-carrying commit(s) in the last 200, touching 194 path(s)",
-      "commit": "680fc55"
+      "detail": "98 concern-carrying commit(s) in the last 200, touching 198 path(s)",
+      "commit": "f49fd3c"
     },
     {
       "name": ".coherence/decisions",
       "ok": true,
-      "detail": "293 record(s) across 57 session(s)"
+      "detail": "294 record(s) across 57 session(s)"
     },
     {
-      "name": "structural diff vs e137a25",
+      "name": "structural diff vs 680fc55",
       "ok": true,
-      "detail": "0 structural change(s), 0 loss(es)",
-      "commit": "e137a25"
+      "detail": "2 structural change(s), 0 loss(es)",
+      "commit": "680fc55"
     }
   ],
   "map": {
@@ -68,6 +68,7 @@
           "calibrate",
           "contextFor",
           "execNamedTest",
+          "inspectLifecycleHook",
           "loadConfig",
           "readJsonOrRefuse",
           "reconcile",
@@ -80,24 +81,24 @@
           "signal",
           "vacuityRefusal"
         ],
-        "files": 51,
-        "lines": 15918,
+        "files": 52,
+        "lines": 16463,
         "accountedFiles": 3,
-        "claims": 20,
-        "gates": 14,
+        "claims": 21,
+        "gates": 15,
         "grades": {
           "A": 0,
           "B": 0,
-          "C": 14,
+          "C": 15,
           "D": 0,
           "U": 0
         },
         "breaches": 0,
-        "invariants": 14,
-        "anchored": 14,
-        "witnessed": 12,
-        "symbols": 444,
-        "undocumented": 166,
+        "invariants": 15,
+        "anchored": 15,
+        "witnessed": 13,
+        "symbols": 466,
+        "undocumented": 181,
         "naked": 0
       },
       {
@@ -158,8 +159,8 @@
         "intent": "Exercises the harness through focused unit contracts and end-to-end fixtures built from the same public data shapes that consuming repositories use.",
         "zone": null,
         "guards": [],
-        "files": 42,
-        "lines": 11343,
+        "files": 43,
+        "lines": 11737,
         "accountedFiles": 4,
         "claims": 4,
         "gates": 0,
@@ -189,7 +190,7 @@
           "verb": "guard",
           "oracle": "testMatch — a runner exiting 0 with no matching output FAILS (the renamed-test trap)",
           "grade": "C",
-          "verdict": "stale",
+          "verdict": "pass",
           "crossing": null,
           "reliants": 0,
           "witnessed": true
@@ -201,7 +202,7 @@
           "verb": "guard",
           "oracle": "RATCHET — a declared invariant with no anchoring boundary fails coverage",
           "grade": "C",
-          "verdict": "stale",
+          "verdict": "pass",
           "crossing": null,
           "reliants": 0,
           "witnessed": true
@@ -213,7 +214,7 @@
           "verb": "guard",
           "oracle": "runner contract — a name that exists nowhere exits nonzero (the vanished oracle cannot pass)",
           "grade": "C",
-          "verdict": "stale",
+          "verdict": "pass",
           "crossing": null,
           "reliants": 0,
           "witnessed": true
@@ -225,7 +226,7 @@
           "verb": "guard",
           "oracle": "merge — a skip never clobbers a real verdict; the old verdict rides through with its own stamp",
           "grade": "C",
-          "verdict": "stale",
+          "verdict": "pass",
           "crossing": null,
           "reliants": 0,
           "witnessed": true
@@ -237,7 +238,7 @@
           "verb": "guard",
           "oracle": "match — ZERO matching tests is its OWN state: the vanished oracle, named as such",
           "grade": "C",
-          "verdict": "stale",
+          "verdict": "pass",
           "crossing": null,
           "reliants": 0,
           "witnessed": true
@@ -249,7 +250,7 @@
           "verb": "guard",
           "oracle": "META-ORACLE — a `via test` boundary whose oracle loops a LITERAL fails",
           "grade": "C",
-          "verdict": "stale",
+          "verdict": "pass",
           "crossing": null,
           "reliants": 0,
           "witnessed": true
@@ -261,7 +262,7 @@
           "verb": "guard",
           "oracle": "hooks — generated wiring uses the low-cost entrypoint and observes writes",
           "grade": "C",
-          "verdict": "stale",
+          "verdict": "pass",
           "crossing": null,
           "reliants": 0,
           "witnessed": false
@@ -273,7 +274,7 @@
           "verb": "guard",
           "oracle": "FLOOR — an empty derivation against a remembered surface REFUSES, never reports coherent",
           "grade": "C",
-          "verdict": "stale",
+          "verdict": "pass",
           "crossing": null,
           "reliants": 0,
           "witnessed": true
@@ -285,7 +286,19 @@
           "verb": "guard",
           "oracle": "audit — retracted decisions disappear and only broken strong leases fail a check",
           "grade": "C",
-          "verdict": "stale",
+          "verdict": "pass",
+          "crossing": null,
+          "reliants": 0,
+          "witnessed": true
+        },
+        {
+          "comp": "Harness core",
+          "inv": "lifecycle hook presence is one canonical runnable bit",
+          "chokepoint": "inspectLifecycleHook",
+          "verb": "guard",
+          "oracle": "control — presence is the complete canonical bundle, never a partial or lookalike",
+          "grade": "C",
+          "verdict": "pass",
           "crossing": null,
           "reliants": 0,
           "witnessed": true
@@ -297,7 +310,7 @@
           "verb": "guard",
           "oracle": "mass — a renamed component keeps its pin; growth and novelty are never absorbed",
           "grade": "C",
-          "verdict": "stale",
+          "verdict": "pass",
           "crossing": null,
           "reliants": 0,
           "witnessed": true
@@ -309,7 +322,7 @@
           "verb": "guard",
           "oracle": "calibration reports coverage, outside reads, and defect rates by prediction misses",
           "grade": "C",
-          "verdict": "stale",
+          "verdict": "pass",
           "crossing": null,
           "reliants": 0,
           "witnessed": true
@@ -321,7 +334,7 @@
           "verb": "guard",
           "oracle": "sinks — a moved file keeps its baselined identity and a genuinely new site still fails",
           "grade": "C",
-          "verdict": "stale",
+          "verdict": "pass",
           "crossing": null,
           "reliants": 0,
           "witnessed": true
@@ -333,7 +346,7 @@
           "verb": "guard",
           "oracle": "only a zero-anchor alarm without attestation needs a decision",
           "grade": "C",
-          "verdict": "stale",
+          "verdict": "pass",
           "crossing": null,
           "reliants": 0,
           "witnessed": true
@@ -345,21 +358,21 @@
           "verb": "guard",
           "oracle": "renderContext — byte-stable for the same inputs and names every approximation",
           "grade": "C",
-          "verdict": "stale",
+          "verdict": "pass",
           "crossing": null,
           "reliants": 0,
           "witnessed": false
         }
       ],
       "withheld": 0,
-      "total": 14
+      "total": 15
     },
     "gatesClean": 0,
-    "gatesTotal": 14,
+    "gatesTotal": 15,
     "grades": {
       "A": 0,
       "B": 0,
-      "C": 14,
+      "C": 15,
       "D": 0,
       "U": 0
     },
@@ -372,7 +385,7 @@
           "tier": 2,
           "security": true,
           "present": true,
-          "heat": 0.21052631578947367,
+          "heat": 0.20408163265306123,
           "owner": "Harness core"
         },
         {
@@ -382,7 +395,7 @@
           "tier": 2,
           "security": true,
           "present": true,
-          "heat": 0.08421052631578947,
+          "heat": 0.08163265306122448,
           "owner": "Harness core"
         },
         {
@@ -392,7 +405,7 @@
           "tier": 2,
           "security": true,
           "present": true,
-          "heat": 0.07368421052631578,
+          "heat": 0.07142857142857142,
           "owner": "Harness core"
         },
         {
@@ -402,7 +415,7 @@
           "tier": 2,
           "security": true,
           "present": true,
-          "heat": 0.06315789473684211,
+          "heat": 0.061224489795918366,
           "owner": "Harness core"
         },
         {
@@ -412,7 +425,7 @@
           "tier": 2,
           "security": true,
           "present": true,
-          "heat": 0.05263157894736842,
+          "heat": 0.05102040816326531,
           "owner": "Harness core"
         },
         {
@@ -422,7 +435,7 @@
           "tier": 2,
           "security": true,
           "present": true,
-          "heat": 0.042105263157894736,
+          "heat": 0.05102040816326531,
           "owner": "Harness core"
         },
         {
@@ -432,7 +445,7 @@
           "tier": 2,
           "security": true,
           "present": true,
-          "heat": 0.031578947368421054,
+          "heat": 0.030612244897959183,
           "owner": "Harness core"
         },
         {
@@ -442,7 +455,7 @@
           "tier": 2,
           "security": true,
           "present": true,
-          "heat": 0.021052631578947368,
+          "heat": 0.02040816326530612,
           "owner": "Harness core"
         },
         {
@@ -452,7 +465,17 @@
           "tier": 2,
           "security": true,
           "present": true,
-          "heat": 0.021052631578947368,
+          "heat": 0.02040816326530612,
+          "owner": "Harness core"
+        },
+        {
+          "sym": "inspectLifecycleHook",
+          "from": "project-source",
+          "to": "verdict",
+          "tier": 2,
+          "security": true,
+          "present": true,
+          "heat": 0.01020408163265306,
           "owner": "Harness core"
         },
         {
@@ -462,7 +485,7 @@
           "tier": 2,
           "security": true,
           "present": true,
-          "heat": 0.010526315789473684,
+          "heat": 0.01020408163265306,
           "owner": "Harness core"
         },
         {
@@ -472,7 +495,7 @@
           "tier": 2,
           "security": false,
           "present": true,
-          "heat": 0.07368421052631578,
+          "heat": 0.08163265306122448,
           "owner": "Harness core"
         },
         {
@@ -482,7 +505,7 @@
           "tier": 2,
           "security": false,
           "present": true,
-          "heat": 0.010526315789473684,
+          "heat": 0.01020408163265306,
           "owner": "Harness core"
         },
         {
@@ -492,7 +515,7 @@
           "tier": 2,
           "security": false,
           "present": true,
-          "heat": 0.010526315789473684,
+          "heat": 0.01020408163265306,
           "owner": "Harness core"
         },
         {
@@ -502,7 +525,7 @@
           "tier": 2,
           "security": false,
           "present": true,
-          "heat": 0.010526315789473684,
+          "heat": 0.01020408163265306,
           "owner": "Harness core"
         },
         {
@@ -512,17 +535,7 @@
           "tier": 3,
           "security": true,
           "present": true,
-          "heat": 0.10526315789473684,
-          "owner": "Harness core"
-        },
-        {
-          "sym": "loadConfig",
-          "from": "project-source",
-          "to": "shell",
-          "tier": 3,
-          "security": true,
-          "present": true,
-          "heat": 0.042105263157894736,
+          "heat": 0.10204081632653061,
           "owner": "Harness core"
         },
         {
@@ -532,19 +545,29 @@
           "tier": 3,
           "security": true,
           "present": true,
-          "heat": 0.042105263157894736,
+          "heat": 0.05102040816326531,
+          "owner": "Harness core"
+        },
+        {
+          "sym": "loadConfig",
+          "from": "project-source",
+          "to": "shell",
+          "tier": 3,
+          "security": true,
+          "present": true,
+          "heat": 0.04081632653061224,
           "owner": "Harness core"
         }
       ],
       "withheld": 0,
-      "total": 17
+      "total": 18
     },
     "atlas": {
-      "at": "2026-08-03T04:31:03.162Z",
-      "stale": true,
+      "at": "2026-08-03T05:50:21.800Z",
+      "stale": false,
       "tiers": {
         "enshrined": 0,
-        "checked": 14,
+        "checked": 15,
         "convention": 3
       },
       "drift": 0,
@@ -565,7 +588,7 @@
         "label": "unwitnessed",
         "what": "invariants with no observed negative control — nothing has ever been seen to break them",
         "dark": 2,
-        "total": 14,
+        "total": 15,
         "unit": "declared invariants",
         "worst": {
           "shown": [
@@ -580,8 +603,8 @@
         "key": "unclaimed",
         "label": "unclaimed",
         "what": "files no claim names — code inside the map that nothing in the spec points at",
-        "dark": 86,
-        "total": 96,
+        "dark": 88,
+        "total": 98,
         "unit": "files in the graph",
         "worst": {
           "shown": [
@@ -592,18 +615,18 @@
             "src/config.ts",
             "src/context.ts",
             "src/contracts.ts",
-            "src/conventions.ts"
+            "src/control.ts"
           ],
-          "withheld": 78,
-          "total": 86
+          "withheld": 80,
+          "total": 88
         }
       },
       {
         "key": "undocumented",
         "label": "undocumented",
         "what": "symbols with no docblock — meaning a reader has to derive from the body",
-        "dark": 171,
-        "total": 456,
+        "dark": 186,
+        "total": 478,
         "unit": "symbols",
         "worst": {
           "shown": [
@@ -616,30 +639,30 @@
             "src/calibration.ts#CalibrationAttribution",
             "src/calibration.ts#CalibrationOutcome"
           ],
-          "withheld": 163,
-          "total": 171
+          "withheld": 178,
+          "total": 186
         }
       },
       {
         "key": "unvisited",
         "label": "unvisited",
         "what": "paths recent work keeps touching that the graph does not own — no closure can be computed for them, so every read-cost figure here excludes them",
-        "dark": 98,
-        "total": 194,
+        "dark": 100,
+        "total": 198,
         "unit": "paths touched in the concern band",
         "worst": {
           "shown": [
+            ".claude/coherence-hook",
+            ".claude/coherence-root",
             ".claude/settings.json",
             ".coherence/calibration/e3421277-38b7-4a40-9b73-5a5a336816ad.jsonl",
             ".coherence/decisions/140340be-ee3f-46f6-94d9-64a7ed4a2da2.jsonl",
             ".coherence/decisions/3e2c9d10-82b3-4627-a861-555b53d9777d.jsonl",
             ".coherence/decisions/97e93ceb-c6a8-47ee-afc1-d4b0e9579cfe.jsonl",
-            ".coherence/decisions/a0822697df6f0b473.jsonl",
-            ".coherence/decisions/a0d10da06384ede58.jsonl",
-            ".coherence/decisions/a338a2b8769208685.jsonl"
+            ".coherence/decisions/a0822697df6f0b473.jsonl"
           ],
-          "withheld": 90,
-          "total": 98
+          "withheld": 92,
+          "total": 100
         }
       }
     ]
@@ -659,7 +682,7 @@
           "over": [],
           "couldBe": [],
           "discriminatedBy": "",
-          "news": true
+          "news": false
         },
         {
           "id": "d-c3b5dbd5",
@@ -823,7 +846,7 @@
             "the rate is low enough that the 89 sit inert in the pin and never fire, in which case scoping safeSql would only remove a detector that costs nothing"
           ],
           "discriminatedBy": "after ~20 commits of ordinary work, count lint-sinks --check failures and split them by context. If a majority are sql-ident on report strings, scope cfg.sinks.safeSql and pin a tripwire measure counting SQL statements at 0 so the exemption is itself checked; if sql-ident never fires, leave the default alone.",
-          "news": true
+          "news": false
         },
         {
           "id": "d-93abae1b",
@@ -993,6 +1016,23 @@
     "decisions": {
       "shown": [
         {
+          "id": "d-67ba8ed4",
+          "kind": "decision",
+          "at": "2026-08-03T05:50:39.153Z",
+          "agent": "main",
+          "session": "3e2c9d10-82b3-4627-a861-555b53d9777d",
+          "commit": "f49fd3c",
+          "chose": "Re-pin mass and conventions for the control interface: +948 lines, +2 files, +22 symbols, +1 claim, and three new fan-out guards accepted as debt",
+          "because": "What the new mass BUYS is the elimination of hand-wired lifecycle hooks. Measured today in the consuming project: PostToolUse was bound to one repo-local script on Edit|Write, coherence's own hook was never added, and recordHookReads therefore never ran — so calibrate sat implemented with zero input for the life of the feature and nothing anywhere said so. That is 948 lines to convert a paste-this-block instruction into an installed, canonical, verifiable bundle whose control bit is false when the path is not singular. The three new conventions are guards with fan-out and no contract — isObject (11 sites) is a JSON-shape narrowing used throughout the settings reader, canonicalGroup (3) and canonicalAction (2) classify hook entries during migration. They are pinned as debt rather than converted because a contract for them wants the settings schema to be a declared type, which is a separate change with its own oracle obligation, and doing it inside a release would trade a checked ratchet for an unchecked refactor. Also charted inspectLifecycleHook as project-source to verdict, closing the atlas drift the new self-claim opened",
+          "over": [
+            "Converting isObject/canonicalGroup/canonicalAction into contracts in the same change",
+            "Leaving the baselines stale so the ratchets stay red"
+          ],
+          "couldBe": [],
+          "discriminatedBy": "",
+          "news": true
+        },
+        {
           "id": "d-2a349553",
           "kind": "decision",
           "at": "2026-08-03T04:28:10.873Z",
@@ -1006,7 +1046,7 @@
           ],
           "couldBe": [],
           "discriminatedBy": "",
-          "news": true
+          "news": false
         },
         {
           "id": "d-3d79428b",
@@ -1022,7 +1062,7 @@
           ],
           "couldBe": [],
           "discriminatedBy": "",
-          "news": true
+          "news": false
         },
         {
           "id": "d-cc8d4c00",
@@ -1039,7 +1079,7 @@
           ],
           "couldBe": [],
           "discriminatedBy": "",
-          "news": true
+          "news": false
         },
         {
           "id": "d-8149793b",
@@ -1056,7 +1096,7 @@
           ],
           "couldBe": [],
           "discriminatedBy": "",
-          "news": true
+          "news": false
         },
         {
           "id": "d-9270c88e",
@@ -1073,7 +1113,7 @@
           ],
           "couldBe": [],
           "discriminatedBy": "",
-          "news": true
+          "news": false
         },
         {
           "id": "d-42ee4863",
@@ -1089,7 +1129,7 @@
           ],
           "couldBe": [],
           "discriminatedBy": "",
-          "news": true
+          "news": false
         },
         {
           "id": "d-fc10eeec",
@@ -1106,7 +1146,7 @@
           ],
           "couldBe": [],
           "discriminatedBy": "",
-          "news": true
+          "news": false
         },
         {
           "id": "d-4fa938b2",
@@ -1140,27 +1180,10 @@
           "couldBe": [],
           "discriminatedBy": "",
           "news": false
-        },
-        {
-          "id": "d-1f632b28",
-          "kind": "decision",
-          "at": "2026-08-03T03:40:01.863Z",
-          "agent": "general-purpose",
-          "session": "a7c019196de0e5880",
-          "commit": "d69d637",
-          "chose": "resources regrouped BY SINK: one hairline lane per sink ending in ONE arrowhead at a shared right rail; each guard is a tap — a vertical drop in its own tier/heat treatment joining the lane at a filled square",
-          "because": "the lane lands once, so drawing one landing is the honest picture; the tap square discloses each feed and its x discloses the stage",
-          "over": [
-            "stair-stepped sink columns (each box one column right of its latest grabbing stage), which adds a column per sink and overflows the 1184px page at hoist's four sinks",
-            "each guard drawing its own full run along the shared lane, which superimposes out-of-phase dashed strokes and reintroduces the two-arrowheads-at-one-x defect the pass exists to close"
-          ],
-          "couldBe": [],
-          "discriminatedBy": "",
-          "news": false
         }
       ],
-      "withheld": 190,
-      "total": 200
+      "withheld": 191,
+      "total": 201
     },
     "marks": [
       {
@@ -2694,7 +2717,7 @@
         "lane": "decision",
         "at": "2026-08-03T03:40:01.863Z",
         "news": false,
-        "shown": true
+        "shown": false
       },
       {
         "id": "d-17965e2a",
@@ -2714,62 +2737,69 @@
         "id": "d-fc10eeec",
         "lane": "decision",
         "at": "2026-08-03T04:11:23.544Z",
-        "news": true,
+        "news": false,
         "shown": true
       },
       {
         "id": "d-42ee4863",
         "lane": "decision",
         "at": "2026-08-03T04:19:54.033Z",
-        "news": true,
+        "news": false,
         "shown": true
       },
       {
         "id": "d-9270c88e",
         "lane": "decision",
         "at": "2026-08-03T04:20:05.710Z",
-        "news": true,
+        "news": false,
         "shown": true
       },
       {
         "id": "d-8149793b",
         "lane": "decision",
         "at": "2026-08-03T04:21:53.909Z",
-        "news": true,
+        "news": false,
         "shown": true
       },
       {
         "id": "d-ea99196e",
         "lane": "open",
         "at": "2026-08-03T04:22:03.881Z",
-        "news": true,
+        "news": false,
         "shown": true
       },
       {
         "id": "d-cc8d4c00",
         "lane": "decision",
         "at": "2026-08-03T04:22:25.398Z",
-        "news": true,
+        "news": false,
         "shown": true
       },
       {
         "id": "d-3d79428b",
         "lane": "decision",
         "at": "2026-08-03T04:22:51.143Z",
-        "news": true,
+        "news": false,
         "shown": true
       },
       {
         "id": "d-f241c582",
         "lane": "blocked",
         "at": "2026-08-03T04:25:44.843Z",
-        "news": true,
+        "news": false,
         "shown": true
       },
       {
         "id": "d-2a349553",
         "lane": "decision",
         "at": "2026-08-03T04:28:10.873Z",
+        "news": false,
+        "shown": true
+      },
+      {
+        "id": "d-67ba8ed4",
+        "lane": "decision",
+        "at": "2026-08-03T05:50:39.153Z",
         "news": true,
         "shown": true
       }
@@ -2778,20 +2808,20 @@
       "resolved": 22,
       "dismissed": 2,
       "retracted": 2,
-      "inFrame": 1
+      "inFrame": 0
     },
     "totals": {
       "blocked": 11,
       "open": 19,
-      "decisions": 200,
-      "records": 293,
+      "decisions": 201,
+      "records": 294,
       "sessions": 57,
       "unreadable": 0
     },
     "news": {
-      "blocked": 1,
-      "open": 1,
-      "decisions": 7
+      "blocked": 0,
+      "open": 0,
+      "decisions": 1
     }
   },
   "trajectory": {
@@ -2807,9 +2837,14 @@
         "total": 0
       },
       "invAdded": {
-        "shown": [],
+        "shown": [
+          {
+            "comp": "Harness core",
+            "inv": "lifecycle hook presence is one canonical runnable bit"
+          }
+        ],
         "withheld": 0,
-        "total": 0
+        "total": 1
       },
       "invRemoved": {
         "shown": [],
@@ -2817,9 +2852,16 @@
         "total": 0
       },
       "boundaryAdded": {
-        "shown": [],
+        "shown": [
+          {
+            "comp": "Harness core",
+            "inv": "lifecycle hook presence is one canonical runnable bit",
+            "chokepoint": "inspectLifecycleHook",
+            "oracle": "control — presence is the complete canonical bundle, never a partial or lookalike"
+          }
+        ],
         "withheld": 0,
-        "total": 0
+        "total": 1
       },
       "boundaryRemoved": {
         "shown": [],
@@ -2831,14 +2873,20 @@
         "withheld": 0,
         "total": 0
       },
-      "claimDelta": [],
-      "changes": 0,
+      "claimDelta": [
+        {
+          "comp": "Coherence",
+          "added": 1,
+          "removed": 1
+        }
+      ],
+      "changes": 2,
       "losses": 0
     },
     "structuralWhy": null,
     "loc": {
-      "added": 33,
-      "deleted": 3
+      "added": 1068,
+      "deleted": 120
     },
     "mass": null,
     "drift": {
