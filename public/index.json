@@ -1,16 +1,16 @@
 {
   "project": "coherence",
   "intent": "The repository-level reading surface: configuration, package contract, generated maps, and the authored explanation of why the harness exists.",
-  "generatedAt": "2026-08-03 14:12Z",
+  "generatedAt": "2026-08-03 14:22Z",
   "head": {
-    "commit": "5271e42",
+    "commit": "0cece26",
     "dirty": true
   },
   "frame": {
     "kind": "cursor",
-    "ref": "f49fd3c",
-    "commit": "f49fd3c",
-    "at": "2026-08-03T01:47:32-04:00",
+    "ref": "5271e42",
+    "commit": "5271e42",
+    "at": "2026-08-03T10:11:19-04:00",
     "commits": 2,
     "why": "the HEAD this Index recorded the last time it ran — literally since you last looked."
   },
@@ -24,34 +24,34 @@
       "name": ".coherence/status.json — verify",
       "ok": true,
       "detail": "30 claim verdict(s), 0 failure(s), tier full",
-      "at": "2026-08-03T05:50:56.468Z",
-      "commit": "f49fd3c",
+      "at": "2026-08-03T14:17:57.676Z",
+      "commit": "2821b2e",
       "stale": true
     },
     {
       "name": ".coherence/status.json — atlas",
       "ok": true,
       "detail": "18 crossing(s) graded",
-      "at": "2026-08-03T05:50:58.301Z",
-      "commit": "f49fd3c",
+      "at": "2026-08-03T14:17:52.306Z",
+      "commit": "2821b2e",
       "stale": true
     },
     {
       "name": "git history",
       "ok": true,
-      "detail": "100 concern-carrying commit(s) in the last 200, touching 202 path(s)",
-      "commit": "5271e42"
+      "detail": "102 concern-carrying commit(s) in the last 200, touching 202 path(s)",
+      "commit": "0cece26"
     },
     {
       "name": ".coherence/decisions",
       "ok": true,
-      "detail": "300 record(s) across 59 session(s)"
+      "detail": "304 record(s) across 59 session(s)"
     },
     {
-      "name": "structural diff vs f49fd3c",
+      "name": "structural diff vs 5271e42",
       "ok": true,
       "detail": "0 structural change(s), 0 loss(es)",
-      "commit": "f49fd3c"
+      "commit": "5271e42"
     }
   ],
   "map": {
@@ -385,7 +385,7 @@
           "tier": 2,
           "security": true,
           "present": true,
-          "heat": 0.20408163265306123,
+          "heat": 0.19801980198019803,
           "owner": "Harness core"
         },
         {
@@ -395,7 +395,7 @@
           "tier": 2,
           "security": true,
           "present": true,
-          "heat": 0.08163265306122448,
+          "heat": 0.07920792079207921,
           "owner": "Harness core"
         },
         {
@@ -405,7 +405,7 @@
           "tier": 2,
           "security": true,
           "present": true,
-          "heat": 0.07142857142857142,
+          "heat": 0.06930693069306931,
           "owner": "Harness core"
         },
         {
@@ -415,7 +415,7 @@
           "tier": 2,
           "security": true,
           "present": true,
-          "heat": 0.061224489795918366,
+          "heat": 0.0594059405940594,
           "owner": "Harness core"
         },
         {
@@ -425,7 +425,7 @@
           "tier": 2,
           "security": true,
           "present": true,
-          "heat": 0.05102040816326531,
+          "heat": 0.04950495049504951,
           "owner": "Harness core"
         },
         {
@@ -435,7 +435,7 @@
           "tier": 2,
           "security": true,
           "present": true,
-          "heat": 0.05102040816326531,
+          "heat": 0.04950495049504951,
           "owner": "Harness core"
         },
         {
@@ -445,7 +445,7 @@
           "tier": 2,
           "security": true,
           "present": true,
-          "heat": 0.030612244897959183,
+          "heat": 0.0297029702970297,
           "owner": "Harness core"
         },
         {
@@ -455,7 +455,7 @@
           "tier": 2,
           "security": true,
           "present": true,
-          "heat": 0.02040816326530612,
+          "heat": 0.019801980198019802,
           "owner": "Harness core"
         },
         {
@@ -465,7 +465,7 @@
           "tier": 2,
           "security": true,
           "present": true,
-          "heat": 0.02040816326530612,
+          "heat": 0.019801980198019802,
           "owner": "Harness core"
         },
         {
@@ -475,7 +475,7 @@
           "tier": 2,
           "security": true,
           "present": true,
-          "heat": 0.01020408163265306,
+          "heat": 0.009900990099009901,
           "owner": "Harness core"
         },
         {
@@ -485,7 +485,7 @@
           "tier": 2,
           "security": true,
           "present": true,
-          "heat": 0.01020408163265306,
+          "heat": 0.009900990099009901,
           "owner": "Harness core"
         },
         {
@@ -495,7 +495,7 @@
           "tier": 2,
           "security": false,
           "present": true,
-          "heat": 0.08163265306122448,
+          "heat": 0.0891089108910891,
           "owner": "Harness core"
         },
         {
@@ -505,7 +505,7 @@
           "tier": 2,
           "security": false,
           "present": true,
-          "heat": 0.01020408163265306,
+          "heat": 0.009900990099009901,
           "owner": "Harness core"
         },
         {
@@ -515,7 +515,7 @@
           "tier": 2,
           "security": false,
           "present": true,
-          "heat": 0.01020408163265306,
+          "heat": 0.009900990099009901,
           "owner": "Harness core"
         },
         {
@@ -525,7 +525,7 @@
           "tier": 2,
           "security": false,
           "present": true,
-          "heat": 0.01020408163265306,
+          "heat": 0.009900990099009901,
           "owner": "Harness core"
         },
         {
@@ -535,7 +535,7 @@
           "tier": 3,
           "security": true,
           "present": true,
-          "heat": 0.10204081632653061,
+          "heat": 0.09900990099009901,
           "owner": "Harness core"
         },
         {
@@ -545,7 +545,7 @@
           "tier": 3,
           "security": true,
           "present": true,
-          "heat": 0.05102040816326531,
+          "heat": 0.04950495049504951,
           "owner": "Harness core"
         },
         {
@@ -555,7 +555,7 @@
           "tier": 3,
           "security": true,
           "present": true,
-          "heat": 0.04081632653061224,
+          "heat": 0.039603960396039604,
           "owner": "Harness core"
         }
       ],
@@ -563,7 +563,7 @@
       "total": 18
     },
     "atlas": {
-      "at": "2026-08-03T05:50:58.301Z",
+      "at": "2026-08-03T14:17:52.306Z",
       "stale": true,
       "tiers": {
         "enshrined": 0,
@@ -578,9 +578,7 @@
         "loadConfig",
         "readJsonOrRefuse"
       ],
-      "hazards": [
-        "buildGraph"
-      ]
+      "hazards": []
     },
     "darknesses": [
       {
@@ -1016,6 +1014,55 @@
     "decisions": {
       "shown": [
         {
+          "id": "d-b0ec0593",
+          "kind": "decision",
+          "at": "2026-08-03T14:14:56.617Z",
+          "agent": "general-purpose",
+          "session": "acf1a604e64155621",
+          "commit": "2821b2e",
+          "chose": "+522 lines / 2 files / 8 symbols buys the run record its FIRST READER — the provenance stamps have been written since v0.10 and never once read back",
+          "because": "MEASURED SUBJECTS at 2821b2e: coherence economy 49 commits behind, drift 49; hoist economy 29, mass 12, verify's full tier 10. Five real subjects on two repos. THE SPLIT IS THE POINT: 281 lines of src/due.ts (+17 wiring hooks.ts) against 224 lines of test/due.test.ts, and 8 of those 14 tests are NEGATIVE — silence on a current tree, on a quiet tree however old the run, on a section that never ran, on an uncountable distance, on a corrupt record, on a name that is not a command. The property being bought is SILENCE, because this text joins the SessionStart block that reaches every adopting project on repin and already carries three imperatives; a fourth that fired every session would cost the other three their attention. 8 symbols: DUE_AFTER, DUE_CAP, DueItem, DueReading, commitsSince, commitsSinceTime, readDue, formatDue",
+          "over": [
+            "leaving status.json's per-section commit stamps unread, so neglect stays invisible until somebody happens to look"
+          ],
+          "couldBe": [],
+          "discriminatedBy": "",
+          "news": true
+        },
+        {
+          "id": "d-984cd4e1",
+          "kind": "decision",
+          "at": "2026-08-03T14:14:30.558Z",
+          "agent": "general-purpose",
+          "session": "acf1a604e64155621",
+          "commit": "2821b2e",
+          "chose": "kept the full-tier sub-reading, which had ZERO subjects at the threshold when I wrote it and has one now",
+          "because": "honest accounting: when I built it hoist sat at 9 commits since lastFullAt against a threshold of 10 — under my own rule that is a mechanism with no subjects and I should have cut it. I kept it on a STRUCTURAL argument rather than a count, and the count has since crossed: hoist is now at 10 and fires. The structural argument is that hoist's habit makes this permanent, not transient — `npm run verify` is `--fast` and `verify:full` is pre-deploy only, so the full tier drifts behind BY DESIGN there, and it is the one case where the section's own stamp reads fresh while every boundary oracle has been skipped. Reporting verify as current on the strength of a run that graded almost nothing is green-by-absence in the newest instrument. A future agent who finds this firing constantly on one project and never elsewhere should re-run: `git rev-list --count --since=<verify.lastFullAt> HEAD` and consider whether the threshold should differ per tier",
+          "over": [
+            "cutting it under BEFORE YOU ADD A CONCEPT COUNT ITS INSTANCES, as I cut the other two readings"
+          ],
+          "couldBe": [],
+          "discriminatedBy": "",
+          "news": true
+        },
+        {
+          "id": "d-aca60e9b",
+          "kind": "decision",
+          "at": "2026-08-03T14:14:19.018Z",
+          "agent": "general-purpose",
+          "session": "acf1a604e64155621",
+          "commit": "2821b2e",
+          "chose": "re-measured after v0.27.0 landed: the NEGLECT reading still has 5 subjects across 2 repos, so it ships; the other two readings stay declined and v0.27.0 strengthens the second decline",
+          "because": "QUERY (re-run it): for each stamped section of .coherence/status.json, `git rev-list --count <section.commit>..HEAD`; for the tier reading, `git rev-list --count --since=<verify.lastFullAt> HEAD`. AT 2821b2e / hoist 52a2857 — coherence: economy 49, drift 49 (verify 1, atlas 1, mass 0). hoist: economy 29, mass 12, verify-full-tier 10 (verify 1, atlas 1). Five subjects at or over the threshold of 10, on both repos, four days after the same sections were last measured at 45/45/28/11 — the neglect did not shrink while attention was elsewhere, which is the entire claim. UNWIRED INPUTS is now not merely zero-subject but OWNED BY A BETTER MECHANISM: control.ts's inspectLifecycleHook makes a half-wired hook read FALSE rather than absent, which is the same absent-vs-unreadable fix done structurally at install time instead of guessed at from a session hook",
+          "over": [
+            "rebuilding the unwired-input reading now that hooks install exists",
+            "abandoning the work order because the earlier instances were fixed"
+          ],
+          "couldBe": [],
+          "discriminatedBy": "",
+          "news": true
+        },
+        {
           "id": "d-67ba8ed4",
           "kind": "decision",
           "at": "2026-08-03T05:50:39.153Z",
@@ -1027,22 +1074,6 @@
           "over": [
             "Converting isObject/canonicalGroup/canonicalAction into contracts in the same change",
             "Leaving the baselines stale so the ratchets stay red"
-          ],
-          "couldBe": [],
-          "discriminatedBy": "",
-          "news": true
-        },
-        {
-          "id": "d-e3b208f1",
-          "kind": "decision",
-          "at": "2026-08-03T05:44:48.457Z",
-          "agent": "general-purpose",
-          "session": "acf1a604e64155621",
-          "commit": "1162dae",
-          "chose": "531 lines (2 files, 8 symbols) buys the run record a READER — the first thing that reads status.json's provenance stamps back",
-          "because": "every section of .coherence/status.json has stamped its own commit since v0.10, and nothing ever asked whether those stamps were still current. Measured today: coherence economy 45 commits behind and drift 45; hoist economy 28 and mass 11. src/due.ts (307 lines) is the reading, test/due.test.ts (224) is 14 tests of which 8 are NEGATIVE — the property being bought is SILENCE on a current tree, because this text joins the SessionStart block that reaches every adopting project on repin. Growth is in Harness core (+307) and Executable contracts (+224), which is the ratio a mechanism whose main risk is firing too often should have",
-          "over": [
-            "leaving the stamps unread and the neglect invisible"
           ],
           "couldBe": [],
           "discriminatedBy": "",
@@ -1144,44 +1175,10 @@
           "couldBe": [],
           "discriminatedBy": "",
           "news": false
-        },
-        {
-          "id": "d-cc8d4c00",
-          "kind": "decision",
-          "at": "2026-08-03T04:22:25.398Z",
-          "agent": "general-purpose",
-          "session": "a6d04728c29bbfb0d",
-          "commit": "e137a25",
-          "chose": "contracts: NOT APPLICABLE to coherence — one path-addressable deploy unit, so cfg.artifacts has nothing to partition",
-          "because": "MEASURED: package.json ships one compile unit (tsc over src/ → dist/cli.js + dist/hook-cli.js from the same run), so every symbol resolves to the same artifact and `cross` is structurally false. The genuine cross-unit seam DOES exist — 6 <script> blocks across render-contract/-index/-outline, whose Node producers hand data to browser consumers nothing typechecks (render-contract JSON.parses an embedded PromiseModel; render-index/-outline read data-* attributes) — but cfg.artifacts partitions by PATH GLOB and both sides of each seam live in ONE file, as a template literal. The mechanism cannot address it. Declaring it anyway would also fail --check as UNANCHORED, since no boundary claim names `embed` or the payload type. Re-run the query by counting compile units in package.json + <script> blocks in src/render-*.ts; if the browser scripts are ever extracted to their own files this answer flips.",
-          "over": [
-            "declaring the render-side embedded browser scripts as a second artifact",
-            "leaving `contracts` unconfigured and silent, which is indistinguishable from never having considered it"
-          ],
-          "couldBe": [],
-          "discriminatedBy": "",
-          "news": false
-        },
-        {
-          "id": "d-8149793b",
-          "kind": "decision",
-          "at": "2026-08-03T04:21:53.909Z",
-          "agent": "general-purpose",
-          "session": "a6d04728c29bbfb0d",
-          "commit": "e137a25",
-          "chose": "name this project's escaper in sinks.safeHtml (esc), after first making the four `esc` copies agree",
-          "because": "sinks.safeHtml exists to name what is safe BY CONSTRUCTION and the default already names escapeXml/escapeAttr for exactly this reason; the pin then means 315 genuinely RAW interpolations rather than 408 of which a quarter are inert. The precondition was real, not cosmetic: render-overview.ts's esc escaped &, < and > but NOT `\"`, while the other three escaped all four — whitelisting the NAME makes the weakest copy define what the whitelist means, so it was fixed first. safeSql is left at its default and NOT scoped.",
-          "over": [
-            "baselining all 408 sites including the 93 already routed through esc()",
-            "leaving safeHtml at its default and treating escaped sites as unreviewed"
-          ],
-          "couldBe": [],
-          "discriminatedBy": "",
-          "news": false
         }
       ],
-      "withheld": 196,
-      "total": 206
+      "withheld": 198,
+      "total": 208
     },
     "marks": [
       {
@@ -2757,7 +2754,7 @@
         "lane": "decision",
         "at": "2026-08-03T04:21:53.909Z",
         "news": false,
-        "shown": true
+        "shown": false
       },
       {
         "id": "d-ea99196e",
@@ -2771,7 +2768,7 @@
         "lane": "decision",
         "at": "2026-08-03T04:22:25.398Z",
         "news": false,
-        "shown": true
+        "shown": false
       },
       {
         "id": "d-3d79428b",
@@ -2823,16 +2820,30 @@
         "shown": true
       },
       {
-        "id": "d-e3b208f1",
+        "id": "d-67ba8ed4",
         "lane": "decision",
-        "at": "2026-08-03T05:44:48.457Z",
+        "at": "2026-08-03T05:50:39.153Z",
         "news": false,
         "shown": true
       },
       {
-        "id": "d-67ba8ed4",
+        "id": "d-aca60e9b",
         "lane": "decision",
-        "at": "2026-08-03T05:50:39.153Z",
+        "at": "2026-08-03T14:14:19.018Z",
+        "news": true,
+        "shown": true
+      },
+      {
+        "id": "d-984cd4e1",
+        "lane": "decision",
+        "at": "2026-08-03T14:14:30.558Z",
+        "news": true,
+        "shown": true
+      },
+      {
+        "id": "d-b0ec0593",
+        "lane": "decision",
+        "at": "2026-08-03T14:14:56.617Z",
         "news": true,
         "shown": true
       }
@@ -2840,21 +2851,21 @@
     "settled": {
       "resolved": 22,
       "dismissed": 2,
-      "retracted": 2,
-      "inFrame": 0
+      "retracted": 3,
+      "inFrame": 1
     },
     "totals": {
       "blocked": 11,
       "open": 19,
-      "decisions": 206,
-      "records": 300,
+      "decisions": 208,
+      "records": 304,
       "sessions": 59,
       "unreadable": 0
     },
     "news": {
       "blocked": 0,
       "open": 0,
-      "decisions": 1
+      "decisions": 3
     }
   },
   "trajectory": {
@@ -2900,32 +2911,32 @@
     },
     "structuralWhy": null,
     "loc": {
-      "added": 523,
-      "deleted": 1
+      "added": 0,
+      "deleted": 0
     },
     "mass": null,
     "drift": {
-      "at": "2026-07-31T17:59:22.182Z",
+      "at": "2026-08-03T14:16:38.209Z",
       "stale": true,
       "locality": [
-        0.8043478260869565,
-        0.8787878787878788,
-        0.26666666666666666,
-        0.5145631067961165,
-        0.5533980582524272,
-        0.47368421052631576,
-        0.5944055944055944,
-        0.4957983193277311
+        0.865546218487395,
+        0.5740740740740741,
+        0.5481727574750831,
+        0.5454545454545454,
+        0.5129682997118156,
+        0.5089820359281437,
+        0.5370370370370371,
+        0.47619047619047616
       ],
       "spread": [
-        1.1428571428571428,
-        1.2857142857142858,
-        1.8571428571428572,
-        2,
-        1.7142857142857142,
-        2,
-        1.7142857142857142,
-        2
+        1.0909090909090908,
+        1.8181818181818181,
+        1.9090909090909092,
+        1.9090909090909092,
+        1.8181818181818181,
+        1.8181818181818181,
+        1.4545454545454546,
+        1.7777777777777777
       ],
       "verdict": "LOCALITY decohering, SPREAD widening — driving toward wider SPREAD, but recent gestures are mostly converge/couple — likely cross-cutting or one-off work, not a smearing trend; read the seam, not the slope",
       "localityArrow": "▼",

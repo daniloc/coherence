@@ -14,6 +14,55 @@ evidence inside that record.
 
 ---
 
+## v0.28.0 — coherence work is due, and the hook says so
+
+Three findings wanted the same delivery: instruments gone quiet, capabilities whose
+input was never wired, gates a project ships but does not run on itself. Only ONE
+of them turned out to have subjects, and the other two were declined by
+measurement — which is the instruction in the very block this feature edits.
+
+**NEGLECT — built. 5 subjects across 2 repos**, measured in COMMITS, because a repo
+nobody touched is neglecting nothing; neglect is the tree moving while the
+instrument did not. `drift` 49 · `economy` 49 here; `economy` 29 · `mass` 12 ·
+full tier 10 in the consuming project. Four days earlier the same sections read
+45/45/28/11 — the neglect did not shrink while attention was elsewhere, which is
+the whole claim.
+
+**UNWIRED INPUTS — declined, 0 subjects, and now owned by a better mechanism.**
+The condition it was built for (a capability implemented with its input never
+wired) no longer exists anywhere, and v0.27.0's `inspectLifecycleHook` fixes it
+STRUCTURALLY at install time — a half-wired hook reads FALSE — rather than being
+guessed at from a session hook.
+
+**UNADOPTED GATES — declined, not representable.** No config key distinguishes
+"not adopted" from "reasoned not applicable", so on any consuming project it
+would fire permanently and non-actionably. That is the dilution this block cannot
+afford: it already carries three imperatives.
+
+**IT IS SILENT WHEN NOTHING IS DUE**, and that was closed end to end rather than
+asserted: the work order named `drift` and `economy`, they were run, the hook was
+re-fired, and the block ended at the journal imperative byte-identical to before
+the feature shipped. Fired → work done → silent.
+
+**AND IT STATES ITS OWN BLIND SPOT.** Only 5 of 36 commands write a `status.json`
+section. For the other 31, "has not run" and "does not record" are
+indistinguishable — so the emitted text says exactly that, and says it is not a
+complete account of what is due. Reporting the first when it might be the second
+is green-by-absence in the newest instrument.
+
+**Declining is journaled.** `blocked` is printed with the item, because without it
+a deferred item and a neglected one read identically forever — the same
+absent-versus-unreadable distinction that runs through this whole codebase.
+
+It never writes, never gates, never throws. No "last nagged at" stamp. A corrupt
+record fails to SILENCE rather than failing to speak — `verify` owns that refusal.
+An uncountable distance (rebase, shallow clone) reports as unknown, never as
+current.
+
+678 tests. `verify` 30/30 green. All seven adopted ratchets green.
+
+---
+
 ## v0.27.0 — the lifecycle control is installed, not instructed
 
 Until now the hook wiring was PROSE a human copied into `settings.json`. That is
