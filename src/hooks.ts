@@ -24,6 +24,7 @@ import {
   LIFECYCLE_HOOK_SCRIPT, lifecycleRootMapping, resolveClaudeProjectRoot,
   type LifecycleHookInspection,
 } from "./control.ts";
+import { readDue, formatDue } from "./due.ts";
 import type { Config } from "./types.ts";
 
 /** Use the source entrypoint only while this repository dogfoods itself. Consumers get
@@ -116,7 +117,23 @@ export async function runHook(cfg: Config, event: string): Promise<number> {
       agent: String(p.agent_type ?? p.agentType ?? process.env.COHERENCE_AGENT ?? "main"),
       job: String(p.session_id ?? p.sessionId ?? process.env.COHERENCE_JOB ?? "-"),
     });
-    emit(event, agentInstructions(rec.session, projectCli(cfg), rec.agent));
+    // THE WORK ORDER IS COMPOSED HERE, not inside `agentInstructions`. That function is
+    // printed verbatim by `coherence hooks` and asserted byte-wise by its tests; making it
+    // read git and the run record would make a documentation command's output vary by
+    // repo state and by day — the hazard commands.ts spends a paragraph on ("no clock,
+    // nothing machine-specific, so `docs --check` compares byte-for-byte with zero
+    // normalization"). The pure block stays pure; the impure reading is appended.
+    //
+    // AND IT IS USUALLY EMPTY. `formatDue` returns [] when nothing is due, so this line is
+    // a no-op on a project that keeps its instruments current, and the emitted block is
+    // byte-identical to what it was before this shipped. A fourth imperative that fired
+    // every session would cost the other three their attention.
+    const cli = projectCli(cfg);
+    const scope = `--session ${JSON.stringify(rec.session)}${rec.agent ? ` --agent ${JSON.stringify(rec.agent)}` : ""}`;
+    // A hook that throws breaks every session in every adopting project on repin. This
+    // reading is worth strictly less than that, so it can fail to nothing.
+    const due = await readDue(cfg).then((r) => formatDue(r, cli, scope)).catch(() => []);
+    emit(event, [agentInstructions(rec.session, cli, rec.agent), ...due].join("\n"));
     return 0;
   }
 
