@@ -3,7 +3,15 @@
 import type { Graph, GraphNode } from "./types.ts";
 import type { DictEntry } from "./phrasebook.ts";
 
-const esc = (s: unknown) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+// THE FOUR `esc`s NOW AGREE, and that is a precondition rather than tidiness. This one
+// escaped &, < and > but NOT `"`, while render-index/-outline/-contract's escape all four
+// — a difference nothing enforced, and one `sinks.safeHtml` cannot see: that config names
+// `esc(` safe BY CONSTRUCTION for every renderer at once, so the weakest copy sets what
+// the whitelist actually means. Today no `esc()` here lands inside a quoted attribute, so
+// the gap was latent; whitelisting the name while one copy stayed weaker would have pinned
+// that audit as a fact. (The four copies themselves remain — see the journal.)
+const esc = (s: unknown) =>
+  String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
 function tree(graph: Graph): string[] {
   // reconstruct a folder tree from file paths; mark node dirs (components) with ●

@@ -27,9 +27,156 @@
   "language": "typescript",
   "platform": null,
   "sources": [
-    "src"
+    "src",
+    "test"
   ],
-  "testDir": "test",
+  "testDir": "test/",
   "testMatch": "pass [1-9]",
-  "oracleExecution": "serial"
+  "oracleExecution": "serial",
+  "mass": {
+    "measures": [
+      {
+        "key": "graph-components",
+        "cmd": [
+          "node",
+          "scripts/graph-population.mjs",
+          "components"
+        ],
+        "unit": "components"
+      },
+      {
+        "key": "graph-claims",
+        "cmd": [
+          "node",
+          "scripts/graph-population.mjs",
+          "claims"
+        ],
+        "unit": "claims"
+      }
+    ]
+  },
+  "conventions": {
+    "dismissed": {
+      "isActive": "A hover/selection highlight predicate inside the browser script render-contract.ts embeds as a string. It decides which lane is lit, grades nothing, and cannot make a verdict unearned.",
+      "isProse": "redundancy.ts's site-kind classifier — it only weights a ranked ADVISORY that gates nothing. A site mis-weighted here changes the order of a report, never a verdict.",
+      "isTooling": "render-outline.ts's display grouping — which subtree prints under `tooling` in the outline. Presentation over an already-derived graph; the graph itself is unaffected."
+    }
+  },
+  "sinks": {
+    "safeHtml": "(^|[^.\\w])(escapeXml|escapeAttr|esc)\\(|\\.toFixed\\(|^[A-Z][A-Z0-9_]*$|^-?\\d"
+  },
+  "atlas": {
+    "charts": {
+      "project-source": "The repository under analysis as it is on disk: *.spec.md prose, source text, coherence.config.json, git history. Agent-authored and arbitrary — never trusted as a statement about itself, only as text to be read.",
+      "derived-model": "The graph the harness builds from that text — components, claims, symbols, import edges — plus the config it was walked with. Everything downstream is computed over this and nothing re-reads the tree.",
+      "shell": "The other side of a process boundary: the commands the harness spawns for evidence (test runner, typecheck, project `measures` probes) and the hook process the agent harness spawns to reach the journal. Nothing here is the harness's own memory, and an exit code is the only fact that crosses.",
+      "record": "The durable memory a LATER run compares against — .coherence/status.json, the pinned baselines in public/, the decision journal. Every ratchet in this repo is a comparison against this chart, which is why a byte of garbage in it is a gate that went quiet.",
+      "verdict": "What a gate is permitted to SAY: a claim's green/red/skip, a ratchet's held/failed, the process exit code. The scarcest chart in the system — a fact reaches it only through a crossing that earned it.",
+      "reading-surface": "What a human or an agent then reads: public/_*.html, AGENTS.md, CLAUDE.md, the terminal reports. Derived text with no authority of its own; it can mislead, but it cannot turn a red green."
+    },
+    "transitions": {
+      "buildGraph": {
+        "from": "project-source",
+        "to": "derived-model",
+        "security": true,
+        "translates": "The single ingress: arbitrary repository text becomes the model every downstream gate is computed over. Nothing after this re-reads the tree, so whatever the walk drops is not wrong here — it is absent everywhere, silently. floor.ts's non-vacuity refusal exists because of exactly this crossing, and grades the collapse rather than the crossing."
+      },
+      "loadConfig": {
+        "from": "project-source",
+        "to": "shell",
+        "security": true,
+        "translates": "The repository's own coherence.config.json becomes argv the harness spawns — `test`, `typecheck`, and every `mass.measures` command. Running the harness in a tree executes that tree's config; readJsonOrRefuse makes an unparseable config refuse rather than revert to defaults, but a parseable one is obeyed."
+      },
+      "readJsonOrRefuse": {
+        "from": "record",
+        "to": "derived-model",
+        "security": true,
+        "translates": "The one door every remembered fact enters through — status.json, each ratchet baseline, the journal. It separates ABSENT (legitimate: first run, nothing pinned) from UNREADABLE (never legitimate), because the `catch → return default` it replaced turned a single garbage byte into every floor on the page quietly agreeing."
+      },
+      "analyzeOracle": {
+        "from": "project-source",
+        "to": "verdict",
+        "security": true,
+        "translates": "An oracle's own source is read to decide whether it iterates a LIVE domain or a literal. A test that loops a hardcoded list proves nothing about the code and must not be allowed to green a totality claim."
+      },
+      "runNamedTest": {
+        "from": "derived-model",
+        "to": "shell",
+        "security": true,
+        "translates": "A claim's oracle NAME becomes a test selection in a spawned runner. A name that exists nowhere exits nonzero — the vanished oracle cannot pass by selecting nothing."
+      },
+      "execNamedTest": {
+        "from": "shell",
+        "to": "verdict",
+        "security": true,
+        "translates": "A subprocess's exit code and stdout become a claim's verdict. Exit 0 is not evidence: the output must positively match `testMatch`, so a runner that ran nothing fails instead of greening the renamed test."
+      },
+      "resolveFromBatch": {
+        "from": "shell",
+        "to": "verdict",
+        "security": true,
+        "translates": "One batched runner's output is split back into per-claim verdicts. ZERO matching tests is its own named state, never a quiet pass — the batch's efficiency must not buy back the absence it would otherwise hide."
+      },
+      "runVerify": {
+        "from": "derived-model",
+        "to": "verdict",
+        "security": true,
+        "translates": "The graded claims plus coverage become the run's verdict. A declared invariant with no anchoring boundary is a promise with no chokepoint, and it reds coverage rather than being counted as satisfied."
+      },
+      "vacuityRefusal": {
+        "from": "derived-model",
+        "to": "verdict",
+        "security": true,
+        "translates": "The floor beneath every other crossing on this map: before any claim is graded, the derived surface is checked against what the record remembers. An empty derivation over a remembered one REFUSES — `0 of 0` never renders as coherent."
+      },
+      "recordVerify": {
+        "from": "verdict",
+        "to": "record",
+        "security": true,
+        "translates": "This run's verdicts become the memory the next run compares against — the only writer to that chart. A skip merges rather than overwrites, so a scoped run can never launder a real red into an absence."
+      },
+      "reconcile": {
+        "from": "record",
+        "to": "verdict",
+        "security": true,
+        "translates": "The pinned interpolation-site review is re-addressed against today's tree. A moved file keeps its baselined identity; a COPIED site finds nothing to absorb it and is still novel, so review cannot be laundered by duplication."
+      },
+      "reconcileMass": {
+        "from": "record",
+        "to": "verdict",
+        "security": true,
+        "translates": "The pinned mass is re-addressed after renames. A vanished pin is inherited only when family, unit and EXACT value all match — a rename that also grew absorbs nothing, so growth cannot ride in under a relabel."
+      },
+      "auditPremiseLeases": {
+        "from": "record",
+        "to": "verdict",
+        "security": true,
+        "translates": "A standing decision's named structural addresses are re-resolved against today's graph. A decision whose premise no longer exists is reported expired rather than silently continuing to hold."
+      },
+      "signal": {
+        "from": "project-source",
+        "to": "verdict",
+        "security": false,
+        "translates": "A diff's shape becomes a demand: behavioral growth with zero anchors needs an invariant or an explicit attestation. It grades process, not evidence — a tear here delays a claim, it does not fabricate one."
+      },
+      "calibrate": {
+        "from": "record",
+        "to": "reading-surface",
+        "security": false,
+        "translates": "Recorded read-traces and labeled outcomes become a report on how well the context predictor did. It gates nothing — the crossing carries a measurement out to a reader, never back into a verdict."
+      },
+      "contextFor": {
+        "from": "derived-model",
+        "to": "reading-surface",
+        "security": false,
+        "translates": "The graph becomes the smallest packet an agent needs for one task. Bounded and byte-stable, and every approximation it makes is named in the packet — a reader must be able to see what was left out."
+      },
+      "runHook": {
+        "from": "shell",
+        "to": "record",
+        "security": false,
+        "translates": "A lifecycle event the agent harness hands this process becomes a durable journal or read-trace row. It writes memory but never a verdict, so a tear loses history rather than earning a green."
+      }
+    }
+  }
 }

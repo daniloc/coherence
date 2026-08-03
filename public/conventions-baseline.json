@@ -1,0 +1,22 @@
+[
+  {
+    "name": "hasRunner",
+    "sites": 3
+  },
+  {
+    "name": "isDocumented",
+    "sites": 4
+  },
+  {
+    "name": "isOutsideBand",
+    "sites": 2
+  },
+  {
+    "name": "isStalePass",
+    "sites": 2
+  },
+  {
+    "name": "isTestPath",
+    "sites": 3
+  }
+]

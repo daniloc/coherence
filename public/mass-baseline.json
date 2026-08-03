@@ -1,0 +1,62 @@
+[
+  {
+    "key": "deps|dev",
+    "value": 2,
+    "unit": "deps"
+  },
+  {
+    "key": "deps|direct",
+    "value": 0,
+    "unit": "deps"
+  },
+  {
+    "key": "deps|transitive",
+    "value": 3,
+    "unit": "deps"
+  },
+  {
+    "key": "files|total",
+    "value": 96,
+    "unit": "files"
+  },
+  {
+    "key": "lines|Executable contracts",
+    "value": 11343,
+    "unit": "lines"
+  },
+  {
+    "key": "lines|Harness core",
+    "value": 15909,
+    "unit": "lines"
+  },
+  {
+    "key": "lines|Source adapters",
+    "value": 225,
+    "unit": "lines"
+  },
+  {
+    "key": "lines|total",
+    "value": 27477,
+    "unit": "lines"
+  },
+  {
+    "key": "measure|graph-claims",
+    "value": 29,
+    "unit": "claims"
+  },
+  {
+    "key": "measure|graph-components",
+    "value": 4,
+    "unit": "components"
+  },
+  {
+    "key": "symbols|total",
+    "value": 456,
+    "unit": "symbols"
+  },
+  {
+    "key": "undocumented|symbols",
+    "value": 171,
+    "unit": "symbols"
+  }
+]

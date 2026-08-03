@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-03 01:27Z",
+  "generatedAt": "2026-08-03 04:28Z",
   "root": "coherence",
   "absRoot": "/Users/daniloc/Documents/Development/coherence",
   "nodes": [
@@ -1406,7 +1406,7 @@
       "kind": "file",
       "sub": "src/floor.ts",
       "path": "src/floor.ts",
-      "prose": "floor.ts — the NON-VACUITY FLOOR and the adoption on-ramp: one reading of the derived\nverification surface, answered two ways depending on what the record remembers.\n\nTHE DEFECT THIS CLOSES (measured twice, 2026-07-31): gut `buildGraph` to return an\nempty graph and `verify` printed `claims: 0 · 0 green · 0 red · 0 skipped` and\n`✓ coherent`, exit 0. Every claim-defended verdict in a project silently rests on the\ngraph deriving non-empty, and nothing checked that premise. It is the instrument-check-\nfirst idiom (test/commands.test.ts checks its AST scanner finds a plausible dispatch\nBEFORE trusting any set comparison) applied to verify itself: before grading claims,\nprove there is a surface to grade.\n\nA repo with a gutted deriver and a repo that never adopted the harness produce the\nIDENTICAL observation — zero components, zero claims. What separates them is MEMORY:\n`.coherence/status.json` remembers how many claims the last run graded. So one reading\n(readSurface) feeds two answers:\n  · remembered > 0, surface empty  → REFUSE (vacuityRefusal). A verification surface\n    does not vanish because the work is done; it vanishes when derivation breaks.\n  · nothing remembered, no claims  → the ON-RAMP (adoptionLadder): name the adoption\n    state and print THE ONE NEXT ACTION, re-runnable, one rung per run.\n\nWHAT THE FLOOR DELIBERATELY DOES NOT CATCH: a PARTIAL collapse (27 → 3) where every\ncomponent still carries at least one claim. That shape is observationally identical to\ndeliberate spec pruning — this repo pruned green trivialities from its own spec the day\nthis floor was written, and evicted two whole components in the same release — and\nrefusing it would train people to reset the record instead of reading the refusal.\n\nAND THE COMPLEMENT IS WEAKER THAN THIS COMMENT USED TO CLAIM. It said coverage reds any\ncomponent whose claims all vanished, \"so a collapse that stays green requires every\ncomponent to keep one\". That holds only when the component NODE SURVIVES with zero\nclaims — a broken spec parse. Coverage iterates the DERIVED graph, so a component the\nWALK dropped entirely is invisible to it: there is no node left to red. Measured\n2026-07-31 with an ignore/glob-bug simulacrum (one component removed from what the walk\ndiscovers): the record remembered 2 claims, the run printed `claims: 1 · 1 green` and\n`✓ coherent` exit 0 with `components 1/1 claimed`, and the record was laundered down to\n1 claim in the same run — so a gradual N→1 collapse never accumulates toward this floor\nat all. Each step looks like one pruned component.\n\nTHAT HOLE IS NAMED RATHER THAN CLOSED, and deliberately. A vanished node is exactly what\ndeleting a component's spec produces, and deletion must stay free — a gate that punishes\nremoval teaches people to stop removing, which is the same argument\n`ratchetVacuityRefusal` makes below for partial shrinkage. THE MITIGATION IS A PIN, not\na gate: a `measures` dimension in `config.mass` whose command counts the population\n(component nodes or claim lines in the derived graph) makes the shrink a RATCHET\nfinding — reviewable, waivable by re-pinning with a diff, and answering the question\nthis floor cannot: not \"is there anything left?\" but \"is there as much as there was?\".\n\nSCOPED RUNS CANNOT TRIP THE FLOOR, structurally: the floor reads the DERIVED GRAPH,\nwhich is always full-tree — `--staged`/`--since` narrow which components are EVALUATED,\nnever what is derived. A reading taken above the scoping seam needs no scope exemption.\n\nTHE SAME READING, GENERALIZED (2026-07-31, the same day as the graph floor above). A verdict has two halves: the POPULATION an\ninstrument examined and what it found there. Drop the population and `0 of 0` renders\nexactly like `0 of 500` — \"I looked and found nothing wrong\" becomes indistinguishable\nfrom \"I did not look\". Two more shapes of that defect live here beside the graph floor,\nbecause they are one doctrine and not three:\n  · `ratchetVacuityRefusal` — the BASELINED ratchets (mass, conventions, lint-sinks) hold\n    the same memory/reading pair verify does, with the baseline playing status.json's\n    part. Each supplies its OWN denominator: mass counts graph files+symbols, while\n    lint-sinks never sees a graph at all (it reads scanSources), so \"the graph has no\n    claims\" is the wrong instrument for it. The rule is shared; the reading is not.\n  · `Unrunnable` — green-by-absence wearing the opposite face. An instrument that cannot\n    run must say WHY in a sentence; a stack trace is a report that failed to say what was\n    and was not measured, which is the same defect with the sign flipped.\n  · `readJsonOrRefuse` — the same defect ONE LAYER DOWN, in the memory every floor above\n    reads. Every one of these gates is a comparison between a live reading and a\n    REMEMBERED one, and each remembered one lives in a JSON file that was loaded by\n    `catch → return default`. That catch cannot tell \"the file is not there\" from \"the\n    file is there and I could not read it\", so a single unparseable byte turned every\n    floor on this page off."
+      "prose": "floor.ts — the NON-VACUITY FLOOR and the adoption on-ramp: one reading of the derived\nverification surface, answered two ways depending on what the record remembers.\n\nTHE DEFECT THIS CLOSES (measured twice, 2026-07-31): gut `buildGraph` to return an\nempty graph and `verify` printed `claims: 0 · 0 green · 0 red · 0 skipped` and\n`✓ coherent`, exit 0. Every claim-defended verdict in a project silently rests on the\ngraph deriving non-empty, and nothing checked that premise. It is the instrument-check-\nfirst idiom (test/commands.test.ts checks its AST scanner finds a plausible dispatch\nBEFORE trusting any set comparison) applied to verify itself: before grading claims,\nprove there is a surface to grade.\n\nA repo with a gutted deriver and a repo that never adopted the harness produce the\nIDENTICAL observation — zero components, zero claims. What separates them is MEMORY:\n`.coherence/status.json` remembers how many claims the last run graded. So one reading\n(readSurface) feeds two answers:\n  · remembered > 0, surface empty  → REFUSE (vacuityRefusal). A verification surface\n    does not vanish because the work is done; it vanishes when derivation breaks.\n  · nothing remembered, no claims  → the ON-RAMP (adoptionLadder): name the adoption\n    state and print THE ONE NEXT ACTION, re-runnable, one rung per run.\n\nWHAT THE FLOOR DELIBERATELY DOES NOT CATCH: a PARTIAL collapse (27 → 3) where every\ncomponent still carries at least one claim. That shape is observationally identical to\ndeliberate spec pruning — this repo pruned green trivialities from its own spec the day\nthis floor was written, and evicted two whole components in the same release — and\nrefusing it would train people to reset the record instead of reading the refusal.\n\nAND THE COMPLEMENT IS WEAKER THAN THIS COMMENT USED TO CLAIM. It said coverage reds any\ncomponent whose claims all vanished, \"so a collapse that stays green requires every\ncomponent to keep one\". That holds only when the component NODE SURVIVES with zero\nclaims — a broken spec parse. Coverage iterates the DERIVED graph, so a component the\nWALK dropped entirely is invisible to it: there is no node left to red. Measured\n2026-07-31 with an ignore/glob-bug simulacrum (one component removed from what the walk\ndiscovers): the record remembered 2 claims, the run printed `claims: 1 · 1 green` and\n`✓ coherent` exit 0 with `components 1/1 claimed`, and the record was laundered down to\n1 claim in the same run — so a gradual N→1 collapse never accumulates toward this floor\nat all. Each step looks like one pruned component.\n\nTHAT HOLE IS NAMED RATHER THAN CLOSED, and deliberately. A vanished node is exactly what\ndeleting a component's spec produces, and deletion must stay free — a gate that punishes\nremoval teaches people to stop removing, which is the same argument\n`ratchetVacuityRefusal` makes below for partial shrinkage. THE MITIGATION IS A PIN, not\na gate: a `measures` dimension in `config.mass` whose command counts the population\n(component nodes or claim lines in the derived graph) makes the shrink a RATCHET\nfinding — reviewable, waivable by re-pinning with a diff, and answering the question\nthis floor cannot: not \"is there anything left?\" but \"is there as much as there was?\".\n\nAND THAT PIN IS NOW WIRED IN THIS REPO, which it was not when the paragraph above was\nwritten (2026-08-03: an audit found coherence ran 2 of the 7 gates it ships, and the\nsharpest instance was this comment prescribing a mitigation the config did not carry).\n`coherence.config.json` declares `mass.measures` = graph-components + graph-claims,\nboth from `scripts/graph-population.mjs`, which DERIVES the graph rather than reading\nthe committed artifact — a probe that read `public/graph.json` would report the\npre-collapse population and pin the collapse as no-change. Pinned at 4 components / 29\nclaims and checked per-push. Verified by simulating the exact defect this paragraph\ndescribes (ignoring `adapters`, so one component leaves the walk): `mass --check`\nprinted `measure|graph-components 3 ← 4  -1` and `measure|graph-claims 26 ← 29  -3`\nunder \"6 dimension(s) SHRANK since the pin (never a failure) — re-pin to bank it\".\nA finding a human re-pins with a diff, which is exactly what was specified.\n\nSCOPED RUNS CANNOT TRIP THE FLOOR, structurally: the floor reads the DERIVED GRAPH,\nwhich is always full-tree — `--staged`/`--since` narrow which components are EVALUATED,\nnever what is derived. A reading taken above the scoping seam needs no scope exemption.\n\nTHE SAME READING, GENERALIZED (2026-07-31, the same day as the graph floor above). A verdict has two halves: the POPULATION an\ninstrument examined and what it found there. Drop the population and `0 of 0` renders\nexactly like `0 of 500` — \"I looked and found nothing wrong\" becomes indistinguishable\nfrom \"I did not look\". Two more shapes of that defect live here beside the graph floor,\nbecause they are one doctrine and not three:\n  · `ratchetVacuityRefusal` — the BASELINED ratchets (mass, conventions, lint-sinks) hold\n    the same memory/reading pair verify does, with the baseline playing status.json's\n    part. Each supplies its OWN denominator: mass counts graph files+symbols, while\n    lint-sinks never sees a graph at all (it reads scanSources), so \"the graph has no\n    claims\" is the wrong instrument for it. The rule is shared; the reading is not.\n  · `Unrunnable` — green-by-absence wearing the opposite face. An instrument that cannot\n    run must say WHY in a sentence; a stack trace is a report that failed to say what was\n    and was not measured, which is the same defect with the sign flipped.\n  · `readJsonOrRefuse` — the same defect ONE LAYER DOWN, in the memory every floor above\n    reads. Every one of these gates is a comparison between a live reading and a\n    REMEMBERED one, and each remembered one lives in a JSON file that was loaded by\n    `catch → return default`. That catch cannot tell \"the file is not there\" from \"the\n    file is there and I could not read it\", so a single unparseable byte turned every\n    floor on this page off."
     },
     {
       "id": "s:src/floor.ts#SurfaceReading",
@@ -1415,7 +1415,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/floor.ts",
-      "line": 77,
+      "line": 90,
       "prose": "The derived surface vs the remembered one. `remembered` is the prior record's claim-row\n count; null means no verify section has ever been filed (a genuinely new project)."
     },
     {
@@ -1425,7 +1425,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/floor.ts",
-      "line": 85
+      "line": 98
     },
     {
       "id": "s:src/floor.ts#vacuityRefusal",
@@ -1434,7 +1434,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/floor.ts",
-      "line": 105,
+      "line": 118,
       "prose": "THE FLOOR — the refusal, or null when the run may proceed to grading.\n\nRefuses exactly when the record remembers a non-empty surface (≥1 claim row) and the\nderived graph carries ZERO claims — whether because it derived zero components (the\ngutted-deriver shape) or components stripped of every claim (a broken spec parse).\nThe refusal is a run failure that must be printed and exited 1 WITHOUT filing a\nrecord: a refusal that overwrote the memory it refused against would refuse only once."
     },
     {
@@ -1444,7 +1444,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/floor.ts",
-      "line": 132,
+      "line": 145,
       "prose": "ONE RATCHET'S READING, as the shared rule needs it. Every field is supplied by the\nratchet itself, because no two of them measure the same population: `mass` reads the\nderived graph, `conventions` and `lint-sinks` read `scanSources` and never see a graph.\nA single predicate over one of those (verify's \"the graph has no claims\") would guard\none ratchet and silently exempt the other two."
     },
     {
@@ -1454,7 +1454,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/floor.ts",
-      "line": 168,
+      "line": 181,
       "prose": "THE RATCHET FLOOR — the refusal, or null when the run may proceed.\n\nRefuses exactly when the live population is EMPTY while the baseline remembers a\nnon-empty one, at both seams: `--check` must not report \"held\" over nothing, and\n`--update-baseline` must not pin nothing over something. The two failures compound —\na `held` that also prescribes re-pinning is an instrument talking an operator into\nbanking its own breakage as the new floor, which is measured, not hypothetical\n(2026-07-31: a gutted `buildGraph` made `mass --check` print \"✓ mass ratchet held\" and\n\"4 dimension(s) SHRANK — re-pin to bank it\", and the pin that followed zeroed four\ndimensions and dropped a fifth).\n\nWHAT THIS DELIBERATELY DOES NOT CATCH — and it is the same line the graph floor draws\ntwenty lines up: PARTIAL shrinkage. Deletion is real work and must stay free; a ratchet\nthat punishes removal teaches people to stop removing. The discriminator is TOTAL\nCOLLAPSE, which no amount of ordinary pruning reaches, because a project that still has\none file still has a denominator."
     },
     {
@@ -1464,7 +1464,7 @@
       "kind": "symbol",
       "sub": "class",
       "path": "src/floor.ts",
-      "line": 203,
+      "line": 216,
       "prose": "AN INSTRUMENT THAT CANNOT RUN, carrying the sentence an operator needs instead of the\nstack that produced it. Thrown from the seam that KNOWS what is missing (it is the only\nplace that can name the requirement), rendered by the CLI, which is the only place that\nowns an exit code.\n\nWHY A TYPED THROW AND NOT A PRE-CHECK AT EACH CALLER. A pre-check is a second spelling\nof the requirement, one per caller, and the third caller added next month is the one\nthat forgets — the same drift this repo's command registry exists to end. The throw\nkeeps the requirement stated ONCE, at the seam that discovers it, and the renderer is\ntotal over every command by construction rather than by review."
     },
     {
@@ -1474,7 +1474,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/floor.ts",
-      "line": 223,
+      "line": 236,
       "prose": "WHAT A PERSISTENT READER MUST BE ABLE TO SAY ABOUT ITS OWN FILE. Absence and\nunreadability are DIFFERENT FACTS and the caller is the only place that knows what each\none means for it, so each supplies its own sentences — the same argument\n`RatchetReading` makes for the ratchets: the rule is shared, the reading is not."
     },
     {
@@ -1484,7 +1484,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/floor.ts",
-      "line": 260,
+      "line": 273,
       "prose": "READ A JSON FILE THAT MAY LEGITIMATELY BE ABSENT AND MAY NEVER LEGITIMATELY BE GARBAGE.\n\nABSENT → null, and the caller does exactly what it did before: defaults, no baseline,\na fresh record. That state is ordinary and every floor here depends on it staying\nordinary — it is what adoption, a first run and an unpinned ratchet all look like.\n\nPRESENT AND UNPARSEABLE → `Unrunnable`. There is no reading of an unparseable file that\nmakes it an empty one. A crashed write, a merge conflict left in place, a truncated\ncheckout: all of them are defects, and all of them used to be answered with the same\nsilence as absence — which is how ONE unparseable byte in `.coherence/status.json`\ndisarmed the vacuity floor, the six guarded generators and the ratchets at once, and\nthen, because the run went on to FILE A FRESH RECORD over the corpse, kept them\ndisarmed for every run after it. Where `.coherence/` is untracked there was not even a\ndiff to notice.\n\nIT REFUSES BEFORE ANYTHING IS WRITTEN, and that ordering is the whole fix rather than a\ndetail of it. A reader that repaired the file by overwriting it would convert a\none-run failure into a permanent one, silently — the same reason `vacuityRefusal`\nfiles no record and the ratchet floor refuses the pin as well as the check."
     },
     {
@@ -1494,7 +1494,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/floor.ts",
-      "line": 303
+      "line": 316
     },
     {
       "id": "s:src/floor.ts#adoptionLadder",
@@ -1503,7 +1503,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/floor.ts",
-      "line": 320,
+      "line": 333,
       "prose": "THE ON-RAMP — which rung of the adoption ladder this project stands on, or null once\nit has graduated (oracle-backed claims + at least one recorded refutation). Re-runnable\nby design: each run names the state and prints THE ONE NEXT ACTION, so `verify` walks\na bare repo up one step at a time instead of dumping a checklist.\n\nThis is what replaced `coherence onboard` (evicted 2026-07-31, v0.22.x): a repo with\nzero specs and a repo with a gutted graph produced identical output, so the same code\npath now answers both — by knowing, via the record, which one it is looking at."
     },
     {
@@ -3815,7 +3815,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/render-index.ts",
-      "line": 210,
+      "line": 215,
       "prose": "THE READING the figure draws: which crossings are steps, which are grabs, which are\n ambient, and — where the shape does not support the reading — the sentence that says so.\n Exported because it is the claim being made, and a claim ought to be testable without\n parsing an SVG."
     },
     {
@@ -3825,7 +3825,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/render-index.ts",
-      "line": 246,
+      "line": 251,
       "prose": "THE DERIVATION. A pure function of the crossing list — no config, no heuristic on names.\n\nThe spine search is an exhaustive longest-SIMPLE-path walk, which is exponential in the\nworst case, so it runs on a fixed step budget. A budget that runs out does not hang and\ndoes not lie: it keeps the longest path it found and says in a note that the spine is a\nlower bound. On any region graph of a size a human would read, the budget is never touched."
     },
     {
@@ -3835,7 +3835,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/render-index.ts",
-      "line": 1477,
+      "line": 1608,
       "prose": "THE SAME MODEL AT THE TERMINAL — what `coherence index` prints after writing the page.\n\nIt lives beside the HTML render because it is the SECOND rendering of ONE model, and\nkeeping them apart is how the two start disagreeing about a number. It is deliberately\na pointer, not a summary of the report: the page is the artifact, and a terminal digest\ncomplete enough to substitute for it would be a third view nobody asked for.\n\nNO HEALTH GLYPH IS REACHABLE FROM HERE, ever — not on a rich project and not on an empty\none. The Index states readings and grades nothing, so a ✓ would be an assertion this\ncommand has no standing to make (test/vacuity.test.ts enumerates every command against a\nproject where nothing can honestly be pronounced healthy)."
     },
     {
@@ -3845,7 +3845,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/render-index.ts",
-      "line": 1509,
+      "line": 1640,
       "prose": "THE PAGE. One self-contained document, a pure function of the model: no clock, no\n disk, no network, no script, and nothing on it that `index.json` does not already hold."
     },
     {
@@ -3891,7 +3891,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/render-overview.ts",
-      "line": 36
+      "line": 44
     },
     {
       "id": "f:src/run-named-test.ts",

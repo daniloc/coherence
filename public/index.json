@@ -1,18 +1,18 @@
 {
   "project": "coherence",
   "intent": "The repository-level reading surface: configuration, package contract, generated maps, and the authored explanation of why the harness exists.",
-  "generatedAt": "2026-08-03 03:12Z",
+  "generatedAt": "2026-08-03 04:28Z",
   "head": {
-    "commit": "0f3b6cd",
+    "commit": "e137a25",
     "dirty": true
   },
   "frame": {
-    "kind": "since",
-    "ref": "HEAD~25",
-    "commit": "d18c3b1",
-    "at": "2026-07-31T22:56:05-04:00",
-    "commits": 25,
-    "why": "you asked for it: --since HEAD~25."
+    "kind": "cursor",
+    "ref": "e137a25",
+    "commit": "e137a25",
+    "at": "2026-08-03T00:05:54-04:00",
+    "commits": 0,
+    "why": "the HEAD this Index recorded the last time it ran — literally since you last looked."
   },
   "sources": [
     {
@@ -24,36 +24,82 @@
       "name": ".coherence/status.json — verify",
       "ok": true,
       "detail": "29 claim verdict(s), 0 failure(s), tier full",
-      "at": "2026-08-03T03:08:03.922Z",
-      "commit": "0f3b6cd",
+      "at": "2026-08-03T04:26:07.488Z",
+      "commit": "e137a25",
       "stale": false
     },
     {
       "name": ".coherence/status.json — atlas",
-      "ok": false,
-      "detail": "no atlas reading recorded — either this project declares no `atlas` config, or `coherence atlas` has not run. The crossings table is EMPTY BECAUSE NOTHING WAS READ, not because there are none.",
+      "ok": true,
+      "detail": "17 crossing(s) graded",
+      "at": "2026-08-03T04:28:18.659Z",
+      "commit": "e137a25",
       "stale": false
     },
     {
       "name": "git history",
       "ok": true,
-      "detail": "92 concern-carrying commit(s) in the last 200, touching 175 path(s)",
-      "commit": "0f3b6cd"
+      "detail": "95 concern-carrying commit(s) in the last 200, touching 187 path(s)",
+      "commit": "e137a25"
     },
     {
       "name": ".coherence/decisions",
       "ok": true,
-      "detail": "276 record(s) across 54 session(s)"
+      "detail": "293 record(s) across 57 session(s)"
     },
     {
-      "name": "structural diff vs HEAD~25",
+      "name": "structural diff vs e137a25",
       "ok": true,
       "detail": "0 structural change(s), 0 loss(es)",
-      "commit": "d18c3b1"
+      "commit": "e137a25"
     }
   ],
   "map": {
     "components": [
+      {
+        "label": "Harness core",
+        "dir": "src",
+        "intent": "Builds the source/spec graph, evaluates declared claims, renders reading surfaces, and records the decisions and observations that must survive an agent's context window.",
+        "zone": null,
+        "guards": [
+          "analyzeOracle",
+          "auditPremiseLeases",
+          "buildGraph",
+          "calibrate",
+          "contextFor",
+          "execNamedTest",
+          "loadConfig",
+          "readJsonOrRefuse",
+          "reconcile",
+          "reconcileMass",
+          "recordVerify",
+          "resolveFromBatch",
+          "runHook",
+          "runNamedTest",
+          "runVerify",
+          "signal",
+          "vacuityRefusal"
+        ],
+        "files": 51,
+        "lines": 15909,
+        "accountedFiles": 3,
+        "claims": 20,
+        "gates": 14,
+        "grades": {
+          "A": 0,
+          "B": 0,
+          "C": 14,
+          "D": 0,
+          "U": 0
+        },
+        "breaches": 0,
+        "invariants": 14,
+        "anchored": 14,
+        "witnessed": 12,
+        "symbols": 444,
+        "undocumented": 166,
+        "naked": 0
+      },
       {
         "label": "Coherence",
         "dir": ".",
@@ -78,32 +124,6 @@
         "witnessed": 0,
         "symbols": 0,
         "undocumented": 0,
-        "naked": 0
-      },
-      {
-        "label": "Harness core",
-        "dir": "src",
-        "intent": "Builds the source/spec graph, evaluates declared claims, renders reading surfaces, and records the decisions and observations that must survive an agent's context window.",
-        "zone": null,
-        "guards": [],
-        "files": 51,
-        "lines": 15837,
-        "accountedFiles": 3,
-        "claims": 20,
-        "gates": 14,
-        "grades": {
-          "A": 0,
-          "B": 0,
-          "C": 14,
-          "D": 0,
-          "U": 0
-        },
-        "breaches": 0,
-        "invariants": 14,
-        "anchored": 14,
-        "witnessed": 12,
-        "symbols": 444,
-        "undocumented": 166,
         "naked": 0
       },
       {
@@ -139,7 +159,7 @@
         "zone": null,
         "guards": [],
         "files": 42,
-        "lines": 11277,
+        "lines": 11343,
         "accountedFiles": 4,
         "claims": 4,
         "gates": 0,
@@ -344,11 +364,191 @@
       "U": 0
     },
     "crossings": {
-      "shown": [],
-      "withheld": 0,
-      "total": 0
+      "shown": [
+        {
+          "sym": "buildGraph",
+          "from": "project-source",
+          "to": "derived-model",
+          "tier": 3,
+          "security": true,
+          "present": true,
+          "heat": 0.10526315789473684,
+          "owner": "Harness core"
+        },
+        {
+          "sym": "loadConfig",
+          "from": "project-source",
+          "to": "shell",
+          "tier": 3,
+          "security": true,
+          "present": true,
+          "heat": 0.042105263157894736,
+          "owner": "Harness core"
+        },
+        {
+          "sym": "readJsonOrRefuse",
+          "from": "record",
+          "to": "derived-model",
+          "tier": 3,
+          "security": true,
+          "present": true,
+          "heat": 0.042105263157894736,
+          "owner": "Harness core"
+        },
+        {
+          "sym": "runVerify",
+          "from": "derived-model",
+          "to": "verdict",
+          "tier": 2,
+          "security": true,
+          "present": true,
+          "heat": 0.21052631578947367,
+          "owner": "Harness core"
+        },
+        {
+          "sym": "recordVerify",
+          "from": "verdict",
+          "to": "record",
+          "tier": 2,
+          "security": true,
+          "present": true,
+          "heat": 0.08421052631578947,
+          "owner": "Harness core"
+        },
+        {
+          "sym": "execNamedTest",
+          "from": "shell",
+          "to": "verdict",
+          "tier": 2,
+          "security": true,
+          "present": true,
+          "heat": 0.07368421052631578,
+          "owner": "Harness core"
+        },
+        {
+          "sym": "analyzeOracle",
+          "from": "project-source",
+          "to": "verdict",
+          "tier": 2,
+          "security": true,
+          "present": true,
+          "heat": 0.06315789473684211,
+          "owner": "Harness core"
+        },
+        {
+          "sym": "reconcileMass",
+          "from": "record",
+          "to": "verdict",
+          "tier": 2,
+          "security": true,
+          "present": true,
+          "heat": 0.05263157894736842,
+          "owner": "Harness core"
+        },
+        {
+          "sym": "vacuityRefusal",
+          "from": "derived-model",
+          "to": "verdict",
+          "tier": 2,
+          "security": true,
+          "present": true,
+          "heat": 0.042105263157894736,
+          "owner": "Harness core"
+        },
+        {
+          "sym": "reconcile",
+          "from": "record",
+          "to": "verdict",
+          "tier": 2,
+          "security": true,
+          "present": true,
+          "heat": 0.031578947368421054,
+          "owner": "Harness core"
+        },
+        {
+          "sym": "auditPremiseLeases",
+          "from": "record",
+          "to": "verdict",
+          "tier": 2,
+          "security": true,
+          "present": true,
+          "heat": 0.021052631578947368,
+          "owner": "Harness core"
+        },
+        {
+          "sym": "resolveFromBatch",
+          "from": "shell",
+          "to": "verdict",
+          "tier": 2,
+          "security": true,
+          "present": true,
+          "heat": 0.021052631578947368,
+          "owner": "Harness core"
+        },
+        {
+          "sym": "runNamedTest",
+          "from": "derived-model",
+          "to": "shell",
+          "tier": 2,
+          "security": true,
+          "present": true,
+          "heat": 0.010526315789473684,
+          "owner": "Harness core"
+        },
+        {
+          "sym": "runHook",
+          "from": "shell",
+          "to": "record",
+          "tier": 2,
+          "security": false,
+          "present": true,
+          "heat": 0.07368421052631578,
+          "owner": "Harness core"
+        },
+        {
+          "sym": "calibrate",
+          "from": "record",
+          "to": "reading-surface",
+          "tier": 2,
+          "security": false,
+          "present": true,
+          "heat": 0.010526315789473684,
+          "owner": "Harness core"
+        },
+        {
+          "sym": "contextFor",
+          "from": "derived-model",
+          "to": "reading-surface",
+          "tier": 2,
+          "security": false,
+          "present": true,
+          "heat": 0.010526315789473684,
+          "owner": "Harness core"
+        }
+      ],
+      "withheld": 1,
+      "total": 17
     },
-    "atlas": null,
+    "atlas": {
+      "at": "2026-08-03T04:28:18.659Z",
+      "stale": false,
+      "tiers": {
+        "enshrined": 0,
+        "checked": 14,
+        "convention": 3
+      },
+      "drift": 0,
+      "dangling": 0,
+      "overclaimed": 0,
+      "tier3Security": [
+        "buildGraph",
+        "loadConfig",
+        "readJsonOrRefuse"
+      ],
+      "hazards": [
+        "buildGraph"
+      ]
+    },
     "darknesses": [
       {
         "key": "unwitnessed",
@@ -414,22 +614,22 @@
         "key": "unvisited",
         "label": "unvisited",
         "what": "paths recent work keeps touching that the graph does not own — no closure can be computed for them, so every read-cost figure here excludes them",
-        "dark": 79,
-        "total": 175,
+        "dark": 91,
+        "total": 187,
         "unit": "paths touched in the concern band",
         "worst": {
           "shown": [
             ".claude/settings.json",
+            ".coherence/calibration/e3421277-38b7-4a40-9b73-5a5a336816ad.jsonl",
+            ".coherence/decisions/140340be-ee3f-46f6-94d9-64a7ed4a2da2.jsonl",
             ".coherence/decisions/3e2c9d10-82b3-4627-a861-555b53d9777d.jsonl",
+            ".coherence/decisions/97e93ceb-c6a8-47ee-afc1-d4b0e9579cfe.jsonl",
             ".coherence/decisions/a0822697df6f0b473.jsonl",
             ".coherence/decisions/a0d10da06384ede58.jsonl",
-            ".coherence/decisions/a4b6a56fedc8782e8.jsonl",
-            ".coherence/decisions/a52046bd2cb7efc4e.jsonl",
-            ".coherence/decisions/a533f8eeb80afb7f8.jsonl",
-            ".coherence/decisions/a873312c333faa81d.jsonl"
+            ".coherence/decisions/a338a2b8769208685.jsonl"
           ],
-          "withheld": 71,
-          "total": 79
+          "withheld": 83,
+          "total": 91
         }
       }
     ]
@@ -437,6 +637,20 @@
   "journal": {
     "blocked": {
       "shown": [
+        {
+          "id": "d-f241c582",
+          "kind": "blocked",
+          "at": "2026-08-03T04:25:44.843Z",
+          "agent": "general-purpose",
+          "session": "a6d04728c29bbfb0d",
+          "commit": "e137a25",
+          "chose": "could not leave `premise --check` green — it FAILS on pristine v0.25.0 too, so CI on main is red today and was before this work",
+          "because": "The single gate-grade failure is d-d31f0a5a, whose `chose` records EVICTING src/scene.ts and src/render-scene.ts. Its strong lease therefore names the files the decision deleted, and can never resolve again: a decision that records a deletion is structurally unable to keep its premise. The two remedies the tool prints are both wrong here — `retract` means 'what refuted it' and nothing refuted it (it was carried out), and a replacement decision does not clear the original's lease. Fixing it needs either a premise-side rule that a lease on a path the SAME decision says it deleted is satisfied-by-deletion, or an explicit 'executed' terminal state distinct from retraction. Not mine to invent inside a gate-adoption job. Side effect worth noting: pinning mass-baseline.json cleared one of the 20 ADVISORY missing-address findings (d-cfa92038 named it), so adoption moved the number in the right direction.",
+          "over": [],
+          "couldBe": [],
+          "discriminatedBy": "",
+          "news": true
+        },
         {
           "id": "d-c3b5dbd5",
           "kind": "blocked",
@@ -449,7 +663,7 @@
           "over": [],
           "couldBe": [],
           "discriminatedBy": "",
-          "news": true
+          "news": false
         },
         {
           "id": "d-ad96879b",
@@ -463,7 +677,7 @@
           "over": [],
           "couldBe": [],
           "discriminatedBy": "",
-          "news": true
+          "news": false
         },
         {
           "id": "d-60e651df",
@@ -579,10 +793,28 @@
         }
       ],
       "withheld": 0,
-      "total": 10
+      "total": 11
     },
     "open": {
       "shown": [
+        {
+          "id": "d-ea99196e",
+          "kind": "conjecture",
+          "at": "2026-08-03T04:22:03.881Z",
+          "agent": "general-purpose",
+          "session": "a6d04728c29bbfb0d",
+          "commit": "e137a25",
+          "chose": "89 of the 315 pinned interpolation sites are graded `sql-ident`, in a repo with ZERO SQL — grep for SELECT/INSERT/CREATE TABLE/sqlite/.prepare( across src returns nothing. The detector's `\"\\${expr}\"` pattern is matching quoted interpolations in terminal-report and markdown strings.",
+          "because": "",
+          "over": [],
+          "couldBe": [
+            "the instrument is wrong — the thing that PRODUCED this number, not the thing it describes",
+            "the sql-ident family is pure false-positive noise here and will red CI on ordinary report-string edits, teaching reviewers to wave the ratchet through — the exact failure reconcile()'s own header names",
+            "the rate is low enough that the 89 sit inert in the pin and never fire, in which case scoping safeSql would only remove a detector that costs nothing"
+          ],
+          "discriminatedBy": "after ~20 commits of ordinary work, count lint-sinks --check failures and split them by context. If a majority are sql-ident on report strings, scope cfg.sinks.safeSql and pin a tripwire measure counting SQL statements at 0 so the exemption is itself checked; if sql-ident never fires, leave the default alone.",
+          "news": true
+        },
         {
           "id": "d-93abae1b",
           "kind": "conjecture",
@@ -599,7 +831,7 @@
             "the inference is right on hoist only because hoist's regions happen to have clean degrees; a project where a resource is ALSO a stage for some other flow would be misclassified and could not be corrected without the field"
           ],
           "discriminatedBy": "run readMap over the atlas of three more projects and count crossings whose inferred kind an author would dispute. Zero disputes on all three: do not add the field. One or more: the field earns its config surface, and the inference becomes the default rather than the only answer",
-          "news": true
+          "news": false
         },
         {
           "id": "d-759f7107",
@@ -616,7 +848,7 @@
             "tier-1 (enshrined) requires a via-guard the atlas can only infer in narrow cases, so the grade is an artifact of what the instrument can see"
           ],
           "discriminatedBy": "count enshrined crossings across several dogfooded projects; if tier-1 is ~1 everywhere regardless of codebase, it is the instrument, and the diagram should encode something with variance instead",
-          "news": true
+          "news": false
         },
         {
           "id": "d-85b1bcd9",
@@ -743,201 +975,182 @@
           ],
           "discriminatedBy": "hand-classify the 66 divergent pairs into cosmetic vs semantic. If semantic pairs are a small minority, the fix is tier-0 editing (stop quoting between frozen release notes and the living README) and an advisory; if semantic drift is common, prose needs binding machinery (transclusion markers regenerated by docs and byte-checked) the way the command index already has",
           "news": false
-        },
-        {
-          "id": "d-e45dbe0f",
-          "kind": "conjecture",
-          "at": "2026-07-31T14:50:52.405Z",
-          "agent": "main",
-          "session": "s-adcd72be1a20",
-          "commit": "fc709cf",
-          "chose": "PREMISE ROT: a journaled decision can state a premise that later work invalidates, and nothing in the harness detects it. Found live in hoist: app.spec.md filed the paths invariants at root because 'the feature has no single node — the store and the wire composition live in the Patient DO and worker.ts respectively'; the capability extraction moved the store, tools and declaration into shared/paths, dissolving that premise, and the decision now reads as current guidance with a false reason. The journal is append-only and self-correcting for RETRACTED decisions, but has no mechanism for decisions whose stated reason silently expired",
-          "because": "",
-          "over": [],
-          "couldBe": [
-            "the instrument is wrong — the thing that PRODUCED this number, not the thing it describes",
-            "a real and detectable advisory class: many premises name structural facts a graph already holds (a file path, 'lives in X', 'has no single node', 'confined to Y', a symbol name) — a scanner could extract path/symbol-shaped tokens from --because text and flag entries whose referents no longer exist or moved",
-            "undetectable in general: most premises are semantic, not structural, and a scanner that only catches path-shaped ones would give false confidence that the rest were checked"
-          ],
-          "discriminatedBy": "extract path/symbol tokens from every --because in hoist's 160-entry journal, resolve each against the current graph, and hand-classify the hits: if a meaningful fraction are genuinely rotted (not just moved-but-equivalent), the advisory is real; if it is mostly noise or only ever finds the one case we already know, it is not worth building",
-          "news": false
         }
       ],
-      "withheld": 8,
-      "total": 18
+      "withheld": 9,
+      "total": 19
     },
     "decisions": {
       "shown": [
         {
-          "id": "d-3fc9fb89",
+          "id": "d-2a349553",
           "kind": "decision",
-          "at": "2026-08-03T03:10:08.810Z",
+          "at": "2026-08-03T04:28:10.873Z",
           "agent": "general-purpose",
-          "session": "a338a2b8769208685",
-          "commit": "0f3b6cd",
-          "chose": "did NOT chase the last 26 left edges: 42 -> 39 headline, but the figure went 22 scattered edges -> 13 lattice stops",
-          "because": "the remaining edges are structural: 8 are chips (a tag flow, words in a line), 5 are right-aligned metric columns whose RIGHT edges are the alignment, 6 are the strip's own uniform stops, 3 are drill terms, 1 is an invisible checkbox the instrument counts; flattening those would trade real typography for a number — the same trap a previous agent refused",
+          "session": "a6d04728c29bbfb0d",
+          "commit": "e137a25",
+          "chose": "report the Index figure's first overflow on a second shape rather than fix the geometry inside a gate-adoption job",
+          "because": "MEASURED on two live shapes now. hoist: 4 spine stages, 9 column tracks at 112/128px, fgrid width 968px — fits the 1184px content column with room to spare, which is why five design rounds never saw this. coherence: 5 spine stages, 11 tracks at 128/144px (longer chart names — project-source, derived-model, reading-surface), fgrid width 1368px — it OVERFLOWS by ~230px. It degrades correctly (.figure is overflow-x:auto, so it scrolls and nothing is lost) but the default view cuts the spine's TERMINAL stage, `verdict`, which is the box the whole figure is about, and there is no affordance saying it scrolls. Figure width is a function of (spine stages x label length) and crosses the column at 5 stages of ~15 chars. That is the second dataset the MAP figure never had; the fix wants a design judgment, not a same-session patch.",
           "over": [
-            "forcing roster chips, drill terms and right-aligned numeric columns onto shared stops to score lower"
+            "widening main's 1184px content column, or shrinking the lattice column tracks, to make the spine fit"
           ],
           "couldBe": [],
           "discriminatedBy": "",
           "news": true
         },
         {
-          "id": "d-ce247973",
+          "id": "d-3d79428b",
           "kind": "decision",
-          "at": "2026-08-03T03:10:07.728Z",
+          "at": "2026-08-03T04:22:51.143Z",
           "agent": "general-purpose",
-          "session": "a338a2b8769208685",
-          "commit": "0f3b6cd",
-          "chose": "security diamonds HANG left of the label (negative margin equal to the mark's footprint) so every guard NAME sits exactly on its column stop",
-          "because": "a crop showed 'Patient' and 'serveJson' failing to left-align above their shared sink; reserving a slot would instead misalign names against box text, which shares the same stop",
+          "session": "a6d04728c29bbfb0d",
+          "commit": "e137a25",
+          "chose": "leave cfg.artifacts UNSET rather than declaring the single unit `cli: [src/**]` to make contracts say something",
+          "because": "MEASURED by trying it: with one artifact declared, `contracts` prints '✓ every cross-artifact shared file is covered by a declared contract or an anchored claim' and exits 0 — a CHECKMARK over a population that is empty by construction (no two artifacts, so no importer set can be disjoint). That is 0-of-0 rendering as 0-of-500, the precise defect floor.ts's header forbids, and it is worse than the unconfigured message ('no contracts/artifacts config — nothing to check'), which at least admits it measured nothing. The gate has no floor of its own: a project with one deploy unit gets an unearned green from `contracts --check` today.",
           "over": [
-            "diamond inline before the name, pushing guarded names 15px off the stop",
-            "reserving a diamond slot on every label, guarded or not"
+            "declaring one artifact so the gate reports a measurement instead of silence"
           ],
           "couldBe": [],
           "discriminatedBy": "",
           "news": true
         },
         {
-          "id": "d-2ab2d521",
+          "id": "d-cc8d4c00",
           "kind": "decision",
-          "at": "2026-08-03T03:10:06.645Z",
+          "at": "2026-08-03T04:22:25.398Z",
           "agent": "general-purpose",
-          "session": "a338a2b8769208685",
-          "commit": "0f3b6cd",
-          "chose": "P3: the summary sentence became a stat strip on uniform column stops; tier counts moved onto the legend's tier rows; zero-valued health readings print NOTHING; the provenance/stale clause was deleted outright",
-          "because": "a sentence cannot wrap or align, which is why four rewordings never helped; health-at-zero on every run is wallpaper that hides the one run where it matters; provenance already lives in the masthead badge and a second copy can only disagree with it",
+          "session": "a6d04728c29bbfb0d",
+          "commit": "e137a25",
+          "chose": "contracts: NOT APPLICABLE to coherence — one path-addressable deploy unit, so cfg.artifacts has nothing to partition",
+          "because": "MEASURED: package.json ships one compile unit (tsc over src/ → dist/cli.js + dist/hook-cli.js from the same run), so every symbol resolves to the same artifact and `cross` is structurally false. The genuine cross-unit seam DOES exist — 6 <script> blocks across render-contract/-index/-outline, whose Node producers hand data to browser consumers nothing typechecks (render-contract JSON.parses an embedded PromiseModel; render-index/-outline read data-* attributes) — but cfg.artifacts partitions by PATH GLOB and both sides of each seam live in ONE file, as a template literal. The mechanism cannot address it. Declaring it anyway would also fail --check as UNANCHORED, since no boundary claim names `embed` or the payload type. Re-run the query by counting compile units in package.json + <script> blocks in src/render-*.ts; if the browser scripts are ever extracted to their own files this answer flips.",
           "over": [
-            "rewording the sentence again",
-            "printing 'no dangling, drift or over-claim' as a green reassurance",
-            "keeping tier counts in both the strip and the legend"
+            "declaring the render-side embedded browser scripts as a second artifact",
+            "leaving `contracts` unconfigured and silent, which is indistinguishable from never having considered it"
           ],
           "couldBe": [],
           "discriminatedBy": "",
           "news": true
         },
         {
-          "id": "d-7a26703a",
+          "id": "d-8149793b",
           "kind": "decision",
-          "at": "2026-08-03T02:51:13.038Z",
-          "agent": "main",
-          "session": "e3421277-38b7-4a40-9b73-5a5a336816ad",
-          "commit": "0f3b6cd",
-          "chose": "field survey ran as 4 grouped agents: hoist alone, planetizer alone, the two coherence-* dirs together, the three zero-decision installs together",
-          "because": "grouping by usage weight let the two heavy journals get full-depth reads while related thin installs were compared against each other in one context, which is what exposed that the coherence-* dirs are worktrees and the mnemion dirs are twin clones -- facts invisible to per-directory agents",
+          "at": "2026-08-03T04:21:53.909Z",
+          "agent": "general-purpose",
+          "session": "a6d04728c29bbfb0d",
+          "commit": "e137a25",
+          "chose": "name this project's escaper in sinks.safeHtml (esc), after first making the four `esc` copies agree",
+          "because": "sinks.safeHtml exists to name what is safe BY CONSTRUCTION and the default already names escapeXml/escapeAttr for exactly this reason; the pin then means 315 genuinely RAW interpolations rather than 408 of which a quarter are inert. The precondition was real, not cosmetic: render-overview.ts's esc escaped &, < and > but NOT `\"`, while the other three escaped all four — whitelisting the NAME makes the weakest copy define what the whitelist means, so it was fixed first. safeSql is left at its default and NOT scoped.",
           "over": [
-            "one agent per .coherence directory (9 agents)",
-            "a single agent sweeping all installs sequentially"
+            "baselining all 408 sites including the 93 already routed through esc()",
+            "leaving safeHtml at its default and treating escaped sites as unreviewed"
           ],
           "couldBe": [],
           "discriminatedBy": "",
           "news": true
         },
         {
-          "id": "d-792db810",
+          "id": "d-9270c88e",
           "kind": "decision",
-          "at": "2026-08-03T02:46:23.449Z",
+          "at": "2026-08-03T04:20:05.710Z",
           "agent": "general-purpose",
-          "session": "a338a2b8769208685",
-          "commit": "0f3b6cd",
-          "chose": "P2: the figure becomes ONE CSS grid with a fixed px track list emitted once from Node; boxes/labels are HTML grid items, the SVG overlay draws connectors only and reads its coordinates from the same track prefix-sums",
-          "because": "fixed px tracks are the only way the CSS and the connector coordinates share one source of truth without runtime measurement; hand-computed text metrics caused every alignment failure so far, and with uniform tracks a bad estimate degrades to harmless overflow instead of layout drift",
+          "session": "a6d04728c29bbfb0d",
+          "commit": "e137a25",
+          "chose": "chart coherence's atlas over EVIDENCE trust domains (project-source · derived-model · shell · record · verdict · reading-surface), not over network/authz zones",
+          "because": "the atlas's semantics are 'trust domains + chokepoints that RE-ESTABLISH the destination's invariant', and coherence's scarce resource is not privilege but WARRANT: what a gate is permitted to say. All 14 spec boundary chokepoints land as crossings with zero non-transitions — the whole codebase is the seam between a repo and a verdict — and the charting immediately paid: 3 tier-3 SECURITY crossings with no boundary claim at all (buildGraph, loadConfig, readJsonOrRefuse), the three ingress doors nothing in the spec governs.",
           "over": [
-            "keeping the all-SVG figure and tightening its hand-computed x's",
-            "absolutely-positioned HTML (not a grid) over the SVG",
-            "JS measuring the DOM to place connectors at runtime"
+            "declaring the atlas not-applicable because coherence has no attacker and no network",
+            "charting the source tree's own module layers, which would restate the graph"
           ],
           "couldBe": [],
           "discriminatedBy": "",
           "news": true
         },
         {
-          "id": "d-36e1ea38",
+          "id": "d-42ee4863",
           "kind": "decision",
-          "at": "2026-08-03T01:29:08.628Z",
+          "at": "2026-08-03T04:19:54.033Z",
           "agent": "general-purpose",
-          "session": "a533f8eeb80afb7f8",
-          "commit": "7e985a2",
-          "chose": "shipped the spine figure at 7e985a2",
-          "because": "the trace read off the rendered PNG matched atlas.transitions 14/14: browser-client -api-> public-web -requireAuth|verifySession-> authed-user -OwnedScope-> patient, plus 8 reaches attributed to the right stage and the right resource, plus config as ambient supply. That read-off is the acceptance test and it is the only one that could not be faked by a passing assertion",
-          "over": [],
-          "couldBe": [],
-          "discriminatedBy": "",
-          "news": true
-        },
-        {
-          "id": "d-3589287d",
-          "kind": "decision",
-          "at": "2026-08-03T01:27:12.776Z",
-          "agent": "general-purpose",
-          "session": "a533f8eeb80afb7f8",
-          "commit": "e351490",
-          "chose": "the figure's organ BANDS are gone; organ ownership survives only as data-owner + the roster",
-          "because": "organs cut ACROSS the spine — on hoist six components own crossings in three different classes, so an organ band over a spine picture is a bounding box around scattered things. The join is not lost: clicking an organ still lights its guards wherever they landed (verified in a browser: shared/auth lights verifySession + 3 reaches), and the ORGAN ROSTER below the figure is unchanged",
+          "session": "a6d04728c29bbfb0d",
+          "commit": "e137a25",
+          "chose": "fix sources=[src,test] + testDir='test/' — adopting the atlas exposed that the sidecar scan was reading the wrong population",
+          "because": "MEASURED: scanSources splits by `rel.includes(testDir)`, so testDir='test' matched src/run-named-test.ts and src/test-batch.ts — two modules deliberately moved INSIDE the evidence perimeter — and pushed them out of the scanned `src`. atlas graded runNamedTest DANGLING for it. Worse, sources=['src'] meant the real test tree was never scanned at all, so conventions' totalityTests set was those two misclassified files: the ORACLE grade was structurally unreachable in this repo, and every guard could only ever come back CONVENTION or single. Now src=54 / test=42 (was 52 / 2).",
           "over": [
-            "keeping the matrix's contiguous per-organ row bands"
+            "keeping sources=[src], testDir='test' and marking runNamedTest knownPending to make atlas --check green"
           ],
           "couldBe": [],
           "discriminatedBy": "",
           "news": true
         },
         {
-          "id": "d-236c6368",
+          "id": "d-fc10eeec",
           "kind": "decision",
-          "at": "2026-08-03T01:27:11.647Z",
+          "at": "2026-08-03T04:11:23.544Z",
           "agent": "general-purpose",
-          "session": "a533f8eeb80afb7f8",
-          "commit": "e351490",
-          "chose": "resource boxes are drawn ONCE and shared, and the reach lanes are grouped by SINK rather than by stage",
-          "because": "grouping by sink puts every guard landing on a resource in one left-aligned column directly above its box — the drop x, the label x and the box's own name x are ONE alignment line. Grouping by stage zigzagged the labels across four x positions for no gain; duplicating the box would turn one shared thing into several, which is the fact the band exists to state (storage is reached by 4 guards from 2 stages)",
+          "session": "a6d04728c29bbfb0d",
+          "commit": "e137a25",
+          "chose": "adopt the five unadopted gates one at a time, and where a gate does not apply say so IN THE CONFIG rather than leaving it unconfigured",
+          "because": "measured: mass/conventions/lint-sinks all exit 2 with no baseline (fail-closed, honest), but atlas and contracts exit 0 when unconfigured — so an inapplicable gate and an unadopted one are INDISTINGUISHABLE for exactly the two gates that were never adopted. That asymmetry is the finding's mechanism, not an incidental.",
           "over": [
-            "grouping lanes by the stage that grabs them",
-            "drawing a resource box under each stage that reaches it"
+            "wiring all five into CI to get seven checkmarks",
+            "leaving atlas/contracts silently unconfigured, which is what made this invisible"
           ],
           "couldBe": [],
           "discriminatedBy": "",
           "news": true
         },
         {
-          "id": "d-192b0a91",
+          "id": "d-4fa938b2",
           "kind": "decision",
-          "at": "2026-08-03T01:24:46.382Z",
+          "at": "2026-08-03T03:40:14.363Z",
           "agent": "general-purpose",
-          "session": "a533f8eeb80afb7f8",
-          "commit": "e351490",
-          "chose": "left-edge count is at PARITY (42 new vs 39 old, same instrument; the brief quoted 43), not reduced — and I stopped chasing it",
-          "because": "measured: 20 of the page's 42 edges are the roster and masthead and are identical in both figures; of the figure's 22, EIGHTEEN are nine boxes each contributing a border edge and a name edge. Boxes are what the arrows point at and what makes a stage a stage — the matrix scored better precisely because it drew none. Alignment was never the defect; the brief says so itself",
+          "session": "a7c019196de0e5880",
+          "commit": "d69d637",
+          "chose": "supply demoted to a one-line footnote under the figure, capped at 6 accessors per source with the withheld-tail idiom",
+          "because": "measured: hoist has 1 supplier with 2 accessors and coherence has none, so a leading band spent the figure's first band on the exception; the cap names what many-crossing projects degrade to, as the author asked",
           "over": [
-            "cutting the region-box outlines, which would have bought 6 edges",
-            "snapping resource boxes to the stage lattice, which costs 300px of width and buys 1"
+            "keeping the supply legend item and tinted band",
+            "an uncapped footnote line that grows with the project"
           ],
           "couldBe": [],
           "discriminatedBy": "",
-          "news": true
+          "news": false
         },
         {
-          "id": "d-28c6aaf4",
+          "id": "d-17965e2a",
           "kind": "decision",
-          "at": "2026-08-03T01:08:57.538Z",
+          "at": "2026-08-03T03:40:04.047Z",
           "agent": "general-purpose",
-          "session": "a533f8eeb80afb7f8",
-          "commit": "e351490",
-          "chose": "break the entry tie on total heat along the path, not on path length",
-          "because": "the brief asserted config takes a 'shorter path'; measuring it, both sources reach the same depth. Heat is the honest discriminator — the entry is where traffic actually enters: api heat 0.089 vs envStr 0.0064, a 14x gap. Re-run: jq '.map.crossings.shown[]|select(.from==\"config\" or .from==\"browser-client\")' docs/coherence/index.json",
+          "session": "a7c019196de0e5880",
+          "commit": "d69d637",
+          "chose": "guards sharing a (stage, sink) pair stagger their taps two units apart with labels cascading down-right in tap order",
+          "because": "three crossings drawn as one coincident wire is the same looks-like-one-landing lie the arrowhead fix removes — the stagger costs 16px and keeps count disclosure",
           "over": [
-            "path length alone (it TIES on hoist: browser-client and config both reach patient in 4 stages)",
-            "declaring the first source in spec order the entry"
+            "one shared tap per (stage, sink) with a label stack above it"
           ],
           "couldBe": [],
           "discriminatedBy": "",
-          "news": true
+          "news": false
+        },
+        {
+          "id": "d-1f632b28",
+          "kind": "decision",
+          "at": "2026-08-03T03:40:01.863Z",
+          "agent": "general-purpose",
+          "session": "a7c019196de0e5880",
+          "commit": "d69d637",
+          "chose": "resources regrouped BY SINK: one hairline lane per sink ending in ONE arrowhead at a shared right rail; each guard is a tap — a vertical drop in its own tier/heat treatment joining the lane at a filled square",
+          "because": "the lane lands once, so drawing one landing is the honest picture; the tap square discloses each feed and its x discloses the stage",
+          "over": [
+            "stair-stepped sink columns (each box one column right of its latest grabbing stage), which adds a column per sink and overflows the 1184px page at hoist's four sinks",
+            "each guard drawing its own full run along the shared lane, which superimposes out-of-phase dashed strokes and reintroduces the two-arrowheads-at-one-x defect the pass exists to close"
+          ],
+          "couldBe": [],
+          "discriminatedBy": "",
+          "news": false
         }
       ],
-      "withheld": 180,
-      "total": 190
+      "withheld": 190,
+      "total": 200
     },
     "marks": [
       {
@@ -1708,7 +1921,7 @@
         "lane": "open",
         "at": "2026-07-31T14:50:52.405Z",
         "news": false,
-        "shown": true
+        "shown": false
       },
       {
         "id": "d-ec1b2f8e",
@@ -2176,315 +2389,399 @@
         "id": "d-bab08665",
         "lane": "decision",
         "at": "2026-08-01T03:16:58.709Z",
-        "news": true,
+        "news": false,
         "shown": false
       },
       {
         "id": "d-3b7c4936",
         "lane": "decision",
         "at": "2026-08-01T03:27:12.214Z",
-        "news": true,
+        "news": false,
         "shown": false
       },
       {
         "id": "d-3add85b9",
         "lane": "decision",
         "at": "2026-08-01T03:34:06.916Z",
-        "news": true,
+        "news": false,
         "shown": false
       },
       {
         "id": "d-d405e24e",
         "lane": "decision",
         "at": "2026-08-01T03:44:19.515Z",
-        "news": true,
+        "news": false,
         "shown": false
       },
       {
         "id": "d-ad96879b",
         "lane": "blocked",
         "at": "2026-08-01T03:49:48.584Z",
-        "news": true,
+        "news": false,
         "shown": true
       },
       {
         "id": "d-2ff4b51b",
         "lane": "decision",
         "at": "2026-08-01T20:49:17.879Z",
-        "news": true,
+        "news": false,
         "shown": false
       },
       {
         "id": "d-faa17811",
         "lane": "decision",
         "at": "2026-08-01T20:49:42.104Z",
-        "news": true,
+        "news": false,
         "shown": false
       },
       {
         "id": "d-91b82241",
         "lane": "decision",
         "at": "2026-08-01T21:00:00.084Z",
-        "news": true,
+        "news": false,
         "shown": false
       },
       {
         "id": "d-dfd359f5",
         "lane": "decision",
         "at": "2026-08-01T21:07:05.296Z",
-        "news": true,
+        "news": false,
         "shown": false
       },
       {
         "id": "d-6a34f3ac",
         "lane": "decision",
         "at": "2026-08-01T21:07:06.550Z",
-        "news": true,
+        "news": false,
         "shown": false
       },
       {
         "id": "d-b3d1fd48",
         "lane": "decision",
         "at": "2026-08-01T21:07:07.787Z",
-        "news": true,
+        "news": false,
         "shown": false
       },
       {
         "id": "d-0aa2f307",
         "lane": "decision",
         "at": "2026-08-01T21:10:53.578Z",
-        "news": true,
+        "news": false,
         "shown": false
       },
       {
         "id": "d-853bdab4",
         "lane": "decision",
         "at": "2026-08-01T21:43:19.543Z",
-        "news": true,
+        "news": false,
         "shown": false
       },
       {
         "id": "d-9094e2a5",
         "lane": "decision",
         "at": "2026-08-01T21:43:33.091Z",
-        "news": true,
+        "news": false,
         "shown": false
       },
       {
         "id": "d-4ad824f3",
         "lane": "decision",
         "at": "2026-08-01T21:43:33.371Z",
-        "news": true,
+        "news": false,
         "shown": false
       },
       {
         "id": "d-6f01f848",
         "lane": "decision",
         "at": "2026-08-01T21:56:21.953Z",
-        "news": true,
+        "news": false,
         "shown": false
       },
       {
         "id": "d-6f9cf4d5",
         "lane": "decision",
         "at": "2026-08-01T22:03:16.398Z",
-        "news": true,
+        "news": false,
         "shown": false
       },
       {
         "id": "d-6143b0d2",
         "lane": "decision",
         "at": "2026-08-01T22:03:16.692Z",
-        "news": true,
+        "news": false,
         "shown": false
       },
       {
         "id": "d-c3b5dbd5",
         "lane": "blocked",
         "at": "2026-08-01T22:03:30.385Z",
-        "news": true,
+        "news": false,
         "shown": true
       },
       {
         "id": "d-afec9036",
         "lane": "decision",
         "at": "2026-08-01T22:03:30.667Z",
-        "news": true,
+        "news": false,
         "shown": false
       },
       {
         "id": "d-061e717c",
         "lane": "decision",
         "at": "2026-08-02T22:34:06.454Z",
-        "news": true,
+        "news": false,
         "shown": false
       },
       {
         "id": "d-dcbb589c",
         "lane": "decision",
         "at": "2026-08-02T22:34:13.421Z",
-        "news": true,
+        "news": false,
         "shown": false
       },
       {
         "id": "d-1a23aa09",
         "lane": "decision",
         "at": "2026-08-02T22:34:17.754Z",
-        "news": true,
+        "news": false,
         "shown": false
       },
       {
         "id": "d-1ca55d4b",
         "lane": "decision",
         "at": "2026-08-02T22:48:09.127Z",
-        "news": true,
+        "news": false,
         "shown": false
       },
       {
         "id": "d-dfaaa05d",
         "lane": "decision",
         "at": "2026-08-02T22:48:14.404Z",
-        "news": true,
+        "news": false,
         "shown": false
       },
       {
         "id": "d-fef2d033",
         "lane": "decision",
         "at": "2026-08-02T23:13:47.482Z",
-        "news": true,
+        "news": false,
         "shown": false
       },
       {
         "id": "d-7573ea9c",
         "lane": "decision",
         "at": "2026-08-02T23:34:29.506Z",
-        "news": true,
+        "news": false,
         "shown": false
       },
       {
         "id": "d-759f7107",
         "lane": "open",
         "at": "2026-08-02T23:37:23.891Z",
-        "news": true,
+        "news": false,
         "shown": true
       },
       {
         "id": "d-c87d30eb",
         "lane": "decision",
         "at": "2026-08-02T23:37:35.757Z",
-        "news": true,
+        "news": false,
         "shown": false
       },
       {
         "id": "d-904ad0c0",
         "lane": "decision",
         "at": "2026-08-02T23:37:36.924Z",
-        "news": true,
+        "news": false,
         "shown": false
       },
       {
         "id": "d-e994764c",
         "lane": "decision",
         "at": "2026-08-03T01:08:49.175Z",
-        "news": true,
+        "news": false,
         "shown": false
       },
       {
         "id": "d-28c6aaf4",
         "lane": "decision",
         "at": "2026-08-03T01:08:57.538Z",
-        "news": true,
-        "shown": true
+        "news": false,
+        "shown": false
       },
       {
         "id": "d-192b0a91",
         "lane": "decision",
         "at": "2026-08-03T01:24:46.382Z",
-        "news": true,
-        "shown": true
+        "news": false,
+        "shown": false
       },
       {
         "id": "d-93abae1b",
         "lane": "open",
         "at": "2026-08-03T01:27:01.048Z",
-        "news": true,
+        "news": false,
         "shown": true
       },
       {
         "id": "d-236c6368",
         "lane": "decision",
         "at": "2026-08-03T01:27:11.647Z",
-        "news": true,
-        "shown": true
+        "news": false,
+        "shown": false
       },
       {
         "id": "d-3589287d",
         "lane": "decision",
         "at": "2026-08-03T01:27:12.776Z",
-        "news": true,
-        "shown": true
+        "news": false,
+        "shown": false
       },
       {
         "id": "d-36e1ea38",
         "lane": "decision",
         "at": "2026-08-03T01:29:08.628Z",
-        "news": true,
-        "shown": true
+        "news": false,
+        "shown": false
       },
       {
         "id": "d-792db810",
         "lane": "decision",
         "at": "2026-08-03T02:46:23.449Z",
-        "news": true,
-        "shown": true
+        "news": false,
+        "shown": false
       },
       {
         "id": "d-7a26703a",
         "lane": "decision",
         "at": "2026-08-03T02:51:13.038Z",
-        "news": true,
-        "shown": true
+        "news": false,
+        "shown": false
       },
       {
         "id": "d-2ab2d521",
         "lane": "decision",
         "at": "2026-08-03T03:10:06.645Z",
-        "news": true,
-        "shown": true
+        "news": false,
+        "shown": false
       },
       {
         "id": "d-ce247973",
         "lane": "decision",
         "at": "2026-08-03T03:10:07.728Z",
-        "news": true,
-        "shown": true
+        "news": false,
+        "shown": false
       },
       {
         "id": "d-3fc9fb89",
         "lane": "decision",
         "at": "2026-08-03T03:10:08.810Z",
+        "news": false,
+        "shown": false
+      },
+      {
+        "id": "d-1f632b28",
+        "lane": "decision",
+        "at": "2026-08-03T03:40:01.863Z",
+        "news": false,
+        "shown": true
+      },
+      {
+        "id": "d-17965e2a",
+        "lane": "decision",
+        "at": "2026-08-03T03:40:04.047Z",
+        "news": false,
+        "shown": true
+      },
+      {
+        "id": "d-4fa938b2",
+        "lane": "decision",
+        "at": "2026-08-03T03:40:14.363Z",
+        "news": false,
+        "shown": true
+      },
+      {
+        "id": "d-fc10eeec",
+        "lane": "decision",
+        "at": "2026-08-03T04:11:23.544Z",
+        "news": true,
+        "shown": true
+      },
+      {
+        "id": "d-42ee4863",
+        "lane": "decision",
+        "at": "2026-08-03T04:19:54.033Z",
+        "news": true,
+        "shown": true
+      },
+      {
+        "id": "d-9270c88e",
+        "lane": "decision",
+        "at": "2026-08-03T04:20:05.710Z",
+        "news": true,
+        "shown": true
+      },
+      {
+        "id": "d-8149793b",
+        "lane": "decision",
+        "at": "2026-08-03T04:21:53.909Z",
+        "news": true,
+        "shown": true
+      },
+      {
+        "id": "d-ea99196e",
+        "lane": "open",
+        "at": "2026-08-03T04:22:03.881Z",
+        "news": true,
+        "shown": true
+      },
+      {
+        "id": "d-cc8d4c00",
+        "lane": "decision",
+        "at": "2026-08-03T04:22:25.398Z",
+        "news": true,
+        "shown": true
+      },
+      {
+        "id": "d-3d79428b",
+        "lane": "decision",
+        "at": "2026-08-03T04:22:51.143Z",
+        "news": true,
+        "shown": true
+      },
+      {
+        "id": "d-f241c582",
+        "lane": "blocked",
+        "at": "2026-08-03T04:25:44.843Z",
+        "news": true,
+        "shown": true
+      },
+      {
+        "id": "d-2a349553",
+        "lane": "decision",
+        "at": "2026-08-03T04:28:10.873Z",
         "news": true,
         "shown": true
       }
     ],
     "settled": {
-      "resolved": 21,
-      "dismissed": 1,
+      "resolved": 22,
+      "dismissed": 2,
       "retracted": 2,
-      "inFrame": 5
+      "inFrame": 1
     },
     "totals": {
-      "blocked": 10,
-      "open": 18,
-      "decisions": 190,
-      "records": 276,
-      "sessions": 54,
+      "blocked": 11,
+      "open": 19,
+      "decisions": 200,
+      "records": 293,
+      "sessions": 57,
       "unreadable": 0
     },
     "news": {
-      "blocked": 2,
-      "open": 2,
-      "decisions": 38
+      "blocked": 1,
+      "open": 1,
+      "decisions": 7
     }
   },
   "trajectory": {
@@ -2524,35 +2821,16 @@
         "withheld": 0,
         "total": 0
       },
-      "claimDelta": [
-        {
-          "comp": "Harness core",
-          "added": 1,
-          "removed": 0
-        }
-      ],
+      "claimDelta": [],
       "changes": 0,
       "losses": 0
     },
     "structuralWhy": null,
     "loc": {
-      "added": 5138,
-      "deleted": 66
+      "added": 22,
+      "deleted": 1
     },
-    "mass": {
-      "at": "2026-07-31T17:56:23.525Z",
-      "stale": true,
-      "series": [
-        2317,
-        1947,
-        2669,
-        9123,
-        4496,
-        3468,
-        2267,
-        11208
-      ]
-    },
+    "mass": null,
     "drift": {
       "at": "2026-07-31T17:59:22.182Z",
       "stale": true,

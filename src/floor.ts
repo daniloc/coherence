@@ -44,6 +44,19 @@
 // finding — reviewable, waivable by re-pinning with a diff, and answering the question
 // this floor cannot: not "is there anything left?" but "is there as much as there was?".
 //
+// AND THAT PIN IS NOW WIRED IN THIS REPO, which it was not when the paragraph above was
+// written (2026-08-03: an audit found coherence ran 2 of the 7 gates it ships, and the
+// sharpest instance was this comment prescribing a mitigation the config did not carry).
+// `coherence.config.json` declares `mass.measures` = graph-components + graph-claims,
+// both from `scripts/graph-population.mjs`, which DERIVES the graph rather than reading
+// the committed artifact — a probe that read `public/graph.json` would report the
+// pre-collapse population and pin the collapse as no-change. Pinned at 4 components / 29
+// claims and checked per-push. Verified by simulating the exact defect this paragraph
+// describes (ignoring `adapters`, so one component leaves the walk): `mass --check`
+// printed `measure|graph-components 3 ← 4  -1` and `measure|graph-claims 26 ← 29  -3`
+// under "6 dimension(s) SHRANK since the pin (never a failure) — re-pin to bank it".
+// A finding a human re-pins with a diff, which is exactly what was specified.
+//
 // SCOPED RUNS CANNOT TRIP THE FLOOR, structurally: the floor reads the DERIVED GRAPH,
 // which is always full-tree — `--staged`/`--since` narrow which components are EVALUATED,
 // never what is derived. A reading taken above the scoping seam needs no scope exemption.

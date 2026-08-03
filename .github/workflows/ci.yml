@@ -35,6 +35,31 @@ jobs:
         run: node src/cli.ts docs --check
       - name: Check invariant rationale coverage
         run: node src/cli.ts why-lint --check
+      # THE RATCHETS AND THE ATLAS — added 2026-08-03, after an audit measured that this
+      # workflow ran 2 of the 7 gates the harness ships. `verify` and `docs` were the two,
+      # and they are the two everybody looks at, which is why "coherence dogfoods itself"
+      # survived five releases without being true. Each of these costs well under a second
+      # (measured: 0.49 / 0.30 / 0.25 / 0.38s), so per-push is the right home for all four.
+      #
+      # `contracts` is deliberately ABSENT and that absence is reasoned, not an omission:
+      # this repo ships ONE path-addressable deploy unit, so `cfg.artifacts` has nothing to
+      # partition and the detector would print a checkmark over an empty population. See
+      # the decision journal (2026-08-03) for the measurement and for what would flip it.
+      - name: Check the mass ratchet (includes the graph POPULATION floor.ts prescribes)
+        # `mass.measures` counts component nodes and claim lines in the DERIVED graph.
+        # floor.ts:42 named this pin as the mitigation for the one collapse the non-vacuity
+        # floor deliberately cannot gate — a gradual N→1 shrink where each step looks like
+        # an ordinary spec deletion. Without it that mitigation was prose.
+        run: node src/cli.ts mass --check
+      - name: Check the convention ratchet
+        run: node src/cli.ts conventions --check
+      - name: Check the interpolation-surface ratchet
+        run: node src/cli.ts lint-sinks --check
+      - name: Check the trust atlas (drift / dangling / over-claim)
+        # Drift is the load-bearing verdict here: every boundary chokepoint in the spec
+        # tree must be mapped to a crossing or declared a within-chart non-transition, so a
+        # new boundary cannot be added without saying what it crosses.
+        run: node src/cli.ts atlas --check
       - name: Materialize a read-only verification snapshot
         run: |
           mkdir -p "$RUNNER_TEMP/coherence-verify"
