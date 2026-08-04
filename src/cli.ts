@@ -516,6 +516,11 @@ if (cmd === "graph") {
     open: argv.includes("--open"),
   });
   console.log(text);
+  // A HUMAN at a terminal learns the settled render has a live sibling; a pipe (an
+  // agent, a script, an --md artifact) gets exactly the record and nothing else — a
+  // permanent footer in piped output would be furniture in every consumer's parse.
+  if (process.stdout.isTTY && !argv.includes("--md"))
+    console.log("live: coherence journal — this record as a stream (⏎ drills in, c lists the open conjectures)\n");
   await exit(0);
 } else if (cmd === "journal") {
   // The LIVE read over the same record `decisions` settles: entries as they land, and a

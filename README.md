@@ -365,6 +365,18 @@ project-local dependency; no global installation is assumed.
    telemetry—not the control bit. A newly installed runnable hook is present before its
    first firing, and yesterday's firing cannot redeem wiring removed today.
 
+6. **Watch the record as it is written.** With the control on, every agent session
+   journals as it works. From the coherence root, in a second terminal:
+
+   ```sh
+   npx coherence journal
+   ```
+
+   This is the payoff surface of the whole record: every stream interleaved, newest
+   first, live. `⏎` drills into an entry, `c` lists the open conjectures, `f` follows
+   the tip as agents write. Leave it open while a fleet runs and you are reading your
+   agents' reasoning at the moment it happens instead of reconstructing it afterward.
+
 `npx coherence hooks print` renders the canonical settings, launcher, and mapping for
 inspection. It is not the preferred installer. The launcher and mapping paths are
 coherence-owned: `install` repairs drift at those names, while `uninstall` removes them

@@ -300,6 +300,10 @@ export async function installHooks(cfg: Config, json = false): Promise<number> {
   if (!json) console.log(result.changed.length ? "installed lifecycle hook in shared project settings" : "lifecycle hook already installed");
   const status = hookStatus(cfg);
   printHookStatus(status, json);
+  // The moment the control turns ON is the one moment the operator is guaranteed to be
+  // reading — and it is exactly when the journal starts being written. Say where to watch.
+  if (!json && status.control.present)
+    console.log("\nwatch it live: npx coherence journal — entries stream in as agents write them");
   return status.control.present ? 0 : 1;
 }
 
