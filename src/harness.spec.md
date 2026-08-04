@@ -23,6 +23,7 @@ rendering, and journaling remain independently addressable modules beneath this 
 - a named oracle that no test runs cannot pass
 - an empty derivation against a remembered surface refuses, never passes
 - lifecycle hook presence is one canonical runnable bit
+- a streamed journal entry renders exactly once across appends and compaction
 
 ## refutations
 
@@ -63,6 +64,7 @@ rendering, and journaling remain independently addressable modules beneath this 
 - boundary "a named oracle that no test runs cannot pass" at runNamedTest via guard "runner contract — a name that exists nowhere exits nonzero (the vanished oracle cannot pass)"
 - boundary "an empty derivation against a remembered surface refuses, never passes" at vacuityRefusal via guard "FLOOR — an empty derivation against a remembered surface REFUSES, never reports coherent"
 - boundary "lifecycle hook presence is one canonical runnable bit" at inspectLifecycleHook via guard "control — presence is the complete canonical bundle, never a partial or lookalike"
+- boundary "a streamed journal entry renders exactly once across appends and compaction" at tailJournal via guard "tail — an appended record arrives exactly once, a compaction fold re-emits nothing and drops nothing, and a half-written line waits for its bytes"
 
 ## why
 
@@ -160,6 +162,16 @@ one stable launcher. Presence means exactly one shared copy, no competing local 
 path, a correct declared root mapping, and a runnable target. Unrelated hooks may coexist.
 Historical journal activity is reported beside this bit but can neither redeem current
 absence nor erase current presence.
+
+**a streamed journal entry renders exactly once across appends and compaction.** The live
+stream exists for the one reader the settled render cannot serve — an orchestrator watching
+five subagents mid-flight — and that reader has no way to audit the feed against the files.
+A dropped entry is a decision the orchestrator never saw, indistinguishable from one never
+made; a duplicate teaches the opposite lie, that a question was decided twice. Both are
+cheap to produce, because the journal's files do not strictly grow: compaction moves lines
+between files and unlinks the originals, which a position-addressed reader replays in full.
+So a record's identity in the stream comes from its content — the same triple the merged
+timeline sorts by — and a moved line is one the feed already carried.
 
 (The import claims above separately prove that the composition root still reaches the
 configuration loader, graph derivation, verifier, spec walker, and journal.)

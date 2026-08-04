@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-08-03 14:22Z",
+  "generatedAt": "2026-08-04 18:55Z",
   "root": "coherence",
-  "absRoot": "/Users/daniloc/Documents/Development/coherence",
+  "absRoot": "/home/user/coherence",
   "nodes": [
     {
       "id": "c:.",
@@ -43,10 +43,11 @@
         "boundary \"a skipped run never clobbers an oracle's recorded verdict\" at recordVerify via guard \"merge — a skip never clobbers a real verdict; the old verdict rides through with its own stamp\"",
         "boundary \"a named oracle that no test runs cannot pass\" at runNamedTest via guard \"runner contract — a name that exists nowhere exits nonzero (the vanished oracle cannot pass)\"",
         "boundary \"an empty derivation against a remembered surface refuses, never passes\" at vacuityRefusal via guard \"FLOOR — an empty derivation against a remembered surface REFUSES, never reports coherent\"",
-        "boundary \"lifecycle hook presence is one canonical runnable bit\" at inspectLifecycleHook via guard \"control — presence is the complete canonical bundle, never a partial or lookalike\""
+        "boundary \"lifecycle hook presence is one canonical runnable bit\" at inspectLifecycleHook via guard \"control — presence is the complete canonical bundle, never a partial or lookalike\"",
+        "boundary \"a streamed journal entry renders exactly once across appends and compaction\" at tailJournal via guard \"tail — an appended record arrives exactly once, a compaction fold re-emits nothing, and a half-written line waits for its bytes\""
       ],
       "prose": "The CLI is deliberately a thin composition root. Parsing, derivation, verification,\nrendering, and journaling remain independently addressable modules beneath this boundary.",
-      "why": "**agent lifecycle preserves decisions and exposes the current change signal.** Decisions\nand risk are cheapest to surface while the agent still holds the context that produced\nthem; waiting for a later reviewer externalizes both reconstruction costs.\n\n**significant behavioral growth acquires an anchor or patch-specific decision.** The cost\nof adding an invariant is immediate while the cost of omitting it appears later, so the\ncurrent patch must carry either enforcement or an addressable reason that it needs none.\n\n**task context is bounded and names its approximations.** A focused context packet is\nuseful only when its one-hop and heuristic limits stay visible; otherwise convenience is\nmisread as completeness and recreates the omission gradient this project exists to oppose.\n\n**cached decisions expose structurally expired premises.** A decision saves inference only\nwhile the repository addresses supporting it remain live. Broken explicit referents must\nbe louder than readable but stale rationale.\n\n**predicted context closure is calibrated against observed reads and outcomes.** Economy's\none-hop closure is a hypothesis about necessary reading, not cognition. Observed reads and\nlater defect labels give that model a path to correction instead of turning it into dogma.\n\n**reviewed risk sites survive relocation but never duplication.** A ratchet baseline is a\ncached review, and a cached fact that expires on a rename rots the same way a decision's\npremises do — a refactor then spends a reviewer's attention on sites nobody touched, and\nattention spent on false alarms is how a real one gets waved through. Relocation changes\nwhere a reviewed site lives; duplication changes how much unreviewed surface exists, and\nonly the second is news.\n\n**pinned mass follows a value-conserving rename but never absorbs growth.** A mass\ndimension's key embeds a name someone chose — a spec H1, a measure's config key — so a\nrename re-addresses the pin, and a ratchet that reads its own re-addressing as \"gained\nparts nobody named\" prints a lie beside the unchanged total that refutes it (measured:\none H1 edit, 35 lines relabeled, zero gained, gate red). The repair must stay\ncount-conserving: only a vanished pin with the same family, unit and exact value can\nabsorb a new name, or growth and novelty would ride in under renames.\n\n**a claim goes green only on positive evidence its oracle ran.** The verifier's whole\nauthority rests on this one property, and until now no claim cited it: an audit deleted\nthe rule and the tree stayed \"✓ coherent\" while the unit test failed unseen. An exit\ncode is the runner's statement about itself, not about the named test — a filter that\nmatched nothing exits clean on every runner class this repo has measured — so green\nmust require output that names the run, the one reading absence cannot produce.\n\n**a vanished oracle reds its claim, never green-by-absence.** A renamed or deleted test\nleaves a claim citing a name nothing owns, and that claim then guards nothing while\nwearing green. Absence has to be its own observable verdict, distinct from ran-and-failed,\nbecause the two demand different repairs: a red test needs the code fixed, a vanished\noracle needs the contract re-tied to something that exists.\n\n**a declared invariant unanchored by any boundary fails coverage.** A spec may not\nassert a property that nothing enforces: that is the ratchet the whole harness turns on,\nand if it silently loosened, specs would drift back into aspiration prose. The gap has to\ncost a red at the run that opened it, while the person who opened it still holds the\ncontext to close it.\n\n**a via-test oracle that iterates no live domain fails its claim.** A totality label on a\nsampling test is worse than no label: it retires the reader's suspicion without retiring\nthe risk. Deriving the checked set from the live registry the chokepoint actually serves\nis what makes \"covers every case\" a fact about the system rather than about the fixture\nlist the author remembered.\n\n**a skipped run never clobbers an oracle's recorded verdict.** The record is the last\nknown truth, honestly dated. A fast tier that skips the executable claims every commit\nwould otherwise erase last week's real pass — or, worse, a real fail — with \"did not\nlook\", and history that can be overwritten by not looking is not history.\n\n**a named oracle that no test runs cannot pass.** The serial runner is the component the\nexecutable tier leans its trust on, and it was outside the evidence perimeter — unclaimed,\nuntested, and (measured) willing to exit clean when the cited title survived only as a\nstring in a file. The runner itself must refuse a name it cannot show ran, because every\ngreen above it inherits that refusal.\n\n**an empty derivation against a remembered surface refuses, never passes.** Every verdict\nin this file rests on the graph deriving non-empty, and nothing checked that premise:\ngutting `buildGraph` left the gate printing \"claims: 0\" and \"✓ coherent\", exit 0 —\ndeeper than a vanished oracle, because it empties every check at once while announcing\nthey all passed. The record remembers how many claims the last run graded, so a run that\nsuddenly sees zero must refuse rather than report success over nothing; the only\nlegitimate zero (a project adopting from nothing) is exactly the one with no memory, and\nit gets the adoption ladder instead. The floor deliberately stops at zero: a partial\ncollapse where every component keeps a claim is observationally identical to deliberate\npruning, and deletion has to stay free or people stop deleting. What the complement\nunderneath it actually reaches is narrower than it first appears — a component stripped of\nits claims is still a node someone can red, while a component the walk never discovered\nleaves nothing behind to notice, so an N→1 slide reads as N ordinary prunings. Pinning the\npopulation as a mass dimension is the honest answer there, because the question it settles\nis not whether anything survived but whether as much survived as last time.\n\n**lifecycle hook presence is one canonical runnable bit.** The control surface cannot\ncreate a field if every repository is free to carry a merely similar—or silently dead—\nhook. Printing, installation, and inspection therefore share one five-event value and\none stable launcher. Presence means exactly one shared copy, no competing local or legacy\npath, a correct declared root mapping, and a runnable target. Unrelated hooks may coexist.\nHistorical journal activity is reported beside this bit but can neither redeem current\nabsence nor erase current presence.\n\n(The import claims above separately prove that the composition root still reaches the\nconfiguration loader, graph derivation, verifier, spec walker, and journal.)",
+      "why": "**agent lifecycle preserves decisions and exposes the current change signal.** Decisions\nand risk are cheapest to surface while the agent still holds the context that produced\nthem; waiting for a later reviewer externalizes both reconstruction costs.\n\n**significant behavioral growth acquires an anchor or patch-specific decision.** The cost\nof adding an invariant is immediate while the cost of omitting it appears later, so the\ncurrent patch must carry either enforcement or an addressable reason that it needs none.\n\n**task context is bounded and names its approximations.** A focused context packet is\nuseful only when its one-hop and heuristic limits stay visible; otherwise convenience is\nmisread as completeness and recreates the omission gradient this project exists to oppose.\n\n**cached decisions expose structurally expired premises.** A decision saves inference only\nwhile the repository addresses supporting it remain live. Broken explicit referents must\nbe louder than readable but stale rationale.\n\n**predicted context closure is calibrated against observed reads and outcomes.** Economy's\none-hop closure is a hypothesis about necessary reading, not cognition. Observed reads and\nlater defect labels give that model a path to correction instead of turning it into dogma.\n\n**reviewed risk sites survive relocation but never duplication.** A ratchet baseline is a\ncached review, and a cached fact that expires on a rename rots the same way a decision's\npremises do — a refactor then spends a reviewer's attention on sites nobody touched, and\nattention spent on false alarms is how a real one gets waved through. Relocation changes\nwhere a reviewed site lives; duplication changes how much unreviewed surface exists, and\nonly the second is news.\n\n**pinned mass follows a value-conserving rename but never absorbs growth.** A mass\ndimension's key embeds a name someone chose — a spec H1, a measure's config key — so a\nrename re-addresses the pin, and a ratchet that reads its own re-addressing as \"gained\nparts nobody named\" prints a lie beside the unchanged total that refutes it (measured:\none H1 edit, 35 lines relabeled, zero gained, gate red). The repair must stay\ncount-conserving: only a vanished pin with the same family, unit and exact value can\nabsorb a new name, or growth and novelty would ride in under renames.\n\n**a claim goes green only on positive evidence its oracle ran.** The verifier's whole\nauthority rests on this one property, and until now no claim cited it: an audit deleted\nthe rule and the tree stayed \"✓ coherent\" while the unit test failed unseen. An exit\ncode is the runner's statement about itself, not about the named test — a filter that\nmatched nothing exits clean on every runner class this repo has measured — so green\nmust require output that names the run, the one reading absence cannot produce.\n\n**a vanished oracle reds its claim, never green-by-absence.** A renamed or deleted test\nleaves a claim citing a name nothing owns, and that claim then guards nothing while\nwearing green. Absence has to be its own observable verdict, distinct from ran-and-failed,\nbecause the two demand different repairs: a red test needs the code fixed, a vanished\noracle needs the contract re-tied to something that exists.\n\n**a declared invariant unanchored by any boundary fails coverage.** A spec may not\nassert a property that nothing enforces: that is the ratchet the whole harness turns on,\nand if it silently loosened, specs would drift back into aspiration prose. The gap has to\ncost a red at the run that opened it, while the person who opened it still holds the\ncontext to close it.\n\n**a via-test oracle that iterates no live domain fails its claim.** A totality label on a\nsampling test is worse than no label: it retires the reader's suspicion without retiring\nthe risk. Deriving the checked set from the live registry the chokepoint actually serves\nis what makes \"covers every case\" a fact about the system rather than about the fixture\nlist the author remembered.\n\n**a skipped run never clobbers an oracle's recorded verdict.** The record is the last\nknown truth, honestly dated. A fast tier that skips the executable claims every commit\nwould otherwise erase last week's real pass — or, worse, a real fail — with \"did not\nlook\", and history that can be overwritten by not looking is not history.\n\n**a named oracle that no test runs cannot pass.** The serial runner is the component the\nexecutable tier leans its trust on, and it was outside the evidence perimeter — unclaimed,\nuntested, and (measured) willing to exit clean when the cited title survived only as a\nstring in a file. The runner itself must refuse a name it cannot show ran, because every\ngreen above it inherits that refusal.\n\n**an empty derivation against a remembered surface refuses, never passes.** Every verdict\nin this file rests on the graph deriving non-empty, and nothing checked that premise:\ngutting `buildGraph` left the gate printing \"claims: 0\" and \"✓ coherent\", exit 0 —\ndeeper than a vanished oracle, because it empties every check at once while announcing\nthey all passed. The record remembers how many claims the last run graded, so a run that\nsuddenly sees zero must refuse rather than report success over nothing; the only\nlegitimate zero (a project adopting from nothing) is exactly the one with no memory, and\nit gets the adoption ladder instead. The floor deliberately stops at zero: a partial\ncollapse where every component keeps a claim is observationally identical to deliberate\npruning, and deletion has to stay free or people stop deleting. What the complement\nunderneath it actually reaches is narrower than it first appears — a component stripped of\nits claims is still a node someone can red, while a component the walk never discovered\nleaves nothing behind to notice, so an N→1 slide reads as N ordinary prunings. Pinning the\npopulation as a mass dimension is the honest answer there, because the question it settles\nis not whether anything survived but whether as much survived as last time.\n\n**lifecycle hook presence is one canonical runnable bit.** The control surface cannot\ncreate a field if every repository is free to carry a merely similar—or silently dead—\nhook. Printing, installation, and inspection therefore share one five-event value and\none stable launcher. Presence means exactly one shared copy, no competing local or legacy\npath, a correct declared root mapping, and a runnable target. Unrelated hooks may coexist.\nHistorical journal activity is reported beside this bit but can neither redeem current\nabsence nor erase current presence.\n\n**a streamed journal entry renders exactly once across appends and compaction.** The live\nstream exists for the one reader the settled render cannot serve — an orchestrator watching\nfive subagents mid-flight — and that reader has no way to audit the feed against the files.\nA dropped entry is a decision the orchestrator never saw, indistinguishable from one never\nmade; a duplicate teaches the opposite lie, that a question was decided twice. Both are\ncheap to produce, because the journal's files do not strictly grow: compaction moves lines\nbetween files and unlinks the originals, which a position-addressed reader replays in full.\nSo a record's identity in the stream comes from its content — the same triple the merged\ntimeline sorts by — and a moved line is one the feed already carried.\n\n(The import claims above separately prove that the composition root still reaches the\nconfiguration loader, graph derivation, verifier, spec walker, and journal.)",
       "invariants": [
         "agent lifecycle preserves decisions and exposes the current change signal",
         "significant behavioral growth acquires an anchor or patch-specific decision",
@@ -62,7 +63,8 @@
         "a skipped run never clobbers an oracle's recorded verdict",
         "a named oracle that no test runs cannot pass",
         "an empty derivation against a remembered surface refuses, never passes",
-        "lifecycle hook presence is one canonical runnable bit"
+        "lifecycle hook presence is one canonical runnable bit",
+        "a streamed journal entry renders exactly once across appends and compaction"
       ],
       "refutations": [
         "lifecycle hook presence is one canonical runnable bit: loosened `inspectLifecycleHook` so `present` ignored `wiringPresent` and trusted only valid JSON plus the launcher (2026-08-03) — full verify named this claim as the sole red, `claims: 30 · 29 green · 1 red`; the guard's duplicate-canonical-group fixture observed the laundered `true`. Restored. This is the dangerous direction: a checker that accepts two firing paths is not a binary control, only a substring detector with a nicer report.",
@@ -504,7 +506,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/commands.ts",
-      "line": 249,
+      "line": 254,
       "prose": "Every command name, in registry order. The `<a|b|c>` list — aliases excluded."
     },
     {
@@ -514,7 +516,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/commands.ts",
-      "line": 253,
+      "line": 258,
       "prose": "Every token the dispatch must accept: names AND aliases. The totality oracle compares\n THIS against the `cmd === \"…\"` literals it reads out of cli.ts."
     },
     {
@@ -524,7 +526,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/commands.ts",
-      "line": 266,
+      "line": 271,
       "prose": "The registry entry a typed token names — BY NAME OR BY ALIAS. The one lookup any guard\nkeyed on a flag (`writesArtifacts`, `writesBaseline`) may use.\n\nThe floor guarding the generators matched `c.name === cmd` and nothing else, which is a\nlatent bypass with no current victim: the only alias in the registry, `resolve`, writes\nnothing. But `aliases` exists precisely so a writing command can acquire a second\nspelling, and the day one does, the guard would silently exempt it — a gate that fails\nopen on a rename is the class of defect this whole file exists to end. Closed here\nrather than at the call site, because the call site is where it was forgotten once."
     },
     {
@@ -534,7 +536,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/commands.ts",
-      "line": 294,
+      "line": 299,
       "prose": "SPELLING ONE — the usage banner, printed to stderr when the verb is unknown or absent.\nDerived in full: there is no command-name string literal left in cli.ts's help text, so\nthe banner cannot be 29 while the dispatch is 30, and two branches editing different\ncommands can no longer conflict on one line."
     },
     {
@@ -544,7 +546,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/commands.ts",
-      "line": 327,
+      "line": 332,
       "prose": "SPELLING TWO — the README's command index, markers inclusive, ready for `spliceBlock`.\n\nA BULLET LIST, not a markdown table, and that is a real constraint rather than taste:\n`redundancy` reads the first column of every markdown table as an enumerated domain, so\na generated table would hand it a fresh README↔dispatch pair to report — trading the\nfinding this change exists to remove for an identical one. A generated block that the\nproject's own detector still flags has not fixed anything.\n\nThe block is an INDEX and nothing more: name, arg shape, one line. The authored\nper-command reasoning lives OUTSIDE the markers, below the block, and is not expected to\ncover every command — completeness is what the derivation owes, depth is what the prose\nowes, and confusing the two is how the reference got twelve commands behind."
     },
     {
@@ -554,7 +556,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/commands.ts",
-      "line": 365,
+      "line": 370,
       "prose": "The README's claim-form index, markers inclusive, ready for `spliceBlock` — the same\ntreatment the command index got, for the same defect: the hand-kept table listed 8 forms\nwhile the registry carried 9 (`lives in` was missing entirely) and its boundary grammar\nhad lost the `[crossing <zone> -> <zone>]` clause. The README even predicted the drift\n(\"nothing compares it against the registry, so it *can* drift\"). Now something does.\n\nA BULLET LIST, not a markdown table, for the reason renderCommandsBlock records:\n`redundancy` reads the first column of every markdown table as an enumerated domain, so\na generated table would hand it a fresh README↔registry pair to report.\n\nThe block is the GRAMMAR and nothing more: name, tier, grammar, example — the fields the\nregistry actually carries. The authored per-form reasoning (tier behavior under `--fast`,\nthe meta-oracle, skip-vs-fail semantics) lives OUTSIDE the markers, below the block."
     },
     {
@@ -1132,13 +1134,52 @@
       "line": 424
     },
     {
+      "id": "s:src/decisions.ts#timelineOrder",
+      "parent": "f:src/decisions.ts",
+      "label": "timelineOrder",
+      "kind": "symbol",
+      "sub": "const",
+      "path": "src/decisions.ts",
+      "line": 432,
+      "prose": "THE TOTAL TIMELINE ORDER, exported because two readers depend on it agreeing with\n itself: `readJournal`'s merged render and the live stream (`journal.ts`), which\n receives records incrementally and must interleave them exactly where a cold read\n would have. Two hand-written copies of a three-key comparator is how \"compaction\n changes nothing\" stops being checkable. See `readJournal` for why the third key\n exists at all."
+    },
+    {
+      "id": "s:src/decisions.ts#deriveSessions",
+      "parent": "f:src/decisions.ts",
+      "label": "deriveSessions",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/decisions.ts",
+      "line": 447,
+      "prose": "A SESSION IS NAMED BY ITS WORK, NOT BY ITS HEADER. The header is written by the\n hook at agent start, BEFORE the agent knows what it is called — so it defaults to\n \"main\" and the branch. Taking identity from the first record therefore filed every\n agent's session under \"main\", which is exactly the attribution the split-file\n layout exists to guarantee. A real record's own claim always wins over the header's\n placeholder.\n\n Sorted INTERNALLY rather than trusting the caller's order, so the answer is a\n function of the record SET — the same property `readJournal`'s sort buys — and a\n caller holding an incrementally-grown array (the stream) gets the same sessions a\n cold read would."
+    },
+    {
+      "id": "s:src/decisions.ts#JournalScope",
+      "parent": "f:src/decisions.ts",
+      "label": "JournalScope",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/decisions.ts",
+      "line": 465,
+      "prose": "ONE SPELLING OF \"IN SCOPE\". `decisions` filters its render by job/agent/session/branch\n and the stream filters the same four ways; a second hand-written predicate is exactly\n the two-spellings drift `redundancy` exists to report, one file over from the module\n that hunts it."
+    },
+    {
+      "id": "s:src/decisions.ts#inScope",
+      "parent": "f:src/decisions.ts",
+      "label": "inScope",
+      "kind": "symbol",
+      "sub": "const",
+      "path": "src/decisions.ts",
+      "line": 466
+    },
+    {
       "id": "s:src/decisions.ts#readJournal",
       "parent": "f:src/decisions.ts",
       "label": "readJournal",
       "kind": "symbol",
       "sub": "function",
       "path": "src/decisions.ts",
-      "line": 433,
+      "line": 477,
       "prose": "THE COHERING READ. Every session file in the folder, merged into ONE timeline\n ordered by time — across agents, across jobs, across branches. This is the\n abstraction the whole split-file layout exists to make possible: writers are\n isolated so they never collide, and the reader sees a single history anyway.\n\n A malformed line is SKIPPED and COUNTED, never thrown on: a journal that refuses\n to render because one agent wrote garbage has failed at the one job it has."
     },
     {
@@ -1148,7 +1189,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/decisions.ts",
-      "line": 527,
+      "line": 553,
       "prose": "THE QUIET WINDOW: a file written more recently than this is never folded.\n\n TWO HOURS, and both bounds are argued rather than picked. It has to be LONGER than the\n gap between one agent's successive appends, or compaction lands mid-session — measured\n on this repo's own journal, the largest gap between consecutive entries in a single\n session is 14.1 min and the longest session spans 22.5 min, so two hours is ~8x the\n observed worst case. And it has to be SHORTER than a day, because the motivating case is\n twenty files accumulated in ONE day and compacted before the PR goes up; a 24-hour\n window would refuse exactly the work it was asked to tidy.\n\n It is a heuristic, so it is not the only guard: every source is re-stat'ed immediately\n before its group is written and the group is abandoned if anything moved, and a fold\n that raced an append anyway would duplicate lines rather than lose them — which\n `resolve`'s content-hash dedupe renders identically."
     },
     {
@@ -1158,7 +1199,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/decisions.ts",
-      "line": 531
+      "line": 557
     },
     {
       "id": "s:src/decisions.ts#planCompaction",
@@ -1167,7 +1208,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/decisions.ts",
-      "line": 543,
+      "line": 569,
       "prose": "What compaction WOULD do. Separated from doing it so the refusals can be tested without\n a filesystem mutation, and so the executor has no policy left in it."
     },
     {
@@ -1177,7 +1218,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/decisions.ts",
-      "line": 622,
+      "line": 648,
       "prose": "Execute the plan. Report lines out, exit code out; the CLI only prints."
     },
     {
@@ -1187,7 +1228,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/decisions.ts",
-      "line": 701,
+      "line": 726,
       "prose": "Retractions resolve ACROSS session files — one agent may withdraw another's\n decision, which in a fan-out is the single most valuable thing that can happen.\n Resolutions cross files the same way, and for the same reason: the agent that\n notices the surprising number is very often not the one with the instrument to\n settle it. Dismissals too — and a dismissal by a SECOND agent is the ordinary case,\n because the advisory that raised the question is not a person at all.\n\n OPEN AND RESOLVED ARE SEPARATE BUCKETS, not a flag on one list, because the render\n has to be able to lead with the open ones. A conjecture never lands in `standing`:\n it is not a choice, and counting it as one would report an unanswered question as a\n settled position — the precise confusion this record exists to end.\n\n THE PRECEDENCE IS retraction > resolution > dismissal, and each step is a claim about\n how much a reader learns:\n   · a RETRACTION says the observation was never real — there is nothing to answer, so\n     it outranks an answer.\n   · a RESOLUTION beats a DISMISSAL because an answer is strictly more informative than\n     a decision not to ask. Filing an answered question under \"we chose not to chase\n     this\" would HIDE the answer, which is the more expensive of the two mistakes."
     },
     {
@@ -1197,7 +1238,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/decisions.ts",
-      "line": 763,
+      "line": 788,
       "prose": "WHAT MAY BE RESOLVED OR DISMISSED, and the exact refusal when it may not.\n\n Two DIFFERENT failures live here and they need different messages: an id nobody ever\n wrote, versus an id that names the wrong KIND of thing. Accepting the second would\n append a resolution pointing at a decision, which no render ever reads — a command\n that exits 0 and does nothing, which is the defect this harness exists to hunt.\n\n It sits in the journal rather than in the CLI so the rule is testable without\n spawning a process, and so a second caller cannot reimplement it differently.\n\n DISMISSAL SHARES THE RULE RATHER THAN COPYING IT, and that is the point of the `verb`\n parameter. `dismiss` has to be as cheap to reach for as `resolved` — if it is even\n slightly harder, a noisy question stays open and the whole `--open` list gets skipped\n — and \"as cheap\" includes failing the same way, with the same words, on the same\n mistakes. Two hand-written copies of this rule would have drifted by the second edit."
     },
     {
@@ -1207,7 +1248,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/decisions.ts",
-      "line": 781
+      "line": 806
     },
     {
       "id": "s:src/decisions.ts#BRIEF_BECAUSE",
@@ -1216,7 +1257,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/decisions.ts",
-      "line": 788,
+      "line": 813,
       "prose": "`--brief`'s budget for `because`. Truncation is ALWAYS announced with the withheld\n count — a shortened rationale that looks complete is worse than no rationale."
     },
     {
@@ -1226,7 +1267,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/decisions.ts",
-      "line": 802,
+      "line": 827,
       "prose": "The render IS the artifact, and its value is a COMPRESSION RATIO: a reader given\n this should be better equipped than one given the transcripts. So it leads with\n what is standing, states what was rejected inline, and gives retractions their own\n section — a retraction rendered as an absence is invisible, and it is the most\n valuable entry in the journal.\n\n OPEN CONJECTURES GO ABOVE EVERYTHING, INCLUDING `Standing`. That ordering is the\n feature, not decoration. A standing decision is settled and will still be there\n tomorrow; an open conjecture is a thing this project NOTICED AND DID NOT CHASE, and\n it decays — the agent that saw the surprising number is gone, and nobody else knows\n to look. Filed underneath the settled work it reads as an appendix, which is\n indistinguishable from never having recorded it."
     },
     {
@@ -2186,6 +2227,144 @@
       "prose": "BUILD THE MODEL. Every history read is INDIVIDUALLY guarded and individually reported:\na project with no git is a perfectly ordinary consumer (a shallow CI clone, a source\nexport), and one unreadable source must cost that source's section, never the page. An\n`Unrunnable` thrown by the structural diff is caught HERE rather than at the CLI's total\nhandler for exactly that reason — the CLI's handler is the right answer for a command\nwhose whole job needs history, and the wrong one for a page with three views."
     },
     {
+      "id": "f:src/journal.ts",
+      "parent": "c:src",
+      "label": "journal.ts",
+      "kind": "file",
+      "sub": "src/journal.ts",
+      "path": "src/journal.ts",
+      "prose": "journal.ts — the journal STREAM: the merged decision timeline as a live feed, and a\nsurfable history — in aggregate, or one session's stream at a time.\n\nWHY A SECOND READ SURFACE WHEN `decisions` EXISTS. `decisions` is the SETTLED render:\nit resolves retractions against what they withdraw, files answered questions under\ntheir answers, and leads with what is still open. That is the right artifact for a\nreader arriving AFTER the work — and useless for one watching DURING it, because it\nre-derives the whole resolution every time and orders by standing, not by arrival.\nThis is the other read: strictly chronological, scoped by STREAM (a session is a\nsubagent's stream — the split-file layout already made that identity structural), and\nLIVE, because the motivating scene is an orchestrator with five subagents running and\nno way to see what any of them is deciding until it finishes.\n\nTHE TAIL IS CONTENT-ADDRESSED, NOT POSITION-ADDRESSED, and that is the one design\ndecision everything else here leans on. A byte-offset tailer is correct only while\nfiles strictly grow — and this journal's files do not: `decisions --compact` folds\ncommitted session files into one per (branch, month), which unlinks sources and\nwrites their lines into a target the tailer may already hold an offset into. A\nposition-addressed reader replays everything after the fold; a reader keyed on the\nrecord's own (session, id, at) — the same triple `readJournal`'s total sort orders\nby — recognizes a moved line as one it has already streamed. Offsets survive as an\nOPTIMIZATION (skip re-parsing what was already consumed on the append path); identity\nnever comes from them.\n\nIT RENDERS; IT NEVER RESOLVES A VERDICT. Like every read in decisions.ts, a malformed\nline is counted and skipped, never thrown on — a live monitor that dies because one\nagent wrote garbage has failed at the one moment it was being watched."
+    },
+    {
+      "id": "s:src/journal.ts#TailState",
+      "parent": "f:src/journal.ts",
+      "label": "TailState",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/journal.ts",
+      "line": 40
+    },
+    {
+      "id": "s:src/journal.ts#newTailState",
+      "parent": "f:src/journal.ts",
+      "label": "newTailState",
+      "kind": "symbol",
+      "sub": "const",
+      "path": "src/journal.ts",
+      "line": 53
+    },
+    {
+      "id": "s:src/journal.ts#tailJournal",
+      "parent": "f:src/journal.ts",
+      "label": "tailJournal",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/journal.ts",
+      "line": 66,
+      "prose": "One pull over the journal directory: every record not yet streamed, in timeline\n order, plus the count of lines nothing could parse. Call it again forever — appends\n arrive once, a compaction fold (bytes moved between files, sources unlinked, target\n rewritten) arrives zero times, because a moved line is recognized by content.\n\n A file SHORTER than its recorded offset was rewritten (the fold's target, or a\n truncation); it is re-read from zero and `seen` absorbs the replay. A file that\n vanished needs nothing at all — its lines either were streamed already or now live\n in the fold target, where the next scan finds them."
+    },
+    {
+      "id": "s:src/journal.ts#KIND_GLYPH",
+      "parent": "f:src/journal.ts",
+      "label": "KIND_GLYPH",
+      "kind": "symbol",
+      "sub": "const",
+      "path": "src/journal.ts",
+      "line": 102,
+      "prose": "One glyph per kind, so a scrolling feed is scannable by shape before it is read.\n `Record<DecisionKind, …>` on purpose: a new kind in decisions.ts refuses to compile\n until it says what it looks like here."
+    },
+    {
+      "id": "s:src/journal.ts#formatEntryLine",
+      "parent": "f:src/journal.ts",
+      "label": "formatEntryLine",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/journal.ts",
+      "line": 112,
+      "prose": "The whole record on ONE line: when, what kind, who, what — and the full `because`,\n uncapped, because this is a pipe-facing render and the evidence lives at the end of\n a rationale (the LABEL_SOFT_MAX argument, applied to a different surface). Pointer\n kinds carry their target inline; a resolution that does not say WHAT it resolves is\n unactionable in a feed where the conjecture scrolled past an hour ago."
+    },
+    {
+      "id": "s:src/journal.ts#entryDetail",
+      "parent": "f:src/journal.ts",
+      "label": "entryDetail",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/journal.ts",
+      "line": 123,
+      "prose": "The drill-in: every field the record carries, wrapped to width. The stream's rows\n clip; this is where nothing does."
+    },
+    {
+      "id": "s:src/journal.ts#StreamModel",
+      "parent": "f:src/journal.ts",
+      "label": "StreamModel",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/journal.ts",
+      "line": 150
+    },
+    {
+      "id": "s:src/journal.ts#StreamUI",
+      "parent": "f:src/journal.ts",
+      "label": "StreamUI",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/journal.ts",
+      "line": 152
+    },
+    {
+      "id": "s:src/journal.ts#initialStreamUI",
+      "parent": "f:src/journal.ts",
+      "label": "initialStreamUI",
+      "kind": "symbol",
+      "sub": "const",
+      "path": "src/journal.ts",
+      "line": 161
+    },
+    {
+      "id": "s:src/journal.ts#visibleRecords",
+      "parent": "f:src/journal.ts",
+      "label": "visibleRecords",
+      "kind": "symbol",
+      "sub": "const",
+      "path": "src/journal.ts",
+      "line": 164
+    },
+    {
+      "id": "s:src/journal.ts#renderStreamFrame",
+      "parent": "f:src/journal.ts",
+      "label": "renderStreamFrame",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/journal.ts",
+      "line": 198,
+      "prose": "Assemble one full frame. Pure: no IO, no clock of its own — testable, replayable."
+    },
+    {
+      "id": "s:src/journal.ts#JournalOpts",
+      "parent": "f:src/journal.ts",
+      "label": "JournalOpts",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/journal.ts",
+      "line": 256
+    },
+    {
+      "id": "s:src/journal.ts#runJournal",
+      "parent": "f:src/journal.ts",
+      "label": "runJournal",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/journal.ts",
+      "line": 282,
+      "prose": "`coherence journal` — three modes, chosen by where stdout points:\n  · a TTY: the interactive surf (live timeline · streams picker · entry drill-in).\n  · a pipe, or `--once`: a chronological snapshot, then exit — which is also what\n    keeps this command safe to run bare in any harness that executes every verb.\n  · `--follow`: line-mode tail for a pipe or a dumb terminal — print the scoped\n    history, then each new record as it lands, until SIGINT."
+    },
+    {
+      "id": "x:node:readline",
+      "label": "node:readline",
+      "kind": "external",
+      "sub": "module"
+    },
+    {
       "id": "f:src/lint-sinks.ts",
       "parent": "c:src",
       "label": "lint-sinks.ts",
@@ -2851,13 +3030,50 @@
       "line": 188
     },
     {
+      "id": "s:src/panel.ts#sty",
+      "parent": "f:src/panel.ts",
+      "label": "sty",
+      "kind": "symbol",
+      "sub": "const",
+      "path": "src/panel.ts",
+      "line": 196,
+      "prose": "Styling: tiny ANSI helpers, disabled wholesale for tests / non-TTY output. Padding\nhappens on plain text BEFORE color wrapping so escape codes never skew widths.\nExported for the journal stream (journal.ts), which is the panel's sibling TUI: two\nhand-rolled ANSI helpers is two chances for the padding-before-color rule to be\nforgotten in one of them."
+    },
+    {
+      "id": "s:src/panel.ts#Sty",
+      "parent": "f:src/panel.ts",
+      "label": "Sty",
+      "kind": "symbol",
+      "sub": "type",
+      "path": "src/panel.ts",
+      "line": 200
+    },
+    {
+      "id": "s:src/panel.ts#clip",
+      "parent": "f:src/panel.ts",
+      "label": "clip",
+      "kind": "symbol",
+      "sub": "const",
+      "path": "src/panel.ts",
+      "line": 202
+    },
+    {
+      "id": "s:src/panel.ts#padE",
+      "parent": "f:src/panel.ts",
+      "label": "padE",
+      "kind": "symbol",
+      "sub": "const",
+      "path": "src/panel.ts",
+      "line": 203
+    },
+    {
       "id": "s:src/panel.ts#wrapText",
       "parent": "f:src/panel.ts",
       "label": "wrapText",
       "kind": "symbol",
       "sub": "function",
       "path": "src/panel.ts",
-      "line": 214
+      "line": 217
     },
     {
       "id": "s:src/panel.ts#renderFrame",
@@ -2866,7 +3082,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/panel.ts",
-      "line": 352,
+      "line": 355,
       "prose": "Assemble one full frame. Pure: no IO, no globals — testable, replayable."
     },
     {
@@ -2876,7 +3092,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/panel.ts",
-      "line": 399
+      "line": 402
     },
     {
       "id": "s:src/panel.ts#runPanel",
@@ -2885,13 +3101,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/panel.ts",
-      "line": 401
-    },
-    {
-      "id": "x:node:readline",
-      "label": "node:readline",
-      "kind": "external",
-      "sub": "module"
+      "line": 404
     },
     {
       "id": "f:src/parity.ts",
@@ -5540,6 +5750,15 @@
       "prose": "index.test.ts — THE INDEX: the returning human's page.\n\nTwo layers, following the pattern decompose.test.ts's header sets out:\n  · the PURE derivations (the cap idiom, the four darknesses, the journal's novelty\n    gate, the gate collapse) driven from hand-built graphs and records — deterministic,\n    no git, no filesystem.\n  · the GLUE (frame resolution, the cursor round-trip, the refusal on a corrupt cursor)\n    driven through a REAL throwaway git repo and the real CLI, because every one of\n    those is a statement about git and about files, and an injected fake would be\n    asserting my own mock.\n\nWHAT IS ACTUALLY AT RISK HERE, which is what these test. The Index shows nothing it\nderived itself, so the classic bugs are not arithmetic — they are HONESTY bugs:\n  · a source that could not be read rendering as an empty section (green-by-absence);\n  · a list silently truncated so the page looks complete;\n  · a denominator of 0 rendering identically to a denominator of 500;\n  · a frame that quietly resolves to nothing, so \"no change\" means \"no comparison\";\n  · a corrupt cursor read as an absent one, so the page calls itself a FIRST LOOK for a\n    project that has an index — and re-reports every old impasse as news.\nEach of those is a test below, and each of them has a matching prohibition in\nsrc/index-model.ts's header."
     },
     {
+      "id": "f:test/journal.test.ts",
+      "parent": "c:test",
+      "label": "journal.test.ts",
+      "kind": "file",
+      "sub": "test/journal.test.ts",
+      "path": "test/journal.test.ts",
+      "prose": "journal.test.ts — the journal STREAM.\n\nWhat these pin, in order of how badly it hurts when it breaks:\n  1. EXACTLY ONCE. The tail's whole contract: an append arrives once, a compaction\n     fold (bytes moved between files, sources unlinked, target rewritten) arrives\n     zero times, and a half-written line is never parsed from half its bytes. This\n     is the guard behind the spec's boundary claim.\n  2. THE STREAM AGREES WITH THE COLD READ. Incremental pulls, accumulated, must\n     equal what `readJournal` sees in one pass — same records, same order — or the\n     live view and the settled view describe two different histories.\n  3. THE SNAPSHOT MODE EXITS. A pipe gets a chronological render and a return, not\n     a tail that never ends — which is also what keeps `coherence journal` safe to\n     run bare in any harness that executes every verb.\n  4. THE FRAME IS A PURE FUNCTION. Streams view lists ALL + one row per session;\n     the timeline scopes to one stream; damage is announced, never silent."
+    },
+    {
       "id": "f:test/kinds.test.ts",
       "parent": "c:test",
       "label": "kinds.test.ts",
@@ -6103,6 +6322,12 @@
       "id": "f:src/cli.ts->f:src/decisions.ts:imports",
       "source": "f:src/cli.ts",
       "target": "f:src/decisions.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/cli.ts->f:src/journal.ts:imports",
+      "source": "f:src/cli.ts",
+      "target": "f:src/journal.ts",
       "kind": "imports"
     },
     {
@@ -6715,6 +6940,42 @@
       "id": "f:src/index-model.ts->f:src/floor.ts:imports",
       "source": "f:src/index-model.ts",
       "target": "f:src/floor.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/journal.ts->x:node:fs:imports",
+      "source": "f:src/journal.ts",
+      "target": "x:node:fs",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/journal.ts->x:node:readline:imports",
+      "source": "f:src/journal.ts",
+      "target": "x:node:readline",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/journal.ts->x:node:path:imports",
+      "source": "f:src/journal.ts",
+      "target": "x:node:path",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/journal.ts->f:src/types.ts:imports",
+      "source": "f:src/journal.ts",
+      "target": "f:src/types.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/journal.ts->f:src/decisions.ts:imports",
+      "source": "f:src/journal.ts",
+      "target": "f:src/decisions.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/journal.ts->f:src/panel.ts:imports",
+      "source": "f:src/journal.ts",
+      "target": "f:src/panel.ts",
       "kind": "imports"
     },
     {
@@ -8611,6 +8872,66 @@
       "id": "f:test/index.test.ts->f:test/_helpers.ts:imports",
       "source": "f:test/index.test.ts",
       "target": "f:test/_helpers.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/journal.test.ts->x:node:test:imports",
+      "source": "f:test/journal.test.ts",
+      "target": "x:node:test",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/journal.test.ts->x:node:assert/strict:imports",
+      "source": "f:test/journal.test.ts",
+      "target": "x:node:assert/strict",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/journal.test.ts->x:node:fs/promises:imports",
+      "source": "f:test/journal.test.ts",
+      "target": "x:node:fs/promises",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/journal.test.ts->x:node:fs:imports",
+      "source": "f:test/journal.test.ts",
+      "target": "x:node:fs",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/journal.test.ts->x:node:os:imports",
+      "source": "f:test/journal.test.ts",
+      "target": "x:node:os",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/journal.test.ts->x:node:path:imports",
+      "source": "f:test/journal.test.ts",
+      "target": "x:node:path",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/journal.test.ts->f:src/decisions.ts:imports",
+      "source": "f:test/journal.test.ts",
+      "target": "f:src/decisions.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/journal.test.ts->f:src/journal.ts:imports",
+      "source": "f:test/journal.test.ts",
+      "target": "f:src/journal.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/journal.test.ts->f:test/_helpers.ts:imports",
+      "source": "f:test/journal.test.ts",
+      "target": "f:test/_helpers.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/journal.test.ts->f:src/types.ts:imports",
+      "source": "f:test/journal.test.ts",
+      "target": "f:src/types.ts",
       "kind": "imports"
     },
     {

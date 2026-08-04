@@ -159,6 +159,12 @@
         "security": false,
         "translates": "A diff's shape becomes a demand: behavioral growth with zero anchors needs an invariant or an explicit attestation. It grades process, not evidence \u2014 a tear here delays a claim, it does not fabricate one."
       },
+      "tailJournal": {
+        "from": "record",
+        "to": "reading-surface",
+        "security": false,
+        "translates": "The journal's append-only session files become a live feed and a surfable history. Identity comes from a record's own content rather than its byte position, so a compaction fold neither drops nor duplicates what a watcher sees; the crossing carries memory out to a reader and never writes a verdict back."
+      },
       "calibrate": {
         "from": "record",
         "to": "reading-surface",

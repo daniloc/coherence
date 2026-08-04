@@ -34,6 +34,7 @@ import { readStatus } from "./status.ts";
 import { readSurface, vacuityRefusal, Unrunnable } from "./floor.ts";
 import { CLAIM_FORMS, loadDictionary } from "./phrasebook.ts";
 import { appendDecision, renderJournal, readJournal, resolvableConjecture, compactJournal } from "./decisions.ts";
+import { runJournal } from "./journal.ts";
 import { recordObservation, formatObserved } from "./observed.ts";
 import { printHooks, reportHooks, checkHooks, installHooks, uninstallHooks, runHook } from "./hooks.ts";
 import { redundancy } from "./redundancy.ts";
@@ -516,6 +517,15 @@ if (cmd === "graph") {
   });
   console.log(text);
   await exit(0);
+} else if (cmd === "journal") {
+  // The LIVE read over the same record `decisions` settles: entries as they land, and a
+  // surf over the history — the merged timeline, or one session's stream. On a TTY it is
+  // interactive; on a pipe (or --once) it prints a chronological snapshot and exits;
+  // --follow is the line-mode tail. It renders and never writes, so it takes no floor.
+  await exit(await runJournal(cfg, {
+    follow: argv.includes("--follow"), once: argv.includes("--once"),
+    job: one("--job"), agent: one("--agent"), session: one("--session"), branch: one("--branch"),
+  }));
 } else if (cmd === "hooks") {
   // The first control interface. `--check` remains the terse gate spelling; status keeps
   // the installation bit and runtime observation visible without conflating them.

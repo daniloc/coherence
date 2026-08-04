@@ -173,6 +173,11 @@ export const COMMANDS: Command[] = [
     summary: "the MERGED timeline across every session file; `--open` is what was noticed and not yet chased,"
       + " `--compact` folds committed session files into one per (branch, month) without changing what this prints",
   },
+  {
+    name: "journal", group: "journal",
+    usage: "[--follow | --once] [--job X] [--agent Y] [--session S] [--branch B]",
+    summary: "the LIVE read — stream entries as agents write them, and surf the history in aggregate or one session's stream",
+  },
 
   // ── perceive ─────────────────────────────────────────────────────────────────────────
   {

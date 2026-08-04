@@ -423,6 +423,50 @@ function write(cfg: Config, given: string | null, input: DecideInput): DecisionR
 
 export interface Session { id: string; agent: string; job: string; branch: string | null; started: string; count: number }
 
+/** THE TOTAL TIMELINE ORDER, exported because two readers depend on it agreeing with
+ *  itself: `readJournal`'s merged render and the live stream (`journal.ts`), which
+ *  receives records incrementally and must interleave them exactly where a cold read
+ *  would have. Two hand-written copies of a three-key comparator is how "compaction
+ *  changes nothing" stops being checkable. See `readJournal` for why the third key
+ *  exists at all. */
+export const timelineOrder = (a: DecisionRecord, b: DecisionRecord): number =>
+  a.at.localeCompare(b.at) || a.id.localeCompare(b.id)
+  || (a.session ?? "").localeCompare(b.session ?? "");
+
+/** A SESSION IS NAMED BY ITS WORK, NOT BY ITS HEADER. The header is written by the
+ *  hook at agent start, BEFORE the agent knows what it is called — so it defaults to
+ *  "main" and the branch. Taking identity from the first record therefore filed every
+ *  agent's session under "main", which is exactly the attribution the split-file
+ *  layout exists to guarantee. A real record's own claim always wins over the header's
+ *  placeholder.
+ *
+ *  Sorted INTERNALLY rather than trusting the caller's order, so the answer is a
+ *  function of the record SET — the same property `readJournal`'s sort buys — and a
+ *  caller holding an incrementally-grown array (the stream) gets the same sessions a
+ *  cold read would. */
+export function deriveSessions(records: DecisionRecord[]): Session[] {
+  const byS = new Map<string, Session>();
+  for (const r of [...records].sort(timelineOrder)) {
+    let s = byS.get(r.session);
+    if (!s) { s = { id: r.session, agent: r.agent, job: r.job, branch: r.branch, started: r.at, count: 0 }; byS.set(r.session, s); }
+    if (r.kind !== "session") {
+      s.count++;
+      s.agent = r.agent; s.job = r.job; s.branch = r.branch;
+    }
+    if (r.at < s.started) s.started = r.at;
+  }
+  return [...byS.values()].sort((a, b) => a.started.localeCompare(b.started));
+}
+
+/** ONE SPELLING OF "IN SCOPE". `decisions` filters its render by job/agent/session/branch
+ *  and the stream filters the same four ways; a second hand-written predicate is exactly
+ *  the two-spellings drift `redundancy` exists to report, one file over from the module
+ *  that hunts it. */
+export interface JournalScope { job?: string | null; agent?: string | null; session?: string | null; branch?: string | null }
+export const inScope = (r: DecisionRecord, s: JournalScope): boolean =>
+  (!s.job || r.job === s.job) && (!s.agent || r.agent === s.agent)
+  && (!s.session || r.session === s.session) && (!s.branch || r.branch === s.branch);
+
 /** THE COHERING READ. Every session file in the folder, merged into ONE timeline
  *  ordered by time — across agents, across jobs, across branches. This is the
  *  abstraction the whole split-file layout exists to make possible: writers are
@@ -455,26 +499,8 @@ export function readJournal(cfg: Config): { records: DecisionRecord[]; sessions:
   // render is now a function of the SET of records — which is what "compaction changes
   // nothing" has to mean to be checkable. (Measured before adding it: 0 (at, id) ties and
   // 0 duplicate ids across this repo's own 72 records, so it moved nothing on disk today.)
-  records.sort((a, b) => a.at.localeCompare(b.at) || a.id.localeCompare(b.id)
-    || (a.session ?? "").localeCompare(b.session ?? ""));
-
-  // A SESSION IS NAMED BY ITS WORK, NOT BY ITS HEADER. The header is written by the
-  // hook at agent start, BEFORE the agent knows what it is called — so it defaults to
-  // "main" and the branch. Taking identity from the first record therefore filed every
-  // agent's session under "main", which is exactly the attribution the split-file
-  // layout exists to guarantee. A real record's own claim always wins over the header's
-  // placeholder.
-  const byS = new Map<string, Session>();
-  for (const r of records) {
-    let s = byS.get(r.session);
-    if (!s) { s = { id: r.session, agent: r.agent, job: r.job, branch: r.branch, started: r.at, count: 0 }; byS.set(r.session, s); }
-    if (r.kind !== "session") {
-      s.count++;
-      s.agent = r.agent; s.job = r.job; s.branch = r.branch;
-    }
-    if (r.at < s.started) s.started = r.at;
-  }
-  return { records, sessions: [...byS.values()].sort((a, b) => a.started.localeCompare(b.started)), unreadable };
+  records.sort(timelineOrder);
+  return { records, sessions: deriveSessions(records), unreadable };
 }
 
 // ── COMPACTION — tidying the working tree, never editing the record ──────────────────
@@ -650,8 +676,7 @@ export function compactJournal(cfg: Config, o: { nowMs?: number } = {}): { code:
     // parsed record would reorder keys and re-escape unicode, and "content byte-identical"
     // is the property the whole operation is judged on.
     const rows = sources.flatMap((s) => s.lines.map((line, i) => ({ line, r: s.recs[i] })));
-    rows.sort((a, b) => a.r.at.localeCompare(b.r.at) || a.r.id.localeCompare(b.r.id)
-      || (a.r.session ?? "").localeCompare(b.r.session ?? ""));
+    rows.sort((a, b) => timelineOrder(a.r, b.r));
     writeFileSync(join(dir, target), rows.map((x) => x.line).join("\n") + "\n");
     written++;
     // AFTER the target exists, never before: a crash here leaves duplicate lines, which
@@ -801,11 +826,7 @@ export const BRIEF_BECAUSE = 180;
  *  indistinguishable from never having recorded it. */
 export function renderJournal(cfg: Config, opts: RenderOpts = {}): { text: string; count: number } {
   const { records, sessions, unreadable } = readJournal(cfg);
-  const scoped = records.filter((r) =>
-    (!opts.job || r.job === opts.job) &&
-    (!opts.agent || r.agent === opts.agent) &&
-    (!opts.session || r.session === opts.session) &&
-    (!opts.branch || r.branch === opts.branch));
+  const scoped = records.filter((r) => inScope(r, opts));
   const { standing, retracted, blocked, open, resolved, dismissed } = resolve(scoped);
   const md = !!opts.markdown;
   const L: string[] = [];

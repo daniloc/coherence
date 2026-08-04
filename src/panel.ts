@@ -190,14 +190,17 @@ export const initialUI = (watchOn: boolean): UIState =>
 
 // Styling: tiny ANSI helpers, disabled wholesale for tests / non-TTY output. Padding
 // happens on plain text BEFORE color wrapping so escape codes never skew widths.
-const sty = (colors: boolean) => {
+// Exported for the journal stream (journal.ts), which is the panel's sibling TUI: two
+// hand-rolled ANSI helpers is two chances for the padding-before-color rule to be
+// forgotten in one of them.
+export const sty = (colors: boolean) => {
   const w = (code: string) => (s: string) => colors ? `\x1b[${code}m${s}\x1b[0m` : s;
   return { red: w("31"), grn: w("32"), yel: w("33"), mag: w("35"), cyn: w("36"), dim: w("2"), bold: w("1"), inv: w("7") };
 };
-type Sty = ReturnType<typeof sty>;
+export type Sty = ReturnType<typeof sty>;
 
-const clip = (s: string, w: number) => s.length <= w ? s : (w <= 1 ? s.slice(0, w) : s.slice(0, w - 1) + "…");
-const padE = (s: string, w: number) => clip(s, w).padEnd(w);
+export const clip = (s: string, w: number) => s.length <= w ? s : (w <= 1 ? s.slice(0, w) : s.slice(0, w - 1) + "…");
+export const padE = (s: string, w: number) => clip(s, w).padEnd(w);
 
 const GLYPH: Record<LightKind, string> = { pass: "●", fail: "✗", stale: "◐", skip: "·", none: "○" };
 function glyph(l: Light, S: Sty): string {
