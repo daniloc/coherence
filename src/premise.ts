@@ -26,7 +26,7 @@ export type PremiseLeaseSource =
   | "chose-path" | "because-path"
   | "chose-symbol" | "because-symbol";
 export type PremiseLeaseStrength = "strong" | "inferred";
-export type PremiseLeaseStatus = "valid" | "missing" | "moved-or-ambiguous";
+export type PremiseLeaseStatus = "valid" | "missing" | "moved-or-ambiguous" | "satisfied-by-deletion";
 export type DecisionPremiseStatus = PremiseLeaseStatus | "unleased";
 
 export interface PremiseReferent {
@@ -228,6 +228,21 @@ export function classifyPremiseReferent(
     : { ...ref, status: "missing", matches: [] };
 }
 
+/** The one terminal state a deletion decision can reach. A decision that records
+ *  REMOVING a file, with a strong lease on that same path, is structurally unable to
+ *  keep its lease resolving — the act it records is what emptied the address. For that
+ *  decision the file's ABSENCE is the premise holding, so grading it `missing` fails
+ *  the gate forever with no honest remedy: `retract` means refuted (nothing refuted
+ *  it — it was carried out), and a replacement entry cannot clear the original's lease
+ *  (d-f241c582 is the blocked entry that named this hole). Scoped narrowly on purpose:
+ *  strong leases only, a deletion verb in the `chose`, and the leased path's own name
+ *  in the same text — anything looser would quietly wave through genuinely lost
+ *  addresses, which is the exact failure the gate exists to catch. */
+const DELETION_CUE = /\b(evict|delet|remov|drop|prun|retir)/i;
+const recordsOwnDeletion = (record: DecisionRecord, leasedPath: string): boolean =>
+  DELETION_CUE.test(record.chose) &&
+  record.chose.toLowerCase().includes(basename(leasedPath).toLowerCase());
+
 /** Audit the STANDING decisions in raw journal records. Retractions are applied before
  *  inspection so a withdrawn cache cannot keep producing stale-address findings. */
 export function auditPremiseLeases(
@@ -237,7 +252,12 @@ export function auditPremiseLeases(
   const standing = resolveJournal(records).standing.filter((r) => r.kind === "decision");
   return standing.map((record) => {
     const leases = extractPremiseReferents(record, opts.root)
-      .map((ref) => classifyPremiseReferent(ref, structure, opts.pathExists));
+      .map((ref) => classifyPremiseReferent(ref, structure, opts.pathExists))
+      .map((lease): PremiseLease =>
+        lease.strength === "strong" && lease.status === "missing" && recordsOwnDeletion(record, lease.value)
+          ? { ...lease, status: "satisfied-by-deletion" }
+          : lease);
+    const held = (s: PremiseLeaseStatus) => s === "valid" || s === "satisfied-by-deletion";
     const status: DecisionPremiseStatus = !leases.length ? "unleased"
       : leases.some((l) => l.status === "missing") ? "missing"
       : leases.some((l) => l.status === "moved-or-ambiguous") ? "moved-or-ambiguous"
@@ -247,7 +267,7 @@ export function auditPremiseLeases(
       chose: record.chose,
       leases,
       status,
-      checkFailure: leases.some((l) => l.strength === "strong" && l.status !== "valid"),
+      checkFailure: leases.some((l) => l.strength === "strong" && !held(l.status)),
     };
   }).sort((a, b) => a.decisionId.localeCompare(b.decisionId));
 }

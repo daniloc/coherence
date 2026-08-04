@@ -1355,6 +1355,34 @@ pinned by a test against a literal id minted before conjectures existed.
 `coherence decisions` is the cohering read: every session file merged into ONE timeline
 ordered by time, across agents, jobs and branches.
 
+### Reading it live — `coherence journal`
+
+`coherence decisions` is the settled read; **`coherence journal`** is the live one. Run
+it in a terminal while agents work and it opens an interactive surf over the same
+record: every stream interleaved, **newest first**, one cell per entry — glyph, local
+time, agent, then up to two lines of the entry text.
+
+- **↑/↓** move a visible selection, and the viewport slides only at the edges. **⏎**
+  opens the full entry — every field, labeled, colons aligned, nothing clipped — and
+  **esc** returns to whichever list you came from. Inside an entry that carries a
+  `supersedes` pointer, **⏎** follows it (the footer names the target); a chain of
+  retractions reads like a paper trail, and **esc** walks back out one hop at a time.
+- **s** is the streams picker: every session ordered by most recent activity, with the
+  merged timeline pinned at the top.
+- **c** opens the **open conjectures** view — the list behind the masthead's "N OPEN
+  conjecture(s)" count, each cell leading with its discriminator, because the test that
+  would close the question is the actionable part.
+- **f** (or **G**) follows the tip: new entries land at the top, under the cursor, as
+  agents write them. Surfing into history pauses the follow; walking back to the top
+  resumes it.
+
+A pipe or `--once` prints a chronological snapshot instead, and `--follow` is the
+line-mode tail for a second terminal. The same four scoping filters as `decisions`
+(`--job`, `--agent`, `--session`, `--branch`) work in every mode. The tail is
+content-addressed — deduped on the record's identity, not file offsets — so a live
+append arrives exactly once and a `--compact` fold mid-watch neither replays nor drops
+an entry.
+
 ### The session id: random for a hook, DERIVED for anything else
 
 One file per session is right when the sessions are real. It was expensive when they were

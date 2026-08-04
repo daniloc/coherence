@@ -14,6 +14,47 @@ evidence inside that record.
 
 ---
 
+## v0.29.0 — the journal gets a live reader, and the reader got read
+
+`coherence journal` is the record's first LIVE surface: an interactive surf over
+the merged timeline — every stream interleaved, **newest first**, stacked cells
+(glyph · local time · agent, then two lines of text) with a visible arrow-driven
+selection. `⏎` drills into the full entry: labeled metadata one field per line,
+every colon on one column, timestamps in human distance ("41 seconds ago" up
+close, the calendar past a day, always the machine's wall clock — the record
+stays UTC). An entry carrying a `supersedes` pointer is followable: `⏎` hops to
+the target, a chain of retractions reads like a paper trail, `esc` walks back
+out one hop at a time. `s` is the streams picker (most recent activity first),
+`c` the **open conjectures** view — the list behind the masthead's count, each
+cell leading with its discriminator, because the test that would close the
+question is the actionable field. A pipe or `--once` gets the chronological
+snapshot; `--follow` is the line-mode tail.
+
+The tail underneath is content-addressed: dedupe on the record's (session, id,
+at), offsets guarded by a consumed-prefix digest, so a live append arrives
+exactly once and a compaction fold — including in place into an existing target
+— neither replays nor drops a record. That is now a boundary claim at
+`tailJournal` with a guard oracle, and it carries an observed refutation: the
+dedupe was deleted on purpose, full verify went red BY NAME (31 · 30 green · 1
+red), and was restored. The quiet failure is the one that matters — a feed that
+duplicates does not crash, it teaches the orchestrator a question was decided
+twice.
+
+The release also closed the deferred bookkeeping and turned the instruments on
+the backlog. `premise` learned the one terminal state a deletion decision can
+reach: a strong lease on a path the SAME decision's `chose` records removing
+grades **satisfied-by-deletion** — absence is that premise HOLDING — which un-reds
+the gate d-f241c582 diagnosed as unfixable-by-remedy. And a four-agent review
+swept all 18 open conjectures: **8 closed** (2 answered by later work, 2 detector
+false positives verified against the compiler, 2 intended reframes, a 27-of-27
+cosmetic census that declined prose-binding machinery, and componentChurn
+measured consumer-less), 10 left open with measured task cards — three of them
+one-line-to-small fixes, four waiting on evidence windows that are not yet
+mature. The journal now records not just what was decided, but that the
+questions it raises get answered.
+
+---
+
 ## v0.28.0 — coherence work is due, and the hook says so
 
 Three findings wanted the same delivery: instruments gone quiet, capabilities whose

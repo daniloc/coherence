@@ -79,6 +79,19 @@ test("audit — retracted decisions disappear and only broken strong leases fail
   ]);
 });
 
+test("audit — a strong lease on a path the SAME decision records deleting is satisfied-by-deletion, never a gate failure", () => {
+  // The eviction decision's lease can never resolve again — the act it records is what
+  // emptied the address. Absence IS this premise holding (d-f241c582 named the hole).
+  const evicted = decision({ id: "d-evicted", chose: "evicted the scene command wholesale: scene.ts + render-scene.ts", files: ["src/scene.ts", "src/render-scene.ts"] });
+  const lost = decision({ id: "d-lost", chose: "anchor the walker here", files: ["src/gone.ts"] });
+  const audits = auditPremiseLeases([evicted, lost], graph([]));
+  const byId = new Map(audits.map((a) => [a.decisionId, a]));
+  assert.deepEqual(byId.get("d-evicted")!.leases.map((l) => l.status), ["satisfied-by-deletion", "satisfied-by-deletion"]);
+  assert.equal(byId.get("d-evicted")!.status, "valid");
+  assert.equal(byId.get("d-evicted")!.checkFailure, false);
+  assert.equal(byId.get("d-lost")!.checkFailure, true, "a missing strong lease with NO recorded deletion still fails — the cue must not loosen the gate");
+});
+
 test("render — findings are keyed and actionable; unleased decisions stay a coverage count", () => {
   const audits = auditPremiseLeases([
     decision({ id: "d-missing", files: ["src/gone.ts"] }),
