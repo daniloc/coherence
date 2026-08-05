@@ -301,6 +301,29 @@ test("resolved — a real conjecture id is accepted", async () => {
   await cleanup(cfg.root);
 });
 
+test("resolved — an answered conjecture refuses a second answer until the first is retracted", async () => {
+  const cfg = await root();
+  const s = newSessionId();
+  const c = habitat(cfg, { session: s, now: T(1) });
+  const answer = appendDecision(cfg, {
+    kind: "resolution", chose: "the decoder", supersedes: c.id,
+    because: "hand decoding settles it", session: s, now: T(2),
+  });
+  const refused = resolvableConjecture(readJournal(cfg).records, c.id);
+  assert.ok("error" in refused);
+  assert.match((refused as { error: string[] }).error.join("\n"), /already resolved/);
+  assert.match((refused as { error: string[] }).error.join("\n"), new RegExp(`retract ${answer.id}`),
+    "replacement requires an explicit correction edge, not implicit last-write-wins");
+
+  appendDecision(cfg, {
+    kind: "retraction", chose: "withdraw the broad answer", supersedes: answer.id,
+    because: "it generalized past the measured case", session: s, now: T(3),
+  });
+  assert.ok("rec" in resolvableConjecture(readJournal(cfg).records, c.id),
+    "with the old answer visibly withdrawn, the question may be answered again");
+  await cleanup(cfg.root);
+});
+
 // ── 4. --brief: prose clips, labels never do ─────────────────────────────────────
 
 test("--brief — `discriminated by` clips and ANNOUNCES the withheld count", async () => {
@@ -403,6 +426,17 @@ test("ids — widening the content hash left every pre-existing id EXACTLY where
     discriminatedBy: "t", session: newSessionId(), now: T(3),
   });
   assert.notEqual(one.id, two.id);
+
+  const targetA = appendDecision(cfg, {
+    kind: "resolution", agent: "A", chose: "same answer", because: "same evidence",
+    supersedes: "d-question-a", session: newSessionId(), now: T(4),
+  });
+  const targetB = appendDecision(cfg, {
+    kind: "resolution", agent: "A", chose: "same answer", because: "same evidence",
+    supersedes: "d-question-b", session: newSessionId(), now: T(5),
+  });
+  assert.notEqual(targetA.id, targetB.id,
+    "terminal identity includes its target, so shared prose cannot collapse different questions");
   await cleanup(cfg.root);
 });
 

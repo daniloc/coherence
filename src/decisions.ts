@@ -317,7 +317,13 @@ const ID_SEP = "\u0000";
  *  that quotes it. Widening the digest for a second copy would buy nothing and would put
  *  one more thing between the frozen id format and the next person who edits this file.
  *
- *  `finding` IS IN THE DIGEST, and it is the one exception — for the opposite reason. It
+ *  `supersedes` joins the digest only when present. It is CONTENT for every terminal row:
+ *  two identical answers to two different questions are two different resolutions. The
+ *  first implementation omitted it, so four writes with shared prose minted one id and
+ *  `resolve` collapsed three. Conditional append preserves every historical non-terminal
+ *  id while making new terminal identities target-specific.
+ *
+ *  `finding` IS IN THE DIGEST, and it is the other exception — for the opposite reason. It
  *  is NOT a projection of the text: an advisory's key is derived to hold STILL while the
  *  wording moves (a redundancy pair's `chose` carries line numbers and a score; its key
  *  carries neither), so two genuinely different findings could in principle render the
@@ -327,10 +333,11 @@ const ID_SEP = "\u0000";
  *  what it always did. A content hash may only widen for content that did not exist. */
 function decisionId(
   kind: DecisionKind, agent: string, chose: string, over: string[], because: string,
-  couldBe: string[] = [], discriminatedBy = "", finding = "",
+  couldBe: string[] = [], discriminatedBy = "", supersedes = "", finding = "",
 ): string {
   const parts = [kind, agent, chose, over.join(" "), because];
   if (couldBe.length || discriminatedBy) parts.push(couldBe.join(" "), discriminatedBy);
+  if (supersedes) parts.push(supersedes);
   if (finding) parts.push(finding);
   return "d-" + createHash("sha256").update(parts.join(ID_SEP)).digest("hex").slice(0, 8);
 }
@@ -396,7 +403,10 @@ function write(cfg: Config, given: string | null, input: DecideInput): DecisionR
   const couldBe = conjecture ? withInstrumentCandidate(input.couldBe ?? []) : (input.couldBe ?? []);
   const discriminatedBy = input.discriminatedBy ?? "";
   const rec: DecisionRecord = {
-    id: decisionId(input.kind, agent, input.chose, over, input.because, couldBe, discriminatedBy, input.finding),
+    id: decisionId(
+      input.kind, agent, input.chose, over, input.because, couldBe, discriminatedBy,
+      input.supersedes, input.finding,
+    ),
     session,
     at,
     kind: input.kind,
@@ -816,6 +826,20 @@ export function resolvableConjecture(
       `${id} is a ${rec.kind}, not a conjecture — only a conjecture ${verb === "dismiss" ? "is dismissed" : "resolves"}.`,
       rec.kind === "decision"
         ? `To withdraw a decision, append a retraction: coherence retract ${id} --because "..."`
+        : "Run `coherence decisions --open` to see what is actually open.",
+    ] };
+  }
+  const state = resolve(records);
+  if (!state.open.some((r) => r.id === id)) {
+    const answered = state.resolved.find((x) => x.rec.id === id)?.by;
+    const dismissed = state.dismissed.find((x) => x.rec.id === id)?.by;
+    const withdrawn = state.retracted.find((x) => x.rec.id === id)?.by;
+    const terminal = answered ?? dismissed ?? withdrawn;
+    const stateName = answered ? "resolved" : dismissed ? "dismissed" : "retracted";
+    return { error: [
+      `${id} is already ${stateName}${terminal ? ` by ${terminal.id}` : ""}.`,
+      answered
+        ? `Retract the prior answer first: coherence retract ${answered.id} --because "..."`
         : "Run `coherence decisions --open` to see what is actually open.",
     ] };
   }
