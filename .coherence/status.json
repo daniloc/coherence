@@ -635,8 +635,8 @@
     "verdict": "LOCALITY decohering, SPREAD widening — driving toward wider SPREAD, but recent gestures are mostly converge/couple — likely cross-cutting or one-off work, not a smearing trend; read the seam, not the slope"
   },
   "atlas": {
-    "at": "2026-08-05T03:48:37.668Z",
-    "commit": "25d4132",
+    "at": "2026-08-05T03:49:13.263Z",
+    "commit": "a5a7f14",
     "tiers": {
       "enshrined": 0,
       "checked": 23,
@@ -653,7 +653,7 @@
         "translates": "The single ingress: arbitrary repository text becomes the model every downstream gate is computed over. Nothing after this re-reads the tree, so whatever the walk drops is not wrong here — it is absent everywhere, silently. floor.ts's non-vacuity refusal exists because of exactly this crossing, and grades the collapse rather than the crossing.",
         "present": true,
         "pending": false,
-        "heat": 0.08620689655172414
+        "heat": 0.08547008547008547
       },
       {
         "sym": "loadConfig",
@@ -665,7 +665,7 @@
         "translates": "The repository's own coherence.config.json becomes argv the harness spawns — `test`, `typecheck`, and every `mass.measures` command. Running the harness in a tree executes that tree's config; readJsonOrRefuse makes an unparseable config refuse rather than revert to defaults, but a parseable one is obeyed.",
         "present": true,
         "pending": false,
-        "heat": 0.034482758620689655
+        "heat": 0.03418803418803419
       },
       {
         "sym": "readJsonOrRefuse",
@@ -677,7 +677,7 @@
         "translates": "The one door every remembered fact enters through — status.json, each ratchet baseline, the journal. It separates ABSENT (legitimate: first run, nothing pinned) from UNREADABLE (never legitimate), because the `catch → return default` it replaced turned a single garbage byte into every floor on the page quietly agreeing.",
         "present": true,
         "pending": false,
-        "heat": 0.04310344827586207
+        "heat": 0.042735042735042736
       },
       {
         "sym": "analyzeOracle",
@@ -689,7 +689,7 @@
         "translates": "An oracle's own source is read to decide whether it iterates a LIVE domain or a literal. A test that loops a hardcoded list proves nothing about the code and must not be allowed to green a totality claim.",
         "present": true,
         "pending": false,
-        "heat": 0.05172413793103448
+        "heat": 0.05128205128205128
       },
       {
         "sym": "runNamedTest",
@@ -701,7 +701,7 @@
         "translates": "A claim's oracle NAME becomes a test selection in a spawned runner. A name that exists nowhere exits nonzero — the vanished oracle cannot pass by selecting nothing.",
         "present": true,
         "pending": false,
-        "heat": 0.008620689655172414
+        "heat": 0.008547008547008548
       },
       {
         "sym": "execNamedTest",
@@ -713,7 +713,7 @@
         "translates": "A subprocess's exit code and stdout become a claim's verdict. Exit 0 is not evidence: the output must positively match `testMatch`, so a runner that ran nothing fails instead of greening the renamed test.",
         "present": true,
         "pending": false,
-        "heat": 0.0603448275862069
+        "heat": 0.05982905982905983
       },
       {
         "sym": "resolveFromBatch",
@@ -725,7 +725,7 @@
         "translates": "One batched runner's output is split back into per-claim verdicts. ZERO matching tests is its own named state, never a quiet pass — the batch's efficiency must not buy back the absence it would otherwise hide.",
         "present": true,
         "pending": false,
-        "heat": 0.017241379310344827
+        "heat": 0.017094017094017096
       },
       {
         "sym": "runVerify",
@@ -737,7 +737,7 @@
         "translates": "The graded claims plus coverage become the run's verdict. A declared invariant with no anchoring boundary is a promise with no chokepoint, and it reds coverage rather than being counted as satisfied.",
         "present": true,
         "pending": false,
-        "heat": 0.1810344827586207
+        "heat": 0.1794871794871795
       },
       {
         "sym": "vacuityRefusal",
@@ -749,7 +749,7 @@
         "translates": "The floor beneath every other crossing on this map: before any claim is graded, the derived surface is checked against what the record remembers. An empty derivation over a remembered one REFUSES — `0 of 0` never renders as coherent.",
         "present": true,
         "pending": false,
-        "heat": 0.04310344827586207
+        "heat": 0.042735042735042736
       },
       {
         "sym": "recordVerify",
@@ -761,7 +761,7 @@
         "translates": "This run's verdicts become the memory the next run compares against — the only writer to that chart. A skip merges rather than overwrites, so a scoped run can never launder a real red into an absence.",
         "present": true,
         "pending": false,
-        "heat": 0.06896551724137931
+        "heat": 0.06837606837606838
       },
       {
         "sym": "setLifecycleHookForHost",
@@ -773,7 +773,7 @@
         "translates": "One host-selected lifecycle contract becomes that host's tracked project settings, stable launcher, and root mapping. Claude and Codex share the five event meanings without sharing settings syntax, matchers, launcher bytes, or bundle identity; unrelated host configuration survives the convergence.",
         "present": true,
         "pending": false,
-        "heat": 0.017241379310344827
+        "heat": 0.017094017094017096
       },
       {
         "sym": "reconcile",
@@ -785,7 +785,7 @@
         "translates": "The pinned interpolation-site review is re-addressed against today's tree. A moved file keeps its baselined identity; a COPIED site finds nothing to absorb it and is still novel, so review cannot be laundered by duplication.",
         "present": true,
         "pending": false,
-        "heat": 0.02586206896551724
+        "heat": 0.02564102564102564
       },
       {
         "sym": "reconcileMass",
@@ -797,7 +797,7 @@
         "translates": "The pinned mass is re-addressed after renames. A vanished pin is inherited only when family, unit and EXACT value all match — a rename that also grew absorbs nothing, so growth cannot ride in under a relabel.",
         "present": true,
         "pending": false,
-        "heat": 0.04310344827586207
+        "heat": 0.042735042735042736
       },
       {
         "sym": "auditPremiseLeases",
@@ -809,7 +809,7 @@
         "translates": "A standing decision's named structural addresses are re-resolved against today's graph. A decision whose premise no longer exists is reported expired rather than silently continuing to hold.",
         "present": true,
         "pending": false,
-        "heat": 0.02586206896551724
+        "heat": 0.02564102564102564
       },
       {
         "sym": "signal",
@@ -821,7 +821,7 @@
         "translates": "A diff's shape becomes a demand: behavioral growth with zero anchors needs an invariant or an explicit attestation. It grades process, not evidence — a tear here delays a claim, it does not fabricate one.",
         "present": true,
         "pending": false,
-        "heat": 0.008620689655172414
+        "heat": 0.008547008547008548
       },
       {
         "sym": "selectRegulation",
@@ -833,7 +833,7 @@
         "translates": "Live sensor observations become exactly one ordered intervention. Missing, foreign, or conflicting readings refuse; a required decision outranks a mechanical redirect; and release means only that the versioned rules evaluated no obligation. A tear here can mask stronger debt with easier work, so the selector's priority is a guarded crossing rather than formatter policy.",
         "present": true,
         "pending": false,
-        "heat": 0.008620689655172414
+        "heat": 0.008547008547008548
       },
       {
         "sym": "observeRegulation",
@@ -845,7 +845,7 @@
         "translates": "The selected agent host's lifecycle surface becomes the control observation consumed by doctrine. A complete Claude path cannot satisfy a Codex reading (or vice versa), and the repair command remains bound to the host actually inspected.",
         "present": true,
         "pending": false,
-        "heat": 0.008620689655172414
+        "heat": 0.008547008547008548
       },
       {
         "sym": "isActivityRow",
@@ -857,7 +857,7 @@
         "translates": "An append-only activity row becomes admissible evidence only when its host, transport, session relation, event identity, canonical time, and optional command result agree. A torn or internally contradictory row is counted as damage instead of entering status, calibration, or experiment inference.",
         "present": true,
         "pending": false,
-        "heat": 0.008620689655172414
+        "heat": 0.008547008547008548
       },
       {
         "sym": "closeExperiment",
@@ -869,7 +869,7 @@
         "translates": "An assessor's action and criterion evidence becomes an immutable close row joined to the frozen owner plan. Every planned id must be answered exactly once, trace and activity prefixes must remain intact, each telemetry window names its weakest provable scope (none, owner-session, parent-session-aggregate, and legacy-unscoped for older trace), and the outcome is derived from criterion statuses; malformed, partial, rewritten, unreadable, or internally unscoped evidence refuses instead of becoming history.",
         "present": true,
         "pending": false,
-        "heat": 0.008620689655172414
+        "heat": 0.008547008547008548
       },
       {
         "sym": "tailJournal",
@@ -881,7 +881,7 @@
         "translates": "The journal's append-only session files become a live feed and a surfable history. Identity comes from a record's own content rather than its byte position, so a compaction fold neither drops nor duplicates what a watcher sees; the crossing carries memory out to a reader and never writes a verdict back.",
         "present": true,
         "pending": false,
-        "heat": 0.017241379310344827
+        "heat": 0.017094017094017096
       },
       {
         "sym": "calibrate",
@@ -893,7 +893,7 @@
         "translates": "Recorded read-traces and labeled outcomes become a report on how well the context predictor did. It gates nothing — the crossing carries a measurement out to a reader, never back into a verdict.",
         "present": true,
         "pending": false,
-        "heat": 0.017241379310344827
+        "heat": 0.017094017094017096
       },
       {
         "sym": "calibrationPaths",
@@ -905,7 +905,7 @@
         "translates": "A host trace and the shared worktree become one calibration sample domain without upgrading scope: exact session writes, Codex parent-session aggregates, legacy unscoped rows, and shared-worktree fallback remain distinct.",
         "present": true,
         "pending": false,
-        "heat": 0.017241379310344827
+        "heat": 0.017094017094017096
       },
       {
         "sym": "contextFor",
@@ -917,7 +917,7 @@
         "translates": "The graph becomes the smallest packet an agent needs for one task. Bounded and byte-stable, and every approximation it makes is named in the packet — a reader must be able to see what was left out.",
         "present": true,
         "pending": false,
-        "heat": 0.008620689655172414
+        "heat": 0.008547008547008548
       },
       {
         "sym": "runHook",
@@ -929,7 +929,7 @@
         "translates": "A lifecycle event the selected agent host hands this process becomes durable journal state or a transient read/activity row carrying host, transport, and bundle identity. It writes memory but never a verdict, so a tear loses history rather than earning a green.",
         "present": true,
         "pending": false,
-        "heat": 0.10344827586206896
+        "heat": 0.10256410256410256
       },
       {
         "sym": "currentObservation",
@@ -941,7 +941,7 @@
         "translates": "One explicitly named session's activity becomes the activation reading used by session-scoped hook checks. Only launcher events from the selected host and current installed bundle count as observed; direct probes, stale bundles, and other sessions cannot earn activation. Parent-fallback may prove that exact bundle reached the parent session, but it cannot establish which child produced the event.",
         "present": true,
         "pending": false,
-        "heat": 0.10344827586206896
+        "heat": 0.10256410256410256
       },
       {
         "sym": "inspectLifecycleHook",
@@ -953,7 +953,7 @@
         "translates": "The selected host's project hook surface is read to produce ONE structural control bit: Claude's shared and local settings, or Codex's hooks.json plus the relevant project config.toml controls, together with that host's aligned launcher root, root mapping, and runnable target. Host-specific syntax cannot weaken singularity: a checker that accepts two firing paths, an inline competitor, a disabled feature, or managed-only exclusion is not a binary control, only a substring detector with a nicer report.",
         "present": true,
         "pending": false,
-        "heat": 0.017241379310344827
+        "heat": 0.017094017094017096
       }
     ],
     "drift": [],
