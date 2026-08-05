@@ -201,6 +201,37 @@ test("open — a RETRACTED conjecture is withdrawn, not answered", async () => {
   await cleanup(cfg.root);
 });
 
+test("open — a retracted resolution cannot keep answering a conjecture", async () => {
+  // Terminal rows are still claims. If an overbroad resolution cannot itself be
+  // withdrawn, append-only correction is fake: the only escape is a second answer that
+  // wins implicitly by read order while the contradicted claim remains live.
+  const cfg = await root();
+  const s = newSessionId();
+  const c = habitat(cfg, { session: s, now: T(1) });
+  const broad = appendDecision(cfg, {
+    kind: "resolution", chose: "global policy", supersedes: c.id,
+    because: "one adopter showed the incident", session: s, now: T(2),
+  });
+  appendDecision(cfg, {
+    kind: "retraction", chose: "withdraw the overreach", supersedes: broad.id,
+    because: "one adopter cannot settle the population", session: s, now: T(3),
+  });
+  const afterWithdrawal = resolve(readJournal(cfg).records);
+  assert.equal(afterWithdrawal.resolved.length, 0,
+    "a withdrawn answer has no terminal force");
+  assert.equal(afterWithdrawal.open.some((r) => r.id === c.id), true,
+    "without another live answer the question reopens");
+
+  const scoped = appendDecision(cfg, {
+    kind: "resolution", chose: "scoped to the observed adopter", supersedes: c.id,
+    because: "the local incident is measured; generalization remains open", session: s, now: T(4),
+  });
+  const repaired = resolve(readJournal(cfg).records);
+  assert.equal(repaired.resolved.find((x) => x.rec.id === c.id)?.by.id, scoped.id,
+    "a later scoped answer closes the question without the withdrawn row competing");
+  await cleanup(cfg.root);
+});
+
 test("open — the stop report names the open questions, where they are cheapest to answer", async () => {
   const cfg = await root();
   habitat(cfg);

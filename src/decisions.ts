@@ -748,8 +748,16 @@ export function resolve(records: DecisionRecord[]): {
   const withdrawn = new Map<string, DecisionRecord>();
   const answered = new Map<string, DecisionRecord>();
   const retired = new Map<string, DecisionRecord>();
+  // Retractions are collected FIRST because they may withdraw a terminal row too. A
+  // resolution is still a claim, and an append-only record needs a real way to correct
+  // an overbroad answer without relying on an implicit last-write-wins accident. The old
+  // one-pass build skipped terminal rows before consulting `withdrawn`, so retracting a
+  // resolution exited 0 and changed nothing.
   for (const r of all) {
     if (r.kind === "retraction" && r.supersedes) withdrawn.set(r.supersedes, r);
+  }
+  for (const r of all) {
+    if (withdrawn.has(r.id)) continue;
     if (r.kind === "resolution" && r.supersedes) answered.set(r.supersedes, r);
     if (r.kind === "dismissal" && r.supersedes) retired.set(r.supersedes, r);
   }
