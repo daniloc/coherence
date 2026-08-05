@@ -10,6 +10,7 @@ rendering, and journaling remain independently addressable modules beneath this 
 
 - agent lifecycle preserves decisions and exposes the current change signal
 - significant behavioral growth acquires an anchor or patch-specific decision
+- a weaker regulation obligation never masks a stronger one
 - task context is bounded and names its approximations
 - cached decisions expose structurally expired premises
 - predicted context closure is calibrated against observed reads and outcomes
@@ -27,6 +28,8 @@ rendering, and journaling remain independently addressable modules beneath this 
 
 ## refutations
 
+- a weaker regulation obligation never masks a stronger one: swapped `candidateCompare` from potential-first to doctrine-rule-first (2026-08-04), so the earlier lifecycle-control redirect masked the stronger current-patch decision when both were owed — full verify red by name, alongside the independent Stop mutation, at `claims: 32 · 30 green · 2 red`; the guard observed `redirect` where `require-decision` was required. Restored. This is the dangerous direction: a stable ordering that is stable on the wrong axis still makes the controller converge on lower-value work.
+- agent lifecycle preserves decisions and exposes the current change signal: inserted an `emit` immediately after main Stop's calibration snapshot (2026-08-04), recreating the conclusion-echo failure and the deeper attribution error — shared-worktree state bought whichever main agent happened to stop another model turn. Full verify red this claim by name at `claims: 32 · 31 green · 1 red`; the runtime guard observed nonempty stdout even for the quiet main Stop. Restored. SubagentStop still restates because its parent may see only the final reply; main Stop now snapshots calibration with byte-empty stdout.
 - lifecycle hook presence is one canonical runnable bit: loosened `inspectLifecycleHook` so `present` ignored `wiringPresent` and trusted only valid JSON plus the launcher (2026-08-03) — full verify named this claim as the sole red, `claims: 30 · 29 green · 1 red`; the guard's duplicate-canonical-group fixture observed the laundered `true`. Restored. This is the dangerous direction: a checker that accepts two firing paths is not a binary control, only a substring detector with a nicer report.
 - pinned mass follows a value-conserving rename but never absorbs growth: mutated `reconcileMass` in BOTH directions (2026-07-31) and full verify reds the claim by name each time. (a) `const hit = undefined` — the pre-fix behaviour where a rename never absorbs: `claims: 27 · 26 green · 1 red`, the H1-rename phase failing on strictEqual (a one-line spec rename read as growth again). (b) dropped the VALUE from the move-invariant address so any same-family vanished pin absorbs any new name — the laundering direction: same `27 · 26 green · 1 red`, the renamed-AND-grown phase failing on match (the growth rode in under the rename and the guard caught the missing NEW-dimension report). Restored, back to 27/27. As with the sinks reconciler, (b) is the direction that matters: a rename-forgiver that cannot fail is a growth ratchet that deleted itself.
 - reviewed risk sites survive relocation but never duplication: mutated `reconcile` in BOTH directions and the guard reds each time. (a) `const from = undefined` — the pre-fix behaviour where the path is part of a site's identity: `claims: 23 · 22 green · 1 red`, the moved file reported as new risk. (b) absorb from every baselined address instead of only vanished ones, without consuming the pool — plain content-addressing: same `1 red`, the copied sink waved through. Restored, back to 23/23. The loosening direction is the one that matters: a fix for a false alarm that cannot fail (b) is a fix that deleted the ratchet.
@@ -50,8 +53,9 @@ rendering, and journaling remain independently addressable modules beneath this 
 - cli.ts imports ./verify.ts
 - hooks.ts imports ./decisions.ts
 - derive.ts imports ./walk.ts
-- boundary "agent lifecycle preserves decisions and exposes the current change signal" at runHook via guard "hooks — generated wiring uses the low-cost entrypoint and observes writes"
+- boundary "agent lifecycle preserves decisions and exposes the current change signal" at runHook via guard "hooks — main Stop snapshots without feedback while SubagentStop alone restates"
 - boundary "significant behavioral growth acquires an anchor or patch-specific decision" at signal via guard "only a zero-anchor alarm without attestation needs a decision"
+- boundary "a weaker regulation obligation never masks a stronger one" at selectRegulation via guard "regulate — ordered potential is permutation-invariant and monotone"
 - boundary "task context is bounded and names its approximations" at contextFor via guard "renderContext — byte-stable for the same inputs and names every approximation"
 - boundary "cached decisions expose structurally expired premises" at auditPremiseLeases via guard "audit — retracted decisions disappear and only broken strong leases fail a check"
 - boundary "predicted context closure is calibrated against observed reads and outcomes" at calibrate via guard "calibration reports coverage, outside reads, and defect rates by prediction misses"
@@ -71,11 +75,22 @@ rendering, and journaling remain independently addressable modules beneath this 
 
 **agent lifecycle preserves decisions and exposes the current change signal.** Decisions
 and risk are cheapest to surface while the agent still holds the context that produced
-them; waiting for a later reviewer externalizes both reconstruction costs.
+them; waiting for a later reviewer externalizes both reconstruction costs. The two stop
+surfaces are not interchangeable: a subagent restates its report because its caller may
+see nothing else, while the main agent has already shown its report to the user and is
+never interrupted by shared-worktree state that may belong to another agent. Main Stop
+keeps the calibration observation and emits no bytes; only SubagentStop carries the
+journal and patch signal forward.
 
 **significant behavioral growth acquires an anchor or patch-specific decision.** The cost
 of adding an invariant is immediate while the cost of omitting it appears later, so the
 current patch must carry either enforcement or an addressable reason that it needs none.
+
+**a weaker regulation obligation never masks a stronger one.** Regulation compares live
+obligations by a lexicographic potential, with missing observations failing closed instead
+of becoming zero, and returns the single strongest action owed. V1 evaluates only rules
+declared in the live doctrine registry; even a no-action result makes no claim of overall
+safety.
 
 **task context is bounded and names its approximations.** A focused context packet is
 useful only when its one-hop and heuristic limits stay visible; otherwise convenience is

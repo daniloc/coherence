@@ -140,6 +140,10 @@ export const COMMANDS: Command[] = [
     name: "signal", group: "verify", usage: "[--check] [--since <ref>] [--attest-no-invariant --because <why>]",
     summary: "require significant behavioral growth to gain an anchor or a patch-bound decision",
   },
+  {
+    name: "regulate", group: "verify", usage: "[--check] [--since <ref>] [--json]",
+    summary: "apply the anti-entropy doctrine to live readings and emit exactly one next action",
+  },
 
   // ── journal ──────────────────────────────────────────────────────────────────────────
   { name: "decide", group: "journal", usage: '"<chose>" --over "<alt>" --because "<why>"', summary: "log one choice and what it was chosen OVER" },
@@ -241,6 +245,7 @@ export const COMMANDS: Command[] = [
   },
 
   // ── reference ────────────────────────────────────────────────────────────────────────
+  { name: "doctrine", group: "reference", usage: "[--json]", summary: "print the versioned law the regulator is allowed to apply" },
   { name: "phrasebook", group: "reference", summary: "print the claim-form table straight from the `CLAIM_FORMS` registry" },
   {
     name: "hooks", group: "reference",

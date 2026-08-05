@@ -41,6 +41,8 @@ import { redundancy } from "./redundancy.ts";
 import { prose } from "./prose.ts";
 import { economy } from "./economy.ts";
 import { signal } from "./signal.ts";
+import { regulate } from "./regulate.ts";
+import { formatDoctrine } from "./doctrine.ts";
 import { contextFromProject, renderContext } from "./context.ts";
 import { premise } from "./premise.ts";
 import { calibrate, type CalibrationOutcome } from "./calibration.ts";
@@ -334,6 +336,26 @@ if (cmd === "graph") {
     session: one("--session") ?? undefined,
     agent: one("--agent") ?? undefined,
   }));
+} else if (cmd === "regulate") {
+  // The first explicit regulator surface. It only reads; --check changes the exit code,
+  // never the observation or the selected action. Hook delivery is deliberately a later
+  // rollout step, after this selector has earned trust under direct use.
+  const json = argv.includes("--json");
+  const allowed = new Set(["--check", "--since", "--json"]);
+  const badFlags = argv.filter((arg) => arg.startsWith("--") && !allowed.has(arg));
+  const sinceCount = argv.filter((arg) => arg === "--since").length;
+  const invalidSince = sinceIdx >= 0 && (!since || since.startsWith("--"));
+  const badShape = positional.length > 0 || invalidSince || sinceCount > 1;
+  if (badFlags.length || badShape) {
+    const usage = "usage: coherence regulate [--check] [--since <ref>] [--json]";
+    const message = badFlags.length
+      ? `unsupported flag(s) for regulate: ${badFlags.join(", ")}`
+      : "regulate accepts no positional arguments and exactly one value per --since";
+    if (json) console.log(JSON.stringify({ error: message, usage }, null, 2));
+    else { console.error(message); console.error(usage); }
+    await exit(2);
+  }
+  await exit(await regulate(cfg, undefined, { since: since ?? undefined, check, json }));
 } else if (cmd === "decide" || cmd === "blocked") {
   // The write half of the decision journal. Deliberately the cheapest thing in the
   // CLI to call: one shell line, no server, no session. Anything an agent has to set
@@ -683,6 +705,20 @@ if (cmd === "graph") {
 } else if (cmd === "why-lint") {
   // Advisory: ## why prose restating a mechanism a boundary claim already anchors.
   await exit(whyLint(await buildGraph(cfg), check ? "check" : "report"));
+} else if (cmd === "doctrine") {
+  const json = argv.includes("--json");
+  const badFlags = argv.filter((arg) => arg.startsWith("--") && arg !== "--json");
+  if (positional.length || badFlags.length) {
+    const usage = "usage: coherence doctrine [--json]";
+    const message = badFlags.length
+      ? `unsupported flag(s) for doctrine: ${badFlags.join(", ")}`
+      : "doctrine accepts no positional arguments";
+    if (json) console.log(JSON.stringify({ error: message, usage }, null, 2));
+    else { console.error(message); console.error(usage); }
+    await exit(2);
+  }
+  for (const line of formatDoctrine(json)) console.log(line);
+  await exit(0);
 } else if (cmd === "phrasebook") {
   // The claim grammar, rendered straight from the CLAIM_FORMS registry — the generated
   // authority behind the README's hand-kept table. A line matching no form is SKIPPED

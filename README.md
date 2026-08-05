@@ -382,6 +382,50 @@ inspection. It is not the preferred installer. The launcher and mapping paths ar
 coherence-owned: `install` repairs drift at those names, while `uninstall` removes them
 only if their bytes still prove coherence ownership.
 
+### Regulate the field: one next action
+
+An instrument answers one question. A regulator decides which answer should change what
+you do **next**. `coherence regulate` is the first deliberately narrow control loop over
+the existing instruments: observe, select one intervention, act, then run it again. It is
+not another dashboard or an umbrella verifier.
+
+```sh
+npx coherence doctrine                         # inspect the law being applied
+npx coherence regulate                         # read-only report
+npx coherence regulate --since origin/main
+npx coherence regulate --check --since origin/main
+npx coherence regulate --json
+```
+
+The doctrine is versioned and built in, not a configurable score. Its potential is
+lexicographic: **refuse an unavailable required reading**, then **require a decision for
+significant unanchored growth**, then **redirect an absent lifecycle control to its one
+repair command**, otherwise **release**. The first nonempty class wins. One run emits at
+most one executable command; lower-priority obligations are counted as withheld, and a
+rerun after the selected action reveals the next one. Insertion order, duplicate readings,
+and locally convenient weights cannot change that order.
+
+V1 evaluates exactly two rules: the complete canonical lifecycle control must be present,
+and significant behavioral growth must carry an invariant/boundary/parity anchor or a
+standing patch-bound decision. That is the whole domain. `release` therefore means “no
+intervention under those two live rules,” never “this repository is coherent” or “this
+change is correct.” `coherence doctrine [--json]` prints the rules and their stated limits
+from the same registry the selector executes.
+
+The command is explicit and read-only. It installs no hook, adds no anchor, writes no
+attestation, and does not update the journal or status record. Without `--check`, a
+redirect or decision requirement is advisory and exits `0`; with `--check`, either exits
+`1`. Release exits `0`, and refusal—where the regulator could not obtain a required
+reading—exits `2` in both modes. `--json` changes only the representation.
+
+The full regulator selector is intentionally **not in any hook yet**. `SubagentStop`
+independently reports the pre-existing change signal, but main-agent `Stop` emits no
+feedback at all: it fires once per turn, and any output would make the host continue.
+Putting an uncalibrated selector there would turn an explicit report into repeated ambient
+control. The first release earns automation by direct use. A later rollout needs genuine
+per-agent attribution before it can canary the same decision without charging one agent
+for another agent's shared-worktree change.
+
 Full (every field the `Config` interface in `src/types.ts` accepts; defaults from
 `src/config.ts`):
 
@@ -960,9 +1004,13 @@ instruction. `SubagentStart` fires for every agent a run spawns; `SessionStart` 
 the session itself, so work that never spawns an agent still journals under an id of its
 own instead of falling back to a derived one. `PostToolUse` records only explicit
 read/write path fields in a transient per-session trace; it does no graph or git analysis
-on that high-frequency path. `SubagentStop` and `Stop` snapshot calibration and report
-both what the journal holds and the patch's current change signal. That non-error feedback
-gets one turn; a `stop_hook_active` follow-up is silent so it cannot loop or become a gate.
+on that high-frequency path. `SubagentStop` snapshots calibration and reports both what
+the journal holds and the patch's current change signal. Its final-report restatement is
+subagent-only: the parent may see no other account of the work. Main-agent `Stop` snapshots
+calibration with byte-empty stdout. It cannot safely turn the shared worktree's change
+signal or open-conjecture count into this agent's unfinished task, so no main conclusion
+receives a second model turn. Subagent feedback gets one turn; a `stop_hook_active`
+follow-up is silent so it cannot loop or become a gate.
 `signal --check` is the CI gate. The generated block invokes the dedicated
 `coherence-hook` binary so loading the full command registry is not part of every read.
 An event the harness does not recognize is deliberately *not* an error — hook sets grow,
@@ -1517,7 +1565,7 @@ both is exactly what drifted.
      edit by hand — add the command to the registry and re-run. Everything OUTSIDE these
      markers is authored prose. -->
 
-_37 commands. This index is derived from the registry the dispatch is checked
+_39 commands. This index is derived from the registry the dispatch is checked
 against (`test/commands.test.ts` enumerates the live `cmd === …` chain and asserts the two
 sets are equal), so it cannot fall behind the CLI. The reasoning for the commands that have
 any is in **In detail** below — that half is authored, and does not cover all of them._
@@ -1534,6 +1582,7 @@ any is in **In detail** below — that half is authored, and does not cover all 
 - `coherence verify [--fast] [--staged | --since <ref>] [--raise [--raise-cap N]] [--apply <verdicts>] [--from-report <file>] [--serial-oracles]` — run the claims, the evidence chain and coverage — the gate
 - `coherence log [<refA> [<refB>]] [--strict]` — structural diff of the invariant/boundary set between two refs, then the novelty advisory
 - `coherence signal [--check] [--since <ref>] [--attest-no-invariant --because <why>]` — require significant behavioral growth to gain an anchor or a patch-bound decision
+- `coherence regulate [--check] [--since <ref>] [--json]` — apply the anti-entropy doctrine to live readings and emit exactly one next action
 
 **The decision journal — appends only, gates nothing**
 
@@ -1579,6 +1628,7 @@ any is in **In detail** below — that half is authored, and does not cover all 
 
 **Reference and plumbing**
 
+- `coherence doctrine [--json]` — print the versioned law the regulator is allowed to apply
 - `coherence phrasebook` — print the claim-form table straight from the `CLAIM_FORMS` registry
 - `coherence hooks [status|install|uninstall|print] [--check] [--json]` — the lifecycle control — converge on one canonical, runnable shared hook bundle
 - `coherence hook <event>` — the hook BODY, invoked by the harness rather than by you
@@ -1940,9 +1990,10 @@ any is in **In detail** below — that half is authored, and does not cover all 
   control. One canonical five-event bundle and stable launcher are shared by the printer,
   installer, and structural checker; `--check` exits on the complete runnable control.
   `status` keeps its structural parts and observed firing visible as separate facts. The block traces explicit
-  read/write paths at `PostToolUse` and emits the patch signal plus calibration snapshot at
-  Stop. `coherence-hook <event>` is the dependency-light lifecycle body; `coherence hook
-  <event>` remains the general-CLI spelling.
+  read/write paths at `PostToolUse`; `SubagentStop` emits the journal + patch report, while
+  main-agent `Stop` records calibration with byte-empty stdout. `coherence-hook <event>` is
+  the dependency-light lifecycle body; `coherence hook <event>` remains the general-CLI
+  spelling.
 - `coherence why-lint` — the **`## why` discipline**, two advisory checks against the
   graph the harness already holds:
   1. **mechanism-restatement** — a sentence that names an anchored chokepoint/oracle

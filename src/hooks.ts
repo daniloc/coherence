@@ -13,9 +13,11 @@
 // spends context to save context is self-defeating.
 //
 // THE NUDGE DOES NOT FAIL THE STOP. `SubagentStop` returns non-error feedback once, then
-// stays silent when the host marks the follow-up stop as active. Exit 2 would make the
-// journal a gate, and a gate acquires an incentive to be complete — at which point it is
-// a transcript again, which is the thing it exists to compress.
+// stays silent when the host marks the follow-up stop as active. Main-agent `Stop` is a
+// different surface: the user already saw its report, and a shared worktree cannot prove
+// which agent owns an unsettled patch. It records calibration with byte-empty stdout.
+// Exit 2 would make the journal a gate, and a gate acquires an incentive to be complete —
+// at which point it is a transcript again, which is the thing it compresses.
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { readJournal, openSession, resolve } from "./decisions.ts";
@@ -98,6 +100,25 @@ export function stopFeedbackActive(payload: unknown): boolean {
   return p.stop_hook_active === true || p.stopHookActive === true;
 }
 
+export type StopChangeFeedback =
+  | { kind: "available"; text: string }
+  | { kind: "unavailable"; text: string };
+
+/**
+ * Host semantics make this distinction consequential: any `additionalContext` continues
+ * the conversation. A subagent's parent may genuinely need the final report restated;
+ * the main user just read it. Main Stop therefore emits nothing. Shared-worktree state
+ * cannot be promoted into a task-local obligation merely because this agent stopped.
+ */
+export function composeStopFeedback(
+  event: "SubagentStop" | "Stop",
+  subagentReport: string,
+  change: StopChangeFeedback,
+): string | null {
+  if (event === "SubagentStop") return `${subagentReport}\n\n${change.text}`;
+  return null;
+}
+
 /** `coherence hook <event>` — the hook body itself, so nothing has to be written to
  *  disk or kept in sync with a script file. Reads the event payload on stdin (unused
  *  today, but hooks are fed JSON and ignoring it silently would be rude to the next
@@ -146,23 +167,37 @@ export async function runHook(cfg: Config, event: string): Promise<number> {
     return 0;
   }
 
-  if (event === "SubagentStop" || event === "Stop") {
+  if (event === "Stop") {
     // Stop additionalContext gives the agent one feedback turn. Without this host flag
     // guard, that turn stops again, receives the same feedback again, and loops until the
     // host's hard cap — expensive signaling turning into an accidental gate.
     if (stopFeedbackActive(payload)) return 0;
-    // The EXPENSIVE tick runs once, when a patch is about to leave the context that made
-    // it. Snapshot any observed reads, then put the patch's anchor signal directly in the
-    // final instruction. Neither operation gates the stop hook; CI's `signal --check` is
-    // the enforcement point after the agent has had this chance to settle it.
+    // Stop fires once per main-agent turn. Preserve that measurement cadence, but emit no
+    // stdout: this shared worktree cannot attribute a patch-wide obligation to this agent.
+    const session = String(hostScope ?? process.env.COHERENCE_SESSION ?? "unknown");
+    const { recordCalibrationSample } = await import("./calibration.ts");
+    await recordCalibrationSample(cfg, session).catch(() => null);
+    return 0;
+  }
+
+  if (event === "SubagentStop") {
+    if (stopFeedbackActive(payload)) return 0;
+    // The subagent's reply is about to cross an ownership seam. Snapshot its observed
+    // reads and give it one chance to return a complete report plus the shared patch signal.
     const session = String(hostScope ?? process.env.COHERENCE_SESSION ?? "unknown");
     const [{ recordCalibrationSample }, { analyzeChange, formatSignal }] = await Promise.all([
       import("./calibration.ts"), import("./signal.ts"),
     ]);
     await recordCalibrationSample(cfg, session).catch(() => null);
-    const change = await analyzeChange(cfg).then((s) => formatSignal(s).join("\n"))
-      .catch((e: unknown) => `CHANGE SIGNAL unavailable: ${e instanceof Error ? e.message : String(e)}`);
-    emit(event, `${stopReport(cfg)}\n\n${change}`);
+    const change: StopChangeFeedback = await analyzeChange(cfg).then((s) => ({
+      kind: "available" as const,
+      text: formatSignal(s).join("\n"),
+    })).catch((e: unknown) => ({
+      kind: "unavailable" as const,
+      text: `CHANGE SIGNAL unavailable: ${e instanceof Error ? e.message : String(e)}`,
+    }));
+    const feedback = composeStopFeedback(event, stopReport(cfg), change);
+    if (feedback !== null) emit(event, feedback);
     return 0;
   }
 
@@ -171,7 +206,7 @@ export async function runHook(cfg: Config, event: string): Promise<number> {
   return 0;
 }
 
-/** What an agent is told as it finishes. Split out of `runHook` so it is reachable
+/** What a subagent is told as it finishes. Split out of `runHook` so it is reachable
  *  without a stdin pipe — the hook body drains stdin, and a report you can only observe
  *  by feeding a process is a report nobody tests. */
 export function stopReport(cfg: Config): string {
@@ -181,7 +216,7 @@ export function stopReport(cfg: Config): string {
   // A REPORT, NOT A QUESTION — and that distinction is load-bearing, because the first
   // version got it wrong in a way that was invisible until agents started answering it.
   // It ended "anything you decided and did not log is about to leave with your context",
-  // which is a yes/no question, and a Stop hook that asks "did you do X?" gets "yes, X is
+  // which is a yes/no question, and a SubagentStop hook that asks "did you do X?" gets "yes, X is
   // done" in the reply. Agents began padding their final messages with compliance
   // liturgy — "nothing unlogged remains" — which is worse than silence: it spends the
   // caller's attention asserting a process was followed instead of saying what was found.
@@ -206,7 +241,7 @@ export function stopReport(cfg: Config): string {
   // told not to read. Agents reliably end with "Complete." or "Nothing further to log",
   // and a real finding dies there: one run tagged six releases, discovered en route that
   // a version in its own brief had never existed, recorded that correctly in the artifact,
-  // and reported none of it. Stop is the last moment the context still exists to say so.
+  // and reported none of it. SubagentStop is the last moment the context still exists to say so.
   const restate = "\n\nYOUR REPLY MUST RESTATE YOUR FINAL REPORT — IT IS THE ONLY THING"
     + " YOUR CALLER SEES. A terse sign-off discards everything you learned that is not"
     + " already in the code.";
@@ -333,10 +368,12 @@ export function printHooks(cfg: Config): void {
 SubagentStart / SessionStart inject the instruction below into the agent's context.
 PostToolUse records explicit file reads and writes for per-agent economy calibration; it
 emits no instruction and uses a dedicated dependency-light entrypoint.
-SubagentStop / Stop report what the journal holds AND the current patch's change signal —
-they return non-error feedback once, then stay silent when the host marks the follow-up
-stop active. They never fail a stop, because a journal that can fail a build acquires an
-incentive to be complete, and a complete journal is a transcript again.
+SubagentStop reports what the journal holds AND the current patch's change signal, then
+stays silent when the host marks the follow-up stop active. Main-agent Stop records the
+calibration sample with byte-empty stdout: a shared-worktree reading cannot prove that an
+obligation belongs to the agent that just stopped. It never repeats a report the user
+already saw. Neither event fails a stop, because a journal that can fail a build acquires
+an incentive to be complete, and a complete journal is a transcript again.
 
 The journal lives in .coherence/decisions/ — ONE APPEND-ONLY FILE PER AGENT SESSION,
 so two branches merge without a conflict and writers can never interleave. Commit the

@@ -24,7 +24,7 @@ import {
   derivedSessionId, slug, compactJournal, planCompaction, COMPACT_QUIET_MS,
   LABEL_SOFT_MAX,
 } from "../src/decisions.ts";
-import { printHooks, stopFeedbackActive } from "../src/hooks.ts";
+import { composeStopFeedback, printHooks, stopFeedbackActive } from "../src/hooks.ts";
 import { runCaptured, cleanup } from "./_helpers.ts";
 import type { Config } from "../src/types.ts";
 
@@ -183,6 +183,18 @@ test("hooks — generated wiring uses the low-cost entrypoint and observes write
   assert.doesNotMatch(out, /npx coherence hook PostToolUse/);
   assert.equal(stopFeedbackActive({ stop_hook_active: true }), true);
   assert.equal(stopFeedbackActive({ stop_hook_active: false }), false);
+  const subagentReport = "YOUR REPLY MUST RESTATE YOUR FINAL REPORT";
+  const quiet = { kind: "available" as const, text: "clean working tree" };
+  const owed = { kind: "available" as const, text: "patch needs a decision" };
+  const unavailable = { kind: "unavailable" as const, text: "change signal unavailable" };
+  assert.equal(composeStopFeedback("Stop", subagentReport, quiet), null,
+    "a clean main-agent Stop must not buy a second turn to repeat the answer");
+  assert.equal(composeStopFeedback("Stop", subagentReport, unavailable), null,
+    "instrument absence is not an outstanding task the main agent can settle by restating itself");
+  assert.equal(composeStopFeedback("Stop", subagentReport, owed), null,
+    "shared-worktree debt must not be misattributed to the main agent that happened to stop");
+  assert.equal(composeStopFeedback("SubagentStop", subagentReport, quiet),
+    `${subagentReport}\n\n${quiet.text}`, "the parent still receives the subagent-only final-report nudge");
   await cleanup(cfg.root);
 });
 
