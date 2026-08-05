@@ -21,12 +21,12 @@
   },
   {
     "key": "lines|Executable contracts",
-    "value": 14657,
+    "value": 14746,
     "unit": "lines"
   },
   {
     "key": "lines|Harness core",
-    "value": 19784,
+    "value": 19827,
     "unit": "lines"
   },
   {
@@ -36,7 +36,7 @@
   },
   {
     "key": "lines|total",
-    "value": 34666,
+    "value": 34798,
     "unit": "lines"
   },
   {
@@ -51,12 +51,12 @@
   },
   {
     "key": "symbols|total",
-    "value": 615,
+    "value": 616,
     "unit": "symbols"
   },
   {
     "key": "undocumented|symbols",
-    "value": 270,
+    "value": 271,
     "unit": "symbols"
   }
 ]

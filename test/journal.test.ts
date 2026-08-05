@@ -19,7 +19,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { readdirSync, readFileSync, unlinkSync, writeFileSync, appendFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { appendDecision, decisionsDir, readJournal, timelineOrder, deriveSessions } from "../src/decisions.ts";
+import { appendDecision, decisionsDir, readJournal, timelineOrder, deriveSessions, INSTRUMENT_MARKER } from "../src/decisions.ts";
 import {
   newTailState, tailJournal, formatEntryLine, formatWhen, entryDetail, renderStreamFrame, initialStreamUI, shownEntry,
   visibleRecords, displayRecords, sessionsByRecency, openConjectures, runJournal, type StreamModel,
@@ -272,7 +272,7 @@ test("conjectures view — lists exactly the OPEN questions behind the masthead 
   appendDecision(cfg, { kind: "decision", chose: "a decision, not a question", because: "-", session: A, agent: "finder-1", now: T(1) });
   const answered = appendDecision(cfg, { kind: "conjecture", chose: "settled question", couldBe: ["x"], discriminatedBy: "was rerun", because: "", session: A, agent: "finder-1", now: T(2) });
   appendDecision(cfg, { kind: "resolution", chose: "x", because: "rerun showed it", supersedes: answered.id, session: A, agent: "finder-1", now: T(3) });
-  appendDecision(cfg, { kind: "conjecture", chose: "older open question", couldBe: ["cache cold", "instrument error"], discriminatedBy: "rerun with warm cache", because: "", session: A, agent: "finder-1", now: T(4) });
+  appendDecision(cfg, { kind: "conjecture", chose: "older open question", couldBe: ["cache cold", `${INSTRUMENT_MARKER} instrument error`], discriminatedBy: "rerun with warm cache", because: "", session: A, agent: "finder-1", now: T(4) });
   appendDecision(cfg, { kind: "conjecture", chose: "newer open question", discriminatedBy: "unknown — no test comes to mind", because: "", session: B, agent: "finder-2", now: T(5) });
   const model: StreamModel = { records: tailJournal(cfg, newTailState()).fresh, unreadable: 0 };
 
@@ -290,7 +290,7 @@ test("conjectures view — lists exactly the OPEN questions behind the masthead 
   // The hint line surfaces what makes the entry a QUESTION: the discriminator (the
   // actionable field, first so clipping cannot eat it), then the candidates.
   assert.match(frame, /discriminated by: rerun with warm cache/);
-  assert.match(frame, /could be: cache cold · instrument error/);
+  assert.match(frame, /could be: cache cold · \[instrument\] instrument error/);
   // The selection is the same inverted bar as every other list.
   const colored = renderStreamFrame(model, ui, { cols: 100, rows: 24 }, true, new Date(T(6)));
   assert.ok(colored.some((l) => l.includes("\x1b[7m") && l.includes("newer open question")), "the reader can see what ⏎ will open");

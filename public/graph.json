@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-05 03:43Z",
+  "generatedAt": "2026-08-05 03:45Z",
   "root": "coherence",
   "absRoot": "/private/tmp/coherence-codex-field",
   "nodes": [
@@ -1410,13 +1410,22 @@
       "prose": "── the candidate nobody writes down ────────────────────────────────────────────────\n\nIt names the MOVE, not the mood. \"the instrument is wrong\" alone is unactionable; the\nclause after the dash is what turns it into a next step, because the mistake is always\nthe same one — reading a number as a fact about the subject when it is a fact about\nthe thing that produced it."
     },
     {
+      "id": "s:src/decisions.ts#INSTRUMENT_MARKER",
+      "parent": "f:src/decisions.ts",
+      "label": "INSTRUMENT_MARKER",
+      "kind": "symbol",
+      "sub": "const",
+      "path": "src/decisions.ts",
+      "line": 165
+    },
+    {
       "id": "s:src/decisions.ts#readsAsInstrumentDoubt",
       "parent": "f:src/decisions.ts",
       "label": "readsAsInstrumentDoubt",
       "kind": "symbol",
       "sub": "function",
       "path": "src/decisions.ts",
-      "line": 179,
+      "line": 187,
       "prose": "Does this candidate already doubt the apparatus rather than the world?"
     },
     {
@@ -1426,8 +1435,8 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/decisions.ts",
-      "line": 192,
-      "prose": "THE GUARANTEE: every conjecture leaves here with instrument-doubt among its\n candidates. Six for six of the findings that motivated this record were instrument\n failures, so the prior is not merely high — and a candidate list that omits it has\n already made the mistake, at WRITE time, before any reader can catch it.\n\n Nothing is reordered when the author supplied their own: their wording is more\n specific than the canonical line (\"the decoder had an off-by-one\" beats \"the\n instrument is wrong\"), and specificity is the whole value."
+      "line": 203,
+      "prose": "THE GUARANTEE: every conjecture leaves here with instrument-doubt among its\n candidates. Six for six of the findings that motivated this record were instrument\n failures, so the prior is not merely high — and a candidate list that omits it has\n already made the mistake, at WRITE time, before any reader can catch it.\n\n Nothing is reordered when the author explicitly marks their own wording: their\n specific candidate (`[instrument] the decoder had an off-by-one`) beats the generic\n canonical line. Lexical inference is deliberately insufficient here: redundancy is\n recoverable, while a false positive silently removes the candidate."
     },
     {
       "id": "s:src/decisions.ts#decisionsDir",
@@ -1436,7 +1445,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/decisions.ts",
-      "line": 196
+      "line": 207
     },
     {
       "id": "s:src/decisions.ts#slug",
@@ -1445,7 +1454,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/decisions.ts",
-      "line": 212,
+      "line": 223,
       "prose": "ONE FILENAME COMPONENT, filesystem-safe, AND STILL INJECTIVE — that last part is the\n requirement that rules out a plain `replace`. A branch may contain `/`, and if\n `feat/x` and `feat-x` both flatten to `feat-x` they share a journal file, which is\n exactly the two-branches-conflict failure the split layout exists to prevent. So\n whenever sanitising CHANGED anything — a substitution, a trim, the length cap — a\n digest of the RAW string is appended, and two distinct inputs can no longer land on\n one name. A string that was already safe is passed through untouched, so every session\n id ever written (`s-` + 12 hex) still maps to the file it has always mapped to.\n\n It is applied at `sessionPath`, which also closes a hole that predates it: `--session`\n is caller-supplied and went straight into a path, so `--session ../../etc/x` wrote\n outside the journal."
     },
     {
@@ -1455,7 +1464,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/decisions.ts",
-      "line": 218
+      "line": 229
     },
     {
       "id": "s:src/decisions.ts#newSessionId",
@@ -1464,7 +1473,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/decisions.ts",
-      "line": 227,
+      "line": 238,
       "prose": "A fresh fallback session id. Random rather than derived: two agents started in the same\n second on the same branch with the same name must not collide, and they can.\n\n A host-supplied unique id is preferred by the hook. Randomness is its fallback, never\n the fallback for a hookless `coherence decide` — see `derivedSessionId`."
     },
     {
@@ -1474,7 +1483,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/decisions.ts",
-      "line": 254,
+      "line": 265,
       "prose": "THE HOOKLESS FALLBACK: `<branch>-<agent>-<YYYY-MM-DD>`, derived rather than random, so\n a human typing `decide` five times gets ONE file instead of five.\n\n THE BRANCH IS IN THE NAME AND MUST STAY THERE. Distinct filenames are the entire reason\n two parallel branches never conflict on the journal; an id that dropped the branch would\n buy a tidier PR by reintroducing the conflict this layout was built to avoid.\n\n THE DATE COMES FROM THE RECORD'S OWN `at`, so the filename and the timestamps inside it\n are on ONE clock (UTC). The cost is that an evening's work can straddle UTC midnight\n into two files; month-grouped compaction absorbs that completely, and a local-clock\n filename would put two timezones in one layout for the same money.\n\n THE RESIDUAL COLLISION IS TWO AGENTS THAT BOTH DEFAULTED TO agent \"main\" ON ONE BRANCH,\n and it is safe on four independent grounds:\n   1. Same branch means same checkout. Git refuses to check one branch out in two\n      worktrees, so genuinely concurrent agents have DIFFERENT branches by construction —\n      and therefore different files.\n   2. Even interleaved, the write survives: `appendFileSync` is measured here at 8\n      concurrent writers x 300 lines, 2400/2400 intact, 0 torn, 0 missing (and the same\n      probe loses 1242 of 2400 with a seek-then-write writer, so it can see loss).\n   3. What is actually lost is attribution BETWEEN two agents that already declined to\n      pass `--agent` — they were indistinguishable before the filename was.\n   4. The supported concurrency path is the hook, and the hook still mints random ids."
     },
     {
@@ -1484,7 +1493,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/decisions.ts",
-      "line": 327
+      "line": 345
     },
     {
       "id": "s:src/decisions.ts#openSession",
@@ -1493,7 +1502,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/decisions.ts",
-      "line": 351,
+      "line": 369,
       "prose": "Open a session and write its header record. A lifecycle host may supply its stable,\n unique agent/session id so later tool hooks, calibration labels and journal writes all\n address the same file. Hookless callers still mint a collision-safe random id."
     },
     {
@@ -1503,7 +1512,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/decisions.ts",
-      "line": 369,
+      "line": 387,
       "prose": "Append one record to a session's file, creating the session on first write so an\n agent that never saw the hook still produces an attributable file.\n\n WITH NO ID FROM ANYWHERE THE ID IS DERIVED, NOT RANDOMISED — the one-line cause of\n twenty unreviewable files in a day. `null` is passed down rather than resolved here\n because the derivation needs the branch and the agent, and `write` is where those are\n worked out; computing them twice is how the two spellings drift."
     },
     {
@@ -1513,7 +1522,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/decisions.ts",
-      "line": 424
+      "line": 445
     },
     {
       "id": "s:src/decisions.ts#timelineOrder",
@@ -1522,7 +1531,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/decisions.ts",
-      "line": 432,
+      "line": 453,
       "prose": "THE TOTAL TIMELINE ORDER, exported because two readers depend on it agreeing with\n itself: `readJournal`'s merged render and the live stream (`journal.ts`), which\n receives records incrementally and must interleave them exactly where a cold read\n would have. Two hand-written copies of a three-key comparator is how \"compaction\n changes nothing\" stops being checkable. See `readJournal` for why the third key\n exists at all."
     },
     {
@@ -1532,7 +1541,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/decisions.ts",
-      "line": 447,
+      "line": 468,
       "prose": "A SESSION IS NAMED BY ITS WORK, NOT BY ITS HEADER. The header is written by the\n hook at agent start, BEFORE the agent knows what it is called — so it defaults to\n \"main\" and the branch. Taking identity from the first record therefore filed every\n agent's session under \"main\", which is exactly the attribution the split-file\n layout exists to guarantee. A real record's own claim always wins over the header's\n placeholder.\n\n Sorted INTERNALLY rather than trusting the caller's order, so the answer is a\n function of the record SET — the same property `readJournal`'s sort buys — and a\n caller holding an incrementally-grown array (the stream) gets the same sessions a\n cold read would."
     },
     {
@@ -1542,7 +1551,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/decisions.ts",
-      "line": 465,
+      "line": 486,
       "prose": "ONE SPELLING OF \"IN SCOPE\". `decisions` filters its render by job/agent/session/branch\n and the stream filters the same four ways; a second hand-written predicate is exactly\n the two-spellings drift `redundancy` exists to report, one file over from the module\n that hunts it."
     },
     {
@@ -1552,7 +1561,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/decisions.ts",
-      "line": 466
+      "line": 487
     },
     {
       "id": "s:src/decisions.ts#readJournal",
@@ -1561,7 +1570,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/decisions.ts",
-      "line": 477,
+      "line": 498,
       "prose": "THE COHERING READ. Every session file in the folder, merged into ONE timeline\n ordered by time — across agents, across jobs, across branches. This is the\n abstraction the whole split-file layout exists to make possible: writers are\n isolated so they never collide, and the reader sees a single history anyway.\n\n A malformed line is SKIPPED and COUNTED, never thrown on: a journal that refuses\n to render because one agent wrote garbage has failed at the one job it has."
     },
     {
@@ -1571,7 +1580,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/decisions.ts",
-      "line": 553,
+      "line": 574,
       "prose": "THE QUIET WINDOW: a file written more recently than this is never folded.\n\n TWO HOURS, and both bounds are argued rather than picked. It has to be LONGER than the\n gap between one agent's successive appends, or compaction lands mid-session — measured\n on this repo's own journal, the largest gap between consecutive entries in a single\n session is 14.1 min and the longest session spans 22.5 min, so two hours is ~8x the\n observed worst case. And it has to be SHORTER than a day, because the motivating case is\n twenty files accumulated in ONE day and compacted before the PR goes up; a 24-hour\n window would refuse exactly the work it was asked to tidy.\n\n It is a heuristic, so it is not the only guard: every source is re-stat'ed immediately\n before its group is written and the group is abandoned if anything moved, and a fold\n that raced an append anyway would duplicate lines rather than lose them — which\n `resolve`'s content-hash dedupe renders identically."
     },
     {
@@ -1581,7 +1590,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/decisions.ts",
-      "line": 557
+      "line": 578
     },
     {
       "id": "s:src/decisions.ts#planCompaction",
@@ -1590,7 +1599,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/decisions.ts",
-      "line": 569,
+      "line": 590,
       "prose": "What compaction WOULD do. Separated from doing it so the refusals can be tested without\n a filesystem mutation, and so the executor has no policy left in it."
     },
     {
@@ -1600,7 +1609,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/decisions.ts",
-      "line": 648,
+      "line": 669,
       "prose": "Execute the plan. Report lines out, exit code out; the CLI only prints."
     },
     {
@@ -1610,7 +1619,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/decisions.ts",
-      "line": 726,
+      "line": 747,
       "prose": "Retractions resolve ACROSS session files — one agent may withdraw another's\n decision, which in a fan-out is the single most valuable thing that can happen.\n Resolutions cross files the same way, and for the same reason: the agent that\n notices the surprising number is very often not the one with the instrument to\n settle it. Dismissals too — and a dismissal by a SECOND agent is the ordinary case,\n because the advisory that raised the question is not a person at all.\n\n OPEN AND RESOLVED ARE SEPARATE BUCKETS, not a flag on one list, because the render\n has to be able to lead with the open ones. A conjecture never lands in `standing`:\n it is not a choice, and counting it as one would report an unanswered question as a\n settled position — the precise confusion this record exists to end.\n\n THE PRECEDENCE IS retraction > resolution > dismissal, and each step is a claim about\n how much a reader learns:\n   · a RETRACTION says the observation was never real — there is nothing to answer, so\n     it outranks an answer.\n   · a RESOLUTION beats a DISMISSAL because an answer is strictly more informative than\n     a decision not to ask. Filing an answered question under \"we chose not to chase\n     this\" would HIDE the answer, which is the more expensive of the two mistakes."
     },
     {
@@ -1620,7 +1629,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/decisions.ts",
-      "line": 788,
+      "line": 817,
       "prose": "WHAT MAY BE RESOLVED OR DISMISSED, and the exact refusal when it may not.\n\n Two DIFFERENT failures live here and they need different messages: an id nobody ever\n wrote, versus an id that names the wrong KIND of thing. Accepting the second would\n append a resolution pointing at a decision, which no render ever reads — a command\n that exits 0 and does nothing, which is the defect this harness exists to hunt.\n\n It sits in the journal rather than in the CLI so the rule is testable without\n spawning a process, and so a second caller cannot reimplement it differently.\n\n DISMISSAL SHARES THE RULE RATHER THAN COPYING IT, and that is the point of the `verb`\n parameter. `dismiss` has to be as cheap to reach for as `resolved` — if it is even\n slightly harder, a noisy question stays open and the whole `--open` list gets skipped\n — and \"as cheap\" includes failing the same way, with the same words, on the same\n mistakes. Two hand-written copies of this rule would have drifted by the second edit."
     },
     {
@@ -1630,7 +1639,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/decisions.ts",
-      "line": 806
+      "line": 849
     },
     {
       "id": "s:src/decisions.ts#BRIEF_BECAUSE",
@@ -1639,7 +1648,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/decisions.ts",
-      "line": 813,
+      "line": 856,
       "prose": "`--brief`'s budget for `because`. Truncation is ALWAYS announced with the withheld\n count — a shortened rationale that looks complete is worse than no rationale."
     },
     {
@@ -1649,7 +1658,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/decisions.ts",
-      "line": 827,
+      "line": 870,
       "prose": "The render IS the artifact, and its value is a COMPRESSION RATIO: a reader given\n this should be better equipped than one given the transcripts. So it leads with\n what is standing, states what was rejected inline, and gives retractions their own\n section — a retraction rendered as an absence is invisible, and it is the most\n valuable entry in the journal.\n\n OPEN CONJECTURES GO ABOVE EVERYTHING, INCLUDING `Standing`. That ordering is the\n feature, not decoration. A standing decision is settled and will still be there\n tomorrow; an open conjecture is a thing this project NOTICED AND DID NOT CHASE, and\n it decays — the agent that saw the surprising number is gone, and nobody else knows\n to look. Filed underneath the settled work it reads as an appendix, which is\n indistinguishable from never having recorded it."
     },
     {
@@ -6378,7 +6387,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/verify.ts",
-      "line": 189,
+      "line": 188,
       "prose": "A claim that is expensive to KEEP TRUE. Every claim is a standing bill: the oracle behind\n it runs on every verify, forever, and one claim taking a quarter of the whole tier is a\n fact about the design of that oracle, not about the code it guards. This is the WEAKEST\n finding the harness raises — an expensive claim can be entirely correct, and often the\n honest answer is \"the domain really is that big\" — so it never displaces a correctness\n question (see the raise order below).\n\n IDENTITY IS THE CLAIM AND ITS NODE, WITH NO NUMBER IN IT. The millisecond reading is the\n most volatile thing here — it moves with machine load, cache state and the pool's mood —\n so it lives in the sentence, exactly like never-red's run count."
     },
     {
@@ -6388,7 +6397,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/verify.ts",
-      "line": 219,
+      "line": 218,
       "prose": "A named invariant with no observed negative control. Broader and weaker than never-red\n — it says nothing about how the claim has behaved — so it is raised LAST and only for\n invariants never-red did not already name."
     },
     {
@@ -6398,7 +6407,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/verify.ts",
-      "line": 242,
+      "line": 241,
       "prose": "A claim on a kind the project flagged. The project decided this category is one it\n distrusts; the advisory prints it every run and then forgets it."
     },
     {
@@ -6408,7 +6417,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/verify.ts",
-      "line": 269
+      "line": 268
     },
     {
       "id": "s:src/verify.ts#runVerify",
@@ -6417,7 +6426,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/verify.ts",
-      "line": 281
+      "line": 280
     },
     {
       "id": "f:src/walk.ts",

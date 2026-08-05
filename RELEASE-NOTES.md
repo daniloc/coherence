@@ -54,7 +54,7 @@ scope-preserving telemetry, selected-host regulation, and relational activity in
 The canonical launchers include the package/protocol build identity, so a structurally
 unchanged old script cannot make a new body look observed.
 
-745 tests. `verify` 39/39 green. Typecheck, build, generated reading surfaces, both
+748 tests. `verify` 39/39 green. Typecheck, build, generated reading surfaces, both
 lifecycle controls, premise leases, conventions, injection sites, mass, atlas, and the
 significant-change gate all held before release.
 
