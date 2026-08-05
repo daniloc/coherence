@@ -14,6 +14,26 @@ evidence inside that record.
 
 ---
 
+## v0.30.1 — the Linux gate returns
+
+No runtime behavior changed. This patch repairs the source release's own evidence path.
+The failed-write oracle in `test/raise.test.ts` used a nonexistent `/proc` path: it
+returned on macOS, but on GitHub's Linux runner its `node:test` worker never exited.
+Because the runner buffers a worker's TAP until that worker completes, every other test
+reported green while this file said nothing. Every completed CI run from v0.14.0 onward
+hit GitHub's six-hour cancellation limit there; v0.30.0 reproduced the same hang.
+
+The oracle now creates a real temporary project and makes `.coherence` a regular file,
+forcing the same journal append through a deterministic `ENOTDIR` failure on every
+platform. Its contract is unchanged: zero questions opened, one failed write counted,
+and the loss stated in the report. The test step also has a five-minute ceiling, so a
+future non-exiting worker becomes a same-run failure instead of six hours of silence.
+
+Confirmed on GitHub's Node 22 runner: 695/695 tests, every ratchet, and full `verify`
+32/32 green in 2m6s. v0.30.0 remains immutable; v0.30.1 is the source-CI-clean tag.
+
+---
+
 ## v0.30.0 — the doctrine gets a regulator, and main Stop goes quiet
 
 Coherence now names the law its instruments are allowed to apply. `coherence doctrine`
