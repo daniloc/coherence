@@ -135,6 +135,12 @@
         "security": true,
         "translates": "This run's verdicts become the memory the next run compares against \u2014 the only writer to that chart. A skip merges rather than overwrites, so a scoped run can never launder a real red into an absence."
       },
+      "setLifecycleHookForHost": {
+        "from": "derived-model",
+        "to": "project-source",
+        "security": true,
+        "translates": "One host-selected lifecycle contract becomes that host's tracked project settings, stable launcher, and root mapping. Claude and Codex share the five event meanings without sharing settings syntax, matchers, launcher bytes, or bundle identity; unrelated host configuration survives the convergence."
+      },
       "reconcile": {
         "from": "record",
         "to": "verdict",
@@ -165,6 +171,24 @@
         "security": true,
         "translates": "Live sensor observations become exactly one ordered intervention. Missing, foreign, or conflicting readings refuse; a required decision outranks a mechanical redirect; and release means only that the versioned rules evaluated no obligation. A tear here can mask stronger debt with easier work, so the selector's priority is a guarded crossing rather than formatter policy."
       },
+      "observeRegulation": {
+        "from": "project-source",
+        "to": "verdict",
+        "security": true,
+        "translates": "The selected agent host's lifecycle surface becomes the control observation consumed by doctrine. A complete Claude path cannot satisfy a Codex reading (or vice versa), and the repair command remains bound to the host actually inspected."
+      },
+      "isActivityRow": {
+        "from": "record",
+        "to": "derived-model",
+        "security": true,
+        "translates": "An append-only activity row becomes admissible evidence only when its host, transport, session relation, event identity, canonical time, and optional command result agree. A torn or internally contradictory row is counted as damage instead of entering status, calibration, or experiment inference."
+      },
+      "closeExperiment": {
+        "from": "shell",
+        "to": "record",
+        "security": false,
+        "translates": "An assessor's action and criterion evidence becomes an immutable close row joined to the frozen owner plan. Every planned id must be answered exactly once, trace and activity prefixes must remain intact, each telemetry window names its weakest provable scope (none, owner-session, parent-session-aggregate, and legacy-unscoped for older trace), and the outcome is derived from criterion statuses; malformed, partial, rewritten, unreadable, or internally unscoped evidence refuses instead of becoming history."
+      },
       "tailJournal": {
         "from": "record",
         "to": "reading-surface",
@@ -177,6 +201,12 @@
         "security": false,
         "translates": "Recorded read-traces and labeled outcomes become a report on how well the context predictor did. It gates nothing \u2014 the crossing carries a measurement out to a reader, never back into a verdict."
       },
+      "calibrationPaths": {
+        "from": "record",
+        "to": "derived-model",
+        "security": false,
+        "translates": "A host trace and the shared worktree become one calibration sample domain without upgrading scope: exact session writes, Codex parent-session aggregates, legacy unscoped rows, and shared-worktree fallback remain distinct."
+      },
       "contextFor": {
         "from": "derived-model",
         "to": "reading-surface",
@@ -187,13 +217,19 @@
         "from": "shell",
         "to": "record",
         "security": false,
-        "translates": "A lifecycle event the agent harness hands this process becomes a durable journal or read-trace row. It writes memory but never a verdict, so a tear loses history rather than earning a green."
+        "translates": "A lifecycle event the selected agent host hands this process becomes durable journal state or a transient read/activity row carrying host, transport, and bundle identity. It writes memory but never a verdict, so a tear loses history rather than earning a green."
+      },
+      "currentObservation": {
+        "from": "record",
+        "to": "verdict",
+        "security": true,
+        "translates": "One explicitly named session's activity becomes the activation reading used by session-scoped hook checks. Only launcher events from the selected host and current installed bundle count as observed; direct probes, stale bundles, and other sessions cannot earn activation. Parent-fallback may prove that exact bundle reached the parent session, but it cannot establish which child produced the event."
       },
       "inspectLifecycleHook": {
         "from": "project-source",
         "to": "verdict",
         "security": true,
-        "translates": "Claude's own settings.json \u2014 agent-authored, arbitrary, and the file that decides which processes the host spawns \u2014 is read to produce ONE control bit. It is charted here rather than left to prose because the bit is a verdict about text nobody validated: a checker that accepts two firing paths is not a binary control, only a substring detector with a nicer report. The refutation on this claim is that exact loosening, watched laundering a `true`."
+        "translates": "The selected host's project hook surface is read to produce ONE structural control bit: Claude's shared and local settings, or Codex's hooks.json plus the relevant project config.toml controls, together with that host's aligned launcher root, root mapping, and runnable target. Host-specific syntax cannot weaken singularity: a checker that accepts two firing paths, an inline competitor, a disabled feature, or managed-only exclusion is not a binary control, only a substring detector with a nicer report."
       }
     }
   }

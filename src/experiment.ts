@@ -16,15 +16,29 @@ import { appendFileSync, existsSync, mkdirSync, readFileSync, readdirSync } from
 import { createHash } from "node:crypto";
 import { spawnSync } from "node:child_process";
 import { basename, join, posix } from "node:path";
-import { readActivity, type ActivityRow } from "./activity.ts";
+import { activityReplayKey, isActivityRow, readActivity, type ActivityRow } from "./activity.ts";
 import { slug } from "./decisions.ts";
-import { readTrace, type ReadEvent } from "./read-trace.ts";
+import { readTraceDetailed, type ReadEvent } from "./read-trace.ts";
 import type { Config } from "./types.ts";
 
-export const EXPERIMENT_VERSION = 1 as const;
+/**
+ * V1 identified activity replays by the host event id and always wrote
+ * `owner-session` on close, including for an empty evidence window. V2 identifies the
+ * whole replay domain and records the weakest attribution the frozen rows prove. The
+ * reader keeps V1 valid and normalizes only its rendered attribution in memory; disk
+ * bytes and their immutable ids are never rewritten.
+ */
+export const EXPERIMENT_VERSION = 2 as const;
+export type ExperimentVersion = 1 | typeof EXPERIMENT_VERSION;
 export type ExperimentOutcome = "success" | "failure" | "inconclusive";
 export type ExperimentActionStatus = "followed" | "revised" | "skipped" | "unknown";
 export type ExperimentCriterionStatus = "met" | "unmet" | "unknown";
+export type ExperimentTraceAttribution =
+  | "none"
+  | "owner-session"
+  | "parent-session-aggregate"
+  | "legacy-unscoped";
+export type ExperimentActivityAttribution = "none" | "owner-session" | "parent-session-aggregate";
 
 export interface ExperimentPlanItem {
   id: string;
@@ -39,7 +53,7 @@ export interface ExperimentRepoSnapshot {
 }
 
 export interface ExperimentOpened {
-  version: typeof EXPERIMENT_VERSION;
+  version: ExperimentVersion;
   event: "opened";
   id: string;
   at: string;
@@ -53,14 +67,14 @@ export interface ExperimentOpened {
   predictedContext: string[];
   actions: ExperimentPlanItem[];
   criteria: ExperimentPlanItem[];
-  /** Count of valid owner-session trace events that existed when the plan was opened. */
+  /** Count of valid trace events in the owner's host-visible scope at plan open. */
   traceCursor: number;
   /** Digest of the prefix behind the cursor; a reset/rewrite cannot masquerade as append. */
   tracePrefix: string;
   /** Same append-prefix contract for lifecycle/command evidence. */
   activityCursor: number;
   activityPrefix: string;
-  /** Host event identities already present; a later replay cannot become post-plan work. */
+  /** V1 host event ids or V2 observation-domain replay keys present when the plan opened. */
   activityKnownEvents: string[];
 }
 
@@ -77,7 +91,7 @@ export interface ExperimentCriterionResult {
 }
 
 export interface ExperimentTraceEvidence {
-  attribution: "owner-session";
+  attribution: ExperimentTraceAttribution;
   session: string;
   start: number;
   end: number;
@@ -85,11 +99,11 @@ export interface ExperimentTraceEvidence {
 }
 
 export interface ExperimentActivityEvidence {
-  attribution: "owner-session";
+  attribution: ExperimentActivityAttribution;
   session: string;
   start: number;
   end: number;
-  /** Raw rows are frozen; stats collapse only rows carrying the same host eventId. */
+  /** Raw rows are frozen; stats collapse only rows sharing one observation-domain replay key. */
   rows: ActivityRow[];
 }
 
@@ -100,7 +114,7 @@ export interface ExperimentAssessor {
 }
 
 export interface ExperimentClosed {
-  version: typeof EXPERIMENT_VERSION;
+  version: ExperimentVersion;
   event: "closed";
   id: string;
   at: string;
@@ -272,15 +286,21 @@ function traceEvent(event: ReadEvent): ReadEvent {
   return {
     at: event.at, session: event.session, tool: event.tool, mode: event.mode, path: event.path,
     ...(event.provenance ? { provenance: { ...event.provenance } } : {}),
+    ...(event.observation ? { observation: { ...event.observation } } : {}),
   };
 }
 
 function exactTrace(cfg: Config, session: string, when: string): ReadEvent[] {
-  const rows = readTrace(cfg, session).map(traceEvent);
+  const read = readTraceDetailed(cfg, session);
+  if (read.unreadable) {
+    throw new ExperimentLedgerError(`${session} trace has ${read.unreadable} unreadable row(s) ${when}; scoped evidence is unavailable`);
+  }
+  const rows = read.rows.map(traceEvent);
   for (const [index, row] of rows.entries()) {
     if (row.session !== session || !row.tool?.trim() || !Number.isFinite(Date.parse(row.at))
-      || new Date(row.at).toISOString() !== row.at || (row.mode !== "read" && row.mode !== "write")) {
-      throw new ExperimentLedgerError(`${session} trace row ${index + 1} is not exact owner-session evidence ${when}`);
+      || new Date(row.at).toISOString() !== row.at || (row.mode !== "read" && row.mode !== "write")
+      || row.observation?.attribution === "unknown") {
+      throw new ExperimentLedgerError(`${session} trace row ${index + 1} is not scoped host evidence ${when}`);
     }
     let normalized = "";
     try { normalized = repoPath(row.path); }
@@ -294,6 +314,14 @@ function exactTrace(cfg: Config, session: string, when: string): ReadEvent[] {
     }
   }
   return rows;
+}
+
+function traceAttribution(events: ReadEvent[]): ExperimentTraceAttribution {
+  if (!events.length) return "none";
+  if (events.some((event) => !event.observation)) return "legacy-unscoped";
+  return events.some((event) => event.observation?.attribution === "parent-fallback")
+    ? "parent-session-aggregate"
+    : "owner-session";
 }
 
 function activityEvent(row: ActivityRow): ActivityRow {
@@ -322,13 +350,22 @@ function activityEvent(row: ActivityRow): ActivityRow {
 function exactActivity(cfg: Config, session: string, when: string): ActivityRow[] {
   const read = readActivity(cfg, session);
   if (read.unreadable) {
-    throw new ExperimentLedgerError(`${session} activity has ${read.unreadable} unreadable row(s) ${when}; exact attribution is unavailable`);
+    throw new ExperimentLedgerError(`${session} activity has ${read.unreadable} unreadable row(s) ${when}; scoped attribution is unavailable`);
   }
-  const ambiguous = read.rows.filter((row) => row.attribution !== "agent" && row.attribution !== "session");
-  if (ambiguous.length) {
-    throw new ExperimentLedgerError(`${session} activity has ${ambiguous.length} ambiguously attributed row(s) ${when}; exact attribution is unavailable`);
+  const invalid = read.rows.filter((row) => row.attribution === "unknown"
+    || (row.attribution === "parent-fallback"
+      && (row.session !== session || row.parentSession !== session || row.agentId !== null)));
+  if (invalid.length) {
+    throw new ExperimentLedgerError(`${session} activity has ${invalid.length} unscoped row(s) ${when}; scoped attribution is unavailable`);
   }
   return read.rows.map(activityEvent);
+}
+
+function activityAttribution(rows: ActivityRow[]): ExperimentActivityAttribution {
+  if (!rows.length) return "none";
+  return rows.some((row) => row.attribution === "parent-fallback")
+    ? "parent-session-aggregate"
+    : "owner-session";
 }
 
 function openIdentity(record: Omit<ExperimentOpened, "id" | "at">): unknown {
@@ -411,9 +448,17 @@ function validateResults(
   return true;
 }
 
-function validateTrace(value: unknown, problems: string[], label: string): value is ExperimentTraceEvidence {
+function validateTrace(
+  value: unknown,
+  version: ExperimentVersion,
+  problems: string[],
+  label: string,
+): value is ExperimentTraceEvidence {
   if (!isObject(value)) { problems.push(`${label}.trace must be an object`); return false; }
-  if (value.attribution !== "owner-session") problems.push(`${label}.trace.attribution must be owner-session`);
+  if (value.attribution !== "none" && value.attribution !== "owner-session" && value.attribution !== "parent-session-aggregate"
+    && value.attribution !== "legacy-unscoped") {
+    problems.push(`${label}.trace.attribution is not recognized`);
+  }
   const session = stringField(value, "session", problems, `${label}.trace`);
   const start = value.start, end = value.end;
   if (!Number.isInteger(start) || (start as number) < 0) problems.push(`${label}.trace.start must be a non-negative integer`);
@@ -425,10 +470,13 @@ function validateTrace(value: unknown, problems: string[], label: string): value
   value.events.forEach((event, i) => {
     if (!isObject(event)) { problems.push(`${label}.trace.events[${i}] must be an object`); return; }
     const eventSession = stringField(event, "session", problems, `${label}.trace.events[${i}]`);
-    stringField(event, "at", problems, `${label}.trace.events[${i}]`);
+    const eventAt = stringField(event, "at", problems, `${label}.trace.events[${i}]`);
     stringField(event, "tool", problems, `${label}.trace.events[${i}]`);
     stringField(event, "path", problems, `${label}.trace.events[${i}]`);
     if (event.mode !== "read" && event.mode !== "write") problems.push(`${label}.trace.events[${i}].mode is not read|write`);
+    if (eventAt && (!Number.isFinite(Date.parse(eventAt)) || new Date(eventAt).toISOString() !== eventAt)) {
+      problems.push(`${label}.trace.events[${i}].at must be a canonical ISO timestamp`);
+    }
     if (eventSession && session && eventSession !== session) problems.push(`${label}.trace.events[${i}] belongs to another session`);
     if (event.provenance !== undefined) {
       if (!isObject(event.provenance) || event.provenance.source !== "apply_patch"
@@ -436,16 +484,71 @@ function validateTrace(value: unknown, problems: string[], label: string): value
         problems.push(`${label}.trace.events[${i}].provenance is not recognized apply_patch provenance`);
       }
     }
+    if (event.observation !== undefined) {
+      const observation = event.observation;
+      if (!isObject(observation)) problems.push(`${label}.trace.events[${i}].observation must be an object`);
+      else {
+        if (observation.version !== 1) problems.push(`${label}.trace.events[${i}].observation.version must be 1`);
+        if (observation.host !== "claude" && observation.host !== "codex" && observation.host !== "unknown") {
+          problems.push(`${label}.trace.events[${i}].observation.host is not recognized`);
+        }
+        if (observation.transport !== "launcher" && observation.transport !== "direct") {
+          problems.push(`${label}.trace.events[${i}].observation.transport is not launcher|direct`);
+        }
+        if (observation.attribution !== "agent" && observation.attribution !== "session"
+          && observation.attribution !== "parent-fallback" && observation.attribution !== "unknown") {
+          problems.push(`${label}.trace.events[${i}].observation.attribution is not recognized`);
+        }
+        if (observation.attribution === "unknown") {
+          problems.push(`${label}.trace.events[${i}].observation has unknown scope`);
+        }
+        for (const key of ["bundleHash", "parentSession", "agentId", "eventId"] as const) {
+          if (observation[key] !== null && (typeof observation[key] !== "string" || !(observation[key] as string).length)) {
+            problems.push(`${label}.trace.events[${i}].observation.${key} must be string|null`);
+          }
+        }
+        if (observation.attribution === "agent" && observation.agentId !== eventSession) {
+          problems.push(`${label}.trace.events[${i}].observation agent does not own the trace row`);
+        }
+        if (observation.attribution === "session"
+          && (observation.agentId !== null || observation.parentSession !== null)) {
+          problems.push(`${label}.trace.events[${i}].observation session attribution is inconsistent`);
+        }
+        if (observation.attribution === "parent-fallback"
+          && (observation.agentId !== null || observation.parentSession !== eventSession)) {
+          problems.push(`${label}.trace.events[${i}].observation parent aggregate does not match the trace session`);
+        }
+        if (observation.eventId !== null
+          && (typeof observation.eventId !== "string" || !/^e-[a-f0-9]{16}$/.test(observation.eventId))) {
+          problems.push(`${label}.trace.events[${i}].observation.eventId is not a host event id`);
+        }
+      }
+    }
   });
   if (Number.isInteger(start) && Number.isInteger(end) && value.events.length !== (end as number) - (start as number)) {
     problems.push(`${label}.trace event count does not match its cursor window`);
   }
+  if (value.events.every(isObject)) {
+    const expected = traceAttribution(value.events as unknown as ReadEvent[]);
+    const legacyOwnerSpelling = version === 1 && value.attribution === "owner-session"
+      && (expected === "none" || expected === "legacy-unscoped");
+    if (value.attribution !== expected && !legacyOwnerSpelling) {
+      problems.push(`${label}.trace.attribution must describe its weakest row scope (${expected})`);
+    }
+  }
   return true;
 }
 
-function validateActivity(value: unknown, problems: string[], label: string): value is ExperimentActivityEvidence {
+function validateActivity(
+  value: unknown,
+  version: ExperimentVersion,
+  problems: string[],
+  label: string,
+): value is ExperimentActivityEvidence {
   if (!isObject(value)) { problems.push(`${label}.activity must be an object`); return false; }
-  if (value.attribution !== "owner-session") problems.push(`${label}.activity.attribution must be owner-session`);
+  if (value.attribution !== "none" && value.attribution !== "owner-session" && value.attribution !== "parent-session-aggregate") {
+    problems.push(`${label}.activity.attribution is not recognized`);
+  }
   const session = stringField(value, "session", problems, `${label}.activity`);
   const start = value.start, end = value.end;
   if (!Number.isInteger(start) || (start as number) < 0) problems.push(`${label}.activity.start must be a non-negative integer`);
@@ -462,8 +565,21 @@ function validateActivity(value: unknown, problems: string[], label: string): va
     stringField(row, "at", problems, rowLabel);
     stringField(row, "event", problems, rowLabel);
     if (rowSession && session && rowSession !== session) problems.push(`${rowLabel} belongs to another session`);
-    if (row.attribution !== "agent" && row.attribution !== "session") {
-      problems.push(`${rowLabel}.attribution is not exact agent|session attribution`);
+    // Released V1 accepted any non-empty writer timestamp. Validate every other
+    // relation through today's shared guard without retroactively changing those bytes;
+    // V2 keeps the canonical-time requirement.
+    const validationRow = version === 1 && typeof row.at === "string" && row.at.trim()
+      ? { ...row, at: "1970-01-01T00:00:00.000Z" }
+      : row;
+    if (session && !isActivityRow(validationRow, session)) {
+      problems.push(`${rowLabel} is not an internally consistent activity row`);
+    }
+    if (row.attribution !== "agent" && row.attribution !== "session" && row.attribution !== "parent-fallback") {
+      problems.push(`${rowLabel}.attribution is not scoped agent|session|parent-fallback attribution`);
+    }
+    if (row.attribution === "parent-fallback"
+      && (row.parentSession !== session || row.agentId !== null)) {
+      problems.push(`${rowLabel}.parent-fallback does not describe the owner session domain`);
     }
     if (row.transport !== "launcher" && row.transport !== "direct") problems.push(`${rowLabel}.transport is not launcher|direct`);
     if (row.host !== "claude" && row.host !== "codex" && row.host !== "unknown") problems.push(`${rowLabel}.host is not recognized`);
@@ -488,12 +604,22 @@ function validateActivity(value: unknown, problems: string[], label: string): va
   if (Number.isInteger(start) && Number.isInteger(end) && value.rows.length !== (end as number) - (start as number)) {
     problems.push(`${label}.activity row count does not match its cursor window`);
   }
+  if (value.rows.every(isObject)) {
+    const expected = activityAttribution(value.rows as unknown as ActivityRow[]);
+    const legacyOwnerSpelling = version === 1 && value.attribution === "owner-session" && expected === "none";
+    if (value.attribution !== expected && !legacyOwnerSpelling) {
+      problems.push(`${label}.activity.attribution must describe its weakest row scope (${expected})`);
+    }
+  }
   return true;
 }
 
 function parseRecord(raw: unknown, label: string, problems: string[]): ExperimentRecord | null {
   if (!isObject(raw)) { problems.push(`${label} must be a JSON object`); return null; }
-  if (raw.version !== EXPERIMENT_VERSION) problems.push(`${label}.version must be ${EXPERIMENT_VERSION}`);
+  if (raw.version !== 1 && raw.version !== EXPERIMENT_VERSION) {
+    problems.push(`${label}.version must be 1 or ${EXPERIMENT_VERSION}`);
+  }
+  const version: ExperimentVersion = raw.version === 1 ? 1 : EXPERIMENT_VERSION;
   if (raw.event !== "opened" && raw.event !== "closed") {
     problems.push(`${label}.event must be opened|closed`);
     return null;
@@ -525,11 +651,13 @@ function parseRecord(raw: unknown, label: string, problems: string[]): Experimen
     if (typeof raw.tracePrefix !== "string" || !/^[a-f0-9]{64}$/.test(raw.tracePrefix)) problems.push(`${label}.tracePrefix must be a sha256 digest`);
     if (!Number.isInteger(raw.activityCursor) || (raw.activityCursor as number) < 0) problems.push(`${label}.activityCursor must be a non-negative integer`);
     if (typeof raw.activityPrefix !== "string" || !/^[a-f0-9]{64}$/.test(raw.activityPrefix)) problems.push(`${label}.activityPrefix must be a sha256 digest`);
+    const knownPattern = version === 1 ? /^(?:e|r)-[a-f0-9]{16}$/ : /^r-[a-f0-9]{16}$/;
     if (!Array.isArray(raw.activityKnownEvents)
-      || raw.activityKnownEvents.some((x) => typeof x !== "string" || !/^e-[a-f0-9]{16}$/.test(x))
+      || raw.activityKnownEvents.some((x) => typeof x !== "string" || !knownPattern.test(x))
+      || (version === 1 && new Set((raw.activityKnownEvents as string[]).map((x) => x.slice(0, 1))).size > 1)
       || !unique(raw.activityKnownEvents as string[])
       || stable([...(raw.activityKnownEvents as string[])].sort()) !== stable(raw.activityKnownEvents)) {
-      problems.push(`${label}.activityKnownEvents must be unique event ids in sorted order`);
+      problems.push(`${label}.activityKnownEvents must be unique, homogeneous activity identities in sorted order`);
     }
     const record = raw as unknown as ExperimentOpened;
     if (id) {
@@ -551,9 +679,9 @@ function parseRecord(raw: unknown, label: string, problems: string[]): Experimen
   validateResults(raw.actionResults, ["followed", "revised", "skipped", "unknown"], problems, `${label}.actionResults`);
   validateResults(raw.criterionResults, ["met", "unmet", "unknown"], problems, `${label}.criterionResults`);
   if (raw.outcome !== "success" && raw.outcome !== "failure" && raw.outcome !== "inconclusive") problems.push(`${label}.outcome is not recognized`);
-  validateTrace(raw.trace, problems, label);
-  validateActivity(raw.activity, problems, label);
-  const record = raw as unknown as ExperimentClosed;
+  validateTrace(raw.trace, version, problems, label);
+  validateActivity(raw.activity, version, problems, label);
+  const wireRecord = raw as unknown as ExperimentClosed;
   if (isObject(raw.assessor) && raw.assessor.session !== "unknown" && raw.trace && isObject(raw.trace)) {
     if (raw.trace.session !== ownerSession) problems.push(`${label}.trace must belong to owner session ${ownerSession}`);
   }
@@ -562,10 +690,24 @@ function parseRecord(raw: unknown, label: string, problems: string[]): Experimen
   }
   if (experiment && !/^e-[a-f0-9]{12}$/.test(experiment)) problems.push(`${label}.experiment is not an experiment id`);
   if (id) {
-    const { id: _id, at: _at, ...identity } = record;
+    const { id: _id, at: _at, ...identity } = wireRecord;
     if (recordId("x", closeIdentity(identity)) !== id) problems.push(`${label}.id does not match immutable close content`);
   }
-  return record;
+  if (version !== 1 || !isObject(raw.trace) || !Array.isArray(raw.trace.events)
+    || !isObject(raw.activity) || !Array.isArray(raw.activity.rows)) return wireRecord;
+  // Preserve the V1 wire identity above, then expose its evidence truthfully. In
+  // particular an empty V1 owner-session window is absence, not exact observation.
+  return {
+    ...wireRecord,
+    trace: {
+      ...wireRecord.trace,
+      attribution: traceAttribution(wireRecord.trace.events),
+    },
+    activity: {
+      ...wireRecord.activity,
+      attribution: activityAttribution(wireRecord.activity.rows),
+    },
+  };
 }
 
 function resultSet<T extends { id: string; status: string; evidence: string }>(
@@ -644,6 +786,9 @@ export function readExperiments(cfg: Config): ExperimentLedger {
   for (const close of closes) {
     const opened = openById.get(close.experiment);
     if (!opened) { problems.push(`${close.id} closes dangling experiment ${close.experiment}`); continue; }
+    if (close.version < opened.version) {
+      problems.push(`${close.id} wire version ${close.version} predates its version ${opened.version} open`);
+    }
     if (close.ownerSession !== opened.session) problems.push(`${close.id} names owner ${close.ownerSession}, expected ${opened.session}`);
     if (close.at < opened.at) problems.push(`${close.id} closes ${opened.id} before it opened`);
     if (close.trace.session !== opened.session || close.trace.start !== opened.traceCursor) {
@@ -742,7 +887,10 @@ export function createExperiment(cfg: Config, input: CreateExperimentInput): Exp
     tracePrefix: traceDigest(trace),
     activityCursor: activity.length,
     activityPrefix: activityDigest(activity),
-    activityKnownEvents: [...new Set(activity.flatMap((row) => row.eventId ? [row.eventId] : []))].sort(),
+    activityKnownEvents: [...new Set(activity.flatMap((row) => {
+      const key = activityReplayKey(row);
+      return key ? [key] : [];
+    }))].sort(),
   };
   const record: ExperimentOpened = { ...body, id: recordId("e", openIdentity(body)), at };
   writeRecord(cfg, session, record);
@@ -765,7 +913,7 @@ function normalizedClose(
   return { assessor, actionResults, criterionResults };
 }
 
-/** Close a plan with total evidence. Outcome is derived; trace evidence is owner-only. */
+/** Close a plan with total manual evidence. Telemetry keeps the narrowest host scope it can prove. */
 export function closeExperiment(cfg: Config, input: CloseExperimentInput): ExperimentClosed {
   const target = nonempty(input.experiment, "experiment id");
   const ledger = readExperiments(cfg);
@@ -792,7 +940,7 @@ export function closeExperiment(cfg: Config, input: CloseExperimentInput): Exper
   }
   const events = current.slice(experiment.opened.traceCursor);
   const trace: ExperimentTraceEvidence = {
-    attribution: "owner-session",
+    attribution: traceAttribution(events),
     session: experiment.opened.session,
     start: experiment.opened.traceCursor,
     end: current.length,
@@ -807,7 +955,7 @@ export function closeExperiment(cfg: Config, input: CloseExperimentInput): Exper
     throw new ExperimentLedgerError(`${target}'s owner activity prefix changed; refusing to invent post-open attribution`);
   }
   const activity: ExperimentActivityEvidence = {
-    attribution: "owner-session",
+    attribution: activityAttribution(currentActivity.slice(experiment.opened.activityCursor)),
     session: experiment.opened.session,
     start: experiment.opened.activityCursor,
     end: currentActivity.length,
@@ -835,14 +983,25 @@ const ratio = (n: number, d: number) => d ? n / d : 0;
 
 const zeroCommandCounts = (): ExperimentCommandCounts => ({ total: 0, success: 0, failure: 0, unknown: 0 });
 
-function resolvedActivity(rows: ActivityRow[]): ActivityRow[] {
+function resolvedActivity(rows: ActivityRow[], version: ExperimentVersion): ActivityRow[] {
   const identified = new Map<string, ActivityRow>();
   const anonymous: ActivityRow[] = [];
   for (const row of rows) {
-    if (row.eventId) identified.set(row.eventId, row);
+    const key = version === 1 ? row.eventId : activityReplayKey(row);
+    if (key) identified.set(key, row);
     else anonymous.push(row);
   }
   return [...anonymous, ...identified.values()];
+}
+
+function activityWasKnown(opened: ExperimentOpened, row: ActivityRow): boolean {
+  const known = new Set(opened.activityKnownEvents);
+  if (!known.size) return false;
+  if (opened.activityKnownEvents[0]?.startsWith("e-")) {
+    return row.eventId !== null && known.has(row.eventId);
+  }
+  const key = activityReplayKey(row);
+  return key !== null && known.has(key);
 }
 
 /** Descriptive plan/observation association only. It assigns no clean/defect label. */
@@ -861,8 +1020,8 @@ export function experimentStats(ledger: ExperimentLedger): ExperimentStats {
     for (const result of closed.criterionResults) criterionResults[result.status]++;
     traceEvents += closed.trace.events.length;
     activityRows += closed.activity.rows.length;
-    const known = new Set(experiment.opened.activityKnownEvents);
-    const activity = resolvedActivity(closed.activity.rows).filter((row) => !row.eventId || !known.has(row.eventId));
+    const activity = resolvedActivity(closed.activity.rows, closed.version)
+      .filter((row) => !activityWasKnown(experiment.opened, row));
     activityEvents += activity.length;
     for (const row of activity) {
       if (!row.command) continue;
@@ -935,19 +1094,19 @@ export function renderExperiments(
     for (const result of c.criterionResults) lines.push(`  criterion ${result.id} ${result.status}: ${result.evidence}`);
     const reads = [...new Set(c.trace.events.filter((x) => x.mode === "read").map((x) => x.path))];
     const writes = [...new Set(c.trace.events.filter((x) => x.mode === "write").map((x) => x.path))];
-    lines.push(`  owner-session trace ${c.trace.start}..${c.trace.end}: ${c.trace.events.length} event(s)`);
+    lines.push(`  ${c.trace.attribution} trace ${c.trace.start}..${c.trace.end}: ${c.trace.events.length} event(s)`);
     if (reads.length) lines.push(`    reads: ${reads.join(" · ")}`);
     if (writes.length) lines.push(`    writes: ${writes.join(" · ")}`);
-    const known = new Set(o.activityKnownEvents);
-    const activity = resolvedActivity(c.activity.rows).filter((row) => !row.eventId || !known.has(row.eventId));
-    lines.push(`  owner-session activity ${c.activity.start}..${c.activity.end}: ${c.activity.rows.length} raw row(s), ${activity.length} new event(s)`);
+    const activity = resolvedActivity(c.activity.rows, c.version)
+      .filter((row) => !activityWasKnown(o, row));
+    lines.push(`  ${c.activity.attribution} activity ${c.activity.start}..${c.activity.end}: ${c.activity.rows.length} raw row(s), ${activity.length} new event(s)`);
     for (const row of activity.filter((candidate) => candidate.command)) {
       const command = row.command!;
       lines.push(`    ${row.transport} ${command.kind} ${command.name}: ${command.result} — ${command.command}`);
     }
   };
   for (const experiment of [...scoped.open, ...scoped.closed]) renderOne(experiment);
-  lines.push("", "  lower bound: only explicit path-bearing reads and recognized owner-session activity are observed.");
+  lines.push("", "  lower bound: only explicit path-bearing reads and recognized activity are observed; parent-session aggregates may include descendant work.");
   lines.push("  experiment outcome is derived from stated criteria; it is not a clean/defect label or a causal claim.");
   return { text: lines.join("\n"), count: selected.length, stats };
 }

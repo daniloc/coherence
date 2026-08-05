@@ -42,13 +42,14 @@ test("regulate CLI — report and check expose the same read-only decision", asy
   const root = await fixture();
   try {
     const before = git(root, "status", "--porcelain").stdout;
-    const report = await run(process.execPath, [CLI, "regulate", "--json"], { cwd: root });
+    const report = await run(process.execPath, [CLI, "regulate", "--host", "claude", "--json"], { cwd: root });
     const first = JSON.parse(report.stdout);
     assert.equal(first.action, "redirect");
-    assert.deepEqual(first.selected.command, { name: "hooks", args: ["install"] });
+    assert.equal(first.host, "claude");
+    assert.deepEqual(first.selected.command, { name: "hooks", args: ["install", "--host", "claude"] });
     assert.equal(git(root, "status", "--porcelain").stdout, before, "report mode must not repair what it observes");
 
-    const checked = await run(process.execPath, [CLI, "regulate", "--check", "--json"], { cwd: root })
+    const checked = await run(process.execPath, [CLI, "regulate", "--check", "--host", "claude", "--json"], { cwd: root })
       .then((value) => ({ code: 0, stdout: value.stdout }), (error: { code: number; stdout: string }) => error);
     assert.equal(checked.code, 1);
     assert.deepEqual(JSON.parse(checked.stdout), first, "--check changes only the exit status");
@@ -57,10 +58,17 @@ test("regulate CLI — report and check expose the same read-only decision", asy
     const installed = await setLifecycleHook(await loadConfig(root), true);
     assert.deepEqual(installed.errors, []);
     const installedState = git(root, "status", "--porcelain").stdout;
-    const released = await run(process.execPath, [CLI, "regulate", "--check", "--json"], { cwd: root });
+    const released = await run(process.execPath, [CLI, "regulate", "--check", "--host", "claude", "--json"], { cwd: root });
     assert.equal(JSON.parse(released.stdout).action, "release");
     assert.equal(git(root, "status", "--porcelain").stdout, installedState,
       "release must not stamp status or create journal residue");
+
+    const codex = await run(process.execPath, [CLI, "regulate", "--host", "codex", "--json"], { cwd: root });
+    const codexDecision = JSON.parse(codex.stdout);
+    assert.equal(codexDecision.action, "redirect", "Claude control cannot redeem selected Codex regulation");
+    assert.deepEqual(codexDecision.selected.command, {
+      name: "hooks", args: ["install", "--host", "codex"],
+    });
   } finally {
     await cleanup(root);
   }
@@ -71,7 +79,7 @@ test("regulate CLI — an unreadable required control observation refuses", asyn
   try {
     await mkdir(join(root, ".claude"), { recursive: true });
     await writeFile(join(root, ".claude", "settings.json"), "{not json\n");
-    const result = await run(process.execPath, [CLI, "regulate", "--json"], { cwd: root })
+    const result = await run(process.execPath, [CLI, "regulate", "--host", "claude", "--json"], { cwd: root })
       .then((value) => ({ code: 0, stdout: value.stdout }), (error: { code: number; stdout: string }) => error);
     assert.equal(result.code, 2);
     const decision = JSON.parse(result.stdout);
@@ -89,6 +97,8 @@ test("regulate CLI — malformed --since arguments refuse at the command boundar
     for (const args of [
       ["regulate", "--since", "--json"],
       ["regulate", "--since", "HEAD", "--since", "HEAD~1", "--json"],
+      ["regulate", "--host", "other", "--json"],
+      ["regulate", "--host", "codex", "--host", "claude", "--json"],
     ]) {
       const result = await run(process.execPath, [CLI, ...args], { cwd: root })
         .then((value) => ({ code: 0, stdout: value.stdout }), (error: { code: number; stdout: string }) => error);
@@ -104,7 +114,7 @@ test("regulate CLI — an absent runnable hook target refuses instead of prescri
   const root = await fixture();
   try {
     await rm(join(root, "src/hook-cli.ts"));
-    const result = await run(process.execPath, [CLI, "regulate", "--json"], { cwd: root })
+    const result = await run(process.execPath, [CLI, "regulate", "--host", "claude", "--json"], { cwd: root })
       .then((value) => ({ code: 0, stdout: value.stdout }), (error: { code: number; stdout: string }) => error);
     assert.equal(result.code, 2);
     const decision = JSON.parse(result.stdout);

@@ -2,12 +2,24 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
-  hookReadCandidates, recordHookReads, readTrace, predictedReadSet,
-  calibrationPaths, calibrationStats, formatCalibration, readCalibrationSamples, type CalibrationSample,
+  hookReadCandidates, recordHookReads, readTrace, readTraceDetailed, predictedReadSet,
+  calibrationPaths, calibrationStats, formatCalibration, readCalibrationSamples, recordCalibrationSample,
+  type CalibrationSample,
 } from "../src/calibration.ts";
-import { appendFileSync, mkdirSync } from "node:fs";
+import { appendFileSync, existsSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { cfg, graph, fileNode, imp, tmpProject, cleanup } from "./_helpers.ts";
+
+const exactObservation = {
+  version: 1 as const,
+  host: "claude" as const,
+  transport: "launcher" as const,
+  bundleHash: "bundle-1",
+  parentSession: "parent",
+  agentId: "agent-abc",
+  attribution: "agent" as const,
+  eventId: null,
+};
 
 test("hook payload extraction reads path fields but never guesses from command text", () => {
   const got = hookReadCandidates({
@@ -26,8 +38,8 @@ test("write-bearing hooks provide per-session patch attribution", () => {
 
 test("calibration uses session writes instead of a concurrent shared-worktree union", () => {
   const traced = calibrationPaths([
-    { at: "t", session: "agent-abc", tool: "Read", mode: "read", path: "src/context.ts" },
-    { at: "t", session: "agent-abc", tool: "Edit", mode: "write", path: "src/signal.ts" },
+    { at: "t", session: "agent-abc", tool: "Read", mode: "read", path: "src/context.ts", observation: exactObservation },
+    { at: "t", session: "agent-abc", tool: "Edit", mode: "write", path: "src/signal.ts", observation: exactObservation },
   ], ["src/signal.ts", "src/someone-elses-change.ts"]);
   assert.deepEqual(traced, {
     changed: ["src/signal.ts"], observed: ["src/context.ts"], attribution: "session-writes",
@@ -37,10 +49,30 @@ test("calibration uses session writes instead of a concurrent shared-worktree un
   })), ["src/shared.ts"]).attribution, "worktree-union");
 
   assert.deepEqual(calibrationPaths([
-    { at: "t", session: "agent-abc", tool: "apply_patch", mode: "write", path: "src/failed.ts" },
+    { at: "t", session: "agent-abc", tool: "apply_patch", mode: "write", path: "src/failed.ts", observation: exactObservation },
   ], ["src/someone-elses-change.ts"]), {
     changed: [], observed: [], attribution: "session-writes",
   }, "a failed/no-op attributed write must not fall back to another agent's worktree union");
+});
+
+test("calibration keeps Codex parent-only writes aggregate and legacy rows unscoped", () => {
+  const parent = {
+    ...exactObservation,
+    host: "codex" as const,
+    parentSession: "codex-thread",
+    agentId: null,
+    attribution: "parent-fallback" as const,
+  };
+  assert.deepEqual(calibrationPaths([
+    { at: "t", session: "codex-thread", tool: "Read", mode: "read", path: "src/context.ts", observation: parent },
+    { at: "t", session: "codex-thread", tool: "apply_patch", mode: "write", path: "src/signal.ts", observation: parent },
+  ], ["src/signal.ts", "src/someone-elses-change.ts"]), {
+    changed: ["src/signal.ts"], observed: ["src/context.ts"], attribution: "parent-session-aggregate",
+  });
+  assert.equal(calibrationPaths([
+    { at: "t", session: "legacy", tool: "Edit", mode: "write", path: "src/signal.ts" },
+    { at: "t", session: "legacy", tool: "Read", mode: "read", path: "src/context.ts" },
+  ], ["src/signal.ts"]).attribution, "legacy-unscoped");
 });
 
 test("hook recording keeps only real files inside the repo", async () => {
@@ -53,6 +85,37 @@ test("hook recording keeps only real files inside the repo", async () => {
     }, "2026-01-01T00:00:00Z");
     assert.deepEqual(events.map((e) => e.path), ["src/a.ts"]);
     assert.deepEqual(readTrace(c, "s-abc").map((e) => e.path), ["src/a.ts"]);
+  } finally { await cleanup(root); }
+});
+
+test("trace files keep sanitization-colliding session ids isolated", async () => {
+  const root = await tmpProject({ "src/a.ts": "a\n", "src/b.ts": "b\n" });
+  try {
+    const c = cfg(root);
+    recordHookReads(c, {
+      session_id: "parent", agent_id: "a/b", tool_name: "Read", tool_input: { file_path: "src/a.ts" },
+    });
+    recordHookReads(c, {
+      session_id: "parent", agent_id: "a?b", tool_name: "Read", tool_input: { file_path: "src/b.ts" },
+    });
+    assert.equal(readTraceDetailed(c, "a/b").unreadable, 0);
+    assert.deepEqual(readTrace(c, "a/b").map((row) => row.path), ["src/a.ts"]);
+    assert.deepEqual(readTrace(c, "a?b").map((row) => row.path), ["src/b.ts"]);
+  } finally { await cleanup(root); }
+});
+
+test("calibration refuses a damaged trace instead of minting a smaller sample", async () => {
+  const root = await tmpProject({ "src/a.ts": "export const a = 1;\n" });
+  try {
+    const c = cfg(root);
+    recordHookReads(c, {
+      session_id: "parent", agent_id: "agent-damage", tool_name: "Read",
+      tool_input: { file_path: "src/a.ts" },
+    });
+    appendFileSync(join(root, ".coherence", "read-traces", "agent-damage.jsonl"), "{ torn\n");
+    const sample = await recordCalibrationSample(c, "agent-damage", "unknown", graph([fileNode("src/a.ts", ".")]));
+    assert.equal(sample, null);
+    assert.equal(existsSync(join(root, ".coherence", "calibration")), false);
   } finally { await cleanup(root); }
 });
 
@@ -79,6 +142,7 @@ test("calibration reports coverage, outside reads, and defect rates by predictio
   assert.equal(stats.defects, 1);
   assert.equal(stats.defectRateWithMisses, 1);
   assert.equal(stats.defectRateWithoutMisses, 0);
+  assert.deepEqual([stats.sharedWorktreeSamples, stats.parentAggregateSamples, stats.legacyUnscopedSamples], [0, 0, 0]);
   assert.match(formatCalibration([]).join("\n"), /no samples yet/);
   assert.match(formatCalibration([sample("1", "defect", ["a.ts"])]).join("\n"), /lower bound/);
 });

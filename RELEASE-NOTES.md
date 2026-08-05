@@ -14,6 +14,52 @@ evidence inside that record.
 
 ---
 
+## v0.31.0 — the field reaches Codex, and its evidence keeps its scope
+
+The lifecycle controller is now host-selectable. Claude and Codex share one five-event
+contract while retaining different settings syntax, matchers, stable launchers, root
+alignment, exclusion controls, and bundle fingerprints. `coherence hooks --check --host
+<claude|codex>` remains the binary structural gate; adding `--session` separately asks
+whether that exact session observed the currently installed host/bundle. Durable journal
+history, a direct probe, another host, another session, or a stale bundle cannot redeem
+activation. Installation during an already-running Codex session therefore reports the
+truth—PRESENT but UNOBSERVED—until the project hooks are reviewed and the session reloads.
+
+Codex attribution follows what the host actually supplies. Child lifecycle events carry
+`agent_id` and can be exact; `PostToolUse` carries only the parent session, so those reads,
+writes, verification runs, and interventions remain `parent-session-aggregate`. They are
+useful fleet evidence but never relabeled as one child agent's work. Calibration, hook
+status, experiment closure, replay deduplication, and the host-aware regulator all
+preserve that ceiling. Main `Stop` remains byte-empty; only `SubagentStop` restates the
+report its caller may otherwise never see.
+
+`coherence experiment` turns multi-step plans into append-only measured loops. Create
+freezes predicted context, inert actions, observable criteria, repository state, and
+telemetry cursors before work. Close must answer every action and criterion, derives its
+own success/failure/inconclusive outcome, and freezes the weakest evidence scope without
+letting telemetry manufacture the result. Inspect defaults to the merged fleet—even when
+an ambient Codex thread identifies the current writer—and narrows only on an explicit
+`--session`. New rows use wire v2; the strict reader still hash-validates v1 rows and
+normalizes their old attribution spelling in memory without rewriting the ledger.
+
+The adopter journal repair is included in the same release: retractions now withdraw
+resolved answers as well as standing decisions, withdrawn terminal records render as
+withdrawn, terminal identity includes its target, and overbroad adopter answers were
+withdrawn instead of left to look authoritative. Surprising measurements also receive
+the explicit instrument-error candidate at write time rather than relying on agent
+discipline.
+
+The release adds direct guards for host parity, exact activation, criterion-total closure,
+scope-preserving telemetry, selected-host regulation, and relational activity integrity.
+The canonical launchers include the package/protocol build identity, so a structurally
+unchanged old script cannot make a new body look observed.
+
+745 tests. `verify` 39/39 green. Typecheck, build, generated reading surfaces, both
+lifecycle controls, premise leases, conventions, injection sites, mass, atlas, and the
+significant-change gate all held before release.
+
+---
+
 ## v0.30.1 — the Linux gate returns
 
 No runtime behavior changed. This patch repairs the source release's own evidence path.

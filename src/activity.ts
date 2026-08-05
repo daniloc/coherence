@@ -131,9 +131,25 @@ function eventIdentity(
 }
 
 /**
- * Resolve attribution once for every reader/writer. PostToolUse without an agent id is
- * intentionally called `parent-fallback`: Codex supplies the parent session id there even
- * when the tool ran in a subagent, so calling it exact session attribution would be a lie.
+ * A host event may legitimately arrive through more than one configured path while a
+ * control is being repaired. Replays collapse only inside the same observation domain;
+ * otherwise a stale or direct copy could overwrite exact launcher evidence (or vice versa).
+ */
+export function activityReplayKey(row: Pick<ActivityRow,
+  "eventId" | "host" | "transport" | "bundleHash" | "attribution" | "parentSession" | "agentId"
+>): string | null {
+  if (!row.eventId) return null;
+  const domain = JSON.stringify([
+    row.eventId, row.host, row.transport, row.bundleHash,
+    row.attribution, row.parentSession, row.agentId,
+  ]);
+  return `r-${createHash("sha256").update(domain).digest("hex").slice(0, 16)}`;
+}
+
+/**
+ * Resolve attribution once for every reader/writer. Codex supplies only the parent session
+ * id on PostToolUse, and a malformed/older subagent lifecycle payload can omit agent_id too.
+ * Both are `parent-fallback`: calling the parent id exact agent attribution would be a lie.
  */
 export function activityAttribution(
   event: string,
@@ -146,7 +162,7 @@ export function activityAttribution(
     return { session: agentId, parentSession, agentId, attribution: "agent" };
   }
   if (parentSession) {
-    return event === "PostToolUse"
+    return event === "PostToolUse" || event === "SubagentStart" || event === "SubagentStop"
       ? { session: parentSession, parentSession, agentId: null, attribution: "parent-fallback" }
       : { session: parentSession, parentSession: null, agentId: null, attribution: "session" };
   }
@@ -205,6 +221,7 @@ export function activityRow(
   now = new Date().toISOString(),
 ): ActivityRow {
   const p = object(payload);
+  const at = Number.isFinite(Date.parse(now)) ? new Date(now).toISOString() : now;
   const attribution = activityAttribution(event, payload);
   const command = event === "PostToolUse" ? classifyActivityCommand(payload) : undefined;
   const turn = text(p.turn_id ?? p.turnId);
@@ -212,7 +229,7 @@ export function activityRow(
   const eventId = eventIdentity(attribution.session, event, turn, toolUseId);
   return {
     version: 1,
-    at: now,
+    at,
     host: context.host,
     transport: context.transport,
     bundleHash: text(context.bundleHash),
@@ -241,7 +258,7 @@ export function recordActivity(
   return row;
 }
 
-function isActivityRow(value: unknown, session: string): value is ActivityRow {
+export function isActivityRow(value: unknown, session: string): value is ActivityRow {
   const row = object(value);
   if (row.version !== 1 || row.session !== session || !text(row.at) || !text(row.event)
     || !HOSTS.has(String(row.host)) || (row.transport !== "launcher" && row.transport !== "direct")
@@ -251,6 +268,13 @@ function isActivityRow(value: unknown, session: string): value is ActivityRow {
   }
   const expected = eventIdentity(session, String(row.event), row.turn as string | null, row.toolUseId as string | null);
   if (row.eventId !== expected) return false;
+  if (!Number.isFinite(Date.parse(String(row.at))) || new Date(String(row.at)).toISOString() !== row.at) return false;
+  if (row.attribution === "agent" && row.agentId !== session) return false;
+  if (row.attribution === "session" && (row.agentId !== null || row.parentSession !== null)) return false;
+  if (row.attribution === "parent-fallback"
+    && (row.agentId !== null || row.parentSession !== session)) return false;
+  if (row.attribution === "unknown"
+    && (session !== "unknown" || row.agentId !== null || row.parentSession !== null)) return false;
   if (row.command !== undefined) {
     const command = object(row.command);
     if ((command.kind !== "verification" && command.kind !== "intervention")
@@ -259,6 +283,11 @@ function isActivityRow(value: unknown, session: string): value is ActivityRow {
       || (command.exitCode !== undefined && !(typeof command.exitCode === "number" && Number.isInteger(command.exitCode)))) {
       return false;
     }
+    if ((command.name === "verify") !== (command.kind === "verification")) return false;
+    const expectedResult = command.exitCode === undefined
+      ? "unknown"
+      : command.exitCode === 0 ? "success" : "failure";
+    if (command.result !== expectedResult) return false;
   }
   return true;
 }
@@ -290,8 +319,9 @@ function counts(rows: ActivityRow[]): ActivityCounts {
   const byIdentity = new Map<string, ActivityRow>();
   const unique: ActivityRow[] = [];
   for (const row of rows) {
-    if (!row.eventId) { unique.push(row); continue; }
-    byIdentity.set(row.eventId, row);
+    const key = activityReplayKey(row);
+    if (!key) { unique.push(row); continue; }
+    byIdentity.set(key, row);
   }
   unique.push(...byIdentity.values());
   const out: ActivityCounts = {

@@ -5,7 +5,11 @@
 // rather than slipping past a hand-maintained fixture list.
 import test from "node:test";
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
+import { chmod, mkdir, writeFile } from "node:fs/promises";
+import { dirname, join } from "node:path";
 import { commandFor } from "../src/commands.ts";
+import { setLifecycleHook } from "../src/control.ts";
 import {
   ANTI_ENTROPY_DOCTRINE,
   type DoctrineRule,
@@ -13,12 +17,14 @@ import {
 } from "../src/doctrine.ts";
 import {
   formatRegulation,
+  observeRegulation,
   renderRegulationCommand,
   selectRegulation,
   type RegulationDecision,
   type RegulationObservation,
   type RegulationReading,
 } from "../src/regulate.ts";
+import { cfg, cleanup, tmpProject } from "./_helpers.ts";
 
 const rules = ANTI_ENTROPY_DOCTRINE.rules;
 
@@ -45,6 +51,7 @@ function reading(
   return {
     doctrine: ANTI_ENTROPY_DOCTRINE.id,
     scope: "shared-worktree",
+    host: "claude",
     observations,
     limitations,
   };
@@ -196,6 +203,12 @@ test("regulate — ordered potential is permutation-invariant and monotone", () 
   assert.equal(invalidScope.action, "refuse", "a foreign runtime scope cannot release");
   assert.equal(invalidScope.scope, "shared-worktree", "the decision never repeats an unsupported scope");
 
+  const invalidHost = selectRegulation({
+    ...reading(withStatuses(new Map())),
+    host: "other" as "claude",
+  });
+  assert.equal(invalidHost.action, "refuse", "an unknown agent host cannot release or author a repair command");
+
   const invalidStatus = selectRegulation(reading([
     ...withStatuses(new Map()).slice(1),
     { ...observation(rules[0]!, "satisfied"), status: "satified" as "satisfied" },
@@ -230,6 +243,10 @@ test("regulate — formatter emits one action and live commands never redirect t
 
   assert.equal(renderRegulationCommand(redirectRule.command!, ["npx", "coherence"]),
     "npx coherence hooks install", "a multiword launcher is an argv prefix, not one quoted executable");
+  const selectedRedirect = selectRegulation(reading(withStatuses(new Map([[redirectRule.id, "violated"]]))));
+  assert.deepEqual(selectedRedirect.selected?.command, {
+    name: "hooks", args: ["install", "--host", "claude"],
+  }, "the selected repair is scoped to the host the sensor actually inspected");
   assert.equal(renderRegulationCommand({ name: "hooks", args: ["an arg's value"] }, ["runner with space"]),
     `'runner with space' hooks 'an arg'\"'\"'s value'`, "every emitted shell word is independently quoted");
 
@@ -254,4 +271,37 @@ test("regulate — formatter emits one action and live commands never redirect t
   assert.match(text.join("\n"), /1 lower-priority obligation\(s\) withheld/);
   assert.doesNotMatch(text.join("\n"), /hooks install/,
     "the withheld redirect may be counted but must not leak as a second command");
+});
+
+test("regulate — selected Codex host cannot be redeemed by Claude control", async () => {
+  const root = await tmpProject({ "src/a.ts": "export const a = 1;\n" });
+  try {
+    const hook = join(root, "node_modules", ".bin", "coherence-hook");
+    await mkdir(dirname(hook), { recursive: true });
+    await writeFile(hook, "#!/bin/sh\nexit 0\n");
+    await chmod(hook, 0o755);
+    const git = (...args: string[]) => spawnSync("git", args, { cwd: root, encoding: "utf8" });
+    assert.equal(git("init", "-q", "-b", "main").status, 0);
+    git("config", "user.email", "test@example.com");
+    git("config", "user.name", "Test");
+    git("config", "commit.gpgsign", "false");
+    git("add", ".");
+    assert.equal(git("commit", "-q", "-m", "base").status, 0);
+
+    const c = cfg(root);
+    assert.equal((await setLifecycleHook(c, true, "claude")).inspection.present, true);
+    const codexReading = await observeRegulation(c, undefined, { host: "codex" });
+    assert.equal(codexReading.host, "codex");
+    assert.equal(codexReading.observations.find((row) => row.rule === "canonical-lifecycle-control")?.status,
+      "violated", "another host's complete control cannot satisfy the selected host sensor");
+    const missingCodex = selectRegulation(codexReading);
+    assert.equal(missingCodex.action, "redirect");
+    assert.deepEqual(missingCodex.selected?.command, {
+      name: "hooks", args: ["install", "--host", "codex"],
+    });
+
+    assert.equal((await setLifecycleHook(c, true, "codex")).inspection.present, true);
+    const complete = selectRegulation(await observeRegulation(c, undefined, { host: "codex" }));
+    assert.equal(complete.action, "release");
+  } finally { await cleanup(root); }
 });

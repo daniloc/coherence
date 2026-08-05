@@ -42,6 +42,7 @@ import {
 } from "./experiment.ts";
 import { recordObservation, formatObserved } from "./observed.ts";
 import { printHooks, reportHooks, checkHooks, installHooks, uninstallHooks, runHook } from "./hooks.ts";
+import type { HookHost } from "./control.ts";
 import { redundancy } from "./redundancy.ts";
 import { prose } from "./prose.ts";
 import { economy } from "./economy.ts";
@@ -347,21 +348,29 @@ if (cmd === "graph") {
   // never the observation or the selected action. Hook delivery is deliberately a later
   // rollout step, after this selector has earned trust under direct use.
   const json = argv.includes("--json");
-  const allowed = new Set(["--check", "--since", "--json"]);
+  const allowed = new Set(["--check", "--since", "--json", "--host"]);
   const badFlags = argv.filter((arg) => arg.startsWith("--") && !allowed.has(arg));
   const sinceCount = argv.filter((arg) => arg === "--since").length;
+  const hostCount = argv.filter((arg) => arg === "--host").length;
   const invalidSince = sinceIdx >= 0 && (!since || since.startsWith("--"));
-  const badShape = positional.length > 0 || invalidSince || sinceCount > 1;
+  const hostArg = one("--host");
+  const invalidHost = hostCount > 0 && (hostArg !== "claude" && hostArg !== "codex");
+  const badShape = positional.length > 0 || invalidSince || sinceCount > 1 || hostCount > 1 || invalidHost;
   if (badFlags.length || badShape) {
-    const usage = "usage: coherence regulate [--check] [--since <ref>] [--json]";
+    const usage = "usage: coherence regulate [--check] [--since <ref>] [--host <claude|codex>] [--json]";
     const message = badFlags.length
       ? `unsupported flag(s) for regulate: ${badFlags.join(", ")}`
-      : "regulate accepts no positional arguments and exactly one value per --since";
+      : "regulate accepts no positional arguments, one --since value, and one claude|codex --host";
     if (json) console.log(JSON.stringify({ error: message, usage }, null, 2));
     else { console.error(message); console.error(usage); }
     await exit(2);
   }
-  await exit(await regulate(cfg, undefined, { since: since ?? undefined, check, json }));
+  await exit(await regulate(cfg, undefined, {
+    since: since ?? undefined,
+    check,
+    json,
+    host: hostArg === "claude" || hostArg === "codex" ? hostArg : undefined,
+  }));
 } else if (cmd === "decide" || cmd === "blocked") {
   // The write half of the decision journal. Deliberately the cheapest thing in the
   // CLI to call: one shell line, no server, no session. Anything an agent has to set
@@ -565,11 +574,12 @@ if (cmd === "graph") {
   // parser never accepts a caller-authored success/failure label.
   const json = argv.includes("--json");
   const action = positional[0] ?? "inspect";
-  const session = one("--session") ?? process.env.COHERENCE_SESSION ?? process.env.CODEX_THREAD_ID ?? null;
+  const explicitSession = one("--session");
+  const writerSession = explicitSession ?? process.env.COHERENCE_SESSION ?? process.env.CODEX_THREAD_ID ?? null;
   const usage = [
     'usage: coherence experiment create "<hypothesis>" --context <path> --action "<step>" --success "<criterion>" --session S [--json]',
     "       coherence experiment inspect [<id>] [--open] [--session S] [--json]",
-    "       coherence experiment close <id> --action-result 'a1=followed::<evidence>' --result 's1=met::<evidence>' --session S [--json]",
+    "       coherence experiment close <id> --action-result 'a1=followed::EVIDENCE' --result 's1=met::EVIDENCE' --session S [--json]",
   ];
   const fail = async (message: string): Promise<never> => {
     if (json) console.log(JSON.stringify({ error: message, usage }, null, 2));
@@ -603,15 +613,15 @@ if (cmd === "graph") {
     const status = evidenceAt < 0 ? "" : raw.slice(equal + 1, evidenceAt).trim();
     const evidence = evidenceAt < 0 ? "" : raw.slice(evidenceAt + 2).trim();
     if (!id || !statuses.includes(status as T) || !evidence) {
-      throw new ExperimentLedgerError(`${label} must be id=${statuses.join("|")}::<non-empty evidence>`);
+      throw new ExperimentLedgerError(`${label} must be id=${statuses.join("|")}::NONEMPTY_EVIDENCE`);
     }
     return { id, status: status as T, evidence };
   };
 
   try {
     if (action === "create") {
-      if (positional.length !== 2 || !session) await fail("experiment create requires one hypothesis and an exact host session");
-      const ownerSession = session as string; // guarded above; async `fail` prevents TS control-flow narrowing
+      if (positional.length !== 2 || !writerSession) await fail("experiment create requires one hypothesis and an exact host session");
+      const ownerSession = writerSession as string; // guarded above; async `fail` prevents TS control-flow narrowing
       const opened = createExperiment(cfg, {
         session: ownerSession,
         hypothesis: positional[1],
@@ -627,8 +637,8 @@ if (cmd === "graph") {
         console.log(`  hypothesis: ${opened.hypothesis}`);
         for (const item of opened.actions) console.log(`  action ${item.id}: ${item.text}`);
         for (const item of opened.criteria) console.log(`  success ${item.id}: ${item.text}`);
-        const actionArgs = opened.actions.map((item) => `--action-result '${item.id}=unknown::<evidence>'`).join(" ");
-        const criterionArgs = opened.criteria.map((item) => `--result '${item.id}=unknown::<evidence>'`).join(" ");
+        const actionArgs = opened.actions.map((item) => `--action-result '${item.id}=unknown::EVIDENCE'`).join(" ");
+        const criterionArgs = opened.criteria.map((item) => `--result '${item.id}=unknown::EVIDENCE'`).join(" ");
         console.log(`  close: coherence experiment close ${opened.id} ${actionArgs} ${criterionArgs} --session ${opened.session}`);
       }
       await exit(0);
@@ -636,7 +646,9 @@ if (cmd === "graph") {
 
     if (action === "inspect") {
       if (positional.length > 2) await fail("experiment inspect accepts at most one experiment id");
-      const opts = { id: positional[1] ?? null, session, openOnly: argv.includes("--open") };
+      // Inspection is the merged fleet view unless the caller explicitly narrows it.
+      // Ambient host identity is for attributing writes, not hiding other agents' loops.
+      const opts = { id: positional[1] ?? null, session: explicitSession, openOnly: argv.includes("--open") };
       if (json) {
         const ledger = readExperiments(cfg);
         const selected = ledger.experiments.filter((experiment) =>
@@ -654,8 +666,8 @@ if (cmd === "graph") {
       await exit(0);
     }
 
-    if (positional.length !== 2 || !session) await fail("experiment close requires one id and an exact assessor session");
-    const assessorSession = session as string; // guarded above; async `fail` prevents TS control-flow narrowing
+    if (positional.length !== 2 || !writerSession) await fail("experiment close requires one id and an exact assessor session");
+    const assessorSession = writerSession as string; // guarded above; async `fail` prevents TS control-flow narrowing
     const actionResults = many("--action-result").map((raw) =>
       parseResult(raw, ["followed", "revised", "skipped", "unknown"] as const, "--action-result")) as ExperimentActionResult[];
     const criterionResults = many("--result").map((raw) =>
@@ -674,33 +686,53 @@ if (cmd === "graph") {
   }
 } else if (cmd === "hooks") {
   // The first control interface. `--check` remains the terse gate spelling; status keeps
-  // the installation bit and runtime observation visible without conflating them.
+  // the installation bit and runtime observation visible without conflating them. A bare
+  // command remains Claude for compatibility; Codex is always an explicit host selection.
   const json = argv.includes("--json");
   const action = check ? "check" : (positional[0] ?? "print");
   const allowed = new Map<string, Set<string>>([
-    ["check", new Set(["--check", "--json"])],
-    ["status", new Set(["--json"])],
-    ["install", new Set(["--json"])],
-    ["uninstall", new Set(["--json"])],
-    ["print", new Set()],
+    ["check", new Set(["--check", "--json", "--host", "--session"])],
+    ["status", new Set(["--json", "--host", "--session"])],
+    ["install", new Set(["--json", "--host", "--session"])],
+    ["uninstall", new Set(["--json", "--host", "--session"])],
+    ["print", new Set(["--host"])],
   ]);
-  const usage = "usage: coherence hooks [status|install|uninstall|print] [--check] [--json]";
-  const badFlags = argv.filter((arg) => arg.startsWith("--") && !allowed.get(action)?.has(arg));
+  const usage = "usage: coherence hooks [status|install|uninstall|print] [--check]"
+    + " [--host <claude|codex>] [--session <id>] [--json]";
+  const actionFlags = allowed.get(action);
+  const badFlags = actionFlags
+    ? argv.filter((arg) => arg.startsWith("--") && !actionFlags.has(arg))
+    : [];
+  const missingValues = ["--host", "--session"].filter((flag) =>
+    argv.some((arg, index) => arg === flag
+      && (argv[index + 1] === undefined || argv[index + 1]!.startsWith("--"))));
+  const repeatedValues = ["--host", "--session"].filter((flag) =>
+    argv.filter((arg) => arg === flag).length > 1);
+  const hostArg = one("--host");
+  const session = one("--session");
+  const invalidHost = hostArg !== null && hostArg !== "claude" && hostArg !== "codex";
+  const invalidSession = session === "" || session === "unknown";
   const badShape = !allowed.has(action)
     || (action === "check" && !check)
     || positional.length > 1
     || (check && positional.length > 0);
-  if (badShape || badFlags.length) {
-    const message = badFlags.length ? `unsupported flag(s) for hooks ${action}: ${badFlags.join(", ")}` : `invalid hooks action: ${positional.join(" ") || action}`;
+  if (badShape || badFlags.length || missingValues.length || repeatedValues.length || invalidHost || invalidSession) {
+    const message = badShape ? `invalid hooks action: ${positional.join(" ") || action}`
+      : badFlags.length ? `unsupported flag(s) for hooks ${action}: ${badFlags.join(", ")}`
+      : missingValues.length ? `missing value for: ${missingValues.join(", ")}`
+      : repeatedValues.length ? `repeated hooks selector: ${repeatedValues.join(", ")}`
+      : invalidHost ? `invalid hook host: ${hostArg}; expected claude or codex`
+      : "--session requires a non-empty, non-unknown id";
     if (json) console.log(JSON.stringify({ error: message, usage }, null, 2));
     else { console.error(message); console.error(usage); }
     await exit(2);
   }
-  if (action === "check") await exit(checkHooks(cfg, json));
-  if (action === "status") await exit(reportHooks(cfg, json));
-  if (action === "install") await exit(await installHooks(cfg, json));
-  if (action === "uninstall") await exit(await uninstallHooks(cfg, json));
-  if (action === "print") { printHooks(cfg); await exit(0); }
+  const host = (hostArg ?? "claude") as HookHost;
+  if (action === "check") await exit(checkHooks(cfg, json, host, session));
+  if (action === "status") await exit(reportHooks(cfg, json, host, session));
+  if (action === "install") await exit(await installHooks(cfg, json, host, session));
+  if (action === "uninstall") await exit(await uninstallHooks(cfg, json, host, session));
+  if (action === "print") { printHooks(cfg, host); await exit(0); }
 } else if (cmd === "hook") {
   // The hook BODY, so nothing has to be written to disk or kept in sync with a script.
   await exit(await runHook(cfg, positional[0] ?? ""));

@@ -104,6 +104,8 @@ printf '%s\n%s\n%s\n%s\n%s\n%s\n' "$PWD" "$COHERENCE_PROJECT_ROOT" "$COHERENCE_H
     assert.equal(first.inspection.files[0]?.managedActions, 5,
       "the audited direct spelling is migrated instead of left to double-fire");
     assert.equal(first.inspection.bundleFingerprint, CODEX_LIFECYCLE_HOOK_BUNDLE_FINGERPRINT);
+    assert.equal(first.inspection.launcher.rootAligned, true);
+    assert.equal(first.inspection.launcher.commandRoot, await realpath(host));
 
     const installed = await readHooks(host);
     const canonical = canonicalLifecycleHookSettings("codex") as Json;
@@ -146,6 +148,38 @@ printf '%s\n%s\n%s\n%s\n%s\n%s\n' "$PWD" "$COHERENCE_PROJECT_ROOT" "$COHERENCE_H
     assert.equal(after.hooks.Notification[0].hooks[0].command, "printf notify");
     await assert.rejects(readFile(join(host, ".codex", "coherence-hook")), { code: "ENOENT" });
     await assert.rejects(readFile(join(host, ".codex", "coherence-root")), { code: "ENOENT" });
+  } finally {
+    await cleanup(host);
+  }
+});
+
+test("Codex control — a configured root the stable launcher cannot address refuses before writing", async () => {
+  const host = await tmpProject();
+  const root = join(host, "app");
+  try {
+    await mkdir(root, { recursive: true });
+    await run("git", ["init"], { cwd: host });
+    await installTarget(root);
+
+    const nested = cfg(root);
+    const before = inspectLifecycleHook(nested, "codex");
+    assert.equal(before.launcher.rootAligned, false);
+    assert.equal(before.launcher.configuredRoot, root);
+    assert.equal(before.launcher.commandRoot, await realpath(host));
+    assert.match(before.warnings.join("\n"), /launcher resolves .* not configured project root/);
+
+    const refused = await setLifecycleHook(nested, true, "codex");
+    assert.ok(refused.errors.some((error) => /project root does not match launcher root/.test(error)));
+    assert.deepEqual(refused.changed, []);
+    await assert.rejects(readFile(join(root, ".codex", "hooks.json")), { code: "ENOENT" });
+    await assert.rejects(readFile(join(root, ".codex", "coherence-hook")), { code: "ENOENT" });
+
+    const aligned = cfg(root, { codexProjectRoot: ".." });
+    const installed = await setLifecycleHook(aligned, true, "codex");
+    assert.deepEqual(installed.errors, []);
+    assert.equal(installed.inspection.present, true);
+    assert.equal(installed.inspection.launcher.rootAligned, true);
+    assert.equal(await readFile(join(host, ".codex", "coherence-root"), "utf8"), "app\n");
   } finally {
     await cleanup(host);
   }
@@ -235,11 +269,38 @@ hooks = false
   }
 });
 
+test("Codex control — managed-only mode excludes an otherwise configured project bundle", async () => {
+  const root = await tmpProject();
+  try {
+    await installTarget(root);
+    assert.equal((await setLifecycleHook(cfg(root), true, "codex")).inspection.present, true);
+    await writeCodex(root, "config.toml", `allow_managed_hooks_only = true
+
+[features]
+hooks = true
+`);
+    const inspection = inspectLifecycleHook(cfg(root), "codex");
+    assert.equal(inspection.valid, true);
+    assert.equal(inspection.configured, true, "the exact project artifacts remain installed");
+    assert.equal(inspection.present, false, "Codex will skip project hooks in managed-only mode");
+    assert.equal(inspection.codexConfig?.managedHooksOnly, true);
+    assert.match(inspection.warnings.join("\n"), /allow_managed_hooks_only = true/);
+
+    const repeat = await setLifecycleHook(cfg(root), true, "codex");
+    assert.deepEqual(repeat.errors, []);
+    assert.deepEqual(repeat.changed, [], "install does not rewrite the operator's disabling config");
+    assert.equal(repeat.inspection.present, false);
+  } finally {
+    await cleanup(root);
+  }
+});
+
 test("Codex control — relevant TOML detection is comment-aware and fails closed on malformed tables", async () => {
   const root = await tmpProject();
   try {
     await writeCodex(root, "config.toml", `# [hooks]
 note = "features.hooks = false # inert"
+managed_note = "allow_managed_hooks_only = true"
 [features]
 hooks = true # explicitly enabled
 `);
@@ -247,6 +308,7 @@ hooks = true # explicitly enabled
     assert.equal(clean.valid, true);
     assert.equal(clean.inlineHooks, false);
     assert.equal(clean.hooksDisabled, false);
+    assert.equal(clean.managedHooksOnly, false, "a mention inside a string is not configuration");
 
     await writeCodex(root, "config.toml", '[["hooks".Stop]]\n');
     const quoted = inspectCodexProjectConfig(cfg(root));

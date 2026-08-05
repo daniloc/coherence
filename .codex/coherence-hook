@@ -1,14 +1,14 @@
 #!/bin/sh
 set -eu
 
-claude_root=${CLAUDE_PROJECT_DIR:-$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)}
-IFS= read -r coherence_rel < "$claude_root/.claude/coherence-root"
-coherence_root=$(CDPATH= cd -- "$claude_root/$coherence_rel" && pwd -P)
+codex_root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd -P)
+IFS= read -r coherence_rel < "$codex_root/.codex/coherence-root"
+coherence_root=$(CDPATH= cd -- "$codex_root/$coherence_rel" && pwd -P)
 cd "$coherence_root"
 export COHERENCE_PROJECT_ROOT="$coherence_root"
-export COHERENCE_HOOK_HOST="claude"
+export COHERENCE_HOOK_HOST="codex"
 export COHERENCE_HOOK_TRANSPORT="launcher"
-export COHERENCE_HOOK_BUNDLE_FINGERPRINT="cf1983f14fb83f48fcef28c320cc73044d8ab6c5631bbf24c1a22f20daad9472"
+export COHERENCE_HOOK_BUNDLE_FINGERPRINT="9088f1e0f2e0d9a7694ad7d4fe116e6aa12775b62142d19529997c7003317a94"
 
 if [ -x "$coherence_root/node_modules/.bin/coherence-hook" ]; then
   exec "$coherence_root/node_modules/.bin/coherence-hook" "$@"

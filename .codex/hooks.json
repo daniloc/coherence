@@ -1,0 +1,56 @@
+{
+  "hooks": {
+    "SubagentStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "codex_root=$(git rev-parse --show-toplevel 2>/dev/null || pwd -P); \"$codex_root/.codex/coherence-hook\" SubagentStart"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "codex_root=$(git rev-parse --show-toplevel 2>/dev/null || pwd -P); \"$codex_root/.codex/coherence-hook\" SessionStart"
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "codex_root=$(git rev-parse --show-toplevel 2>/dev/null || pwd -P); \"$codex_root/.codex/coherence-hook\" SubagentStop"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "codex_root=$(git rev-parse --show-toplevel 2>/dev/null || pwd -P); \"$codex_root/.codex/coherence-hook\" Stop"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash|apply_patch|update_plan|mcp__.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "codex_root=$(git rev-parse --show-toplevel 2>/dev/null || pwd -P); \"$codex_root/.codex/coherence-hook\" PostToolUse"
+          }
+        ]
+      }
+    ]
+  }
+}

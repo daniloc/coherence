@@ -5,8 +5,9 @@
 // one small data file maps the stable host-side launcher to coherence's root. A host's
 // control bit is true only when that whole path is singular, canonical, enabled, and
 // runnable. It deliberately says nothing about runtime trust or observed execution.
-import { accessSync, constants, existsSync, readFileSync, statSync } from "node:fs";
+import { accessSync, constants, existsSync, readFileSync, realpathSync, statSync } from "node:fs";
 import { chmod, mkdir, rename, rm, writeFile } from "node:fs/promises";
+import { execFileSync } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
 import { dirname, join, relative, resolve } from "node:path";
@@ -27,9 +28,21 @@ export const POST_TOOL_USE_MATCHER = "Read|Grep|Glob|Write|Edit|MultiEdit|Notebo
 export const CODEX_POST_TOOL_USE_MATCHER = "Bash|apply_patch|update_plan|mcp__.*";
 export const CODEX_SESSION_START_MATCHER = "startup|resume|clear|compact";
 export const LIFECYCLE_HOOK_LAUNCHER = '"$CLAUDE_PROJECT_DIR/.claude/coherence-hook"';
-export const CODEX_LIFECYCLE_HOOK_LAUNCHER = 'codex_root=$(git rev-parse --show-toplevel 2>/dev/null || pwd); "$codex_root/.codex/coherence-hook"';
+export const CODEX_LIFECYCLE_HOOK_LAUNCHER = 'codex_root=$(git rev-parse --show-toplevel 2>/dev/null || pwd -P); "$codex_root/.codex/coherence-hook"';
 
 const BUNDLE_FINGERPRINT_TOKEN = "__COHERENCE_HOOK_BUNDLE_FINGERPRINT__";
+/** Bump when a hook-body wire meaning changes without a package-version change. */
+export const HOOK_BODY_PROTOCOL_VERSION = 1 as const;
+
+function packageVersion(): string {
+  try {
+    const parsed: unknown = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
+    return isObject(parsed) && typeof parsed.version === "string" ? parsed.version : "unversioned";
+  } catch { return "unversioned"; }
+}
+
+/** Old activity cannot prove a newly installed body merely because settings stayed still. */
+export const HOOK_BODY_BUILD_ID = `${packageVersion()}/protocol-${HOOK_BODY_PROTOCOL_VERSION}`;
 
 const CLAUDE_LIFECYCLE_HOOK_SCRIPT_TEMPLATE = `#!/bin/sh
 set -eu
@@ -56,7 +69,7 @@ exit 127
 const CODEX_LIFECYCLE_HOOK_SCRIPT_TEMPLATE = `#!/bin/sh
 set -eu
 
-codex_root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+codex_root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd -P)
 IFS= read -r coherence_rel < "$codex_root/.codex/coherence-root"
 coherence_root=$(CDPATH= cd -- "$codex_root/$coherence_rel" && pwd -P)
 cd "$coherence_root"
@@ -96,6 +109,12 @@ export interface HookLauncherInspection {
   path: string;
   /** Script + mapping + executable target are all current. */
   present: boolean;
+  /** The root carrying this host's checked-in hook control. */
+  configuredRoot: string;
+  /** The root the stable command will address (`git` top-level, or cwd outside Git). */
+  commandRoot: string;
+  /** False means the command cannot reach `path`, even if every file at `path` is exact. */
+  rootAligned: boolean;
   exists: boolean;
   canonical: boolean;
   executable: boolean;
@@ -118,6 +137,8 @@ export interface CodexProjectConfigInspection {
   inlineHooks: boolean;
   /** Only project-local `[features].hooks = false`; higher layers remain unknowable here. */
   hooksDisabled: boolean;
+  /** This setting excludes user, project, session, and plugin hooks at runtime. */
+  managedHooksOnly: boolean;
   error?: string;
 }
 
@@ -208,8 +229,9 @@ export function canonicalLifecycleHookSettings(host: HookHost = "claude"): JsonO
  */
 export function lifecycleHookBundleFingerprint(host: HookHost = "claude"): string {
   const authored = JSON.stringify({
-    version: 1,
+    version: 2,
     host,
+    hookBodyBuild: HOOK_BODY_BUILD_ID,
     settings: canonicalLifecycleHookSettings(host),
     launcherTemplate: launcherTemplateForHost(host),
   });
@@ -450,7 +472,36 @@ export function lifecycleHookScript(host: HookHost = "claude"): string {
   return host === "codex" ? CODEX_LIFECYCLE_HOOK_SCRIPT : LIFECYCLE_HOOK_SCRIPT;
 }
 
+function physicalRoot(path: string): string {
+  try { return realpathSync(path); } catch { return resolve(path); }
+}
+
+/**
+ * Mirror the stable Codex command's root choice before calling the control runnable.
+ * The command is intentionally path-free so one trusted definition travels between
+ * checkouts; that only works when the `.codex` owner is also Git's top-level. Outside
+ * Git the command falls back to its cwd, which Codex sets to the project root.
+ */
+function launcherCommandRoot(cfg: Config, host: HookHost): string {
+  const configuredRoot = resolveHookProjectRoot(cfg, host);
+  if (host !== "codex") return configuredRoot;
+  try {
+    const root = execFileSync("git", ["rev-parse", "--show-toplevel"], {
+      cwd: configuredRoot,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+      timeout: 2_000,
+    }).trim();
+    return root ? resolve(root) : configuredRoot;
+  } catch {
+    return configuredRoot;
+  }
+}
+
 function inspectLauncher(cfg: Config, host: HookHost): HookLauncherInspection {
+  const configuredRoot = resolveHookProjectRoot(cfg, host);
+  const commandRoot = launcherCommandRoot(cfg, host);
+  const rootAligned = physicalRoot(configuredRoot) === physicalRoot(commandRoot);
   const path = launcherPath(cfg, host);
   const actual = readText(path);
   const expectedMapping = lifecycleRootMapping(cfg, host);
@@ -463,7 +514,10 @@ function inspectLauncher(cfg: Config, host: HookHost): HookLauncherInspection {
   return {
     host,
     path,
-    present: canonical && executable && mappingPresent && target.present,
+    present: rootAligned && canonical && executable && mappingPresent && target.present,
+    configuredRoot,
+    commandRoot,
+    rootAligned,
     exists: actual !== undefined,
     canonical,
     executable,
@@ -498,21 +552,25 @@ function tomlCode(line: string): string {
 
 /**
  * This is deliberately a relevant-syntax scanner, not a pretend TOML parser. It proves
- * only the two project-level facts the control needs: whether another inline hook surface
- * exists, and whether this layer explicitly disables hooks. Higher config/trust layers
+ * only the project-level facts the control needs: whether another inline hook surface
+ * exists, and whether this layer explicitly disables project hooks. Higher config/trust layers
  * remain outside a repository inspection's authority.
  */
 export function inspectCodexProjectConfig(cfg: Config): CodexProjectConfigInspection {
   const path = join(resolveCodexProjectRoot(cfg), ".codex", "config.toml");
   if (!existsSync(path)) {
-    return { path, exists: false, valid: true, inlineHooks: false, hooksDisabled: false };
+    return {
+      path, exists: false, valid: true, inlineHooks: false,
+      hooksDisabled: false, managedHooksOnly: false,
+    };
   }
   let raw: string;
   try {
     raw = readFileSync(path, "utf8");
   } catch (error) {
     return {
-      path, exists: true, valid: false, inlineHooks: false, hooksDisabled: false,
+      path, exists: true, valid: false, inlineHooks: false,
+      hooksDisabled: false, managedHooksOnly: false,
       error: error instanceof Error ? error.message : String(error),
     };
   }
@@ -520,6 +578,7 @@ export function inspectCodexProjectConfig(cfg: Config): CodexProjectConfigInspec
   let section = "";
   let inlineHooks = false;
   let hooksDisabled = false;
+  let managedHooksOnly = false;
   for (const rawLine of raw.split(/\r?\n/)) {
     const line = tomlCode(rawLine);
     if (!line) continue;
@@ -531,7 +590,7 @@ export function inspectCodexProjectConfig(cfg: Config): CodexProjectConfigInspec
       if (!table) {
         if (/^\[+\s*(?:hooks|features)(?:[.\]\s]|$)/.test(headerCode)) {
           return {
-            path, exists: true, valid: false, inlineHooks, hooksDisabled,
+            path, exists: true, valid: false, inlineHooks, hooksDisabled, managedHooksOnly,
             error: "could not classify relevant Codex TOML table syntax",
           };
         }
@@ -545,6 +604,10 @@ export function inspectCodexProjectConfig(cfg: Config): CodexProjectConfigInspec
 
     const keyCode = line.replace(/["']/g, "");
     if (section === "" && /^hooks(?:\.|\s*=)/.test(keyCode)) inlineHooks = true;
+    if (section === ""
+      && /^(?:allow_managed_hooks_only|"allow_managed_hooks_only"|'allow_managed_hooks_only')\s*=\s*true(?:\s|$)/.test(line)) {
+      managedHooksOnly = true;
+    }
     if (section === "" && /^features\.(?:hooks|codex_hooks)\s*=\s*false(?:\s|$)/.test(keyCode)) {
       hooksDisabled = true;
     }
@@ -552,7 +615,7 @@ export function inspectCodexProjectConfig(cfg: Config): CodexProjectConfigInspec
       hooksDisabled = true;
     }
   }
-  return { path, exists: true, valid: true, inlineHooks, hooksDisabled };
+  return { path, exists: true, valid: true, inlineHooks, hooksDisabled, managedHooksOnly };
 }
 
 /** Inspect without mutating: the lifecycle control's read operation. */
@@ -580,11 +643,13 @@ export function inspectLifecycleHook(cfg: Config, host: HookHost = "claude"): Li
   if (local?.complete && !project.complete) warnings.push("the canonical bundle is local-only and will not travel with the repository");
   if (codexConfig?.inlineHooks) warnings.push("Codex config contains inline hooks; a singular project lifecycle path cannot be established");
   if (codexConfig?.hooksDisabled) warnings.push("Codex project config disables hooks (`features.hooks = false`)");
+  if (codexConfig?.managedHooksOnly) warnings.push("Codex project config excludes project hooks (`allow_managed_hooks_only = true`)");
+  if (!launcher.rootAligned) warnings.push(`Codex launcher resolves ${launcher.commandRoot}, not configured project root ${launcher.configuredRoot}`);
   if (launcher.exists && !launcher.canonical) warnings.push("the managed lifecycle launcher has drifted");
   if (launcher.mappingActual !== undefined && !launcher.mappingPresent) warnings.push("the lifecycle root mapping does not address this coherence root");
   return {
     host,
-    present: configured && !(codexConfig?.hooksDisabled ?? false),
+    present: configured && !(codexConfig?.hooksDisabled ?? false) && !(codexConfig?.managedHooksOnly ?? false),
     configured,
     valid,
     wiringPresent,
@@ -684,6 +749,11 @@ export async function setLifecycleHook(
   }
   if (present && codexConfig?.inlineHooks) {
     errors.push(`${codexConfig.path}: inline Codex hooks prevent a singular coherence lifecycle path`);
+  }
+  const launcher = inspectLauncher(cfg, host);
+  if (present && host === "codex" && !launcher.rootAligned) {
+    errors.push(`${launcher.configuredRoot}: Codex project root does not match launcher root ${launcher.commandRoot}; `
+      + "the stable launcher addresses Git's top-level .codex directory");
   }
   const target = runnableTarget(cfg);
   if (present && !target.present) {

@@ -19,8 +19,12 @@ const cleanEnv = (): NodeJS.ProcessEnv => {
   return env;
 };
 
-async function run(root: string, args: string[]): Promise<{ code: number; stdout: string; stderr: string }> {
-  return exec(process.execPath, [CLI, ...args], { cwd: root, env: cleanEnv() })
+async function run(
+  root: string,
+  args: string[],
+  env: NodeJS.ProcessEnv = cleanEnv(),
+): Promise<{ code: number; stdout: string; stderr: string }> {
+  return exec(process.execPath, [CLI, ...args], { cwd: root, env })
     .then((result) => ({ code: 0, stdout: result.stdout, stderr: result.stderr }))
     .catch((error: { code: number; stdout: string; stderr: string }) => ({
       code: error.code, stdout: error.stdout, stderr: error.stderr,
@@ -85,6 +89,29 @@ test("experiment CLI — create, alias inspect, close, retry, and open lens roun
       ? "s1=met::the focused contract now passes" : arg));
     assert.equal(changed.code, 2);
     assert.match(JSON.parse(changed.stdout).error, /already closed by immutable record/);
+  } finally { await cleanup(root); }
+});
+
+test("experiment CLI — ambient Codex identity attributes writers but never narrows inspect", async () => {
+  const root = await tmpProject({ "src/a.ts": "export const a = 1;\n" });
+  try {
+    const first = JSON.parse((await run(root, createArgs("owner-one"))).stdout);
+    const second = JSON.parse((await run(root, createArgs("owner-two"))).stdout);
+    const ambient = { ...cleanEnv(), CODEX_THREAD_ID: "ambient-codex-thread" };
+
+    const fleet = await run(root, ["experiment", "inspect", "--json"], ambient);
+    assert.equal(fleet.code, 0, fleet.stderr);
+    assert.deepEqual(JSON.parse(fleet.stdout).experiments.map(
+      (experiment: { opened: { id: string } }) => experiment.opened.id,
+    ).sort(), [first.id, second.id].sort(), "ambient writer identity must not hide other sessions' loops");
+
+    const narrowed = await run(root, [
+      "experiment", "inspect", "--session", "owner-one", "--json",
+    ], ambient);
+    assert.equal(narrowed.code, 0, narrowed.stderr);
+    assert.deepEqual(JSON.parse(narrowed.stdout).experiments.map(
+      (experiment: { opened: { id: string } }) => experiment.opened.id,
+    ), [first.id], "only an explicit --session narrows the merged experiment view");
   } finally { await cleanup(root); }
 });
 

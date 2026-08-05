@@ -2,7 +2,7 @@
 //
 // `economy` measures a structural neighbourhood, not cognition. Calling that neighbourhood
 // "what a reader must load" remains a conjecture until observed read sets and outcomes can
-// disagree with it. Claude-compatible PostToolUse hooks append explicit file reads to a
+// disagree with it. Host PostToolUse hooks append explicit file reads to a
 // TRANSIENT trace; Stop snapshots the trace against the patch and its predicted one-hop
 // closure. `coherence calibrate --outcome clean|defect` labels the same sample later.
 //
@@ -17,11 +17,15 @@ import { buildGraph } from "./derive.ts";
 import { changedBetween } from "./structural.ts";
 import { importAdjacency } from "./economy.ts";
 import { patchFingerprint } from "./signal.ts";
-import { readTrace, type ReadEvent as TraceEvent } from "./read-trace.ts";
-export { hookReadCandidates, recordHookReads, readTrace, type ReadEvent } from "./read-trace.ts";
+import { readTraceDetailed, type ReadEvent as TraceEvent } from "./read-trace.ts";
+export { hookReadCandidates, recordHookReads, readTrace, readTraceDetailed, type ReadEvent } from "./read-trace.ts";
 
 export type CalibrationOutcome = "unknown" | "clean" | "defect";
-export type CalibrationAttribution = "session-writes" | "worktree-union";
+export type CalibrationAttribution =
+  | "session-writes"
+  | "parent-session-aggregate"
+  | "legacy-unscoped"
+  | "worktree-union";
 
 export interface CalibrationSample {
   id: string;
@@ -44,6 +48,8 @@ export interface CalibrationStats {
   defectRateWithMisses: number | null;
   defectRateWithoutMisses: number | null;
   sharedWorktreeSamples: number;
+  parentAggregateSamples: number;
+  legacyUnscopedSamples: number;
 }
 
 const samplesDir = (cfg: Config) => join(cfg.root, ".coherence", "calibration");
@@ -84,10 +90,16 @@ export function calibrationPaths(
   const changed = recordedWrites.length
     ? recordedWrites.filter((path) => worktree.includes(path))
     : worktree;
+  const weakestTraceScope: CalibrationAttribution = trace.some((event) => !event.observation
+    || event.observation.attribution === "unknown")
+    ? "legacy-unscoped"
+    : trace.some((event) => event.observation?.attribution === "parent-fallback")
+      ? "parent-session-aggregate"
+      : "session-writes";
   return {
     changed,
     observed: [...new Set(trace.filter((e) => e.mode !== "write").map((e) => e.path))].sort(),
-    attribution: recordedWrites.length ? "session-writes" : "worktree-union",
+    attribution: recordedWrites.length ? weakestTraceScope : "worktree-union",
   };
 }
 
@@ -100,11 +112,14 @@ export async function recordCalibrationSample(
   graph?: Graph,
   now = new Date().toISOString(),
 ): Promise<CalibrationSample | null> {
-  const trace = readTrace(cfg, session);
-  // A host with write-bearing PostToolUse hooks gives per-agent attribution. Older/other
-  // hosts fall back loudly to the shared worktree domain; formatCalibration names this
-  // observational ceiling rather than pretending the union belongs to one agent.
-  const { changed, observed, attribution } = calibrationPaths(trace, changedBetween(cfg, "HEAD", null));
+  const trace = readTraceDetailed(cfg, session);
+  // Damage cannot become a smaller, cleaner-looking observation. Status names the lost
+  // rows; calibration declines to mint a sample from a window it cannot account for.
+  if (trace.unreadable) return null;
+  // Exact host rows, Codex parent-session aggregates, legacy rows, and the shared-worktree
+  // fallback stay distinct. In particular, parent-only Codex writes are never relabeled
+  // as one child's patch merely because they occupy one session file.
+  const { changed, observed, attribution } = calibrationPaths(trace.rows, changedBetween(cfg, "HEAD", null));
   if (!changed.length || !observed.length) return null;
   const patch = await patchFingerprint(cfg, "HEAD", changed);
   const predicted = [...predictedReadSet(graph ?? await buildGraph(cfg), changed)].sort();
@@ -158,6 +173,8 @@ export function calibrationStats(samples: CalibrationSample[]): CalibrationStats
     defectRateWithMisses: defectRate(withMisses),
     defectRateWithoutMisses: defectRate(withoutMisses),
     sharedWorktreeSamples: samples.filter((x) => !x.attribution || x.attribution === "worktree-union").length,
+    parentAggregateSamples: samples.filter((x) => x.attribution === "parent-session-aggregate").length,
+    legacyUnscopedSamples: samples.filter((x) => x.attribution === "legacy-unscoped").length,
   };
 }
 
@@ -171,7 +188,9 @@ export function formatCalibration(samples: CalibrationSample[]): string[] {
   lines.push(`  mean observed reads outside prediction: ${pct(s.meanObservedOutside)}`);
   lines.push(`  defect rate with predicted files unread: ${pct(s.defectRateWithMisses)}`);
   lines.push(`  defect rate with full predicted coverage: ${pct(s.defectRateWithoutMisses)}`);
-  lines.push(`  attribution: ${s.sharedWorktreeSamples} sample(s) used the shared worktree union; the rest used explicit session writes.`);
+  const exact = s.samples - s.sharedWorktreeSamples - s.parentAggregateSamples - s.legacyUnscopedSamples;
+  lines.push(`  attribution: ${exact} exact-session · ${s.parentAggregateSamples} parent-session aggregate ·`
+    + ` ${s.legacyUnscopedSamples} legacy unscoped · ${s.sharedWorktreeSamples} shared-worktree sample(s).`);
   lines.push("  lower bound: shell/editor/remembered reads are not inferred; correlation is not causation.");
   return lines;
 }

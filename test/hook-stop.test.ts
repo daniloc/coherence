@@ -9,7 +9,8 @@ import { tmpProject, cleanup } from "./_helpers.ts";
 import { loadConfig } from "../src/config.ts";
 import { recordHookReads } from "../src/read-trace.ts";
 import { readCalibrationSamples } from "../src/calibration.ts";
-import { readJournal } from "../src/decisions.ts";
+import { appendDecision, readJournal } from "../src/decisions.ts";
+import { hookStatus, reportHooks } from "../src/hooks.ts";
 
 const HOOK_CLI = join(dirname(fileURLToPath(import.meta.url)), "..", "src", "hook-cli.ts");
 
@@ -98,6 +99,90 @@ test("hooks — main Stop snapshots without feedback while SubagentStop alone re
   } finally {
     await cleanup(owedRoot);
   }
+});
+
+test("hooks — SubagentStop counts only the exact child while open conjectures stay repo-wide", async () => {
+  const root = await repo();
+  try {
+    const cfg = await loadConfig(root);
+    appendDecision(cfg, {
+      kind: "decision", chose: "child choice", because: "child evidence", session: "child-a",
+    });
+    appendDecision(cfg, {
+      kind: "decision", chose: "parent choice", because: "parent evidence", session: "parent",
+    });
+    appendDecision(cfg, {
+      kind: "conjecture", chose: "other session question", because: "not chased yet",
+      couldBe: ["the subject changed"], discriminatedBy: "run the discriminator", session: "child-b",
+    });
+
+    const stopped = hook(root, "SubagentStop", { session_id: "parent", agent_id: "child-a" });
+    assert.equal(stopped.status, 0, stopped.stderr);
+    const report = JSON.parse(stopped.stdout).hookSpecificOutput.additionalContext as string;
+    assert.match(report, /DECISION JOURNAL: 1 entry recorded by this child session\./);
+    assert.doesNotMatch(report, /DECISION JOURNAL: 3 entries/,
+      "the repository total must not masquerade as this child's journal count");
+    assert.match(report, /1 OPEN CONJECTURE\(S\) in this repo/,
+      "the advisory tail deliberately remains repository-wide");
+  } finally { await cleanup(root); }
+});
+
+test("hooks — Codex SubagentStop without agent_id refuses parent-as-child attribution", async () => {
+  const root = await repo();
+  try {
+    const cfg = await loadConfig(root);
+    await writeFile(join(root, "app/app.ts"), "export const value = 2;\n");
+    appendDecision(cfg, {
+      kind: "decision", chose: "parent-owned choice", because: "parent evidence", session: "codex-parent",
+    });
+    // If the parent id were incorrectly treated as the child id, these two rows would
+    // be enough to mint a calibration sample for the child's stop.
+    recordHookReads(cfg, {
+      session_id: "codex-parent", tool_name: "Write",
+      tool_input: { file_path: join(root, "app/app.ts") },
+    });
+    recordHookReads(cfg, {
+      session_id: "codex-parent", tool_name: "Read",
+      tool_input: { file_path: join(root, "app/app.spec.md") },
+    });
+
+    const stopped = hook(root, "SubagentStop", { session_id: "codex-parent" }, "codex");
+    assert.equal(stopped.status, 0, stopped.stderr);
+    const output = JSON.parse(stopped.stdout);
+    assert.equal(output.decision, "block");
+    assert.match(output.reason, /child-session count unavailable/);
+    assert.match(output.reason, /no exact agent_id/);
+    assert.match(output.reason, /parent session id cannot identify which child/);
+    assert.doesNotMatch(output.reason, /DECISION JOURNAL: 1 entry recorded/,
+      "the parent's real entry must not be charged to an unidentified child");
+    assert.deepEqual(readCalibrationSamples(cfg), [],
+      "an unidentified child's stop cannot snapshot the parent's mixed trace");
+
+    await writeFile(join(root, ".coherence/read-traces/codex-parent.jsonl"), "{ torn trace\n", { flag: "a" });
+    const current = hookStatus(cfg, "codex", "codex-parent").observation.current!;
+    assert.deepEqual(current.trace, {
+      reads: 1,
+      writes: 1,
+      attribution: "parent-session-aggregate",
+      scope: { ownerSession: 0, parentSessionAggregate: 2, unscoped: 0 },
+      bundle: { exactLauncher: 0, staleLauncher: 0, direct: 2, legacy: 0 },
+      unreadable: 1,
+    }, "path rows retain their parent-domain ceiling, transport, and actual read damage");
+
+    const lines: string[] = [];
+    const log = console.log;
+    console.log = (...values: unknown[]) => { lines.push(values.map(String).join(" ")); };
+    try { reportHooks(cfg, false, "codex", "codex-parent"); }
+    finally { console.log = log; }
+    const status = lines.join("\n");
+    assert.match(status, /repository journal history: .*durable history, not proof this host or bundle ran/);
+    assert.match(status, /path trace \(session file\): 1 read · 1 write — parent-session-aggregate/);
+    assert.match(status, /scope: 0 owner-session · 2 parent-session aggregate · 0 unscoped/);
+    assert.match(status, /bundle: 0 exact launcher\/bundle · 0 stale\/other launcher · 2 direct · 0 legacy/);
+    assert.match(status, /trace damage: 1 unreadable row\(s\) skipped/);
+    assert.doesNotMatch(status, /runtime observation: OBSERVED/,
+      "durable journal headers must not be promoted into current-host execution evidence");
+  } finally { await cleanup(root); }
 });
 
 test("hooks — Codex gets its own subagent continuation shape and session refresh is idempotent", async () => {

@@ -28,10 +28,11 @@ import {
 } from "./control.ts";
 import { readDue, formatDue } from "./due.ts";
 import {
-  readActivity, recordActivity,
+  activityReplayKey, readActivity, recordActivity,
+  type ActivityRow,
   type ActivityHost, type ActivityTransport,
 } from "./activity.ts";
-import { readTrace } from "./read-trace.ts";
+import { readTraceDetailed } from "./read-trace.ts";
 import { readExperiments } from "./experiment.ts";
 import type { Config } from "./types.ts";
 
@@ -150,7 +151,9 @@ export async function runHook(cfg: Config, event: string): Promise<number> {
   let payload: unknown = {};
   try { payload = raw.trim() ? JSON.parse(raw) : {}; } catch { /* hooks must survive a host's malformed payload */ }
   const p = payload && typeof payload === "object" ? payload as Record<string, unknown> : {};
-  const hostScope = p.agent_id ?? p.agentId ?? p.session_id ?? p.sessionId;
+  const agentScope = p.agent_id ?? p.agentId;
+  const sessionScope = p.session_id ?? p.sessionId;
+  const hostScope = agentScope ?? sessionScope;
   const host = hookHost();
 
   // Every lifecycle crossing leaves a cheap, transient heartbeat. Unlike a journal
@@ -225,11 +228,18 @@ export async function runHook(cfg: Config, event: string): Promise<number> {
     if (stopFeedbackActive(payload)) return 0;
     // The subagent's reply is about to cross an ownership seam. Snapshot its observed
     // reads and give it one chance to return a complete report plus the shared patch signal.
-    const session = String(hostScope ?? process.env.COHERENCE_SESSION ?? "unknown");
-    const [{ recordCalibrationSample }, { analyzeChange, formatSignal }] = await Promise.all([
-      import("./calibration.ts"), import("./signal.ts"),
+    // A parent session id is NOT a child id: Codex currently omits agent_id on some child
+    // events, and charging those rows to the parent would turn concurrency into false
+    // precision. In that case the hook still reports the repo-wide signal, but records no
+    // child calibration and names the attribution ceiling in the report.
+    const childSession = typeof agentScope === "string" && agentScope.length ? agentScope : null;
+    const [{ analyzeChange, formatSignal }, calibration] = await Promise.all([
+      import("./signal.ts"),
+      childSession ? import("./calibration.ts") : Promise.resolve(null),
     ]);
-    await recordCalibrationSample(cfg, session).catch(() => null);
+    if (childSession && calibration) {
+      await calibration.recordCalibrationSample(cfg, childSession).catch(() => null);
+    }
     const change: StopChangeFeedback = await analyzeChange(cfg).then((s) => ({
       kind: "available" as const,
       text: formatSignal(s).join("\n"),
@@ -237,7 +247,7 @@ export async function runHook(cfg: Config, event: string): Promise<number> {
       kind: "unavailable" as const,
       text: `CHANGE SIGNAL unavailable: ${e instanceof Error ? e.message : String(e)}`,
     }));
-    const feedback = composeStopFeedback(event, stopReport(cfg), change);
+    const feedback = composeStopFeedback(event, stopReport(cfg, childSession), change);
     if (feedback !== null) emit(host, event, feedback);
     return 0;
   }
@@ -250,10 +260,11 @@ export async function runHook(cfg: Config, event: string): Promise<number> {
 /** What a subagent is told as it finishes. Split out of `runHook` so it is reachable
  *  without a stdin pipe — the hook body drains stdin, and a report you can only observe
  *  by feeding a process is a report nobody tests. */
-export function stopReport(cfg: Config): string {
+export function stopReport(cfg: Config, childSession: string | null = null): string {
   const cli = projectCli(cfg);
   const { records, unreadable } = readJournal(cfg);
-  const n = records.filter((r) => r.kind !== "session").length;
+  const n = childSession === null ? 0 : records
+    .filter((r) => r.kind !== "session" && r.session === childSession).length;
   // A REPORT, NOT A QUESTION — and that distinction is load-bearing, because the first
   // version got it wrong in a way that was invisible until agents started answering it.
   // It ended "anything you decided and did not log is about to leave with your context",
@@ -266,11 +277,19 @@ export function stopReport(cfg: Config): string {
   // reminder does not need to be a prompt, because `decide` was already in the startup
   // instruction and the agent has it. The only DIRECTIVE here is the restatement below,
   // and it asks for substance rather than for a status report on compliance.
-  const msg = n === 0
-    ? "DECISION JOURNAL: nothing logged this session."
-    : `DECISION JOURNAL: ${n} entr${n === 1 ? "y" : "ies"} recorded`
-      + (unreadable ? ` (${unreadable} unreadable line(s), skipped)` : "")
-      + ".";
+  const msg = childSession === null
+    ? "DECISION JOURNAL: child-session count unavailable — this SubagentStop supplied"
+      + " no exact agent_id. A parent session id cannot identify which child wrote an entry."
+    : n === 0
+      ? "DECISION JOURNAL: nothing logged by this child session."
+      : `DECISION JOURNAL: ${n} entr${n === 1 ? "y" : "ies"} recorded by this child session.`;
+  // Damage is known only for the merged repository read. Attaching it parenthetically to
+  // the child count would imply we know which session owned the torn rows, so keep it as a
+  // separately scoped warning.
+  const damage = unreadable
+    ? `\n\nREPOSITORY JOURNAL DAMAGE: ${unreadable} unreadable line(s) skipped; child and`
+      + " repo-wide counts cover readable rows only."
+    : "";
   // STOP IS WHERE AN OPEN QUESTION IS CHEAPEST TO ANSWER AND ABOUT TO BECOME MOST
   // EXPENSIVE — the agent still holds the context that noticed it, and is one turn from
   // losing it. Repo-wide, and phrased as such: attributing another session's open
@@ -286,7 +305,7 @@ export function stopReport(cfg: Config): string {
   const restate = "\n\nYOUR REPLY MUST RESTATE YOUR FINAL REPORT — IT IS THE ONLY THING"
     + " YOUR CALLER SEES. A terse sign-off discards everything you learned that is not"
     + " already in the code.";
-  return msg + restate + (open.length
+  return msg + damage + restate + (open.length
     ? `\n\n${open.length} OPEN CONJECTURE(S) in this repo — noticed, not yet chased.`
       + ` If your work settled one, close it with \`${cli} resolved <id> --because ...\`;`
       + ` if one is not worth chasing, \`${cli} dismiss <id> --because ...\` retires it.`
@@ -320,9 +339,10 @@ export interface HookStatus {
   host: HookHost;
   control: LifecycleHookInspection;
   observation: {
-    sessionsOpenedByHook: number;
+    journalSessionHeaders: number;
     journalEntries: number;
     sessions: number;
+    unreadableJournal: number;
     current: CurrentHookObservation | null;
   };
 }
@@ -334,8 +354,15 @@ export interface CurrentHookObservation {
   staleLauncherEvents: number;
   directEvents: number;
   lastExactAt: string | null;
-  reads: number;
-  writes: number;
+  trace: {
+    reads: number;
+    writes: number;
+    /** Weakest row scope in this session file; parent aggregates may include descendants. */
+    attribution: "none" | "owner-session" | "parent-session-aggregate" | "unscoped";
+    scope: { ownerSession: number; parentSessionAggregate: number; unscoped: number };
+    bundle: { exactLauncher: number; staleLauncher: number; direct: number; legacy: number };
+    unreadable: number;
+  };
   updatePlanEvents: number;
   parentFallbackEvents: number;
   unreadableActivity: number;
@@ -352,16 +379,18 @@ export function activeHookHost(explicit?: HookHost | null): HookHost {
 
 /** Never pick the newest session: concurrency makes "latest" an attribution bug. */
 export function activeHookSession(host: HookHost, explicit?: string | null): string | null {
-  return explicit ?? process.env.COHERENCE_SESSION
+  const selected = explicit ?? process.env.COHERENCE_SESSION
     ?? (host === "codex" ? process.env.CODEX_THREAD_ID : undefined)
     ?? null;
+  return selected?.trim() ? selected : null;
 }
 
-function uniqueActivity<T extends { eventId: string | null; at: string }>(rows: T[]): T[] {
-  const addressed = new Map<string, T>();
-  const unaddressed: T[] = [];
+function uniqueActivity(rows: ActivityRow[]): ActivityRow[] {
+  const addressed = new Map<string, ActivityRow>();
+  const unaddressed: ActivityRow[] = [];
   for (const row of rows) {
-    if (row.eventId) addressed.set(row.eventId, row); // last replay carries the best result
+    const key = activityReplayKey(row);
+    if (key) addressed.set(key, row); // last same-domain replay carries the best result
     else unaddressed.push(row); // no host identity means there is nothing honest to dedupe on
   }
   return [...unaddressed, ...addressed.values()].sort((a, b) => a.at.localeCompare(b.at));
@@ -377,7 +406,7 @@ function commandCounts(rows: ReturnType<typeof readActivity>["rows"], kind: "ver
   };
 }
 
-function currentObservation(cfg: Config, control: LifecycleHookInspection, session: string): CurrentHookObservation {
+export function currentObservation(cfg: Config, control: LifecycleHookInspection, session: string): CurrentHookObservation {
   const activityRead = readActivity(cfg, session);
   const activity = uniqueActivity(activityRead.rows);
   const exact = activity.filter((row) => row.transport === "launcher"
@@ -385,7 +414,33 @@ function currentObservation(cfg: Config, control: LifecycleHookInspection, sessi
   const stale = activity.filter((row) => row.transport === "launcher"
     && (row.host !== control.host || row.bundleHash !== control.bundleFingerprint));
   const direct = activity.filter((row) => row.transport === "direct");
-  const trace = readTrace(cfg, session);
+  const traceRead = readTraceDetailed(cfg, session);
+  const trace = traceRead.rows;
+  const traceScope = { ownerSession: 0, parentSessionAggregate: 0, unscoped: 0 };
+  const traceBundle = { exactLauncher: 0, staleLauncher: 0, direct: 0, legacy: 0 };
+  for (const row of trace) {
+    const observed = row.observation;
+    if (!observed) {
+      traceScope.unscoped++;
+      traceBundle.legacy++;
+      continue;
+    }
+    if ((observed.attribution === "agent" && observed.agentId === row.session)
+      || (observed.attribution === "session" && observed.agentId === null && observed.parentSession === null)) {
+      traceScope.ownerSession++;
+    } else if (observed.attribution === "parent-fallback"
+      && observed.agentId === null && observed.parentSession === row.session) {
+      traceScope.parentSessionAggregate++;
+    } else {
+      traceScope.unscoped++;
+    }
+    if (observed.transport === "direct") traceBundle.direct++;
+    else if (observed.host === control.host && observed.bundleHash === control.bundleFingerprint) {
+      traceBundle.exactLauncher++;
+    } else {
+      traceBundle.staleLauncher++;
+    }
+  }
   let experiment: CurrentHookObservation["experiment"];
   try {
     const ledger = readExperiments(cfg);
@@ -402,18 +457,26 @@ function currentObservation(cfg: Config, control: LifecycleHookInspection, sessi
   }
   return {
     session,
-    state: exact.length ? "observed" : stale.length ? "stale" : "unobserved",
-    exactLauncherEvents: exact.length,
+    state: session !== "unknown" && exact.length ? "observed" : stale.length ? "stale" : "unobserved",
+    exactLauncherEvents: session === "unknown" ? 0 : exact.length,
     staleLauncherEvents: stale.length,
     directEvents: direct.length,
-    lastExactAt: exact.at(-1)?.at ?? null,
-    reads: trace.filter((row) => row.mode === "read").length,
-    writes: trace.filter((row) => row.mode === "write").length,
-    updatePlanEvents: exact.filter((row) => row.event === "PostToolUse" && row.tool === "update_plan").length,
-    parentFallbackEvents: exact.filter((row) => row.attribution === "parent-fallback").length,
+    lastExactAt: session === "unknown" ? null : exact.at(-1)?.at ?? null,
+    trace: {
+      reads: trace.filter((row) => row.mode === "read").length,
+      writes: trace.filter((row) => row.mode === "write").length,
+      attribution: traceScope.unscoped ? "unscoped"
+        : traceScope.parentSessionAggregate ? "parent-session-aggregate"
+          : trace.length ? "owner-session" : "none",
+      scope: traceScope,
+      bundle: traceBundle,
+      unreadable: traceRead.unreadable,
+    },
+    updatePlanEvents: session === "unknown" ? 0 : exact.filter((row) => row.event === "PostToolUse" && row.tool === "update_plan").length,
+    parentFallbackEvents: session === "unknown" ? 0 : exact.filter((row) => row.attribution === "parent-fallback").length,
     unreadableActivity: activityRead.unreadable,
-    verification: commandCounts(exact, "verification"),
-    intervention: commandCounts(exact, "intervention"),
+    verification: commandCounts(session === "unknown" ? [] : exact, "verification"),
+    intervention: commandCounts(session === "unknown" ? [] : exact, "intervention"),
     experiment,
   };
 }
@@ -421,7 +484,7 @@ function currentObservation(cfg: Config, control: LifecycleHookInspection, sessi
 /** Structural configuration, historical memory, and this exact session stay separate. */
 export function hookStatus(cfg: Config, host: HookHost = "claude", session?: string | null): HookStatus {
   const control = inspectLifecycleHook(cfg, host);
-  const { records, sessions } = readJournal(cfg);
+  const { records, sessions, unreadable } = readJournal(cfg);
   const opened = records.filter((r) => r.kind === "session");
   const entries = records.length - opened.length;
   const currentSession = activeHookSession(host, session);
@@ -429,9 +492,10 @@ export function hookStatus(cfg: Config, host: HookHost = "claude", session?: str
     host,
     control,
     observation: {
-      sessionsOpenedByHook: new Set(opened.map((record) => record.session)).size,
+      journalSessionHeaders: new Set(opened.map((record) => record.session)).size,
       journalEntries: entries,
       sessions: sessions.length,
+      unreadableJournal: unreadable,
       current: currentSession ? currentObservation(cfg, control, currentSession) : null,
     },
   };
@@ -456,10 +520,12 @@ function printHookStatus(status: HookStatus, json = false): void {
   if (!control.launcher.canonical) console.log(`  script: ${control.launcher.exists ? "DRIFTED" : "MISSING"}`);
   if (!control.launcher.mappingPresent) console.log(`  root mapping: ${control.launcher.mappingActual === undefined ? "MISSING" : "DRIFTED"} (expected ${control.launcher.mappingExpected})`);
   console.log(`  target: ${control.launcher.targetPresent ? control.launcher.targetKind.toUpperCase() : "MISSING"} (${control.launcher.targetPath})`);
-  console.log(`runtime observation: ${observation.sessionsOpenedByHook
-    ? `OBSERVED — ${observation.sessionsOpenedByHook} session(s) opened by a hook`
-    : "UNOBSERVED — no hook-opened session is recorded"}`);
-  console.log(`journal: ${observation.journalEntries} entr${observation.journalEntries === 1 ? "y" : "ies"} across ${observation.sessions} session(s)`);
+  console.log(`repository journal history: ${observation.journalEntries} entr${observation.journalEntries === 1 ? "y" : "ies"}`
+    + ` across ${observation.sessions} session(s) · ${observation.journalSessionHeaders} session header(s)`
+    + " — durable history, not proof this host or bundle ran");
+  if (observation.unreadableJournal) {
+    console.log(`  journal damage: ${observation.unreadableJournal} unreadable row(s) skipped`);
+  }
   if (!observation.current) {
     console.log("current session: UNKNOWN — pass --session (no newest-session fallback)");
   } else {
@@ -468,7 +534,17 @@ function printHookStatus(status: HookStatus, json = false): void {
     console.log(`  exact launcher/bundle events: ${current.exactLauncherEvents}`
       + `${current.staleLauncherEvents ? ` · stale/other bundle: ${current.staleLauncherEvents}` : ""}`
       + `${current.directEvents ? ` · direct probes: ${current.directEvents}` : ""}`);
-    console.log(`  paths: ${current.reads} read · ${current.writes} write (explicit-path lower bound)`);
+    console.log(`  path trace (session file): ${current.trace.reads} read · ${current.trace.writes} write`
+      + ` — ${current.trace.attribution}`);
+    console.log(`    scope: ${current.trace.scope.ownerSession} owner-session ·`
+      + ` ${current.trace.scope.parentSessionAggregate} parent-session aggregate ·`
+      + ` ${current.trace.scope.unscoped} unscoped`);
+    console.log(`    bundle: ${current.trace.bundle.exactLauncher} exact launcher/bundle ·`
+      + ` ${current.trace.bundle.staleLauncher} stale/other launcher ·`
+      + ` ${current.trace.bundle.direct} direct · ${current.trace.bundle.legacy} legacy`);
+    if (current.trace.unreadable) {
+      console.log(`    trace damage: ${current.trace.unreadable} unreadable row(s) skipped`);
+    }
     console.log(`  plan tool: ${current.updatePlanEvents} update(s) · verification ${current.verification.success}/${current.verification.total}`
       + ` · regulation ${current.intervention.success}/${current.intervention.total}`);
     if (current.unreadableActivity) console.log(`  activity damage: ${current.unreadableActivity} unreadable row(s) — exact experiment attribution will refuse`);

@@ -13,7 +13,7 @@ import {
   type DoctrineRule,
   type RegulationAction,
 } from "./doctrine.ts";
-import { inspectLifecycleHook } from "./control.ts";
+import { inspectLifecycleHook, type HookHost } from "./control.ts";
 import { analyzeChange, signalState } from "./signal.ts";
 import { Unrunnable } from "./floor.ts";
 
@@ -31,6 +31,8 @@ export interface RegulationObservation {
 export interface RegulationReading {
   doctrine: string;
   scope: "shared-worktree";
+  /** The agent host whose control this invocation is regulating. */
+  host: HookHost;
   observations: RegulationObservation[];
   limitations: string[];
 }
@@ -47,6 +49,7 @@ export interface RegulationDecision {
   id: string;
   action: RegulationAction;
   scope: "shared-worktree";
+  host: HookHost;
   selected?: SelectedRegulation;
   /** Counts after exact duplicates have been collapsed. */
   potential: {
@@ -130,6 +133,13 @@ export function selectRegulation(reading: RegulationReading): RegulationDecision
       `scope:${String(reading.scope)}`,
     ));
   }
+  if (reading.host !== "claude" && reading.host !== "codex") {
+    candidates.push(refusal(
+      "host",
+      `reading names unsupported agent host ${String(reading.host)}`,
+      `host:${String(reading.host)}`,
+    ));
+  }
 
   const known = new Set(ANTI_ENTROPY_DOCTRINE.rules.map((rule) => rule.id));
   for (const [id, variants] of [...byRule].sort(([a], [b]) => byteCompare(a, b))) {
@@ -169,12 +179,21 @@ export function selectRegulation(reading: RegulationReading): RegulationDecision
       candidates.push(refusal(rule.id, invalid, `invalid-command:${rule.id}`));
       continue;
     }
+    const command = rule.command ? {
+      name: rule.command.name,
+      args: [
+        ...rule.command.args,
+        ...(rule.command.hostScoped && (reading.host === "claude" || reading.host === "codex")
+          ? ["--host", reading.host]
+          : []),
+      ],
+    } : undefined;
     candidates.push({
       action: rule.response,
       rule: rule.id,
       evidence: observation.evidence,
       remedy: rule.remedy,
-      ...(rule.command ? { command: { name: rule.command.name, args: [...rule.command.args] } } : {}),
+      ...(command ? { command } : {}),
       key: `violation:${rule.id}:${observation.fingerprint ?? ""}:${observation.evidence}`,
     });
   }
@@ -191,6 +210,7 @@ export function selectRegulation(reading: RegulationReading): RegulationDecision
   const identity = JSON.stringify({
     doctrine: DOCTRINE_ID,
     scope: "shared-worktree",
+    host: reading.host,
     action,
     candidates: candidates.map(({ action: kind, rule, evidence, key }) => ({ action: kind, rule, evidence, key })),
     limitations,
@@ -201,6 +221,7 @@ export function selectRegulation(reading: RegulationReading): RegulationDecision
     id,
     action,
     scope: "shared-worktree",
+    host: reading.host,
     ...(selected ? {
       selected: {
         rule: selected.rule,
@@ -234,13 +255,13 @@ export function formatRegulation(
   if (options.json) return [JSON.stringify(decision, null, 2)];
   if (decision.action === "release") {
     return [
-      `REGULATION release · ${decision.doctrine} · ${decision.id}`,
+      `REGULATION release · ${decision.host} · ${decision.doctrine} · ${decision.id}`,
       "  No intervention under the rules v1 actually evaluated; this is not a proof of correctness.",
     ];
   }
   const selected = decision.selected!;
   const lines = [
-    `REGULATION ${decision.action} · ${selected.rule} · ${decision.id}`,
+    `REGULATION ${decision.action} · ${decision.host} · ${selected.rule} · ${decision.id}`,
     `  ${selected.evidence}`,
   ];
   if (selected.remedy) lines.push(`  ${selected.remedy}`);
@@ -254,25 +275,27 @@ export interface RegulateOptions {
   check?: boolean;
   json?: boolean;
   cli?: readonly string[];
+  host?: HookHost;
 }
 
 /** Read the two live v1 sensors. No writes. */
 export async function observeRegulation(
   cfg: Config,
   graph?: Graph,
-  options: Pick<RegulateOptions, "since"> = {},
+  options: Pick<RegulateOptions, "since" | "host"> = {},
 ): Promise<RegulationReading> {
   const observations: RegulationObservation[] = [];
   const limitations: string[] = [];
 
-  const control = inspectLifecycleHook(cfg);
+  const host: HookHost = options.host ?? (process.env.CODEX_THREAD_ID ? "codex" : "claude");
+  const control = inspectLifecycleHook(cfg, host);
   if (!control.valid) {
     const errors = control.files.filter((file) => !file.valid)
       .map((file) => `${file.path}: ${file.error ?? "invalid settings"}`);
     observations.push({
       rule: "canonical-lifecycle-control",
       status: "unavailable",
-      evidence: errors.join("; ") || "lifecycle settings could not be interpreted",
+      evidence: errors.join("; ") || `${host} lifecycle settings could not be interpreted`,
     });
   } else if (!control.launcher.targetPresent) {
     observations.push({
@@ -284,13 +307,13 @@ export async function observeRegulation(
     observations.push({
       rule: "canonical-lifecycle-control",
       status: "satisfied",
-      evidence: "the canonical five-event bundle, launcher, root mapping, and target are present",
+      evidence: `the canonical ${host} five-event bundle, launcher, root mapping, and target are present`,
     });
   } else {
     observations.push({
       rule: "canonical-lifecycle-control",
       status: "violated",
-      evidence: control.warnings[0] ?? "the complete canonical runnable lifecycle control is absent",
+      evidence: control.warnings[0] ?? `the complete canonical runnable ${host} lifecycle control is absent`,
     });
   }
 
@@ -316,7 +339,7 @@ export async function observeRegulation(
     });
   }
 
-  return { doctrine: DOCTRINE_ID, scope: "shared-worktree", observations, limitations };
+  return { doctrine: DOCTRINE_ID, scope: "shared-worktree", host, observations, limitations };
 }
 
 /** Explicit CLI surface. Report mode observes; --check turns intervention into a gate. */

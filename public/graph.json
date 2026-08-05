@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-08-05 01:06Z",
+  "generatedAt": "2026-08-05 03:43Z",
   "root": "coherence",
-  "absRoot": "/Users/daniloc/Documents/Development/coherence",
+  "absRoot": "/private/tmp/coherence-codex-field",
   "nodes": [
     {
       "id": "c:.",
@@ -14,7 +14,7 @@
         "passes test \"control — this repository's own lifecycle control is PRESENT\""
       ],
       "prose": "Implementation belongs to the nested source and test components. This root component\nkeeps only the files that establish how those components are built, read, and released.",
-      "why": "An agent should encounter the project's purpose and its ownership seams before source\ndetail. The project hook wiring also records which repository reads informed a change and\nwhich decisions survived it. Keeping coordination separate from implementation makes that\nfirst read small while still checking that every deeper entry point is reachable.\n\nThis spec once claimed five obvious files existed at root; three were pruned rather than\ndressed up, because a root claim earns its line only when the failure it detects would\notherwise be SILENT. `package.json`, `README.md`, and `src/cli.ts` fail loudly on their\nown — npm, the reader, and the CLI itself all scream within seconds of their absence —\nso claiming them was green weight that could never turn red for an interesting reason\n(the Known-limits section calls that spec \"coherent and worthless\"). The two claims\nkept from that pruning are the ones whose absence the system absorbs without a sound:\n`loadConfig`\nfalls back to defaults when `coherence.config.json` is missing (verify would silently\nrun with no test runner, no serial pin, and the wrong testMatch), and a missing lifecycle\ncontrol kills the journal hooks with no host error at all. The latter used to be the weak\nstructural claim `.claude/settings.json exists at root`; now the root claims the binary\ncontrol reading itself. Its oracle checks the three tracked parts—settings, stable\nlauncher, and root mapping—their exact composition, the absence of a competing local\npath, and the runnable target. One meaningful claim is lighter and stronger than three\ngreen file-existence claims. Fewer claims, honestly scoped, is still the trade this\nharness teaches; making its own root spec take it is the least it owes."
+      "why": "An agent should encounter the project's purpose and its ownership seams before source\ndetail. The project hook wiring also records which repository reads informed a change and\nwhich decisions survived it. Keeping coordination separate from implementation makes that\nfirst read small while still checking that every deeper entry point is reachable.\n\nThis spec once claimed five obvious files existed at root; three were pruned rather than\ndressed up, because a root claim earns its line only when the failure it detects would\notherwise be SILENT. `package.json`, `README.md`, and `src/cli.ts` fail loudly on their\nown — npm, the reader, and the CLI itself all scream within seconds of their absence —\nso claiming them was green weight that could never turn red for an interesting reason\n(the Known-limits section calls that spec \"coherent and worthless\"). The two claims\nkept from that pruning are the ones whose absence the system absorbs without a sound:\n`loadConfig`\nfalls back to defaults when `coherence.config.json` is missing (verify would silently\nrun with no test runner, no serial pin, and the wrong testMatch), and a missing lifecycle\ncontrol kills the journal hooks with no host error at all. The latter used to be the weak\nstructural claim `.claude/settings.json exists at root`; now the root claims the binary\ncontrol reading itself for every host this repository supports. Its oracle checks each\nhost's three tracked parts—settings, stable launcher, and root mapping—their exact\ncomposition, host-specific exclusion controls, the absence of a competing path, and the\nrunnable target. One meaningful claim is lighter and stronger than six\ngreen file-existence claims. Fewer claims, honestly scoped, is still the trade this\nharness teaches; making its own root spec take it is the least it owes."
     },
     {
       "id": "c:src",
@@ -32,9 +32,11 @@
         "boundary \"agent lifecycle preserves decisions and exposes the current change signal\" at runHook via guard \"hooks — main Stop snapshots without feedback while SubagentStop alone restates\"",
         "boundary \"significant behavioral growth acquires an anchor or patch-specific decision\" at signal via guard \"only a zero-anchor alarm without attestation needs a decision\"",
         "boundary \"a weaker regulation obligation never masks a stronger one\" at selectRegulation via guard \"regulate — ordered potential is permutation-invariant and monotone\"",
+        "boundary \"regulation evaluates and repairs the selected agent host\" at observeRegulation via guard \"regulate — selected Codex host cannot be redeemed by Claude control\"",
         "boundary \"task context is bounded and names its approximations\" at contextFor via guard \"renderContext — byte-stable for the same inputs and names every approximation\"",
         "boundary \"cached decisions expose structurally expired premises\" at auditPremiseLeases via guard \"audit — retracted decisions disappear and only broken strong leases fail a check\"",
         "boundary \"predicted context closure is calibrated against observed reads and outcomes\" at calibrate via guard \"calibration reports coverage, outside reads, and defect rates by prediction misses\"",
+        "boundary \"calibration preserves the weakest host attribution of its trace\" at calibrationPaths via guard \"calibration keeps Codex parent-only writes aggregate and legacy rows unscoped\"",
         "boundary \"reviewed risk sites survive relocation but never duplication\" at reconcile via guard \"sinks — a moved file keeps its baselined identity and a genuinely new site still fails\"",
         "boundary \"pinned mass follows a value-conserving rename but never absorbs growth\" at reconcileMass via guard \"mass — a renamed component keeps its pin; growth and novelty are never absorbed\"",
         "boundary \"a claim goes green only on positive evidence its oracle ran\" at execNamedTest via guard \"testMatch — a runner exiting 0 with no matching output FAILS (the renamed-test trap)\"",
@@ -45,17 +47,24 @@
         "boundary \"a named oracle that no test runs cannot pass\" at runNamedTest via guard \"runner contract — a name that exists nowhere exits nonzero (the vanished oracle cannot pass)\"",
         "boundary \"an empty derivation against a remembered surface refuses, never passes\" at vacuityRefusal via guard \"FLOOR — an empty derivation against a remembered surface REFUSES, never reports coherent\"",
         "boundary \"lifecycle hook presence is one canonical runnable bit\" at inspectLifecycleHook via guard \"control — presence is the complete canonical bundle, never a partial or lookalike\"",
+        "boundary \"supported lifecycle hosts share one control contract without sharing host syntax\" at setLifecycleHookForHost via guard \"Codex control — install is exact, idempotent, preserving, and runnable across nested paths\"",
+        "boundary \"current-session activation requires exact installed-bundle evidence\" at currentObservation via guard \"hook status — exact current bundle activates; stale, direct, replayed, and damaged evidence does not\"",
+        "boundary \"experiment outcomes require criterion-total evidence\" at closeExperiment via guard \"close — total nonempty evidence is mandatory and outcome is derived, never supplied\"",
+        "boundary \"experiment telemetry preserves its weakest provable attribution\" at closeExperiment via guard \"Codex parent-only tool events close the loop as an aggregate, never exact owner evidence\"",
+        "boundary \"activity evidence is accepted only when identity, scope, time, and command agree\" at isActivityRow via guard \"activity — internally inconsistent scope, time, and command rows are damage, not evidence\"",
         "boundary \"a streamed journal entry renders exactly once across appends and compaction\" at tailJournal via guard \"tail — an appended record arrives exactly once, a compaction fold re-emits nothing and drops nothing, and a half-written line waits for its bytes\""
       ],
       "prose": "The CLI is deliberately a thin composition root. Parsing, derivation, verification,\nrendering, and journaling remain independently addressable modules beneath this boundary.",
-      "why": "**agent lifecycle preserves decisions and exposes the current change signal.** Decisions\nand risk are cheapest to surface while the agent still holds the context that produced\nthem; waiting for a later reviewer externalizes both reconstruction costs. The two stop\nsurfaces are not interchangeable: a subagent restates its report because its caller may\nsee nothing else, while the main agent has already shown its report to the user and is\nnever interrupted by shared-worktree state that may belong to another agent. Main Stop\nkeeps the calibration observation and emits no bytes; only SubagentStop carries the\njournal and patch signal forward.\n\n**significant behavioral growth acquires an anchor or patch-specific decision.** The cost\nof adding an invariant is immediate while the cost of omitting it appears later, so the\ncurrent patch must carry either enforcement or an addressable reason that it needs none.\n\n**a weaker regulation obligation never masks a stronger one.** Regulation compares live\nobligations by a lexicographic potential, with missing observations failing closed instead\nof becoming zero, and returns the single strongest action owed. V1 evaluates only rules\ndeclared in the live doctrine registry; even a no-action result makes no claim of overall\nsafety.\n\n**task context is bounded and names its approximations.** A focused context packet is\nuseful only when its one-hop and heuristic limits stay visible; otherwise convenience is\nmisread as completeness and recreates the omission gradient this project exists to oppose.\n\n**cached decisions expose structurally expired premises.** A decision saves inference only\nwhile the repository addresses supporting it remain live. Broken explicit referents must\nbe louder than readable but stale rationale.\n\n**predicted context closure is calibrated against observed reads and outcomes.** Economy's\none-hop closure is a hypothesis about necessary reading, not cognition. Observed reads and\nlater defect labels give that model a path to correction instead of turning it into dogma.\n\n**reviewed risk sites survive relocation but never duplication.** A ratchet baseline is a\ncached review, and a cached fact that expires on a rename rots the same way a decision's\npremises do — a refactor then spends a reviewer's attention on sites nobody touched, and\nattention spent on false alarms is how a real one gets waved through. Relocation changes\nwhere a reviewed site lives; duplication changes how much unreviewed surface exists, and\nonly the second is news.\n\n**pinned mass follows a value-conserving rename but never absorbs growth.** A mass\ndimension's key embeds a name someone chose — a spec H1, a measure's config key — so a\nrename re-addresses the pin, and a ratchet that reads its own re-addressing as \"gained\nparts nobody named\" prints a lie beside the unchanged total that refutes it (measured:\none H1 edit, 35 lines relabeled, zero gained, gate red). The repair must stay\ncount-conserving: only a vanished pin with the same family, unit and exact value can\nabsorb a new name, or growth and novelty would ride in under renames.\n\n**a claim goes green only on positive evidence its oracle ran.** The verifier's whole\nauthority rests on this one property, and until now no claim cited it: an audit deleted\nthe rule and the tree stayed \"✓ coherent\" while the unit test failed unseen. An exit\ncode is the runner's statement about itself, not about the named test — a filter that\nmatched nothing exits clean on every runner class this repo has measured — so green\nmust require output that names the run, the one reading absence cannot produce.\n\n**a vanished oracle reds its claim, never green-by-absence.** A renamed or deleted test\nleaves a claim citing a name nothing owns, and that claim then guards nothing while\nwearing green. Absence has to be its own observable verdict, distinct from ran-and-failed,\nbecause the two demand different repairs: a red test needs the code fixed, a vanished\noracle needs the contract re-tied to something that exists.\n\n**a declared invariant unanchored by any boundary fails coverage.** A spec may not\nassert a property that nothing enforces: that is the ratchet the whole harness turns on,\nand if it silently loosened, specs would drift back into aspiration prose. The gap has to\ncost a red at the run that opened it, while the person who opened it still holds the\ncontext to close it.\n\n**a via-test oracle that iterates no live domain fails its claim.** A totality label on a\nsampling test is worse than no label: it retires the reader's suspicion without retiring\nthe risk. Deriving the checked set from the live registry the chokepoint actually serves\nis what makes \"covers every case\" a fact about the system rather than about the fixture\nlist the author remembered.\n\n**a skipped run never clobbers an oracle's recorded verdict.** The record is the last\nknown truth, honestly dated. A fast tier that skips the executable claims every commit\nwould otherwise erase last week's real pass — or, worse, a real fail — with \"did not\nlook\", and history that can be overwritten by not looking is not history.\n\n**a named oracle that no test runs cannot pass.** The serial runner is the component the\nexecutable tier leans its trust on, and it was outside the evidence perimeter — unclaimed,\nuntested, and (measured) willing to exit clean when the cited title survived only as a\nstring in a file. The runner itself must refuse a name it cannot show ran, because every\ngreen above it inherits that refusal.\n\n**an empty derivation against a remembered surface refuses, never passes.** Every verdict\nin this file rests on the graph deriving non-empty, and nothing checked that premise:\ngutting `buildGraph` left the gate printing \"claims: 0\" and \"✓ coherent\", exit 0 —\ndeeper than a vanished oracle, because it empties every check at once while announcing\nthey all passed. The record remembers how many claims the last run graded, so a run that\nsuddenly sees zero must refuse rather than report success over nothing; the only\nlegitimate zero (a project adopting from nothing) is exactly the one with no memory, and\nit gets the adoption ladder instead. The floor deliberately stops at zero: a partial\ncollapse where every component keeps a claim is observationally identical to deliberate\npruning, and deletion has to stay free or people stop deleting. What the complement\nunderneath it actually reaches is narrower than it first appears — a component stripped of\nits claims is still a node someone can red, while a component the walk never discovered\nleaves nothing behind to notice, so an N→1 slide reads as N ordinary prunings. Pinning the\npopulation as a mass dimension is the honest answer there, because the question it settles\nis not whether anything survived but whether as much survived as last time.\n\n**lifecycle hook presence is one canonical runnable bit.** The control surface cannot\ncreate a field if every repository is free to carry a merely similar—or silently dead—\nhook. Printing, installation, and inspection therefore share one five-event value and\none stable launcher. Presence means exactly one shared copy, no competing local or legacy\npath, a correct declared root mapping, and a runnable target. Unrelated hooks may coexist.\nHistorical journal activity is reported beside this bit but can neither redeem current\nabsence nor erase current presence.\n\n**a streamed journal entry renders exactly once across appends and compaction.** The live\nstream exists for the one reader the settled render cannot serve — an orchestrator watching\nfive subagents mid-flight — and that reader has no way to audit the feed against the files.\nA dropped entry is a decision the orchestrator never saw, indistinguishable from one never\nmade; a duplicate teaches the opposite lie, that a question was decided twice. Both are\ncheap to produce, because the journal's files do not strictly grow: compaction moves lines\nbetween files and unlinks the originals, which a position-addressed reader replays in full.\nSo a record's identity in the stream comes from its content — the same triple the merged\ntimeline sorts by — and a moved line is one the feed already carried.\n\n(The import claims above separately prove that the composition root still reaches the\nconfiguration loader, graph derivation, verifier, spec walker, and journal.)",
+      "why": "**agent lifecycle preserves decisions and exposes the current change signal.** Decisions\nand risk are cheapest to surface while the agent still holds the context that produced\nthem; waiting for a later reviewer externalizes both reconstruction costs. The two stop\nsurfaces are not interchangeable: a subagent restates its report because its caller may\nsee nothing else, while the main agent has already shown its report to the user and is\nnever interrupted by shared-worktree state that may belong to another agent. Main Stop\nkeeps the calibration observation and emits no bytes; only SubagentStop carries the\njournal and patch signal forward.\n\n**significant behavioral growth acquires an anchor or patch-specific decision.** The cost\nof adding an invariant is immediate while the cost of omitting it appears later, so the\ncurrent patch must carry either enforcement or an addressable reason that it needs none.\n\n**a weaker regulation obligation never masks a stronger one.** Regulation compares live\nobligations by a lexicographic potential, with missing observations failing closed instead\nof becoming zero, and returns the single strongest action owed. V1 evaluates only rules\ndeclared in the live doctrine registry; even a no-action result makes no claim of overall\nsafety.\n\n**regulation evaluates and repairs the selected agent host.** A canonical Claude control\ncannot create a field around a Codex session, even though both hosts implement the same\nlifecycle domain. The sensor therefore names the explicit or current host in its reading,\nthe decision identity retains it, and a lifecycle redirect installs that same host. A\nforeign host value refuses before it can release or author a shell command.\n\n**task context is bounded and names its approximations.** A focused context packet is\nuseful only when its one-hop and heuristic limits stay visible; otherwise convenience is\nmisread as completeness and recreates the omission gradient this project exists to oppose.\n\n**cached decisions expose structurally expired premises.** A decision saves inference only\nwhile the repository addresses supporting it remain live. Broken explicit referents must\nbe louder than readable but stale rationale.\n\n**predicted context closure is calibrated against observed reads and outcomes.** Economy's\none-hop closure is a hypothesis about necessary reading, not cognition. Observed reads and\nlater defect labels give that model a path to correction instead of turning it into dogma.\n\n**calibration preserves the weakest host attribution of its trace.** A Codex parent\nsession file can contain parent and descendant tool use because PostToolUse supplies no\nchild id. Calibration may still compare that aggregate against a patch, but it must name\nthe aggregate rather than relabeling those writes as one agent's work. Legacy rows remain\nunscoped, shared-worktree fallback remains separate, and any unreadable row prevents a\nnew sample instead of disappearing from its denominator.\n\n**reviewed risk sites survive relocation but never duplication.** A ratchet baseline is a\ncached review, and a cached fact that expires on a rename rots the same way a decision's\npremises do — a refactor then spends a reviewer's attention on sites nobody touched, and\nattention spent on false alarms is how a real one gets waved through. Relocation changes\nwhere a reviewed site lives; duplication changes how much unreviewed surface exists, and\nonly the second is news.\n\n**pinned mass follows a value-conserving rename but never absorbs growth.** A mass\ndimension's key embeds a name someone chose — a spec H1, a measure's config key — so a\nrename re-addresses the pin, and a ratchet that reads its own re-addressing as \"gained\nparts nobody named\" prints a lie beside the unchanged total that refutes it (measured:\none H1 edit, 35 lines relabeled, zero gained, gate red). The repair must stay\ncount-conserving: only a vanished pin with the same family, unit and exact value can\nabsorb a new name, or growth and novelty would ride in under renames.\n\n**a claim goes green only on positive evidence its oracle ran.** The verifier's whole\nauthority rests on this one property, and until now no claim cited it: an audit deleted\nthe rule and the tree stayed \"✓ coherent\" while the unit test failed unseen. An exit\ncode is the runner's statement about itself, not about the named test — a filter that\nmatched nothing exits clean on every runner class this repo has measured — so green\nmust require output that names the run, the one reading absence cannot produce.\n\n**a vanished oracle reds its claim, never green-by-absence.** A renamed or deleted test\nleaves a claim citing a name nothing owns, and that claim then guards nothing while\nwearing green. Absence has to be its own observable verdict, distinct from ran-and-failed,\nbecause the two demand different repairs: a red test needs the code fixed, a vanished\noracle needs the contract re-tied to something that exists.\n\n**a declared invariant unanchored by any boundary fails coverage.** A spec may not\nassert a property that nothing enforces: that is the ratchet the whole harness turns on,\nand if it silently loosened, specs would drift back into aspiration prose. The gap has to\ncost a red at the run that opened it, while the person who opened it still holds the\ncontext to close it.\n\n**a via-test oracle that iterates no live domain fails its claim.** A totality label on a\nsampling test is worse than no label: it retires the reader's suspicion without retiring\nthe risk. Deriving the checked set from the live registry the chokepoint actually serves\nis what makes \"covers every case\" a fact about the system rather than about the fixture\nlist the author remembered.\n\n**a skipped run never clobbers an oracle's recorded verdict.** The record is the last\nknown truth, honestly dated. A fast tier that skips the executable claims every commit\nwould otherwise erase last week's real pass — or, worse, a real fail — with \"did not\nlook\", and history that can be overwritten by not looking is not history.\n\n**a named oracle that no test runs cannot pass.** The serial runner is the component the\nexecutable tier leans its trust on, and it was outside the evidence perimeter — unclaimed,\nuntested, and (measured) willing to exit clean when the cited title survived only as a\nstring in a file. The runner itself must refuse a name it cannot show ran, because every\ngreen above it inherits that refusal.\n\n**an empty derivation against a remembered surface refuses, never passes.** Every verdict\nin this file rests on the graph deriving non-empty, and nothing checked that premise:\ngutting `buildGraph` left the gate printing \"claims: 0\" and \"✓ coherent\", exit 0 —\ndeeper than a vanished oracle, because it empties every check at once while announcing\nthey all passed. The record remembers how many claims the last run graded, so a run that\nsuddenly sees zero must refuse rather than report success over nothing; the only\nlegitimate zero (a project adopting from nothing) is exactly the one with no memory, and\nit gets the adoption ladder instead. The floor deliberately stops at zero: a partial\ncollapse where every component keeps a claim is observationally identical to deliberate\npruning, and deletion has to stay free or people stop deleting. What the complement\nunderneath it actually reaches is narrower than it first appears — a component stripped of\nits claims is still a node someone can red, while a component the walk never discovered\nleaves nothing behind to notice, so an N→1 slide reads as N ordinary prunings. Pinning the\npopulation as a mass dimension is the honest answer there, because the question it settles\nis not whether anything survived but whether as much survived as last time.\n\n**lifecycle hook presence is one canonical runnable bit.** The control surface cannot\ncreate a field if every repository is free to carry a merely similar—or silently dead—\nhook. Printing, installation, and inspection therefore share one five-event value and\none stable launcher per host. Presence means exactly one shared project copy, no competing\nlocal, inline, or legacy path, an aligned host/launcher root, a correct declared root\nmapping, an enabled project-hook layer, and a runnable target. Unrelated hooks may coexist.\nHistorical journal activity is reported beside this bit but can neither redeem current\nabsence nor erase current presence.\n\n**supported lifecycle hosts share one control contract without sharing host syntax.**\nClaude and Codex expose the same five lifecycle meanings through different settings files,\nmatchers, launch commands, and response envelopes. Host parity therefore means deriving\neach complete bundle from one host-selected domain while retaining a distinct fingerprint;\ncopying Claude bytes into Codex would be resemblance, not parity.\n\n**current-session activation requires exact installed-bundle evidence.** Structural\npresence proves that the project control is runnable, not that this session loaded it. A\nsession becomes observed only when its activity names the selected host, launcher\ntransport, and current bundle fingerprint. Direct probes, stale bundles, other sessions,\nand a guessed newest session cannot establish activation; parent-session fallback stays a\nnamed attribution ceiling rather than being promoted to child evidence.\n\n**experiment outcomes require criterion-total evidence.** A\nplan is frozen before work with its predicted context, actions, criteria, and evidence\ncursors. Closure answers every action and criterion exactly once, preserves the assessor,\nand derives success, failure, or inconclusive from criterion statuses rather than accepting\nan outcome label. Otherwise the ledger would turn an incomplete story into a measured loop.\n\n**experiment telemetry preserves its weakest provable attribution.** Trace and activity\nwindows may be empty, prove an exact owner session, or only prove a parent-session aggregate\nthat can include descendants; older trace may carry no observation metadata at all. Those\nfour scopes remain distinct in the immutable close record. Damaged prefixes, unreadable\nrows, and unknown or inconsistent scope refuse. That keeps compatible history without\nturning absence or uncertainty into false precision.\n\n**activity evidence is accepted only when identity, scope, time, and command agree.** A\nrow is useful precisely because later status and experiment readers stop re-deriving the\nhost event. That cached inference is safe only while its relational fields still agree:\nagent attribution names the row session, parent fallback names its parent domain, event\nidentity recomputes, time is canonical, and command kind/result agrees with name and exit\ncode. One strict reader grades that whole relation; malformed rows become counted damage,\nnever partially trusted evidence.\n\n**a streamed journal entry renders exactly once across appends and compaction.** The live\nstream exists for the one reader the settled render cannot serve — an orchestrator watching\nfive subagents mid-flight — and that reader has no way to audit the feed against the files.\nA dropped entry is a decision the orchestrator never saw, indistinguishable from one never\nmade; a duplicate teaches the opposite lie, that a question was decided twice. Both are\ncheap to produce, because the journal's files do not strictly grow: compaction moves lines\nbetween files and unlinks the originals, which a position-addressed reader replays in full.\nSo a record's identity in the stream comes from its content — the same triple the merged\ntimeline sorts by — and a moved line is one the feed already carried.\n\n(The import claims above separately prove that the composition root still reaches the\nconfiguration loader, graph derivation, verifier, spec walker, and journal.)",
       "invariants": [
         "agent lifecycle preserves decisions and exposes the current change signal",
         "significant behavioral growth acquires an anchor or patch-specific decision",
         "a weaker regulation obligation never masks a stronger one",
+        "regulation evaluates and repairs the selected agent host",
         "task context is bounded and names its approximations",
         "cached decisions expose structurally expired premises",
         "predicted context closure is calibrated against observed reads and outcomes",
+        "calibration preserves the weakest host attribution of its trace",
         "reviewed risk sites survive relocation but never duplication",
         "pinned mass follows a value-conserving rename but never absorbs growth",
         "a claim goes green only on positive evidence its oracle ran",
@@ -66,6 +75,11 @@
         "a named oracle that no test runs cannot pass",
         "an empty derivation against a remembered surface refuses, never passes",
         "lifecycle hook presence is one canonical runnable bit",
+        "supported lifecycle hosts share one control contract without sharing host syntax",
+        "current-session activation requires exact installed-bundle evidence",
+        "experiment outcomes require criterion-total evidence",
+        "experiment telemetry preserves its weakest provable attribution",
+        "activity evidence is accepted only when identity, scope, time, and command agree",
         "a streamed journal entry renders exactly once across appends and compaction"
       ],
       "refutations": [
@@ -117,6 +131,229 @@
       "why": "The shared fixture builders, verifier tests, journal tests, and command-registry tests are\nthe suite's load-bearing entry points. Naming them makes the evidence surface visible\nwithout turning hundreds of individual test cases into an agent's component map."
     },
     {
+      "id": "f:src/activity.ts",
+      "parent": "c:src",
+      "label": "activity.ts",
+      "kind": "file",
+      "sub": "src/activity.ts",
+      "path": "src/activity.ts",
+      "prose": "activity.ts — the transient, per-session observation of hook traffic.\n\nThe decision journal is durable memory and status.json is a repository-level run\nrecord. Hook traffic is neither: it is high-frequency, host-local evidence used to\nanswer \"what is this session doing now?\" and whether a canonical launcher has ever\nreached the body. Keeping it in one append-only file per attributed session avoids a\nshared read/modify/write race while the blanket `.coherence/*` ignore keeps telemetry\nout of review diffs."
+    },
+    {
+      "id": "s:src/activity.ts#ActivityHost",
+      "parent": "f:src/activity.ts",
+      "label": "ActivityHost",
+      "kind": "symbol",
+      "sub": "type",
+      "path": "src/activity.ts",
+      "line": 14
+    },
+    {
+      "id": "s:src/activity.ts#ActivityTransport",
+      "parent": "f:src/activity.ts",
+      "label": "ActivityTransport",
+      "kind": "symbol",
+      "sub": "type",
+      "path": "src/activity.ts",
+      "line": 15
+    },
+    {
+      "id": "s:src/activity.ts#ActivityAttribution",
+      "parent": "f:src/activity.ts",
+      "label": "ActivityAttribution",
+      "kind": "symbol",
+      "sub": "type",
+      "path": "src/activity.ts",
+      "line": 16
+    },
+    {
+      "id": "s:src/activity.ts#ActivityCommandKind",
+      "parent": "f:src/activity.ts",
+      "label": "ActivityCommandKind",
+      "kind": "symbol",
+      "sub": "type",
+      "path": "src/activity.ts",
+      "line": 17
+    },
+    {
+      "id": "s:src/activity.ts#ActivityCommandResult",
+      "parent": "f:src/activity.ts",
+      "label": "ActivityCommandResult",
+      "kind": "symbol",
+      "sub": "type",
+      "path": "src/activity.ts",
+      "line": 18
+    },
+    {
+      "id": "s:src/activity.ts#ActivityCommand",
+      "parent": "f:src/activity.ts",
+      "label": "ActivityCommand",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/activity.ts",
+      "line": 20
+    },
+    {
+      "id": "s:src/activity.ts#ActivityRow",
+      "parent": "f:src/activity.ts",
+      "label": "ActivityRow",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/activity.ts",
+      "line": 29
+    },
+    {
+      "id": "s:src/activity.ts#ActivityContext",
+      "parent": "f:src/activity.ts",
+      "label": "ActivityContext",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/activity.ts",
+      "line": 52
+    },
+    {
+      "id": "s:src/activity.ts#ActivityRead",
+      "parent": "f:src/activity.ts",
+      "label": "ActivityRead",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/activity.ts",
+      "line": 59
+    },
+    {
+      "id": "s:src/activity.ts#ActivityCommandCounts",
+      "parent": "f:src/activity.ts",
+      "label": "ActivityCommandCounts",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/activity.ts",
+      "line": 64
+    },
+    {
+      "id": "s:src/activity.ts#ActivityCounts",
+      "parent": "f:src/activity.ts",
+      "label": "ActivityCounts",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/activity.ts",
+      "line": 71
+    },
+    {
+      "id": "s:src/activity.ts#CurrentSessionSummary",
+      "parent": "f:src/activity.ts",
+      "label": "CurrentSessionSummary",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/activity.ts",
+      "line": 83
+    },
+    {
+      "id": "s:src/activity.ts#activityPath",
+      "parent": "f:src/activity.ts",
+      "label": "activityPath",
+      "kind": "symbol",
+      "sub": "const",
+      "path": "src/activity.ts",
+      "line": 104
+    },
+    {
+      "id": "s:src/activity.ts#activityReplayKey",
+      "parent": "f:src/activity.ts",
+      "label": "activityReplayKey",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/activity.ts",
+      "line": 138,
+      "prose": "A host event may legitimately arrive through more than one configured path while a\ncontrol is being repaired. Replays collapse only inside the same observation domain;\notherwise a stale or direct copy could overwrite exact launcher evidence (or vice versa)."
+    },
+    {
+      "id": "s:src/activity.ts#activityAttribution",
+      "parent": "f:src/activity.ts",
+      "label": "activityAttribution",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/activity.ts",
+      "line": 154,
+      "prose": "Resolve attribution once for every reader/writer. Codex supplies only the parent session\nid on PostToolUse, and a malformed/older subagent lifecycle payload can omit agent_id too.\nBoth are `parent-fallback`: calling the parent id exact agent attribution would be a lie."
+    },
+    {
+      "id": "s:src/activity.ts#classifyActivityCommand",
+      "parent": "f:src/activity.ts",
+      "label": "classifyActivityCommand",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/activity.ts",
+      "line": 197,
+      "prose": "Recognize only a bare `verify` or `regulate` invocation observed as the Bash tool.\nA log line, quoted example, pipeline, wrapper, command substitution, or compound shell\ncommand is not execution evidence. The result is likewise unknown without an explicit\nnumeric exit-code field in the structured tool response."
+    },
+    {
+      "id": "s:src/activity.ts#activityRow",
+      "parent": "f:src/activity.ts",
+      "label": "activityRow",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/activity.ts",
+      "line": 217,
+      "prose": "Pure payload conversion; exported so hook wiring can be tested without filesystem I/O."
+    },
+    {
+      "id": "s:src/activity.ts#recordActivity",
+      "parent": "f:src/activity.ts",
+      "label": "recordActivity",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/activity.ts",
+      "line": 248,
+      "prose": "One append and no graph/config/git work: safe on the high-frequency hook path."
+    },
+    {
+      "id": "s:src/activity.ts#isActivityRow",
+      "parent": "f:src/activity.ts",
+      "label": "isActivityRow",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/activity.ts",
+      "line": 261
+    },
+    {
+      "id": "s:src/activity.ts#readActivity",
+      "parent": "f:src/activity.ts",
+      "label": "readActivity",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/activity.ts",
+      "line": 296,
+      "prose": "A torn or foreign row is skipped and counted, never converted into no activity."
+    },
+    {
+      "id": "s:src/activity.ts#currentSessionSummary",
+      "parent": "f:src/activity.ts",
+      "label": "currentSessionSummary",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/activity.ts",
+      "line": 349,
+      "prose": "The launcher view is separate by construction. A direct/manual body invocation remains\nuseful diagnostic activity but cannot become proof that installed, trusted wiring ran."
+    },
+    {
+      "id": "x:node:fs",
+      "label": "node:fs",
+      "kind": "external",
+      "sub": "module"
+    },
+    {
+      "id": "x:node:crypto",
+      "label": "node:crypto",
+      "kind": "external",
+      "sub": "module"
+    },
+    {
+      "id": "x:node:path",
+      "label": "node:path",
+      "kind": "external",
+      "sub": "module"
+    },
+    {
       "id": "f:src/adapters/cloudflare.ts",
       "parent": "c:src/adapters",
       "label": "cloudflare.ts",
@@ -137,12 +374,6 @@
     {
       "id": "x:node:fs/promises",
       "label": "node:fs/promises",
-      "kind": "external",
-      "sub": "module"
-    },
-    {
-      "id": "x:node:path",
-      "label": "node:path",
       "kind": "external",
       "sub": "module"
     },
@@ -304,7 +535,7 @@
       "kind": "file",
       "sub": "src/calibration.ts",
       "path": "src/calibration.ts",
-      "prose": "calibration.ts — test economy's predicted context against what agents actually read.\n\n`economy` measures a structural neighbourhood, not cognition. Calling that neighbourhood\n\"what a reader must load\" remains a conjecture until observed read sets and outcomes can\ndisagree with it. Claude-compatible PostToolUse hooks append explicit file reads to a\nTRANSIENT trace; Stop snapshots the trace against the patch and its predicted one-hop\nclosure. `coherence calibrate --outcome clean|defect` labels the same sample later.\n\nThis is deliberately a LOWER BOUND. Shell pipelines, editor buffers and remembered\ncontext are not guessed from command strings. A narrow honest observation is more useful\nthan a complete-looking fiction."
+      "prose": "calibration.ts — test economy's predicted context against what agents actually read.\n\n`economy` measures a structural neighbourhood, not cognition. Calling that neighbourhood\n\"what a reader must load\" remains a conjecture until observed read sets and outcomes can\ndisagree with it. Host PostToolUse hooks append explicit file reads to a\nTRANSIENT trace; Stop snapshots the trace against the patch and its predicted one-hop\nclosure. `coherence calibrate --outcome clean|defect` labels the same sample later.\n\nThis is deliberately a LOWER BOUND. Shell pipelines, editor buffers and remembered\ncontext are not guessed from command strings. A narrow honest observation is more useful\nthan a complete-looking fiction."
     },
     {
       "id": "s:src/calibration.ts#CalibrationOutcome",
@@ -331,7 +562,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/calibration.ts",
-      "line": 26
+      "line": 30
     },
     {
       "id": "s:src/calibration.ts#CalibrationStats",
@@ -340,7 +571,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/calibration.ts",
-      "line": 38
+      "line": 42
     },
     {
       "id": "s:src/calibration.ts#predictedReadSet",
@@ -349,7 +580,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/calibration.ts",
-      "line": 56,
+      "line": 62,
       "prose": "Economy's code-file prediction, made explicit and independently testable. Specs are\nomitted from calibration until hook traces can distinguish reading a spec from receiving\nits generated projection; counting either as the other would manufacture misses."
     },
     {
@@ -359,7 +590,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/calibration.ts",
-      "line": 74,
+      "line": 80,
       "prose": "Separate the host observation from git fallback so the attribution rule is a pure,\ntestable contract. Writes win whenever the host supplies them; mixing them with the\nworktree union would silently charge one agent for another agent's patch."
     },
     {
@@ -369,7 +600,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/calibration.ts",
-      "line": 88,
+      "line": 108,
       "prose": "Append a snapshot. Re-labeling appends the same id with a new outcome; readers take the\nlatest row, preserving append-only history without reporting one patch twice."
     },
     {
@@ -379,7 +610,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/calibration.ts",
-      "line": 111
+      "line": 134
     },
     {
       "id": "s:src/calibration.ts#calibrationStats",
@@ -388,7 +619,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/calibration.ts",
-      "line": 127
+      "line": 157
     },
     {
       "id": "s:src/calibration.ts#formatCalibration",
@@ -397,7 +628,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/calibration.ts",
-      "line": 150
+      "line": 182
     },
     {
       "id": "s:src/calibration.ts#calibrate",
@@ -406,19 +637,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/calibration.ts",
-      "line": 164
-    },
-    {
-      "id": "x:node:fs",
-      "label": "node:fs",
-      "kind": "external",
-      "sub": "module"
-    },
-    {
-      "id": "x:node:crypto",
-      "label": "node:crypto",
-      "kind": "external",
-      "sub": "module"
+      "line": 198
     },
     {
       "id": "f:src/cli.ts",
@@ -511,7 +730,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/commands.ts",
-      "line": 259,
+      "line": 264,
       "prose": "Every command name, in registry order. The `<a|b|c>` list — aliases excluded."
     },
     {
@@ -521,7 +740,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/commands.ts",
-      "line": 263,
+      "line": 268,
       "prose": "Every token the dispatch must accept: names AND aliases. The totality oracle compares\n THIS against the `cmd === \"…\"` literals it reads out of cli.ts."
     },
     {
@@ -531,7 +750,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/commands.ts",
-      "line": 276,
+      "line": 281,
       "prose": "The registry entry a typed token names — BY NAME OR BY ALIAS. The one lookup any guard\nkeyed on a flag (`writesArtifacts`, `writesBaseline`) may use.\n\nThe floor guarding the generators matched `c.name === cmd` and nothing else, which is a\nlatent bypass with no current victim: the only alias in the registry, `resolve`, writes\nnothing. But `aliases` exists precisely so a writing command can acquire a second\nspelling, and the day one does, the guard would silently exempt it — a gate that fails\nopen on a rename is the class of defect this whole file exists to end. Closed here\nrather than at the call site, because the call site is where it was forgotten once."
     },
     {
@@ -541,7 +760,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/commands.ts",
-      "line": 304,
+      "line": 309,
       "prose": "SPELLING ONE — the usage banner, printed to stderr when the verb is unknown or absent.\nDerived in full: there is no command-name string literal left in cli.ts's help text, so\nthe banner cannot be 29 while the dispatch is 30, and two branches editing different\ncommands can no longer conflict on one line."
     },
     {
@@ -551,7 +770,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/commands.ts",
-      "line": 337,
+      "line": 342,
       "prose": "SPELLING TWO — the README's command index, markers inclusive, ready for `spliceBlock`.\n\nA BULLET LIST, not a markdown table, and that is a real constraint rather than taste:\n`redundancy` reads the first column of every markdown table as an enumerated domain, so\na generated table would hand it a fresh README↔dispatch pair to report — trading the\nfinding this change exists to remove for an identical one. A generated block that the\nproject's own detector still flags has not fixed anything.\n\nThe block is an INDEX and nothing more: name, arg shape, one line. The authored\nper-command reasoning lives OUTSIDE the markers, below the block, and is not expected to\ncover every command — completeness is what the derivation owes, depth is what the prose\nowes, and confusing the two is how the reference got twelve commands behind."
     },
     {
@@ -561,7 +780,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/commands.ts",
-      "line": 375,
+      "line": 380,
       "prose": "The README's claim-form index, markers inclusive, ready for `spliceBlock` — the same\ntreatment the command index got, for the same defect: the hand-kept table listed 8 forms\nwhile the registry carried 9 (`lives in` was missing entirely) and its boundary grammar\nhad lost the `[crossing <zone> -> <zone>]` clause. The README even predicted the drift\n(\"nothing compares it against the registry, so it *can* drift\"). Now something does.\n\nA BULLET LIST, not a markdown table, for the reason renderCommandsBlock records:\n`redundancy` reads the first column of every markdown table as an enumerated domain, so\na generated table would hand it a fresh README↔registry pair to report.\n\nThe block is the GRAMMAR and nothing more: name, tier, grammar, example — the fields the\nregistry actually carries. The authored per-form reasoning (tier behavior under `--fast`,\nthe meta-oracle, skip-vs-fail semantics) lives OUTSIDE the markers, below the block."
     },
     {
@@ -801,7 +1020,7 @@
       "kind": "file",
       "sub": "src/control.ts",
       "path": "src/control.ts",
-      "prose": "control.ts — the first control surface: one immutable lifecycle-hook bundle.\n\nClaude's project root, coherence's config root, and the npm package root are not\nnecessarily the same directory. The hook and its launcher remain identical anyway:\none small data file maps the stable Claude-side launcher to coherence's root. The\ncontrol bit is true only when that whole path is singular, canonical, and runnable."
+      "prose": "control.ts — the first control surface: one immutable lifecycle-hook bundle per host.\n\nA host project root, coherence's config root, and the npm package root are not\nnecessarily the same directory. The hook and its launcher remain identical anyway:\none small data file maps the stable host-side launcher to coherence's root. A host's\ncontrol bit is true only when that whole path is singular, canonical, enabled, and\nrunnable. It deliberately says nothing about runtime trust or observed execution."
     },
     {
       "id": "s:src/control.ts#LIFECYCLE_HOOK_EVENTS",
@@ -810,7 +1029,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/control.ts",
-      "line": 14
+      "line": 16
     },
     {
       "id": "s:src/control.ts#LifecycleHookEvent",
@@ -819,7 +1038,7 @@
       "kind": "symbol",
       "sub": "type",
       "path": "src/control.ts",
-      "line": 21
+      "line": 23
     },
     {
       "id": "s:src/control.ts#HookScope",
@@ -828,7 +1047,16 @@
       "kind": "symbol",
       "sub": "type",
       "path": "src/control.ts",
-      "line": 22
+      "line": 24
+    },
+    {
+      "id": "s:src/control.ts#HookHost",
+      "parent": "f:src/control.ts",
+      "label": "HookHost",
+      "kind": "symbol",
+      "sub": "type",
+      "path": "src/control.ts",
+      "line": 25
     },
     {
       "id": "s:src/control.ts#POST_TOOL_USE_MATCHER",
@@ -837,7 +1065,25 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/control.ts",
-      "line": 24
+      "line": 27
+    },
+    {
+      "id": "s:src/control.ts#CODEX_POST_TOOL_USE_MATCHER",
+      "parent": "f:src/control.ts",
+      "label": "CODEX_POST_TOOL_USE_MATCHER",
+      "kind": "symbol",
+      "sub": "const",
+      "path": "src/control.ts",
+      "line": 28
+    },
+    {
+      "id": "s:src/control.ts#CODEX_SESSION_START_MATCHER",
+      "parent": "f:src/control.ts",
+      "label": "CODEX_SESSION_START_MATCHER",
+      "kind": "symbol",
+      "sub": "const",
+      "path": "src/control.ts",
+      "line": 29
     },
     {
       "id": "s:src/control.ts#LIFECYCLE_HOOK_LAUNCHER",
@@ -846,16 +1092,36 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/control.ts",
-      "line": 25
+      "line": 30
     },
     {
-      "id": "s:src/control.ts#LIFECYCLE_HOOK_SCRIPT",
+      "id": "s:src/control.ts#CODEX_LIFECYCLE_HOOK_LAUNCHER",
       "parent": "f:src/control.ts",
-      "label": "LIFECYCLE_HOOK_SCRIPT",
+      "label": "CODEX_LIFECYCLE_HOOK_LAUNCHER",
       "kind": "symbol",
       "sub": "const",
       "path": "src/control.ts",
-      "line": 26
+      "line": 31
+    },
+    {
+      "id": "s:src/control.ts#HOOK_BODY_PROTOCOL_VERSION",
+      "parent": "f:src/control.ts",
+      "label": "HOOK_BODY_PROTOCOL_VERSION",
+      "kind": "symbol",
+      "sub": "const",
+      "path": "src/control.ts",
+      "line": 35,
+      "prose": "Bump when a hook-body wire meaning changes without a package-version change."
+    },
+    {
+      "id": "s:src/control.ts#HOOK_BODY_BUILD_ID",
+      "parent": "f:src/control.ts",
+      "label": "HOOK_BODY_BUILD_ID",
+      "kind": "symbol",
+      "sub": "const",
+      "path": "src/control.ts",
+      "line": 45,
+      "prose": "Old activity cannot prove a newly installed body merely because settings stayed still."
     },
     {
       "id": "s:src/control.ts#HookFileInspection",
@@ -864,7 +1130,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/control.ts",
-      "line": 47
+      "line": 93
     },
     {
       "id": "s:src/control.ts#HookLauncherInspection",
@@ -873,7 +1139,16 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/control.ts",
-      "line": 61
+      "line": 107
+    },
+    {
+      "id": "s:src/control.ts#CodexProjectConfigInspection",
+      "parent": "f:src/control.ts",
+      "label": "CodexProjectConfigInspection",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/control.ts",
+      "line": 132
     },
     {
       "id": "s:src/control.ts#LifecycleHookInspection",
@@ -882,7 +1157,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/control.ts",
-      "line": 77
+      "line": 145
     },
     {
       "id": "s:src/control.ts#LifecycleHookMutation",
@@ -891,7 +1166,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/control.ts",
-      "line": 89
+      "line": 162
     },
     {
       "id": "s:src/control.ts#lifecycleHookCommand",
@@ -900,7 +1175,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/control.ts",
-      "line": 118
+      "line": 199
     },
     {
       "id": "s:src/control.ts#canonicalLifecycleHookSettings",
@@ -909,8 +1184,54 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/control.ts",
-      "line": 133,
+      "line": 219,
       "prose": "The sole authored settings value. Printing, inspection, and installation all call this."
+    },
+    {
+      "id": "s:src/control.ts#lifecycleHookBundleFingerprint",
+      "parent": "f:src/control.ts",
+      "label": "lifecycleHookBundleFingerprint",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/control.ts",
+      "line": 230,
+      "prose": "Version the authored hook bundle independently from any machine path. The mapping is\ninspected separately: including it here would make identical host wiring acquire a new\nruntime identity merely because the consumer keeps coherence in a nested package."
+    },
+    {
+      "id": "s:src/control.ts#LIFECYCLE_HOOK_BUNDLE_FINGERPRINT",
+      "parent": "f:src/control.ts",
+      "label": "LIFECYCLE_HOOK_BUNDLE_FINGERPRINT",
+      "kind": "symbol",
+      "sub": "const",
+      "path": "src/control.ts",
+      "line": 241
+    },
+    {
+      "id": "s:src/control.ts#CODEX_LIFECYCLE_HOOK_BUNDLE_FINGERPRINT",
+      "parent": "f:src/control.ts",
+      "label": "CODEX_LIFECYCLE_HOOK_BUNDLE_FINGERPRINT",
+      "kind": "symbol",
+      "sub": "const",
+      "path": "src/control.ts",
+      "line": 242
+    },
+    {
+      "id": "s:src/control.ts#LIFECYCLE_HOOK_SCRIPT",
+      "parent": "f:src/control.ts",
+      "label": "LIFECYCLE_HOOK_SCRIPT",
+      "kind": "symbol",
+      "sub": "const",
+      "path": "src/control.ts",
+      "line": 243
+    },
+    {
+      "id": "s:src/control.ts#CODEX_LIFECYCLE_HOOK_SCRIPT",
+      "parent": "f:src/control.ts",
+      "label": "CODEX_LIFECYCLE_HOOK_SCRIPT",
+      "kind": "symbol",
+      "sub": "const",
+      "path": "src/control.ts",
+      "line": 247
     },
     {
       "id": "s:src/control.ts#resolveClaudeProjectRoot",
@@ -919,8 +1240,27 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/control.ts",
-      "line": 140,
+      "line": 253,
       "prose": "The Claude host root is explicit because real consumers keep coherence in a sub-project."
+    },
+    {
+      "id": "s:src/control.ts#resolveCodexProjectRoot",
+      "parent": "f:src/control.ts",
+      "label": "resolveCodexProjectRoot",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/control.ts",
+      "line": 258,
+      "prose": "Codex ordinarily opens the same repo; retain that relationship only as a default."
+    },
+    {
+      "id": "s:src/control.ts#resolveHookProjectRoot",
+      "parent": "f:src/control.ts",
+      "label": "resolveHookProjectRoot",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/control.ts",
+      "line": 262
     },
     {
       "id": "s:src/control.ts#lifecycleRootMapping",
@@ -929,7 +1269,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/control.ts",
-      "line": 156
+      "line": 289
     },
     {
       "id": "s:src/control.ts#managedLifecycleEvent",
@@ -938,8 +1278,27 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/control.ts",
-      "line": 219,
+      "line": 352,
       "prose": "Recognize only lifecycle commands coherence has emitted or that are already present in\naudited consumers. The match is anchored: mentioning `coherence hook` is not enough."
+    },
+    {
+      "id": "s:src/control.ts#lifecycleHookScript",
+      "parent": "f:src/control.ts",
+      "label": "lifecycleHookScript",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/control.ts",
+      "line": 471
+    },
+    {
+      "id": "s:src/control.ts#inspectCodexProjectConfig",
+      "parent": "f:src/control.ts",
+      "label": "inspectCodexProjectConfig",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/control.ts",
+      "line": 559,
+      "prose": "This is deliberately a relevant-syntax scanner, not a pretend TOML parser. It proves\nonly the project-level facts the control needs: whether another inline hook surface\nexists, and whether this layer explicitly disables project hooks. Higher config/trust layers\nremain outside a repository inspection's authority."
     },
     {
       "id": "s:src/control.ts#inspectLifecycleHook",
@@ -948,8 +1307,17 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/control.ts",
-      "line": 357,
+      "line": 622,
       "prose": "Inspect without mutating: the lifecycle control's read operation."
+    },
+    {
+      "id": "s:src/control.ts#inspectLifecycleHookForHost",
+      "parent": "f:src/control.ts",
+      "label": "inspectLifecycleHookForHost",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/control.ts",
+      "line": 665
     },
     {
       "id": "s:src/control.ts#setLifecycleHook",
@@ -958,8 +1326,17 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/control.ts",
-      "line": 458,
-      "prose": "Set the lifecycle bit. ON converges project settings, removes competing local/legacy\npaths, and repairs the two coherence-owned launcher files. OFF removes every recognized\nlifecycle action from both settings scopes, then removes only launcher files whose bytes\nare still canonical. Unrelated settings and hook actions survive both operations."
+      "line": 739,
+      "prose": "Set one host's lifecycle bit. ON converges project settings, removes competing\nhost-local/legacy paths, and repairs the two coherence-owned launcher files. OFF removes\nevery recognized lifecycle action from that host's settings, then removes only launcher\nfiles whose bytes are still canonical. Unrelated settings and hook actions survive."
+    },
+    {
+      "id": "s:src/control.ts#setLifecycleHookForHost",
+      "parent": "f:src/control.ts",
+      "label": "setLifecycleHookForHost",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/control.ts",
+      "line": 795
     },
     {
       "id": "x:node:util",
@@ -1403,7 +1780,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/doctrine.ts",
-      "line": 24
+      "line": 26
     },
     {
       "id": "s:src/doctrine.ts#ANTI_ENTROPY_DOCTRINE",
@@ -1412,7 +1789,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/doctrine.ts",
-      "line": 41,
+      "line": 43,
       "prose": "Order is API in both arrays.  Potential order decides which class of obligation wins;\nrule order is the byte-stable tie-break inside a class.  Neither may be supplied by a\nproject config: allowing local weights would make the law disappear exactly where it\nbecame inconvenient."
     },
     {
@@ -1422,7 +1799,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/doctrine.ts",
-      "line": 80,
+      "line": 82,
       "prose": "A data-only representation for the CLI and other hosts."
     },
     {
@@ -1432,7 +1809,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/doctrine.ts",
-      "line": 92
+      "line": 94
     },
     {
       "id": "f:src/drift.ts",
@@ -1794,6 +2171,319 @@
       "prose": "NET line delta per bucket, OLDEST → NEWEST — mass over time. `commits` arrive\n newest-first from git, so they are reversed before bucketing; a commit with no entry\n in `deltas` (an empty commit, or a shortstat pass that did not reach it) contributes\n zero rather than dropping its bucket. Negative buckets are real and are the point: a\n release that removed more than it added is the shape a growth ratchet cannot show."
     },
     {
+      "id": "f:src/experiment.ts",
+      "parent": "c:src",
+      "label": "experiment.ts",
+      "kind": "file",
+      "sub": "src/experiment.ts",
+      "path": "src/experiment.ts",
+      "prose": "experiment.ts — a first-class, append-only record of an agent's planned inference loop.\n\nA decision records what won. An experiment records the loop that was supposed to\nproduce evidence before anybody knew what would win: a hypothesis, predicted reading\nsurface, inert planned actions, observable success criteria, and the evidence actually\ngathered. Keeping that record separate from decisions matters. A failed experiment is\nstill a successfully closed loop, and neither \"success\" nor \"failure\" means a later\ncalibration label is \"clean\" or \"defect\".\n\nONE FILE PER WRITING SESSION keeps parallel writers apart. Open rows live in the owner\nsession's file; close rows live in the assessor session's file. The merged reader ties\nthem by experiment id and preserves both identities. Every public writer first performs\nthe strict merged read: malformed history, a dangling close, or competing close records\nrefuses the next append instead of laundering an ambiguous ledger into a new fact."
+    },
+    {
+      "id": "s:src/experiment.ts#EXPERIMENT_VERSION",
+      "parent": "f:src/experiment.ts",
+      "label": "EXPERIMENT_VERSION",
+      "kind": "symbol",
+      "sub": "const",
+      "path": "src/experiment.ts",
+      "line": 31,
+      "prose": "V1 identified activity replays by the host event id and always wrote\n`owner-session` on close, including for an empty evidence window. V2 identifies the\nwhole replay domain and records the weakest attribution the frozen rows prove. The\nreader keeps V1 valid and normalizes only its rendered attribution in memory; disk\nbytes and their immutable ids are never rewritten."
+    },
+    {
+      "id": "s:src/experiment.ts#ExperimentVersion",
+      "parent": "f:src/experiment.ts",
+      "label": "ExperimentVersion",
+      "kind": "symbol",
+      "sub": "type",
+      "path": "src/experiment.ts",
+      "line": 32
+    },
+    {
+      "id": "s:src/experiment.ts#ExperimentOutcome",
+      "parent": "f:src/experiment.ts",
+      "label": "ExperimentOutcome",
+      "kind": "symbol",
+      "sub": "type",
+      "path": "src/experiment.ts",
+      "line": 33
+    },
+    {
+      "id": "s:src/experiment.ts#ExperimentActionStatus",
+      "parent": "f:src/experiment.ts",
+      "label": "ExperimentActionStatus",
+      "kind": "symbol",
+      "sub": "type",
+      "path": "src/experiment.ts",
+      "line": 34
+    },
+    {
+      "id": "s:src/experiment.ts#ExperimentCriterionStatus",
+      "parent": "f:src/experiment.ts",
+      "label": "ExperimentCriterionStatus",
+      "kind": "symbol",
+      "sub": "type",
+      "path": "src/experiment.ts",
+      "line": 35
+    },
+    {
+      "id": "s:src/experiment.ts#ExperimentTraceAttribution",
+      "parent": "f:src/experiment.ts",
+      "label": "ExperimentTraceAttribution",
+      "kind": "symbol",
+      "sub": "type",
+      "path": "src/experiment.ts",
+      "line": 36
+    },
+    {
+      "id": "s:src/experiment.ts#ExperimentActivityAttribution",
+      "parent": "f:src/experiment.ts",
+      "label": "ExperimentActivityAttribution",
+      "kind": "symbol",
+      "sub": "type",
+      "path": "src/experiment.ts",
+      "line": 41
+    },
+    {
+      "id": "s:src/experiment.ts#ExperimentPlanItem",
+      "parent": "f:src/experiment.ts",
+      "label": "ExperimentPlanItem",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/experiment.ts",
+      "line": 43
+    },
+    {
+      "id": "s:src/experiment.ts#ExperimentRepoSnapshot",
+      "parent": "f:src/experiment.ts",
+      "label": "ExperimentRepoSnapshot",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/experiment.ts",
+      "line": 48
+    },
+    {
+      "id": "s:src/experiment.ts#ExperimentOpened",
+      "parent": "f:src/experiment.ts",
+      "label": "ExperimentOpened",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/experiment.ts",
+      "line": 55
+    },
+    {
+      "id": "s:src/experiment.ts#ExperimentActionResult",
+      "parent": "f:src/experiment.ts",
+      "label": "ExperimentActionResult",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/experiment.ts",
+      "line": 81
+    },
+    {
+      "id": "s:src/experiment.ts#ExperimentCriterionResult",
+      "parent": "f:src/experiment.ts",
+      "label": "ExperimentCriterionResult",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/experiment.ts",
+      "line": 87
+    },
+    {
+      "id": "s:src/experiment.ts#ExperimentTraceEvidence",
+      "parent": "f:src/experiment.ts",
+      "label": "ExperimentTraceEvidence",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/experiment.ts",
+      "line": 93
+    },
+    {
+      "id": "s:src/experiment.ts#ExperimentActivityEvidence",
+      "parent": "f:src/experiment.ts",
+      "label": "ExperimentActivityEvidence",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/experiment.ts",
+      "line": 101
+    },
+    {
+      "id": "s:src/experiment.ts#ExperimentAssessor",
+      "parent": "f:src/experiment.ts",
+      "label": "ExperimentAssessor",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/experiment.ts",
+      "line": 110
+    },
+    {
+      "id": "s:src/experiment.ts#ExperimentClosed",
+      "parent": "f:src/experiment.ts",
+      "label": "ExperimentClosed",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/experiment.ts",
+      "line": 116
+    },
+    {
+      "id": "s:src/experiment.ts#ExperimentRecord",
+      "parent": "f:src/experiment.ts",
+      "label": "ExperimentRecord",
+      "kind": "symbol",
+      "sub": "type",
+      "path": "src/experiment.ts",
+      "line": 133
+    },
+    {
+      "id": "s:src/experiment.ts#Experiment",
+      "parent": "f:src/experiment.ts",
+      "label": "Experiment",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/experiment.ts",
+      "line": 135
+    },
+    {
+      "id": "s:src/experiment.ts#ExperimentLedger",
+      "parent": "f:src/experiment.ts",
+      "label": "ExperimentLedger",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/experiment.ts",
+      "line": 140
+    },
+    {
+      "id": "s:src/experiment.ts#CreateExperimentInput",
+      "parent": "f:src/experiment.ts",
+      "label": "CreateExperimentInput",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/experiment.ts",
+      "line": 148
+    },
+    {
+      "id": "s:src/experiment.ts#CloseExperimentInput",
+      "parent": "f:src/experiment.ts",
+      "label": "CloseExperimentInput",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/experiment.ts",
+      "line": 161
+    },
+    {
+      "id": "s:src/experiment.ts#ExperimentStats",
+      "parent": "f:src/experiment.ts",
+      "label": "ExperimentStats",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/experiment.ts",
+      "line": 172
+    },
+    {
+      "id": "s:src/experiment.ts#ExperimentCommandCounts",
+      "parent": "f:src/experiment.ts",
+      "label": "ExperimentCommandCounts",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/experiment.ts",
+      "line": 192
+    },
+    {
+      "id": "s:src/experiment.ts#RenderExperimentOpts",
+      "parent": "f:src/experiment.ts",
+      "label": "RenderExperimentOpts",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/experiment.ts",
+      "line": 199
+    },
+    {
+      "id": "s:src/experiment.ts#ExperimentLedgerError",
+      "parent": "f:src/experiment.ts",
+      "label": "ExperimentLedgerError",
+      "kind": "symbol",
+      "sub": "class",
+      "path": "src/experiment.ts",
+      "line": 206,
+      "prose": "A refusal a CLI can print without mistaking damaged evidence for \"no experiments\"."
+    },
+    {
+      "id": "s:src/experiment.ts#experimentsDir",
+      "parent": "f:src/experiment.ts",
+      "label": "experimentsDir",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/experiment.ts",
+      "line": 217
+    },
+    {
+      "id": "s:src/experiment.ts#experimentSessionPath",
+      "parent": "f:src/experiment.ts",
+      "label": "experimentSessionPath",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/experiment.ts",
+      "line": 221
+    },
+    {
+      "id": "s:src/experiment.ts#deriveExperimentOutcome",
+      "parent": "f:src/experiment.ts",
+      "label": "deriveExperimentOutcome",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/experiment.ts",
+      "line": 739
+    },
+    {
+      "id": "s:src/experiment.ts#readExperiments",
+      "parent": "f:src/experiment.ts",
+      "label": "readExperiments",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/experiment.ts",
+      "line": 746,
+      "prose": "Strict merged read. Exact duplicate rows collapse; every other ambiguity refuses."
+    },
+    {
+      "id": "s:src/experiment.ts#createExperiment",
+      "parent": "f:src/experiment.ts",
+      "label": "createExperiment",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/experiment.ts",
+      "line": 851,
+      "prose": "Open one immutable plan. A byte-equivalent retry returns the standing row without append."
+    },
+    {
+      "id": "s:src/experiment.ts#closeExperiment",
+      "parent": "f:src/experiment.ts",
+      "label": "closeExperiment",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/experiment.ts",
+      "line": 917,
+      "prose": "Close a plan with total manual evidence. Telemetry keeps the narrowest host scope it can prove."
+    },
+    {
+      "id": "s:src/experiment.ts#experimentStats",
+      "parent": "f:src/experiment.ts",
+      "label": "experimentStats",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/experiment.ts",
+      "line": 1008,
+      "prose": "Descriptive plan/observation association only. It assigns no clean/defect label."
+    },
+    {
+      "id": "s:src/experiment.ts#renderExperiments",
+      "parent": "f:src/experiment.ts",
+      "label": "renderExperiments",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/experiment.ts",
+      "line": 1060,
+      "prose": "Human reading surface. Open loops lead; evidence remains attached to its criterion."
+    },
+    {
       "id": "f:src/floor.ts",
       "parent": "c:src",
       "label": "floor.ts",
@@ -1925,7 +2615,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 45,
+      "line": 52,
       "prose": "The text every agent is handed at startup. Short on purpose: it is paid for by\n every agent on every job, and an instruction nobody finishes reading is a comment."
     },
     {
@@ -1935,7 +2625,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 98,
+      "line": 112,
       "prose": "A Stop feedback turn stops again. Hosts mark that second pass so a non-blocking nudge\ncan be emitted exactly once instead of accidentally becoming an eight-turn gate."
     },
     {
@@ -1945,7 +2635,7 @@
       "kind": "symbol",
       "sub": "type",
       "path": "src/hooks.ts",
-      "line": 103
+      "line": 117
     },
     {
       "id": "s:src/hooks.ts#composeStopFeedback",
@@ -1954,7 +2644,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 113,
+      "line": 127,
       "prose": "Host semantics make this distinction consequential: any `additionalContext` continues\nthe conversation. A subagent's parent may genuinely need the final report restated;\nthe main user just read it. Main Stop therefore emits nothing. Shared-worktree state\ncannot be promoted into a task-local obligation merely because this agent stopped."
     },
     {
@@ -1964,7 +2654,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 126,
+      "line": 149,
       "prose": "`coherence hook <event>` — the hook body itself, so nothing has to be written to\n disk or kept in sync with a script file. Reads the event payload on stdin (unused\n today, but hooks are fed JSON and ignoring it silently would be rude to the next\n person who needs a field from it) and prints the documented output shape."
     },
     {
@@ -1974,7 +2664,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 212,
+      "line": 263,
       "prose": "What a subagent is told as it finishes. Split out of `runHook` so it is reachable\n without a stdin pipe — the hook body drains stdin, and a report you can only observe\n by feeding a process is a report nobody tests."
     },
     {
@@ -1984,7 +2674,45 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/hooks.ts",
-      "line": 271
+      "line": 338
+    },
+    {
+      "id": "s:src/hooks.ts#CurrentHookObservation",
+      "parent": "f:src/hooks.ts",
+      "label": "CurrentHookObservation",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/hooks.ts",
+      "line": 350
+    },
+    {
+      "id": "s:src/hooks.ts#activeHookHost",
+      "parent": "f:src/hooks.ts",
+      "label": "activeHookHost",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/hooks.ts",
+      "line": 375,
+      "prose": "Which host owns the current shell. Explicit selection always wins."
+    },
+    {
+      "id": "s:src/hooks.ts#activeHookSession",
+      "parent": "f:src/hooks.ts",
+      "label": "activeHookSession",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/hooks.ts",
+      "line": 381,
+      "prose": "Never pick the newest session: concurrency makes \"latest\" an attribution bug."
+    },
+    {
+      "id": "s:src/hooks.ts#currentObservation",
+      "parent": "f:src/hooks.ts",
+      "label": "currentObservation",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/hooks.ts",
+      "line": 409
     },
     {
       "id": "s:src/hooks.ts#hookStatus",
@@ -1993,8 +2721,8 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 277,
-      "prose": "Structural control state and historical runtime evidence are adjacent, never fused."
+      "line": 485,
+      "prose": "Structural configuration, historical memory, and this exact session stay separate."
     },
     {
       "id": "s:src/hooks.ts#reportHooks",
@@ -2003,7 +2731,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 314,
+      "line": 566,
       "prose": "`coherence hooks status` — report the switch and the observation beside it."
     },
     {
@@ -2013,7 +2741,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 321,
+      "line": 573,
       "prose": "`coherence hooks --check` — the binary current-control gate. Observation never redeems absence."
     },
     {
@@ -2023,7 +2751,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 328
+      "line": 583
     },
     {
       "id": "s:src/hooks.ts#uninstallHooks",
@@ -2032,7 +2760,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 345
+      "line": 600
     },
     {
       "id": "s:src/hooks.ts#printHooks",
@@ -2041,8 +2769,8 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 360,
-      "prose": "`coherence hooks` — print the block to paste into .claude/settings.json, plus the\n instruction text so a reader can see what agents will actually be told."
+      "line": 615,
+      "prose": "`coherence hooks` — print one host's canonical block, plus the\n instruction text so a reader can see what agents will actually be told."
     },
     {
       "id": "f:src/index-model.ts",
@@ -4140,7 +4868,34 @@
       "kind": "symbol",
       "sub": "type",
       "path": "src/read-trace.ts",
-      "line": 10
+      "line": 17
+    },
+    {
+      "id": "s:src/read-trace.ts#PatchOperation",
+      "parent": "f:src/read-trace.ts",
+      "label": "PatchOperation",
+      "kind": "symbol",
+      "sub": "type",
+      "path": "src/read-trace.ts",
+      "line": 18
+    },
+    {
+      "id": "s:src/read-trace.ts#ReadEventProvenance",
+      "parent": "f:src/read-trace.ts",
+      "label": "ReadEventProvenance",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/read-trace.ts",
+      "line": 19
+    },
+    {
+      "id": "s:src/read-trace.ts#ReadEventObservation",
+      "parent": "f:src/read-trace.ts",
+      "label": "ReadEventObservation",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/read-trace.ts",
+      "line": 23
     },
     {
       "id": "s:src/read-trace.ts#ReadEvent",
@@ -4149,7 +4904,26 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/read-trace.ts",
-      "line": 11
+      "line": 34
+    },
+    {
+      "id": "s:src/read-trace.ts#TraceRead",
+      "parent": "f:src/read-trace.ts",
+      "label": "TraceRead",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/read-trace.ts",
+      "line": 46
+    },
+    {
+      "id": "s:src/read-trace.ts#applyPatchCandidates",
+      "parent": "f:src/read-trace.ts",
+      "label": "applyPatchCandidates",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/read-trace.ts",
+      "line": 69,
+      "prose": "Parse only the formal file headers accepted by the apply_patch tool. This is not shell\ncommand inference: it runs solely for canonical `tool_name: \"apply_patch\"`, requires the\ncomplete Begin/End envelope, and ignores arbitrary command text from Bash."
     },
     {
       "id": "s:src/read-trace.ts#hookReadCandidates",
@@ -4158,8 +4932,8 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/read-trace.ts",
-      "line": 24,
-      "prose": "Generic enough for Claude hook payloads without coupling the core to one version of\ntheir schema. Only explicit path-bearing fields count; command text is never parsed."
+      "line": 123,
+      "prose": "The historical public payload API: exact keys and path-array shape are preserved."
     },
     {
       "id": "s:src/read-trace.ts#recordHookReads",
@@ -4168,8 +4942,18 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/read-trace.ts",
-      "line": 46,
+      "line": 139,
       "prose": "PostToolUse write: tiny, append-only, and intentionally outside the committed record."
+    },
+    {
+      "id": "s:src/read-trace.ts#readTraceDetailed",
+      "parent": "f:src/read-trace.ts",
+      "label": "readTraceDetailed",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/read-trace.ts",
+      "line": 211,
+      "prose": "Strict reader used by experiments and status surfaces that must report lost evidence."
     },
     {
       "id": "s:src/read-trace.ts#readTrace",
@@ -4178,7 +4962,8 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/read-trace.ts",
-      "line": 59
+      "line": 258,
+      "prose": "Historical convenience reader: callers needing loss accounting use readTraceDetailed."
     },
     {
       "id": "f:src/redundancy.ts",
@@ -4436,7 +5221,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/regulate.ts",
-      "line": 38
+      "line": 40
     },
     {
       "id": "s:src/regulate.ts#RegulationDecision",
@@ -4445,7 +5230,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/regulate.ts",
-      "line": 45
+      "line": 47
     },
     {
       "id": "s:src/regulate.ts#selectRegulation",
@@ -4454,7 +5239,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/regulate.ts",
-      "line": 110,
+      "line": 113,
       "prose": "The control law. Pure, total over arbitrary readings, and intentionally ignorant of\nfilesystems, Git, clocks, config, output, and exit codes."
     },
     {
@@ -4464,7 +5249,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/regulate.ts",
-      "line": 223
+      "line": 244
     },
     {
       "id": "s:src/regulate.ts#formatRegulation",
@@ -4473,7 +5258,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/regulate.ts",
-      "line": 230
+      "line": 251
     },
     {
       "id": "s:src/regulate.ts#RegulateOptions",
@@ -4482,7 +5267,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/regulate.ts",
-      "line": 252
+      "line": 273
     },
     {
       "id": "s:src/regulate.ts#observeRegulation",
@@ -4491,7 +5276,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/regulate.ts",
-      "line": 260,
+      "line": 282,
       "prose": "Read the two live v1 sensors. No writes."
     },
     {
@@ -4501,7 +5286,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/regulate.ts",
-      "line": 323,
+      "line": 346,
       "prose": "Explicit CLI surface. Report mode observes; --check turns intervention into a gate."
     },
     {
@@ -5856,13 +6641,13 @@
       "prose": "An `imports` edge between two file nodes — what the decompose fan-in (hubs) reads."
     },
     {
-      "id": "f:test/atlas.test.ts",
+      "id": "f:test/activity.test.ts",
       "parent": "c:test",
-      "label": "atlas.test.ts",
+      "label": "activity.test.ts",
       "kind": "file",
-      "sub": "test/atlas.test.ts",
-      "path": "test/atlas.test.ts",
-      "prose": "atlas.test.ts — the trust-graded manifold's tier derivation. The load-bearing rule:\ntier-1 (enshrined) is NOT inferred from a claim's verb — a bare `via guard` is only\nsource-totality evidence (tier-2). Tier-1 requires an EXPLICIT `enshrined: true` marker\non the transition AND a backing `via guard` claim; a marker with no backing guard is an\nempty over-claim that fails-closed (`atlas --check` reds instead of rendering tier-1)."
+      "sub": "test/activity.test.ts",
+      "path": "test/activity.test.ts",
+      "prose": "activity.test.ts — hook telemetry stays attributable, narrow, and non-authoritative."
     },
     {
       "id": "x:node:test",
@@ -5875,6 +6660,15 @@
       "label": "node:assert/strict",
       "kind": "external",
       "sub": "module"
+    },
+    {
+      "id": "f:test/atlas.test.ts",
+      "parent": "c:test",
+      "label": "atlas.test.ts",
+      "kind": "file",
+      "sub": "test/atlas.test.ts",
+      "path": "test/atlas.test.ts",
+      "prose": "atlas.test.ts — the trust-graded manifold's tier derivation. The load-bearing rule:\ntier-1 (enshrined) is NOT inferred from a claim's verb — a bare `via guard` is only\nsource-totality evidence (tier-2). Tier-1 requires an EXPLICIT `enshrined: true` marker\non the transition AND a backing `via guard` claim; a marker with no backing guard is an\nempty over-claim that fails-closed (`atlas --check` reds instead of rendering tier-1)."
     },
     {
       "id": "f:test/calibration.test.ts",
@@ -5893,6 +6687,15 @@
       "sub": "test/claude.test.ts",
       "path": "test/claude.test.ts",
       "prose": "claude.test.ts — the CLAUDE.md fence splicer. `coherence claude` regenerates ONLY the\nfenced block and must preserve all authored prose around it — and must REFUSE (return\nnull, never clobber) a file that hasn't opted in by carrying the markers."
+    },
+    {
+      "id": "f:test/codex-control.test.ts",
+      "parent": "c:test",
+      "label": "codex-control.test.ts",
+      "kind": "file",
+      "sub": "test/codex-control.test.ts",
+      "path": "test/codex-control.test.ts",
+      "prose": "codex-control.test.ts — Codex gets its own exact project control, never a Claude alias."
     },
     {
       "id": "f:test/commands.test.ts",
@@ -6009,6 +6812,24 @@
       "prose": "evolution.test.ts — the shared EVOLUTION store (src/evolution.ts): the ONE home for the\ngit derivation decompose, drift, scene and mass all read. Two layers, the same split\ndecompose.test.ts's header sets out and for the same reason:\n  1. the pure derivations — fileChurn / componentChurn / locDeltaSeries driven through\n     HAND-BUILT commit arrays: exhaustive, deterministic, no git.\n  2. the git plumbing the injection bypasses — readCommitLog's %x00/%x1f parser,\n     commitDeltas' --shortstat parse, and THE MEMO — driven through real throwaway\n     repos, because a memo is precisely the thing an injected array cannot exercise."
     },
     {
+      "id": "f:test/experiment-cli.test.ts",
+      "parent": "c:test",
+      "label": "experiment-cli.test.ts",
+      "kind": "file",
+      "sub": "test/experiment-cli.test.ts",
+      "path": "test/experiment-cli.test.ts",
+      "prose": "experiment-cli.test.ts — the process boundary preserves the ledger's strict contract."
+    },
+    {
+      "id": "f:test/experiment.test.ts",
+      "parent": "c:test",
+      "label": "experiment.test.ts",
+      "kind": "file",
+      "sub": "test/experiment.test.ts",
+      "path": "test/experiment.test.ts",
+      "prose": "experiment.test.ts — contracts for the first-class plan/outcome ledger.\n\nThe expensive mistakes here are false attribution and false closure: charging another\nsession's trace to the owner, accepting half a result set, or reading corrupt history as\nan empty ledger. These tests keep those failures louder than the plan they would distort."
+    },
+    {
       "id": "f:test/floor.test.ts",
       "parent": "c:test",
       "label": "floor.test.ts",
@@ -6025,6 +6846,15 @@
       "sub": "test/hook-stop.test.ts",
       "path": "test/hook-stop.test.ts",
       "prose": "hook-stop.test.ts — main and subagent conclusions are different delivery surfaces."
+    },
+    {
+      "id": "f:test/hooks-cli.test.ts",
+      "parent": "c:test",
+      "label": "hooks-cli.test.ts",
+      "kind": "file",
+      "sub": "test/hooks-cli.test.ts",
+      "path": "test/hooks-cli.test.ts",
+      "prose": "hooks-cli.test.ts — the host selector is a public control boundary, not an internal API."
     },
     {
       "id": "f:test/index.test.ts",
@@ -6335,6 +7165,30 @@
   ],
   "edges": [
     {
+      "id": "f:src/activity.ts->x:node:fs:imports",
+      "source": "f:src/activity.ts",
+      "target": "x:node:fs",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/activity.ts->x:node:crypto:imports",
+      "source": "f:src/activity.ts",
+      "target": "x:node:crypto",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/activity.ts->x:node:path:imports",
+      "source": "f:src/activity.ts",
+      "target": "x:node:path",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/activity.ts->f:src/types.ts:imports",
+      "source": "f:src/activity.ts",
+      "target": "f:src/types.ts",
+      "kind": "imports"
+    },
+    {
       "id": "f:src/adapters/cloudflare.ts->x:node:fs/promises:imports",
       "source": "f:src/adapters/cloudflare.ts",
       "target": "x:node:fs/promises",
@@ -6635,6 +7489,12 @@
       "kind": "imports"
     },
     {
+      "id": "f:src/cli.ts->f:src/experiment.ts:imports",
+      "source": "f:src/cli.ts",
+      "target": "f:src/experiment.ts",
+      "kind": "imports"
+    },
+    {
       "id": "f:src/cli.ts->f:src/observed.ts:imports",
       "source": "f:src/cli.ts",
       "target": "f:src/observed.ts",
@@ -6644,6 +7504,12 @@
       "id": "f:src/cli.ts->f:src/hooks.ts:imports",
       "source": "f:src/cli.ts",
       "target": "f:src/hooks.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/cli.ts->f:src/control.ts:imports",
+      "source": "f:src/cli.ts",
+      "target": "f:src/control.ts",
       "kind": "imports"
     },
     {
@@ -6830,6 +7696,12 @@
       "id": "f:src/control.ts->x:node:fs/promises:imports",
       "source": "f:src/control.ts",
       "target": "x:node:fs/promises",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/control.ts->x:node:child_process:imports",
+      "source": "f:src/control.ts",
+      "target": "x:node:child_process",
       "kind": "imports"
     },
     {
@@ -7097,6 +7969,54 @@
       "kind": "imports"
     },
     {
+      "id": "f:src/experiment.ts->x:node:fs:imports",
+      "source": "f:src/experiment.ts",
+      "target": "x:node:fs",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/experiment.ts->x:node:crypto:imports",
+      "source": "f:src/experiment.ts",
+      "target": "x:node:crypto",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/experiment.ts->x:node:child_process:imports",
+      "source": "f:src/experiment.ts",
+      "target": "x:node:child_process",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/experiment.ts->x:node:path:imports",
+      "source": "f:src/experiment.ts",
+      "target": "x:node:path",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/experiment.ts->f:src/activity.ts:imports",
+      "source": "f:src/experiment.ts",
+      "target": "f:src/activity.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/experiment.ts->f:src/decisions.ts:imports",
+      "source": "f:src/experiment.ts",
+      "target": "f:src/decisions.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/experiment.ts->f:src/read-trace.ts:imports",
+      "source": "f:src/experiment.ts",
+      "target": "f:src/read-trace.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/experiment.ts->f:src/types.ts:imports",
+      "source": "f:src/experiment.ts",
+      "target": "f:src/types.ts",
+      "kind": "imports"
+    },
+    {
       "id": "f:src/floor.ts->x:node:fs/promises:imports",
       "source": "f:src/floor.ts",
       "target": "x:node:fs/promises",
@@ -7160,6 +8080,24 @@
       "id": "f:src/hooks.ts->f:src/due.ts:imports",
       "source": "f:src/hooks.ts",
       "target": "f:src/due.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/hooks.ts->f:src/activity.ts:imports",
+      "source": "f:src/hooks.ts",
+      "target": "f:src/activity.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/hooks.ts->f:src/read-trace.ts:imports",
+      "source": "f:src/hooks.ts",
+      "target": "f:src/read-trace.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/hooks.ts->f:src/experiment.ts:imports",
+      "source": "f:src/hooks.ts",
+      "target": "f:src/experiment.ts",
       "kind": "imports"
     },
     {
@@ -7709,9 +8647,21 @@
       "kind": "imports"
     },
     {
+      "id": "f:src/read-trace.ts->x:node:crypto:imports",
+      "source": "f:src/read-trace.ts",
+      "target": "x:node:crypto",
+      "kind": "imports"
+    },
+    {
       "id": "f:src/read-trace.ts->x:node:path:imports",
       "source": "f:src/read-trace.ts",
       "target": "x:node:path",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/read-trace.ts->f:src/activity.ts:imports",
+      "source": "f:src/read-trace.ts",
+      "target": "f:src/activity.ts",
       "kind": "imports"
     },
     {
@@ -8321,6 +9271,60 @@
       "kind": "imports"
     },
     {
+      "id": "f:test/activity.test.ts->x:node:test:imports",
+      "source": "f:test/activity.test.ts",
+      "target": "x:node:test",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/activity.test.ts->x:node:assert/strict:imports",
+      "source": "f:test/activity.test.ts",
+      "target": "x:node:assert/strict",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/activity.test.ts->x:node:fs:imports",
+      "source": "f:test/activity.test.ts",
+      "target": "x:node:fs",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/activity.test.ts->x:node:path:imports",
+      "source": "f:test/activity.test.ts",
+      "target": "x:node:path",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/activity.test.ts->f:src/activity.ts:imports",
+      "source": "f:test/activity.test.ts",
+      "target": "f:src/activity.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/activity.test.ts->f:src/read-trace.ts:imports",
+      "source": "f:test/activity.test.ts",
+      "target": "f:src/read-trace.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/activity.test.ts->f:src/hooks.ts:imports",
+      "source": "f:test/activity.test.ts",
+      "target": "f:src/hooks.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/activity.test.ts->f:src/control.ts:imports",
+      "source": "f:test/activity.test.ts",
+      "target": "f:src/control.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/activity.test.ts->f:test/_helpers.ts:imports",
+      "source": "f:test/activity.test.ts",
+      "target": "f:test/_helpers.ts",
+      "kind": "imports"
+    },
+    {
       "id": "f:test/atlas.test.ts->x:node:test:imports",
       "source": "f:test/atlas.test.ts",
       "target": "x:node:test",
@@ -8405,6 +9409,18 @@
       "kind": "imports"
     },
     {
+      "id": "f:test/calibration.test.ts->x:node:fs:imports",
+      "source": "f:test/calibration.test.ts",
+      "target": "x:node:fs",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/calibration.test.ts->x:node:path:imports",
+      "source": "f:test/calibration.test.ts",
+      "target": "x:node:path",
+      "kind": "imports"
+    },
+    {
       "id": "f:test/calibration.test.ts->f:test/_helpers.ts:imports",
       "source": "f:test/calibration.test.ts",
       "target": "f:test/_helpers.ts",
@@ -8431,6 +9447,54 @@
     {
       "id": "f:test/claude.test.ts->f:test/_helpers.ts:imports",
       "source": "f:test/claude.test.ts",
+      "target": "f:test/_helpers.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/codex-control.test.ts->x:node:test:imports",
+      "source": "f:test/codex-control.test.ts",
+      "target": "x:node:test",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/codex-control.test.ts->x:node:assert/strict:imports",
+      "source": "f:test/codex-control.test.ts",
+      "target": "x:node:assert/strict",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/codex-control.test.ts->x:node:child_process:imports",
+      "source": "f:test/codex-control.test.ts",
+      "target": "x:node:child_process",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/codex-control.test.ts->x:node:util:imports",
+      "source": "f:test/codex-control.test.ts",
+      "target": "x:node:util",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/codex-control.test.ts->x:node:fs/promises:imports",
+      "source": "f:test/codex-control.test.ts",
+      "target": "x:node:fs/promises",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/codex-control.test.ts->x:node:path:imports",
+      "source": "f:test/codex-control.test.ts",
+      "target": "x:node:path",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/codex-control.test.ts->f:src/control.ts:imports",
+      "source": "f:test/codex-control.test.ts",
+      "target": "f:src/control.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/codex-control.test.ts->f:test/_helpers.ts:imports",
+      "source": "f:test/codex-control.test.ts",
       "target": "f:test/_helpers.ts",
       "kind": "imports"
     },
@@ -9071,6 +10135,114 @@
       "kind": "imports"
     },
     {
+      "id": "f:test/experiment-cli.test.ts->x:node:test:imports",
+      "source": "f:test/experiment-cli.test.ts",
+      "target": "x:node:test",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/experiment-cli.test.ts->x:node:assert/strict:imports",
+      "source": "f:test/experiment-cli.test.ts",
+      "target": "x:node:assert/strict",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/experiment-cli.test.ts->x:node:child_process:imports",
+      "source": "f:test/experiment-cli.test.ts",
+      "target": "x:node:child_process",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/experiment-cli.test.ts->x:node:util:imports",
+      "source": "f:test/experiment-cli.test.ts",
+      "target": "x:node:util",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/experiment-cli.test.ts->x:node:path:imports",
+      "source": "f:test/experiment-cli.test.ts",
+      "target": "x:node:path",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/experiment-cli.test.ts->x:node:url:imports",
+      "source": "f:test/experiment-cli.test.ts",
+      "target": "x:node:url",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/experiment-cli.test.ts->x:node:fs:imports",
+      "source": "f:test/experiment-cli.test.ts",
+      "target": "x:node:fs",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/experiment-cli.test.ts->f:test/_helpers.ts:imports",
+      "source": "f:test/experiment-cli.test.ts",
+      "target": "f:test/_helpers.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/experiment.test.ts->x:node:test:imports",
+      "source": "f:test/experiment.test.ts",
+      "target": "x:node:test",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/experiment.test.ts->x:node:assert/strict:imports",
+      "source": "f:test/experiment.test.ts",
+      "target": "x:node:assert/strict",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/experiment.test.ts->x:node:crypto:imports",
+      "source": "f:test/experiment.test.ts",
+      "target": "x:node:crypto",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/experiment.test.ts->x:node:fs/promises:imports",
+      "source": "f:test/experiment.test.ts",
+      "target": "x:node:fs/promises",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/experiment.test.ts->x:node:fs:imports",
+      "source": "f:test/experiment.test.ts",
+      "target": "x:node:fs",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/experiment.test.ts->x:node:path:imports",
+      "source": "f:test/experiment.test.ts",
+      "target": "x:node:path",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/experiment.test.ts->f:src/activity.ts:imports",
+      "source": "f:test/experiment.test.ts",
+      "target": "f:src/activity.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/experiment.test.ts->f:src/experiment.ts:imports",
+      "source": "f:test/experiment.test.ts",
+      "target": "f:src/experiment.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/experiment.test.ts->f:src/read-trace.ts:imports",
+      "source": "f:test/experiment.test.ts",
+      "target": "f:src/read-trace.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/experiment.test.ts->f:test/_helpers.ts:imports",
+      "source": "f:test/experiment.test.ts",
+      "target": "f:test/_helpers.ts",
+      "kind": "imports"
+    },
+    {
       "id": "f:test/floor.test.ts->x:node:test:imports",
       "source": "f:test/floor.test.ts",
       "target": "x:node:test",
@@ -9200,6 +10372,72 @@
       "id": "f:test/hook-stop.test.ts->f:src/calibration.ts:imports",
       "source": "f:test/hook-stop.test.ts",
       "target": "f:src/calibration.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/hook-stop.test.ts->f:src/decisions.ts:imports",
+      "source": "f:test/hook-stop.test.ts",
+      "target": "f:src/decisions.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/hook-stop.test.ts->f:src/hooks.ts:imports",
+      "source": "f:test/hook-stop.test.ts",
+      "target": "f:src/hooks.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/hooks-cli.test.ts->x:node:test:imports",
+      "source": "f:test/hooks-cli.test.ts",
+      "target": "x:node:test",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/hooks-cli.test.ts->x:node:assert/strict:imports",
+      "source": "f:test/hooks-cli.test.ts",
+      "target": "x:node:assert/strict",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/hooks-cli.test.ts->x:node:child_process:imports",
+      "source": "f:test/hooks-cli.test.ts",
+      "target": "x:node:child_process",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/hooks-cli.test.ts->x:node:util:imports",
+      "source": "f:test/hooks-cli.test.ts",
+      "target": "x:node:util",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/hooks-cli.test.ts->x:node:fs/promises:imports",
+      "source": "f:test/hooks-cli.test.ts",
+      "target": "x:node:fs/promises",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/hooks-cli.test.ts->x:node:fs:imports",
+      "source": "f:test/hooks-cli.test.ts",
+      "target": "x:node:fs",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/hooks-cli.test.ts->x:node:path:imports",
+      "source": "f:test/hooks-cli.test.ts",
+      "target": "x:node:path",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/hooks-cli.test.ts->x:node:url:imports",
+      "source": "f:test/hooks-cli.test.ts",
+      "target": "x:node:url",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/hooks-cli.test.ts->f:test/_helpers.ts:imports",
+      "source": "f:test/hooks-cli.test.ts",
+      "target": "f:test/_helpers.ts",
       "kind": "imports"
     },
     {
@@ -10031,9 +11269,33 @@
       "kind": "imports"
     },
     {
+      "id": "f:test/regulate.test.ts->x:node:child_process:imports",
+      "source": "f:test/regulate.test.ts",
+      "target": "x:node:child_process",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/regulate.test.ts->x:node:fs/promises:imports",
+      "source": "f:test/regulate.test.ts",
+      "target": "x:node:fs/promises",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/regulate.test.ts->x:node:path:imports",
+      "source": "f:test/regulate.test.ts",
+      "target": "x:node:path",
+      "kind": "imports"
+    },
+    {
       "id": "f:test/regulate.test.ts->f:src/commands.ts:imports",
       "source": "f:test/regulate.test.ts",
       "target": "f:src/commands.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/regulate.test.ts->f:src/control.ts:imports",
+      "source": "f:test/regulate.test.ts",
+      "target": "f:src/control.ts",
       "kind": "imports"
     },
     {
@@ -10046,6 +11308,12 @@
       "id": "f:test/regulate.test.ts->f:src/regulate.ts:imports",
       "source": "f:test/regulate.test.ts",
       "target": "f:src/regulate.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/regulate.test.ts->f:test/_helpers.ts:imports",
+      "source": "f:test/regulate.test.ts",
+      "target": "f:test/_helpers.ts",
       "kind": "imports"
     },
     {

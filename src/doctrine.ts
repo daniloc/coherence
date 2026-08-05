@@ -19,6 +19,8 @@ export type RegulationAction = typeof REGULATION_POTENTIAL[number];
 export interface DoctrineCommand {
   name: string;
   args: readonly string[];
+  /** The selector appends `--host <reading.host>`; the sensor never authors shell argv. */
+  hostScoped?: true;
 }
 
 export interface DoctrineRule {
@@ -59,7 +61,7 @@ export const ANTI_ENTROPY_DOCTRINE: {
       sensor: "inspectLifecycleHook",
       response: "redirect" as const,
       remedy: "install the canonical five-event lifecycle control",
-      command: Object.freeze({ name: "hooks", args: Object.freeze(["install"]) }),
+      command: Object.freeze({ name: "hooks", args: Object.freeze(["install"]), hostScoped: true as const }),
     }),
     Object.freeze({
       id: "significant-growth-needs-address",

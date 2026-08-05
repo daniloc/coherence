@@ -1,11 +1,15 @@
 [
   {
     "name": "canonicalAction",
-    "sites": 2
+    "sites": 3
   },
   {
     "name": "canonicalGroup",
     "sites": 3
+  },
+  {
+    "name": "canonicalLifecycleHookSettings",
+    "sites": 2
   },
   {
     "name": "hasRunner",
@@ -16,8 +20,12 @@
     "sites": 4
   },
   {
+    "name": "iso",
+    "sites": 2
+  },
+  {
     "name": "isObject",
-    "sites": 11
+    "sites": 29
   },
   {
     "name": "isOutsideBand",
@@ -30,5 +38,13 @@
   {
     "name": "isTestPath",
     "sites": 3
+  },
+  {
+    "name": "validateItems",
+    "sites": 2
+  },
+  {
+    "name": "validateResults",
+    "sites": 2
   }
 ]

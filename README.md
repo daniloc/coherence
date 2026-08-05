@@ -272,7 +272,8 @@ Then add scripts that call the bin:
   "coherence:graph":  "coherence graph",
   "coherence:docs":   "coherence docs",
   "coherence:verify": "coherence verify",
-  "coherence:hooks-check": "coherence hooks --check"
+  "coherence:claude-hooks-check": "coherence hooks --check --host claude",
+  "coherence:codex-hooks-check": "coherence hooks --check --host codex"
 }
 ```
 
@@ -298,74 +299,138 @@ directory. Run the commands from that directory—the **coherence root**, where 
 consuming `package.json` installed `coherence-harness`. `npx` below resolves that
 project-local dependency; no global installation is assumed.
 
-1. **Name the Claude project root when it differs.** The Claude project root is the
-   directory the agent host opens and whose `.claude/settings.json` owns project hooks.
-   For the ordinary single-root layout, omit `claudeProjectRoot` (its default is `"."`).
-   If Claude opens the repository root while coherence is installed in `app/`, put this
-   in `app/coherence.config.json` *before* installing the hook:
+1. **Name each host's project root when it differs.** The host project root is the
+   directory the agent host opens and where that host keeps project hooks. Claude owns
+   `.claude/settings.json`; Codex owns `.codex/hooks.json`. For an ordinary single-root
+   layout, omit both fields. If coherence is installed in `app/` while both hosts open the
+   repository root, put this in `app/coherence.config.json` *before* installing either
+   control:
 
    ```json
    {
-     "claudeProjectRoot": ".."
+     "claudeProjectRoot": "..",
+     "codexProjectRoot": ".."
    }
    ```
 
-2. **Converge the control ON.** Do not author a repository-specific command or paste a
-   near-equivalent hook block:
+   `codexProjectRoot` defaults to `claudeProjectRoot`, then `"."`, but the explicit field
+   is preferable when the layouts differ. In a Git checkout it must resolve to the same
+   directory as `git rev-parse --show-toplevel`: Codex's canonical command deliberately
+   finds `.codex/coherence-hook` from that root. It is not an arbitrary directory in which
+   to park hook files. Outside Git, Codex treats the session working directory as its
+   project root; install and launch the session from this configured root. Current-session
+   activation remains the runtime proof that the structural path actually fired.
+
+2. **Converge one host's control ON.** Do not author a repository-specific command or
+   paste a near-equivalent hook block:
 
    ```sh
-   npx coherence hooks install
+   npx coherence hooks install --host claude
+   npx coherence hooks install --host codex --session "$CODEX_THREAD_ID"
    ```
 
-   Installation migrates recognized older coherence commands out of both shared and
-   local settings, preserves unrelated settings and hooks, and publishes exactly one
-   shared five-event bundle. Every repository receives the same command:
+   `--host` is deliberately explicit: a bare command remains Claude for compatibility,
+   even when `CODEX_THREAD_ID` is present. `--session` is optional for installation and
+   does not activate a running session—it asks the report printed after installation to
+   inspect that exact session.
+
+   Installation preserves unrelated settings and hooks and publishes exactly one shared
+   five-event bundle for the selected host. The lifecycle domain is the same, but the
+   host syntax is not. Claude receives:
 
    ```sh
    "$CLAUDE_PROJECT_DIR/.claude/coherence-hook" EVENT
    ```
 
-   Layout is carried separately by `.claude/coherence-root`. If installation reports a
-   missing lifecycle target, stop: either dependencies were not installed in the
-   coherence root or the selected coherence release predates the `coherence-hook` bin.
-   Fix the dependency before editing Claude settings.
+   Codex receives its own matchers and launcher identity:
 
-3. **Commit the complete control.** Track all three Claude-root artifacts produced or
-   updated by the installer:
+   ```sh
+   codex_root=$(git rev-parse --show-toplevel 2>/dev/null || pwd -P); "$codex_root/.codex/coherence-hook" EVENT
+   ```
+
+   In particular, Codex `SessionStart` matches `startup|resume|clear|compact`, while
+   `PostToolUse` matches `Bash|apply_patch|update_plan|mcp__.*`. Layout is carried
+   separately by the selected host's `coherence-root` file. If installation reports a
+   missing lifecycle target, stop: install dependencies in the coherence root before
+   editing host settings.
+
+3. **Commit the complete selected control.** Track the selected host's three artifacts:
 
    - `.claude/settings.json`
    - `.claude/coherence-hook`
    - `.claude/coherence-root`
 
+   or:
+
+   - `.codex/hooks.json`
+   - `.codex/coherence-hook`
+   - `.codex/coherence-root`
+
    Also commit `coherence.config.json`. In a nested layout these files deliberately live
    at different levels: the config/package in the coherence root, the three control
-   files in the Claude project root. `.claude/settings.local.json` is not part of the
+   files in the host project root. `.claude/settings.local.json` is not part of Claude's
    shared control; the installer only removes recognized competing coherence actions
-   from it.
+   from it. Codex's `.codex/config.toml` is inspected but not owned: an inline hook table
+   prevents a singular project path and makes installation refuse, while
+   `features.hooks = false` or `allow_managed_hooks_only = true` leaves the files
+   configured but the project control absent. User, managed, and plugin Codex layers
+   remain outside a repository check's authority.
 
-4. **Accept one binary reading.** This is the adoption gate and is suitable for CI:
+4. **Accept the structural bit.** With no session in scope, this is the adoption gate and
+   is suitable for CI:
 
    ```sh
-   npx coherence hooks --check
-   # or: npm run coherence:hooks-check
+   npx coherence hooks --check --host claude
+   npx coherence hooks --check --host codex
+   # or use the corresponding host-specific package script above
    ```
 
    Exit `0` means the singular canonical bundle, launcher, root mapping, and runnable
    target are all present. Exit `1` means absent/noncanonical; exit `2` means the checker
    could not answer safely (for example, invalid settings). A partial block, duplicate,
-   legacy spelling, competing local action, drifted launcher, or missing target is OFF.
+   legacy spelling, competing action, drifted launcher, misaligned Codex/Git root,
+   excluded or disabled Codex project hooks, or missing target is OFF.
 
-5. **Observe the field separately.** Start a fresh Claude session or subagent, then run:
+5. **Activate and prove the current Codex session separately.** Installation cannot make
+   a hook fire retroactively. Review the exact project hook in Codex `/hooks`, then start
+   or resume the session so `SessionStart` crosses the installed launcher. Inspect the
+   same session by id:
 
    ```sh
-   npx coherence hooks status
+   npx coherence hooks status --host codex --session "$CODEX_THREAD_ID"
+   npx coherence hooks --check --host codex --session "$CODEX_THREAD_ID"
    ```
 
-   `status` shows whether a hook-opened session has ever been observed, but history is
-   telemetry—not the control bit. A newly installed runnable hook is present before its
-   first firing, and yesterday's firing cannot redeem wiring removed today.
+   With `--session`, `--check` requires both the structural bit and an event delivered by
+   the exact selected host, launcher transport, and installed bundle fingerprint. That
+   fingerprint includes the hook-body package/protocol build as well as settings and
+   launcher bytes, so a pre-upgrade event cannot prove the new body ran. A manual
+   `coherence hook` probe is reported as direct evidence, not activation; an older bundle
+   is reported as stale. There is deliberately no “newest session” fallback—concurrency
+   makes newest an attribution bug. When neither `--session`, `COHERENCE_SESSION`, nor
+   `CODEX_THREAD_ID` supplies an identity, `status` says the current session is unknown.
+   Historical hook-opened sessions remain telemetry: yesterday's firing cannot redeem
+   wiring removed today, and a newly installed runnable control can be present while this
+   session's activation remains unconfirmed.
 
-6. **Watch the record as it is written.** With the control on, every agent session
+6. **Read the attribution ceiling.** Codex `PostToolUse` carries `session_id` but no
+   `agent_id`, and subagent hooks share the parent's session id. The parent session file
+   may therefore aggregate parent and descendant tool activity. Coherence records those
+   rows as `parent-fallback`, reports their count in session status, and never promotes
+   them to exact child evidence. A matching host/launcher/bundle row may still prove that
+   the installed control reached the named parent session; activation does not strengthen
+   its attribution. This is an honest aggregate, not a best guess. A
+   first-class experiment keeps valid fallback rows but labels the resulting telemetry
+   `parent-session-aggregate`: it may include descendant work and is never presented as
+   exact owner or child evidence. Exact agent/session rows are `owner-session`, an empty
+   post-open window is `none`, and trace rows written before observation metadata existed
+   remain visible as `legacy-unscoped`. Unreadable or internally unscoped/unknown rows
+   refuse closure. Likewise, a
+   `SubagentStop` without an exact child id reports the child journal count as unavailable
+   and takes no child calibration snapshot; the repository-wide open-conjecture reminder
+   remains explicitly repository-wide.
+
+7. **Watch the record as it is written.** With the control on, every agent session
    journals as it works. From the coherence root, in a second terminal:
 
    ```sh
@@ -377,10 +442,10 @@ project-local dependency; no global installation is assumed.
    the tip as agents write. Leave it open while a fleet runs and you are reading your
    agents' reasoning at the moment it happens instead of reconstructing it afterward.
 
-`npx coherence hooks print` renders the canonical settings, launcher, and mapping for
-inspection. It is not the preferred installer. The launcher and mapping paths are
-coherence-owned: `install` repairs drift at those names, while `uninstall` removes them
-only if their bytes still prove coherence ownership.
+`npx coherence hooks print --host codex` (or `--host claude`) renders that host's canonical
+settings, launcher, and mapping for inspection. It is not the preferred installer. The
+launcher and mapping paths are coherence-owned: `install` repairs drift at those names,
+while `uninstall --host …` removes them only if their bytes still prove coherence ownership.
 
 ### Regulate the field: one next action
 
@@ -391,10 +456,11 @@ not another dashboard or an umbrella verifier.
 
 ```sh
 npx coherence doctrine                         # inspect the law being applied
-npx coherence regulate                         # read-only report
-npx coherence regulate --since origin/main
-npx coherence regulate --check --since origin/main
-npx coherence regulate --json
+npx coherence regulate                         # current host (Codex when CODEX_THREAD_ID is set)
+npx coherence regulate --host claude
+npx coherence regulate --host codex --since origin/main
+npx coherence regulate --check --host codex
+npx coherence regulate --host codex --json
 ```
 
 The doctrine is versioned and built in, not a configurable score. Its potential is
@@ -405,14 +471,19 @@ most one executable command; lower-priority obligations are counted as withheld,
 rerun after the selected action reveals the next one. Insertion order, duplicate readings,
 and locally convenient weights cannot change that order.
 
-V1 evaluates exactly two rules: the complete canonical lifecycle control must be present,
+V1 evaluates exactly two rules: the selected agent host's complete canonical lifecycle
+control must be present,
 and significant behavioral growth must carry an invariant/boundary/parity anchor or a
 standing patch-bound decision. That is the whole domain. `release` therefore means “no
 intervention under those two live rules,” never “this repository is coherent” or “this
 change is correct.” `coherence doctrine [--json]` prints the rules and their stated limits
 from the same registry the selector executes.
 
-The command is explicit and read-only. It installs no hook, adds no anchor, writes no
+`--host` selects the control being regulated; when omitted, a Codex process selects Codex
+and other environments select Claude. The host is part of the reading and decision id,
+and an absent control redirects to `hooks install --host <that-host>`—a present Claude
+control cannot redeem Codex. The command is explicit and read-only. It installs no hook,
+adds no anchor, writes no
 attestation, and does not update the journal or status record. Without `--check`, a
 redirect or decision requirement is advisory and exits `0`; with `--check`, either exits
 `1`. Release exits `0`, and refusal—where the regulator could not obtain a required
@@ -446,6 +517,7 @@ Full (every field the `Config` interface in `src/types.ts` accepts; defaults fro
   "platform": "cloudflare",
   "claudeMdPath": "../CLAUDE.md",
   "claudeProjectRoot": "..",
+  "codexProjectRoot": "..",
   "dictionary": "dictionary",
   "sources": ["src"],
   "testDir": "__tests__",
@@ -480,6 +552,7 @@ Full (every field the `Config` interface in `src/types.ts` accepts; defaults fro
 | `components` | unset | Sub-component overrides for `decompose`/`drift` co-change analysis ONLY (globs relative to root; first match wins). The spec graph, verify, and coverage are untouched. |
 | `claudeMdPath` | `"CLAUDE.md"` | Path to the CLAUDE.md whose fenced block `coherence claude` owns. May be `../`-relative to escape the coherence root (repo-root CLAUDE.md above a sub-package). |
 | `claudeProjectRoot` | `"."` | Path from the coherence root to the Claude project root whose `.claude/settings.json` owns lifecycle hooks. Set `".."` when coherence/package.json lives in a sub-project but Claude opens at the repository root. The installed launcher remains identical; `.claude/coherence-root` carries the relative address back. |
+| `codexProjectRoot` | `claudeProjectRoot`, then `"."` | Path from the coherence root to the Codex project root whose `.codex/hooks.json` owns lifecycle hooks. In a Git checkout this must resolve to `git rev-parse --show-toplevel`, because the canonical launcher is found from that root. The Codex and Claude controls remain independent even when their roots coincide. |
 | `dictionary` | `"dictionary"` | Dir (relative to the coherence root) holding the pattern dictionary — one `<Word>.md` per word. A `conforms to <Word>` claim expands the word's commitments against the declaring component. A project with no such dir simply has no words (see "The dictionary" below). |
 | `sources` | `[entryDir]` | Dirs the `lint-sinks`/`conventions` scans are scoped to — keep generated/vendored trees out. |
 | `testDir` | `"__tests__"` | Path substring identifying test files for the ratchet scans. |
@@ -962,40 +1035,35 @@ The journal is the third option: each agent emits a line per decision **as it ma
 it**, and you read the merged result.
 
 ```sh
-coherence hooks install   # set the lifecycle control ON in .claude/settings.json
-coherence hooks status    # show structural state, launcher readiness, and runtime evidence
-coherence hooks --check   # binary gate: is the complete canonical control runnable?
-coherence hooks uninstall # set it OFF without touching unrelated settings or hooks
+coherence hooks install --host codex --session "$CODEX_THREAD_ID"
+coherence hooks status --host codex --session "$CODEX_THREAD_ID"
+coherence hooks --check --host codex --session "$CODEX_THREAD_ID"
+coherence hooks uninstall --host codex # leaves unrelated settings and hooks intact
 ```
 
 The hook is a **control value**, not a family of similar snippets. Printing, installing,
-and checking all use the same five-event structure and byte-exact commands. `--check`
-answers one question only: is the complete shared control present and runnable? That means
-exactly one canonical group per event in project settings, no competing coherence action
-in local settings, the stable `.claude/coherence-hook` launcher, the correct root mapping,
-and a runnable package target. A partial block, an older spelling, a duplicate, and a
-command under the wrong matcher are off; unrelated hooks may coexist. `install` converges
-older coherence-emitted spellings and is byte-idempotent.
+and checking all derive from one host-selected five-event value and byte-exact launcher.
+Host parity means one contract with host-native syntax, not pretending Claude and Codex
+consume the same JSON or output shape. `--check` without a session answers the structural
+question: is the selected host's complete shared control present and runnable? With an
+exact `--session`, it additionally requires an event from this host's installed bundle.
+A partial block, older spelling, duplicate, wrong matcher, direct diagnostic invocation,
+or stale bundle cannot earn that reading; unrelated hooks may coexist. `install` converges
+recognized older spellings and is byte-idempotent.
 
-`.claude/coherence-hook` and `.claude/coherence-root` are coherence-owned control files.
-`install` atomically repairs drift or collisions at those exact names; do not place unrelated
-content there. `uninstall` is deliberately conservative: it removes either file only while
-its bytes are still canonical, so an operator edit made after installation is never deleted.
+Each host's `coherence-hook` and `coherence-root` are coherence-owned control files.
+`install` atomically repairs drift or collisions at those exact names; `uninstall` removes
+either file only while its bytes still prove coherence ownership. Layout is data: declare
+the host root with `claudeProjectRoot` or `codexProjectRoot`, and the mapping addresses the
+coherence root without minting a repository-specific launcher.
 
-The settings command and launcher are identical in every repository. Layout is data:
-`.claude/coherence-root` is `.` in a single-root project and e.g. `app` when Claude opens
-one directory above coherence. Declare that host directory with `claudeProjectRoot` in
-`coherence.config.json`; this avoids turning each monorepo layout into a new hook spelling.
-
-**Current readiness and historical observation are different facts.** The first real test of the hook path
-failed silently: the settings block existed, the command emitted correct JSON by hand,
-and the subagent received nothing. `status` therefore shows every current prerequisite
-(wiring, launcher, mapping, target) and the historical count of hook-opened sessions.
-Current readiness determines the bit; history never does. Old activity cannot redeem a
-hook removed today, and a newly installed runnable hook is present before its first
-session. **The journal itself needs no hook** — `coherence
-decide` is a plain command; without a running hook you put the instruction in each
-agent's brief instead.
+**Configuration, current-session activation, and historical observation are different
+facts.** `status` prints all three. Old activity cannot redeem a hook removed today; an
+installed control does not prove the current Codex session loaded it; and invoking the
+body by hand proves only that the body runs. For Codex, review the project hook in `/hooks`,
+start or resume the named session, then require `activation: OBSERVED` for that session.
+**The journal itself needs no hook** — `coherence decide` is a plain command; without a
+running hook you put the instruction in each agent's brief instead.
 
 The block `coherence hooks` prints carries **five** event names. `SubagentStart` and
 `SessionStart` do the same job at two scales: each OPENS a session — the only place that
@@ -1003,14 +1071,21 @@ can guarantee one id per *agent* rather than one per shell command — and injec
 instruction. `SubagentStart` fires for every agent a run spawns; `SessionStart` fires for
 the session itself, so work that never spawns an agent still journals under an id of its
 own instead of falling back to a derived one. `PostToolUse` records only explicit
-read/write path fields in a transient per-session trace; it does no graph or git analysis
-on that high-frequency path. `SubagentStop` snapshots calibration and reports both what
-the journal holds and the patch's current change signal. Its final-report restatement is
-subagent-only: the parent may see no other account of the work. Main-agent `Stop` snapshots
-calibration with byte-empty stdout. It cannot safely turn the shared worktree's change
-signal or open-conjecture count into this agent's unfinished task, so no main conclusion
-receives a second model turn. Subagent feedback gets one turn; a `stop_hook_active`
-follow-up is silent so it cannot loop or become a gate.
+read/write path fields in a transient per-session trace and narrow lifecycle/command
+activity carrying host, launcher, bundle, and the strongest available attribution; it does
+no graph or git analysis on that high-frequency path. The path trace is an explicit-path
+lower bound whose current rows carry that observation identity; status partitions exact,
+stale, direct, parent-aggregate, and legacy rows and counts malformed lines. Older rows
+without observation metadata remain explicitly `legacy-unscoped`. `SubagentStop`
+snapshots calibration and reports the
+exact child's journal count plus the patch's repository-wide change signal only when the
+host supplied an `agent_id`; otherwise it names the ceiling and does not charge the parent
+session to an unknown child. Its final-report restatement is subagent-only: the parent may
+see no other account of the work. Main-agent `Stop` snapshots calibration with byte-empty
+stdout. It cannot safely turn the shared worktree's change signal or open-conjecture count
+into this agent's unfinished task, so no main conclusion receives a second model turn.
+Subagent feedback gets one turn; a `stop_hook_active` follow-up is silent so it cannot loop
+or become a gate.
 `signal --check` is the CI gate. The generated block invokes the dedicated
 `coherence-hook` binary so loading the full command registry is not part of every read.
 An event the harness does not recognize is deliberately *not* an error — hook sets grow,
@@ -1046,6 +1121,74 @@ coherence decisions [--job X] [--agent Y] [--session S] [--branch B] [--sessions
 # it changes nothing the read prints: fold COMMITTED session files into one per (branch, month).
 coherence decisions --compact
 ```
+
+### `coherence experiment` — freeze a planned inference loop, then close it with evidence
+
+A checklist records intended motion and a checked box records self-report. An experiment
+records the prediction **before** the work and requires evidence for every declared action
+and success criterion afterward. It is a separate append-only ledger because a failed
+experiment can still be a well-closed loop, while a successful experiment is not proof
+that the patch is clean or that the plan caused the outcome.
+
+Create the experiment before taking its first action:
+
+```sh
+coherence experiment create "one boundary removes the repeated branch" \
+  --context src/a.ts --context src/a.spec.md \
+  --action "replace both branches at the shared chokepoint" \
+  --success "the focused contract passes" \
+  --session "$CODEX_THREAD_ID"
+```
+
+The owner session is exact—there is no branch/date, `unknown`, or newest-session fallback.
+At least one predicted context path, inert action label, and observable success criterion
+is required. The command executes none of them. It freezes the repository snapshot and
+the owner session's read/activity cursors, assigns stable ids (`a1`, `s1`, …), and prints
+the close template. A session may have one open experiment; an exact create retry dedupes,
+while changing the plan requires closing the standing one first.
+
+Inspect one loop or the open work list at any time:
+
+```sh
+coherence experiment inspect <experiment-id>
+coherence experiment inspect --open --session "$CODEX_THREAD_ID"
+# `coherence plan …` is an alias; `--json` is available on create/inspect/close.
+```
+
+With no selector, inspect is the merged fleet view. Ambient `CODEX_THREAD_ID` or
+`COHERENCE_SESSION` identifies create/close writers but never silently narrows a read;
+only an explicit `--session` applies that filter.
+
+Close it by answering every generated id exactly once with nonempty evidence:
+
+```sh
+coherence experiment close <experiment-id> \
+  --action-result 'a1=revised::the diff showed a third caller at src/c.ts' \
+  --result 's1=unmet::the focused contract still reports one failing case' \
+  --session "$CODEX_THREAD_ID"
+```
+
+Action statuses are `followed|revised|skipped|unknown`; criterion statuses are
+`met|unmet|unknown`. The caller cannot supply an outcome. Any unmet criterion derives
+`failure`; all met derives `success`; otherwise the result is `inconclusive`. Closure
+freezes the post-open trace and activity windows in the owner's session files while
+preserving the assessor's separate identity. Each window names its weakest provable
+scope: `none` for an empty post-open window, `owner-session` for exact agent/session rows,
+`parent-session-aggregate` when a valid Codex fallback may include descendant work, and
+`legacy-unscoped` for older trace rows that predate observation metadata. Activity
+evidence uses the first three scopes; legacy trace remains visible instead of being
+silently upgraded. These telemetry labels do not derive the outcome—the assessor's total
+criterion evidence does. Missing or extra ids, unreadable rows, shrunk or rewritten
+prefixes, and unknown or inconsistent scope all refuse rather than manufacturing a
+complete story. An exact close retry returns the immutable record; changed evidence
+cannot rewrite it. Commit `.coherence/experiments/` alongside the decision and calibration
+records.
+
+New writes use experiment wire v2, whose replay identity includes the observation domain
+and whose empty windows say `none`. The strict reader still accepts valid v1 rows, checks
+their original content-addressed ids before adapting anything, and normalizes the old
+`owner-session` spelling in memory to `none` or `legacy-unscoped` where the frozen rows
+prove only that weaker scope. It never rewrites the append-only bytes.
 
 ### The conjecture — abduction as a first-class entry
 
@@ -1582,7 +1725,7 @@ any is in **In detail** below — that half is authored, and does not cover all 
 - `coherence verify [--fast] [--staged | --since <ref>] [--raise [--raise-cap N]] [--apply <verdicts>] [--from-report <file>] [--serial-oracles]` — run the claims, the evidence chain and coverage — the gate
 - `coherence log [<refA> [<refB>]] [--strict]` — structural diff of the invariant/boundary set between two refs, then the novelty advisory
 - `coherence signal [--check] [--since <ref>] [--attest-no-invariant --because <why>]` — require significant behavioral growth to gain an anchor or a patch-bound decision
-- `coherence regulate [--check] [--since <ref>] [--json]` — apply the anti-entropy doctrine to live readings and emit exactly one next action
+- `coherence regulate [--check] [--since <ref>] [--host <claude|codex>] [--json]` — apply the anti-entropy doctrine to live readings and emit exactly one next action
 
 **Durable agent record — appends only, gates nothing**
 
@@ -1631,7 +1774,7 @@ any is in **In detail** below — that half is authored, and does not cover all 
 
 - `coherence doctrine [--json]` — print the versioned law the regulator is allowed to apply
 - `coherence phrasebook` — print the claim-form table straight from the `CLAIM_FORMS` registry
-- `coherence hooks [status|install|uninstall|print] [--check] [--json]` — the lifecycle control — converge on one canonical, runnable shared hook bundle
+- `coherence hooks [status|install|uninstall|print] [--check] [--json] [--host <claude|codex>] [--session <id>]` — the lifecycle control — converge on one canonical, runnable shared hook bundle
 - `coherence hook <event>` — the hook BODY, invoked by the harness rather than by you
 
 <!-- coherence:commands:end -->
@@ -1799,9 +1942,11 @@ any is in **In detail** below — that half is authored, and does not cover all 
 - `coherence calibrate [--outcome clean|defect] [--session <id>]` — compare economy's
   predicted one-hop read set with observed explicit file reads, then label the patch
   outcome. Compact append-only samples live per session in `.coherence/calibration/`;
-  raw hook traces remain transient. Write-bearing hooks scope changed files to the
-  session that edited them; hosts without those events fall back to the shared worktree
-  union and say so. Coverage and defect-rate differences are calibration evidence, not
+  raw hook traces remain transient. Exact write-bearing rows scope changed files to the
+  editing session; Codex parent-only rows stay `parent-session-aggregate`, legacy rows
+  stay unscoped, and hosts without write events fall back to the shared worktree union.
+  Trace damage produces no sample instead of shrinking the observation silently. Coverage
+  and defect-rate differences are calibration evidence, not
   causal proof, and shell/editor/remembered reads are intentionally not guessed.
 - `coherence scaffold <boundary|component|invariant|parity> <name>` — the gradient-flip
   generator: make the complete shape the cheapest thing to ship.
@@ -1981,20 +2126,31 @@ any is in **In detail** below — that half is authored, and does not cover all 
     — the MERGED timeline across every session file, ordered by time. `--compact` is the
     one exception to "appends only": it folds **committed** session files into one per
     (branch, month) and is judged by leaving this render character-for-character identical.
+- `coherence experiment <create|inspect|close> …` (alias `plan`) — the first-class plan
+  ledger. `create` freezes a hypothesis, predicted context, inert actions, criteria, and
+  owner session-file evidence cursors before work. `close` requires total nonempty evidence,
+  labels telemetry at its weakest provable scope, and derives
+  `success|failure|inconclusive` from the criteria; it accepts no caller-authored outcome
+  and makes no clean/defect or causal claim. Records append under
+  `.coherence/experiments/<writing-session>.jsonl`.
 - `coherence contract` — the **promise graph**: derive declared zones, graded gates and the
   reliance double-entry into a self-contained `_contract.html`, plus `promise.json` for
   agents and tools. It is the **reliance ledger** — an inspection artifact written for the
   relying party rather than the author, answering *what may be assumed here, and on whose
   evidence*, which is the trust-side reading of the ladder above. It embeds live grades, so it is always regenerated — there is no
   `--check` for it.
-- `coherence hooks [status|install|uninstall|print] [--check] [--json]` — the lifecycle
-  control. One canonical five-event bundle and stable launcher are shared by the printer,
-  installer, and structural checker; `--check` exits on the complete runnable control.
-  `status` keeps its structural parts and observed firing visible as separate facts. The block traces explicit
-  read/write paths at `PostToolUse`; `SubagentStop` emits the journal + patch report, while
-  main-agent `Stop` records calibration with byte-empty stdout. `coherence-hook <event>` is
-  the dependency-light lifecycle body; `coherence hook <event>` remains the general-CLI
-  spelling.
+- `coherence hooks [status|install|uninstall|print] [--check] [--host claude|codex] [--session S] [--json]`
+  — the lifecycle control. `--host` selects every action; `--session` scopes `status`,
+  `--check`, and the report after `install`/`uninstall`, while `print` accepts only the
+  host. One host-selected canonical five-event bundle and stable launcher are shared by
+  the printer, installer, and checker. A
+  sessionless `--check` grades the complete runnable control; with `--session`, it also
+  requires activation evidence from that host's exact installed bundle. `status` keeps
+  structural state, current-session activation, and historical firing separate, and names
+  Codex's `parent-fallback` attribution ceiling. The block traces explicit read/write paths
+  at `PostToolUse`; `SubagentStop` emits the journal + patch report, while main-agent `Stop`
+  records calibration with byte-empty stdout. `coherence-hook <event>` is the
+  dependency-light lifecycle body; `coherence hook <event>` remains the general-CLI spelling.
 - `coherence why-lint` — the **`## why` discipline**, two advisory checks against the
   graph the harness already holds:
   1. **mechanism-restatement** — a sentence that names an anchored chokepoint/oracle
