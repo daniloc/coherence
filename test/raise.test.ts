@@ -20,7 +20,7 @@
 //      afford.
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtemp } from "node:fs/promises";
+import { mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -412,11 +412,18 @@ test("the labels stay labels — a raised `chose` does not run to a paragraph", 
 test("gates nothing — a journal that cannot be written reports the loss and returns", async () => {
   // Advisory or not, a lost entry is reported. The alternative is an advisory that looks
   // like it raised a question and did not, which is the defect this harness hunts.
-  const cfg = { root: "/proc/nonexistent-and-unwritable" } as Config;
-  const r = raiseFindings(cfg, [], [neverRedFinding("sim", "c", 4)], { enabled: true });
-  assert.equal(r.opened.length, 0);
-  assert.equal(r.failed, 1);
-  assert.match(formatRaise(r).join("\n"), /1 write\(s\) FAILED/);
+  // A regular file at the journal directory's parent makes mkdir fail deterministically.
+  // The old fixture used a nonexistent path under /proc. On Linux, this file's worker
+  // was the only worker that never exited in every CI run since v0.14.0; replacing its
+  // sole platform-specific setup makes the failure portable and the diagnosis testable.
+  const cfg = await root();
+  try {
+    await writeFile(join(cfg.root, ".coherence"), "not a directory\n");
+    const r = raiseFindings(cfg, [], [neverRedFinding("sim", "c", 4)], { enabled: true });
+    assert.equal(r.opened.length, 0);
+    assert.equal(r.failed, 1);
+    assert.match(formatRaise(r).join("\n"), /1 write\(s\) FAILED/);
+  } finally { await cleanup(cfg.root); }
 });
 
 // ── 7. through the actual commands ───────────────────────────────────────────────
