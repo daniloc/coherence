@@ -769,9 +769,9 @@ export function resolve(records: DecisionRecord[]): {
   const resolved: { rec: DecisionRecord; by: DecisionRecord }[] = [];
   const dismissed: { rec: DecisionRecord; by: DecisionRecord }[] = [];
   for (const r of all) {
-    if (r.kind === "retraction" || r.kind === "resolution" || r.kind === "dismissal") continue;
     const by = withdrawn.get(r.id);
     if (by) { retracted.push({ rec: r, by }); continue; }
+    if (r.kind === "retraction" || r.kind === "resolution" || r.kind === "dismissal") continue;
     if (r.kind === "conjecture") {
       const ans = answered.get(r.id);
       if (ans) { resolved.push({ rec: r, by: ans }); continue; }

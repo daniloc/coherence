@@ -221,6 +221,10 @@ test("open — a retracted resolution cannot keep answering a conjecture", async
     "a withdrawn answer has no terminal force");
   assert.equal(afterWithdrawal.open.some((r) => r.id === c.id), true,
     "without another live answer the question reopens");
+  assert.equal(afterWithdrawal.retracted.some((x) => x.rec.id === broad.id), true,
+    "the withdrawn answer remains visible in the correction record");
+  assert.match(renderJournal(cfg).text, /global policy[\s\S]*RETRACTED by/,
+    "terminal correction is readable without opening raw JSONL");
 
   const scoped = appendDecision(cfg, {
     kind: "resolution", chose: "scoped to the observed adopter", supersedes: c.id,
