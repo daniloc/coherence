@@ -159,6 +159,12 @@
         "security": false,
         "translates": "A diff's shape becomes a demand: behavioral growth with zero anchors needs an invariant or an explicit attestation. It grades process, not evidence \u2014 a tear here delays a claim, it does not fabricate one."
       },
+      "selectRegulation": {
+        "from": "derived-model",
+        "to": "verdict",
+        "security": true,
+        "translates": "Live sensor observations become exactly one ordered intervention. Missing, foreign, or conflicting readings refuse; a required decision outranks a mechanical redirect; and release means only that the versioned rules evaluated no obligation. A tear here can mask stronger debt with easier work, so the selector's priority is a guarded crossing rather than formatter policy."
+      },
       "tailJournal": {
         "from": "record",
         "to": "reading-surface",

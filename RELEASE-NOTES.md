@@ -14,6 +14,53 @@ evidence inside that record.
 
 ---
 
+## v0.30.0 — the doctrine gets a regulator, and main Stop goes quiet
+
+Coherence now names the law its instruments are allowed to apply. `coherence doctrine`
+prints the immutable `anti-entropy/v1` registry; `coherence regulate` reads its live
+sensors and selects **exactly one strongest next action**: refuse an unavailable required
+reading, require a decision for significant unanchored growth, redirect an absent
+lifecycle control to its canonical installer, or release. The potential is lexicographic,
+runtime-frozen, permutation-invariant, and fail-closed on missing, foreign, malformed, or
+conflicting observations. Lower obligations remain counted but cannot leak a second
+command into the reply.
+
+This is deliberately a SMALL controller, not a new umbrella verdict. V1 evaluates only
+the canonical lifecycle bit and the existing significant-growth signal. `release` means
+no intervention under those two rules, never that the change is correct or the repository
+is coherent. Report mode is read-only; `--check` changes only the exit status. Doctrine
+does not install its own hook, write an attestation, stamp the run record, or let a local
+config reorder the law when it becomes inconvenient.
+
+Main-agent `Stop` is now **byte-silent**. Claude Code fires it once per turn and gives it
+no matcher; any `additionalContext` buys another model turn. The old shared report therefore
+made every conclusion repeat itself. The tempting compromise — interrupt only for an
+unsettled change signal — failed a deeper test: `analyzeChange` observes the shared
+worktree, so one agent's change could charge whichever agent happened to stop. Main Stop
+still snapshots calibration, but only `SubagentStop` receives the journal, patch signal,
+and final-report restatement. The canonical five-event bundle is unchanged, so adopters
+need a dependency repin, not a settings migration.
+
+Both seams carry executable negative controls. Reordering the selector by rule declaration
+made the easy lifecycle redirect mask the stronger decision requirement and red the
+regulation claim. Inserting one main-Stop `emit` recreated the conclusion echo and red the
+lifecycle claim by name. An adversarial pass also caught three quiet release defects before
+tagging: a multiword `npx coherence` remedy rendered as one impossible executable, the
+priority array was readonly only to TypeScript rather than frozen at runtime, and a missing
+hook target prescribed an install that could not succeed. All now refuse or render safely.
+
+The shared-worktree attribution conjecture is resolved in the journal rather than buried
+as a code comment. This release also carries the journal discoverability signposts that
+landed just after v0.29.0: hook installation names the live reader, the TTY decision view
+points to its streaming sibling, and the adoption ladder tells a fleet operator to keep
+`coherence journal` open while agents run.
+
+695 tests. `verify` 32/32 green. Generated reading surfaces current; lifecycle control,
+premise leases, conventions, injection sites, mass, atlas, and change signal all held at
+release.
+
+---
+
 ## v0.29.0 — the journal gets a live reader, and the reader got read
 
 `coherence journal` is the record's first LIVE surface: an interactive surf over
