@@ -58,7 +58,7 @@ export type CommandGroup =
 const GROUP_TITLE: Record<CommandGroup, string> = {
   derive: "Derive the artifacts",
   verify: "Verify, and diff what is enforced",
-  journal: "The decision journal — appends only, gates nothing",
+  journal: "Durable agent record — appends only, gates nothing",
   perceive: "Perceive the project",
   ratchet: "Ratchets and gates",
   advisory: "Advisories — they surface, you judge",
@@ -181,6 +181,11 @@ export const COMMANDS: Command[] = [
     name: "journal", group: "journal",
     usage: "[--follow | --once] [--job X] [--agent Y] [--session S] [--branch B]",
     summary: "the LIVE read — stream entries as agents write them, and surf the history in aggregate or one session's stream",
+  },
+  {
+    name: "experiment", group: "journal", aliases: ["plan"],
+    usage: "<create|inspect|close> ... [--session S] [--json]",
+    summary: "open a plan hypothesis, freeze its predicted context/actions/criteria, then close it with criterion-total evidence",
   },
 
   // ── perceive ─────────────────────────────────────────────────────────────────────────

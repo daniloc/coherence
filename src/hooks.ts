@@ -23,10 +23,16 @@ import { join } from "node:path";
 import { readJournal, openSession, resolve } from "./decisions.ts";
 import {
   canonicalLifecycleHookSettings, inspectLifecycleHook, setLifecycleHook,
-  LIFECYCLE_HOOK_SCRIPT, lifecycleRootMapping, resolveClaudeProjectRoot,
-  type LifecycleHookInspection,
+  lifecycleHookScript, lifecycleRootMapping, resolveHookProjectRoot,
+  type HookHost, type LifecycleHookInspection,
 } from "./control.ts";
 import { readDue, formatDue } from "./due.ts";
+import {
+  readActivity, recordActivity,
+  type ActivityHost, type ActivityTransport,
+} from "./activity.ts";
+import { readTrace } from "./read-trace.ts";
+import { readExperiments } from "./experiment.ts";
 import type { Config } from "./types.ts";
 
 /** Use the source entrypoint only while this repository dogfoods itself. Consumers get
@@ -83,6 +89,13 @@ export function agentInstructions(session: string, cli = "npx coherence", agent?
     `  ${cli} decide "not X — measured N instances" --over "<the mechanism you did not build>" \\`,
     `    --because "<the query, so the next agent can re-run it instead of re-arguing>" ${scope}`,
     "",
+    "WHEN YOU FORM A MULTI-STEP PLAN, MAKE ITS PREDICTION FALSIFIABLE before acting:",
+    `  ${cli} experiment create "<what you expect will work>" --context "<file you expect to need>" \\`,
+    `    --action "<planned action>" --success "<observable success criterion>" ${scope}`,
+    "The command prints stable action/criterion ids and a close template. Closing derives",
+    "success, failure, or inconclusive from evidence for EVERY id; a Stop or a checked box",
+    "never becomes success by itself.",
+    "",
     "Two more verbs:",
     `  ${cli} blocked "<what you could not do>" --because "<why>" ${scope}`,
     `  ${cli} retract <id> --because "<what refuted it>" ${scope}`,
@@ -119,6 +132,15 @@ export function composeStopFeedback(
   return null;
 }
 
+function hookHost(): ActivityHost {
+  const host = process.env.COHERENCE_HOOK_HOST;
+  return host === "codex" || host === "claude" ? host : "unknown";
+}
+
+function hookTransport(): ActivityTransport {
+  return process.env.COHERENCE_HOOK_TRANSPORT === "launcher" ? "launcher" : "direct";
+}
+
 /** `coherence hook <event>` — the hook body itself, so nothing has to be written to
  *  disk or kept in sync with a script file. Reads the event payload on stdin (unused
  *  today, but hooks are fed JSON and ignoring it silently would be rude to the next
@@ -129,12 +151,31 @@ export async function runHook(cfg: Config, event: string): Promise<number> {
   try { payload = raw.trim() ? JSON.parse(raw) : {}; } catch { /* hooks must survive a host's malformed payload */ }
   const p = payload && typeof payload === "object" ? payload as Record<string, unknown> : {};
   const hostScope = p.agent_id ?? p.agentId ?? p.session_id ?? p.sessionId;
+  const host = hookHost();
+
+  // Every lifecycle crossing leaves a cheap, transient heartbeat. Unlike a journal
+  // header, this names the host, launcher transport and exact bundle fingerprint, so an
+  // old Claude run—or a direct diagnostic invocation—cannot prove that THIS Codex
+  // session is currently inside the field.
+  try {
+    recordActivity(cfg, event, payload, {
+      host,
+      transport: hookTransport(),
+      bundleHash: process.env.COHERENCE_HOOK_BUNDLE_FINGERPRINT ?? null,
+      experimentId: null,
+    });
+  } catch { /* observation loss must not become agent-lifecycle failure */ }
 
   if (event === "SubagentStart" || event === "SessionStart") {
     // The session is OPENED here, by the hook, once per agent — which is the only
     // place that can guarantee one id per agent rather than one per shell command.
-    const rec = openSession(cfg, {
-      session: hostScope === undefined ? undefined : String(hostScope),
+    const session = hostScope === undefined ? undefined : String(hostScope);
+    // Codex re-fires SessionStart on resume, clear and compaction. Re-inject the current
+    // work order every time, but keep one logical journal opening for one host session.
+    const existing = session === undefined ? undefined : readJournal(cfg).records
+      .find((record) => record.kind === "session" && record.session === session);
+    const rec = existing ?? openSession(cfg, {
+      session,
       agent: String(p.agent_type ?? p.agentType ?? process.env.COHERENCE_AGENT ?? "main"),
       job: String(p.session_id ?? p.sessionId ?? process.env.COHERENCE_JOB ?? "-"),
     });
@@ -154,7 +195,7 @@ export async function runHook(cfg: Config, event: string): Promise<number> {
     // A hook that throws breaks every session in every adopting project on repin. This
     // reading is worth strictly less than that, so it can fail to nothing.
     const due = await readDue(cfg).then((r) => formatDue(r, cli, scope)).catch(() => []);
-    emit(event, [agentInstructions(rec.session, cli, rec.agent), ...due].join("\n"));
+    emit(host, event, [agentInstructions(rec.session, cli, rec.agent), ...due].join("\n"));
     return 0;
   }
 
@@ -197,7 +238,7 @@ export async function runHook(cfg: Config, event: string): Promise<number> {
       text: `CHANGE SIGNAL unavailable: ${e instanceof Error ? e.message : String(e)}`,
     }));
     const feedback = composeStopFeedback(event, stopReport(cfg), change);
-    if (feedback !== null) emit(event, feedback);
+    if (feedback !== null) emit(host, event, feedback);
     return 0;
   }
 
@@ -253,7 +294,14 @@ export function stopReport(cfg: Config): string {
     : "");
 }
 
-function emit(event: string, additionalContext: string): void {
+function emit(host: ActivityHost, event: string, additionalContext: string): void {
+  // Codex SubagentStop has a distinct continuation contract: additionalContext is not a
+  // delivery surface there. A block decision gives the child one final turn; the shared
+  // stop_hook_active guard above keeps that turn from feeding itself forever.
+  if (host === "codex" && event === "SubagentStop") {
+    console.log(JSON.stringify({ decision: "block", reason: additionalContext }));
+    return;
+  }
   console.log(JSON.stringify({ hookSpecificOutput: { hookEventName: event, additionalContext } }));
 }
 
@@ -269,25 +317,130 @@ function readStdin(): Promise<string> {
 }
 
 export interface HookStatus {
+  host: HookHost;
   control: LifecycleHookInspection;
-  observation: { sessionsOpenedByHook: number; journalEntries: number; sessions: number };
+  observation: {
+    sessionsOpenedByHook: number;
+    journalEntries: number;
+    sessions: number;
+    current: CurrentHookObservation | null;
+  };
 }
 
-/** Structural control state and historical runtime evidence are adjacent, never fused. */
-export function hookStatus(cfg: Config): HookStatus {
-  const control = inspectLifecycleHook(cfg);
+export interface CurrentHookObservation {
+  session: string;
+  state: "observed" | "unobserved" | "stale";
+  exactLauncherEvents: number;
+  staleLauncherEvents: number;
+  directEvents: number;
+  lastExactAt: string | null;
+  reads: number;
+  writes: number;
+  updatePlanEvents: number;
+  parentFallbackEvents: number;
+  unreadableActivity: number;
+  verification: { total: number; success: number; failure: number; unknown: number };
+  intervention: { total: number; success: number; failure: number; unknown: number };
+  experiment: { open: number; closed: number; latest: string | null; outcome: string | null } | { unavailable: string };
+}
+
+/** Which host owns the current shell. Explicit selection always wins. */
+export function activeHookHost(explicit?: HookHost | null): HookHost {
+  if (explicit) return explicit;
+  return process.env.CODEX_THREAD_ID ? "codex" : "claude";
+}
+
+/** Never pick the newest session: concurrency makes "latest" an attribution bug. */
+export function activeHookSession(host: HookHost, explicit?: string | null): string | null {
+  return explicit ?? process.env.COHERENCE_SESSION
+    ?? (host === "codex" ? process.env.CODEX_THREAD_ID : undefined)
+    ?? null;
+}
+
+function uniqueActivity<T extends { eventId: string | null; at: string }>(rows: T[]): T[] {
+  const addressed = new Map<string, T>();
+  const unaddressed: T[] = [];
+  for (const row of rows) {
+    if (row.eventId) addressed.set(row.eventId, row); // last replay carries the best result
+    else unaddressed.push(row); // no host identity means there is nothing honest to dedupe on
+  }
+  return [...unaddressed, ...addressed.values()].sort((a, b) => a.at.localeCompare(b.at));
+}
+
+function commandCounts(rows: ReturnType<typeof readActivity>["rows"], kind: "verification" | "intervention") {
+  const commands = rows.map((row) => row.command).filter((command) => command?.kind === kind);
+  return {
+    total: commands.length,
+    success: commands.filter((command) => command?.result === "success").length,
+    failure: commands.filter((command) => command?.result === "failure").length,
+    unknown: commands.filter((command) => command?.result === "unknown").length,
+  };
+}
+
+function currentObservation(cfg: Config, control: LifecycleHookInspection, session: string): CurrentHookObservation {
+  const activityRead = readActivity(cfg, session);
+  const activity = uniqueActivity(activityRead.rows);
+  const exact = activity.filter((row) => row.transport === "launcher"
+    && row.host === control.host && row.bundleHash === control.bundleFingerprint);
+  const stale = activity.filter((row) => row.transport === "launcher"
+    && (row.host !== control.host || row.bundleHash !== control.bundleFingerprint));
+  const direct = activity.filter((row) => row.transport === "direct");
+  const trace = readTrace(cfg, session);
+  let experiment: CurrentHookObservation["experiment"];
+  try {
+    const ledger = readExperiments(cfg);
+    const owned = ledger.experiments.filter((item) => item.opened.session === session);
+    const latest = owned.at(-1) ?? null;
+    experiment = {
+      open: owned.filter((item) => !item.closed).length,
+      closed: owned.filter((item) => !!item.closed).length,
+      latest: latest?.opened.id ?? null,
+      outcome: latest?.closed?.outcome ?? null,
+    };
+  } catch (error) {
+    experiment = { unavailable: error instanceof Error ? error.message : String(error) };
+  }
+  return {
+    session,
+    state: exact.length ? "observed" : stale.length ? "stale" : "unobserved",
+    exactLauncherEvents: exact.length,
+    staleLauncherEvents: stale.length,
+    directEvents: direct.length,
+    lastExactAt: exact.at(-1)?.at ?? null,
+    reads: trace.filter((row) => row.mode === "read").length,
+    writes: trace.filter((row) => row.mode === "write").length,
+    updatePlanEvents: exact.filter((row) => row.event === "PostToolUse" && row.tool === "update_plan").length,
+    parentFallbackEvents: exact.filter((row) => row.attribution === "parent-fallback").length,
+    unreadableActivity: activityRead.unreadable,
+    verification: commandCounts(exact, "verification"),
+    intervention: commandCounts(exact, "intervention"),
+    experiment,
+  };
+}
+
+/** Structural configuration, historical memory, and this exact session stay separate. */
+export function hookStatus(cfg: Config, host: HookHost = "claude", session?: string | null): HookStatus {
+  const control = inspectLifecycleHook(cfg, host);
   const { records, sessions } = readJournal(cfg);
   const opened = records.filter((r) => r.kind === "session");
   const entries = records.length - opened.length;
+  const currentSession = activeHookSession(host, session);
   return {
+    host,
     control,
-    observation: { sessionsOpenedByHook: opened.length, journalEntries: entries, sessions: sessions.length },
+    observation: {
+      sessionsOpenedByHook: new Set(opened.map((record) => record.session)).size,
+      journalEntries: entries,
+      sessions: sessions.length,
+      current: currentSession ? currentObservation(cfg, control, currentSession) : null,
+    },
   };
 }
 
 function printHookStatus(status: HookStatus, json = false): void {
   if (json) { console.log(JSON.stringify(status, null, 2)); return; }
   const { control, observation } = status;
+  console.log(`host: ${status.host}`);
   console.log(`lifecycle hook: ${!control.valid ? "UNKNOWN" : control.present ? "PRESENT" : "ABSENT"}`);
   console.log(`shared wiring: ${control.wiringPresent ? "PRESENT" : "ABSENT"}`);
   if (control.scopes.length) console.log(`canonical scope(s): ${control.scopes.join(" + ")}`);
@@ -307,33 +460,59 @@ function printHookStatus(status: HookStatus, json = false): void {
     ? `OBSERVED — ${observation.sessionsOpenedByHook} session(s) opened by a hook`
     : "UNOBSERVED — no hook-opened session is recorded"}`);
   console.log(`journal: ${observation.journalEntries} entr${observation.journalEntries === 1 ? "y" : "ies"} across ${observation.sessions} session(s)`);
+  if (!observation.current) {
+    console.log("current session: UNKNOWN — pass --session (no newest-session fallback)");
+  } else {
+    const current = observation.current;
+    console.log(`current session: ${current.state.toUpperCase()} — ${current.session}`);
+    console.log(`  exact launcher/bundle events: ${current.exactLauncherEvents}`
+      + `${current.staleLauncherEvents ? ` · stale/other bundle: ${current.staleLauncherEvents}` : ""}`
+      + `${current.directEvents ? ` · direct probes: ${current.directEvents}` : ""}`);
+    console.log(`  paths: ${current.reads} read · ${current.writes} write (explicit-path lower bound)`);
+    console.log(`  plan tool: ${current.updatePlanEvents} update(s) · verification ${current.verification.success}/${current.verification.total}`
+      + ` · regulation ${current.intervention.success}/${current.intervention.total}`);
+    if (current.unreadableActivity) console.log(`  activity damage: ${current.unreadableActivity} unreadable row(s) — exact experiment attribution will refuse`);
+    if ("unavailable" in current.experiment) console.log(`  experiment: UNAVAILABLE — ${current.experiment.unavailable}`);
+    else console.log(`  experiment: ${current.experiment.open} open · ${current.experiment.closed} closed`
+      + `${current.experiment.latest ? ` · latest ${current.experiment.latest}${current.experiment.outcome ? ` ${current.experiment.outcome}` : ""}` : ""}`);
+    if (current.parentFallbackEvents) console.log(`  attribution ceiling: ${current.parentFallbackEvents} event(s) had parent-session fallback`);
+  }
+  if (status.host === "codex" && observation.current?.state !== "observed") {
+    console.log("activation: UNCONFIRMED — review this exact project hook in Codex /hooks, then start or resume a session");
+  } else if (status.host === "codex") {
+    console.log("activation: OBSERVED — this exact Codex bundle reached the hook body for this session");
+  }
   for (const warning of control.warnings) console.log(`warning: ${warning}`);
+  if (status.host === "codex") console.log("ceiling: user, managed, and plugin hook layers are outside project inspection");
 }
 
 /** `coherence hooks status` — report the switch and the observation beside it. */
-export function reportHooks(cfg: Config, json = false): number {
-  const status = hookStatus(cfg);
+export function reportHooks(cfg: Config, json = false, host: HookHost = "claude", session?: string | null): number {
+  const status = hookStatus(cfg, host, session);
   printHookStatus(status, json);
   return status.control.valid ? 0 : 2;
 }
 
 /** `coherence hooks --check` — the binary current-control gate. Observation never redeems absence. */
-export function checkHooks(cfg: Config, json = false): number {
-  const status = hookStatus(cfg);
+export function checkHooks(cfg: Config, json = false, host: HookHost = "claude", session?: string | null): number {
+  const status = hookStatus(cfg, host, session);
   printHookStatus(status, json);
   if (!status.control.valid) return 2;
-  return status.control.present ? 0 : 1;
+  if (!status.control.present) return 1;
+  // With an exact session in scope, configured-but-untrusted/unfired is not active.
+  if (status.observation.current && status.observation.current.state !== "observed") return 1;
+  return 0;
 }
 
-export async function installHooks(cfg: Config, json = false): Promise<number> {
-  const result = await setLifecycleHook(cfg, true);
+export async function installHooks(cfg: Config, json = false, host: HookHost = "claude", session?: string | null): Promise<number> {
+  const result = await setLifecycleHook(cfg, true, host);
   if (result.errors.length) {
     if (json) console.log(JSON.stringify({ errors: result.errors, control: result.inspection }, null, 2));
     else for (const error of result.errors) console.error(`cannot install lifecycle hook: ${error}`);
     return 2;
   }
-  if (!json) console.log(result.changed.length ? "installed lifecycle hook in shared project settings" : "lifecycle hook already installed");
-  const status = hookStatus(cfg);
+  if (!json) console.log(result.changed.length ? `installed ${host} lifecycle hook in shared project settings` : `${host} lifecycle hook already installed`);
+  const status = hookStatus(cfg, host, session);
   printHookStatus(status, json);
   // The moment the control turns ON is the one moment the operator is guaranteed to be
   // reading — and it is exactly when the journal starts being written. Say where to watch.
@@ -342,28 +521,29 @@ export async function installHooks(cfg: Config, json = false): Promise<number> {
   return status.control.present ? 0 : 1;
 }
 
-export async function uninstallHooks(cfg: Config, json = false): Promise<number> {
-  const result = await setLifecycleHook(cfg, false);
+export async function uninstallHooks(cfg: Config, json = false, host: HookHost = "claude", session?: string | null): Promise<number> {
+  const result = await setLifecycleHook(cfg, false, host);
   if (result.errors.length) {
     if (json) console.log(JSON.stringify({ errors: result.errors, control: result.inspection }, null, 2));
     else for (const error of result.errors) console.error(`cannot uninstall lifecycle hook: ${error}`);
     return 2;
   }
   if (!json) console.log(result.changed.length ? "uninstalled lifecycle hook" : "lifecycle hook already absent");
-  const status = hookStatus(cfg);
+  const status = hookStatus(cfg, host, session);
   printHookStatus(status, json);
   return status.control.valid && !status.control.present ? 0 : 1;
 }
 
-/** `coherence hooks` — print the block to paste into .claude/settings.json, plus the
+/** `coherence hooks` — print one host's canonical block, plus the
  *  instruction text so a reader can see what agents will actually be told. */
-export function printHooks(cfg: Config): void {
-  const block = canonicalLifecycleHookSettings();
-  const claudeRoot = resolveClaudeProjectRoot(cfg);
-  console.log(`Canonical control for ${claudeRoot}. Prefer \`coherence hooks install\`; it preserves unrelated hooks.`);
+export function printHooks(cfg: Config, host: HookHost = "claude"): void {
+  const block = canonicalLifecycleHookSettings(host);
+  const hostRoot = resolveHookProjectRoot(cfg, host);
+  const hostDir = host === "codex" ? ".codex" : ".claude";
+  console.log(`Canonical ${host} control for ${hostRoot}. Prefer \`coherence hooks install --host ${host}\`; it preserves unrelated hooks.`);
   console.log("The settings value, stable launcher, and root mapping are:\n");
   console.log(JSON.stringify(block, null, 2));
-  console.log(`\n--- .claude/coherence-hook ---\n${LIFECYCLE_HOOK_SCRIPT}--- .claude/coherence-root ---\n${lifecycleRootMapping(cfg)}`);
+  console.log(`\n--- ${hostDir}/coherence-hook ---\n${lifecycleHookScript(host)}--- ${hostDir}/coherence-root ---\n${lifecycleRootMapping(cfg, host)}`);
   console.log(`
 SubagentStart / SessionStart inject the instruction below into the agent's context.
 PostToolUse records explicit file reads and writes for per-agent economy calibration; it

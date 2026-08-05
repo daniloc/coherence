@@ -1,9 +1,10 @@
 node_modules/
 dist/
 # .coherence/ holds two DIFFERENT kinds of thing, and they need opposite treatment.
-# verify-jobs.json is regenerated on every run and is genuinely a cache. decisions/
-# and status.json are the RECORD — the decision journal and the sticky red history,
-# both cumulative, both worthless if a fresh clone starts empty. A blanket ignore was
+# verify-jobs.json is regenerated on every run and is genuinely a cache. decisions/,
+# experiments/, calibration/, and status.json are the RECORD — durable choices, planned
+# loops and evidence, calibration history, and sticky reds. All are cumulative and
+# worthless if a fresh clone starts empty. A blanket ignore was
 # defensible when this directory held only transient files; it stopped being defensible
 # the moment the journal landed here, and this repo was ignoring the very folder its
 # own README tells consumers to commit.
@@ -11,6 +12,7 @@ dist/
 !.coherence/decisions/
 !.coherence/status.json
 !.coherence/calibration/
+!.coherence/experiments/
 
 # AGENTS.md and public/{graph.json,_graph.html,_overview.html} are committed, fully-owned
 # reading surfaces now that this repository has a real spec tree. `coherence docs --check`

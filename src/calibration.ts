@@ -75,11 +75,19 @@ export function calibrationPaths(
   trace: TraceEvent[],
   worktreeChanged: Iterable<string>,
 ): { changed: string[]; observed: string[]; attribution: CalibrationAttribution } {
-  const writes = [...new Set(trace.filter((e) => e.mode === "write").map((e) => e.path))].sort();
+  const recordedWrites = [...new Set(trace.filter((e) => e.mode === "write").map((e) => e.path))].sort();
+  const worktree = [...new Set(worktreeChanged)].sort();
+  // A PostToolUse event proves that a write tool ran, not that its requested edit landed.
+  // Intersect its paths with Git's live change set before calling them this agent's patch.
+  // Crucially, a host that supplied write attribution but landed nothing does NOT fall
+  // back to the shared union—that would charge another concurrent agent's work to it.
+  const changed = recordedWrites.length
+    ? recordedWrites.filter((path) => worktree.includes(path))
+    : worktree;
   return {
-    changed: writes.length ? writes : [...new Set(worktreeChanged)].sort(),
+    changed,
     observed: [...new Set(trace.filter((e) => e.mode !== "write").map((e) => e.path))].sort(),
-    attribution: writes.length ? "session-writes" : "worktree-union",
+    attribution: recordedWrites.length ? "session-writes" : "worktree-union",
   };
 }
 
@@ -116,7 +124,14 @@ export function readCalibrationSamples(cfg: Config): CalibrationSample[] {
       if (!line.trim()) continue;
       try {
         const s = JSON.parse(line) as CalibrationSample;
-        if (typeof s.id === "string" && Array.isArray(s.predicted) && Array.isArray(s.observed)) latest.set(s.id, s);
+        if (typeof s.id === "string" && Array.isArray(s.predicted) && Array.isArray(s.observed)) {
+          const previous = latest.get(s.id);
+          // Stop is a recurring observation tick. It may snapshot the same patch after a
+          // human has already labeled that patch clean or defective, and "looked again"
+          // is not evidence that the label became unknown. Preserve a real verdict across
+          // later unknown snapshots; another explicit label may still replace it.
+          if (!previous || s.outcome !== "unknown" || previous.outcome === "unknown") latest.set(s.id, s);
+        }
       } catch { /* counted nowhere: malformed calibration is no evidence */ }
     }
   }

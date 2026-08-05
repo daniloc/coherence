@@ -3,8 +3,10 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   hookReadCandidates, recordHookReads, readTrace, predictedReadSet,
-  calibrationPaths, calibrationStats, formatCalibration, type CalibrationSample,
+  calibrationPaths, calibrationStats, formatCalibration, readCalibrationSamples, type CalibrationSample,
 } from "../src/calibration.ts";
+import { appendFileSync, mkdirSync } from "node:fs";
+import { join } from "node:path";
 import { cfg, graph, fileNode, imp, tmpProject, cleanup } from "./_helpers.ts";
 
 test("hook payload extraction reads path fields but never guesses from command text", () => {
@@ -33,6 +35,12 @@ test("calibration uses session writes instead of a concurrent shared-worktree un
   assert.equal(calibrationPaths(traced.observed.map((path) => ({
     at: "t", session: "agent-abc", tool: "Read", mode: "read" as const, path,
   })), ["src/shared.ts"]).attribution, "worktree-union");
+
+  assert.deepEqual(calibrationPaths([
+    { at: "t", session: "agent-abc", tool: "apply_patch", mode: "write", path: "src/failed.ts" },
+  ], ["src/someone-elses-change.ts"]), {
+    changed: [], observed: [], attribution: "session-writes",
+  }, "a failed/no-op attributed write must not fall back to another agent's worktree union");
 });
 
 test("hook recording keeps only real files inside the repo", async () => {
@@ -73,4 +81,90 @@ test("calibration reports coverage, outside reads, and defect rates by predictio
   assert.equal(stats.defectRateWithoutMisses, 0);
   assert.match(formatCalibration([]).join("\n"), /no samples yet/);
   assert.match(formatCalibration([sample("1", "defect", ["a.ts"])]).join("\n"), /lower bound/);
+});
+
+test("calibration — a recurring unknown snapshot never erases an explicit outcome", async () => {
+  const root = await tmpProject();
+  try {
+    const c = cfg(root);
+    const dir = join(root, ".coherence", "calibration");
+    mkdirSync(dir, { recursive: true });
+    const labeled = sample("same-patch", "defect", ["a.ts"]);
+    const tick = { ...labeled, at: "later", outcome: "unknown" as const };
+    appendFileSync(join(dir, "s.jsonl"), `${JSON.stringify(labeled)}\n${JSON.stringify(tick)}\n`);
+    assert.equal(readCalibrationSamples(c)[0]?.outcome, "defect");
+
+    const relabeled = { ...labeled, at: "latest", outcome: "clean" as const };
+    appendFileSync(join(dir, "s.jsonl"), `${JSON.stringify(relabeled)}\n`);
+    assert.equal(readCalibrationSamples(c)[0]?.outcome, "clean",
+      "a later explicit assessment still supersedes the prior one");
+  } finally { await cleanup(root); }
+});
+
+test("hook payload extraction accepts only formal Codex apply_patch headers as writes", async () => {
+  const root = await tmpProject({
+    "src/added.ts": "added\n",
+    "src/updated.ts": "updated\n",
+    "src/moved.ts": "moved\n",
+  });
+  try {
+    const c = cfg(root);
+    const command = [
+      "*** Begin Patch",
+      "*** Add File: src/added.ts",
+      "+added",
+      "*** Update File: src/updated.ts",
+      "@@",
+      "-before",
+      "+after",
+      "*** Update File: src/old-name.ts",
+      "*** Move to: src/moved.ts",
+      "@@",
+      "-old",
+      "+moved",
+      "*** Delete File: src/deleted.ts",
+      "*** End Patch",
+    ].join("\n");
+    assert.deepEqual(hookReadCandidates({
+      session_id: "parent", agent_id: "agent-patch", tool_name: "apply_patch",
+      tool_input: { command },
+    }), {
+      session: "agent-patch", tool: "apply_patch", mode: "write",
+      paths: ["src/added.ts", "src/updated.ts", "src/old-name.ts", "src/moved.ts", "src/deleted.ts"],
+    });
+
+    const events = recordHookReads(c, {
+      session_id: "parent", agent_id: "agent-patch", tool_name: "apply_patch",
+      tool_input: { command },
+    }, "2026-08-04T00:00:00Z");
+    assert.deepEqual(events.map((event) => [event.path, event.provenance?.operation]), [
+      ["src/added.ts", "add"],
+      ["src/updated.ts", "update"],
+      ["src/old-name.ts", "update"],
+      ["src/moved.ts", "move"],
+      ["src/deleted.ts", "delete"],
+    ], "formal write headers preserve paths even when a delete or move-source no longer exists");
+    assert.deepEqual(readTrace(c, "agent-patch").map((event) => event.provenance?.source),
+      ["apply_patch", "apply_patch", "apply_patch", "apply_patch", "apply_patch"]);
+  } finally { await cleanup(root); }
+});
+
+test("hook payload extraction never promotes Bash patch-shaped mentions into file reads or writes", async () => {
+  const root = await tmpProject({ "src/real.ts": "real\n" });
+  try {
+    const c = cfg(root);
+    const patchMention = "*** Begin Patch\n*** Update File: src/real.ts\n*** End Patch";
+    assert.deepEqual(hookReadCandidates({
+      session_id: "s-bash", tool_name: "Bash", tool_input: { command: patchMention },
+    }), { session: "s-bash", tool: "Bash", mode: "read", paths: [] });
+    assert.deepEqual(recordHookReads(c, {
+      session_id: "s-bash", tool_name: "Bash", tool_input: { command: patchMention },
+    }), []);
+
+    assert.deepEqual(hookReadCandidates({
+      session_id: "s-patch", tool_name: "apply_patch",
+      tool_input: { command: "echo '*** Update File: src/real.ts'" },
+    }), { session: "s-patch", tool: "apply_patch", mode: "write", paths: [] },
+    "apply_patch text without the formal envelope is not evidence either");
+  } finally { await cleanup(root); }
 });

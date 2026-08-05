@@ -1565,7 +1565,7 @@ both is exactly what drifted.
      edit by hand — add the command to the registry and re-run. Everything OUTSIDE these
      markers is authored prose. -->
 
-_39 commands. This index is derived from the registry the dispatch is checked
+_40 commands. This index is derived from the registry the dispatch is checked
 against (`test/commands.test.ts` enumerates the live `cmd === …` chain and asserts the two
 sets are equal), so it cannot fall behind the CLI. The reasoning for the commands that have
 any is in **In detail** below — that half is authored, and does not cover all of them._
@@ -1584,7 +1584,7 @@ any is in **In detail** below — that half is authored, and does not cover all 
 - `coherence signal [--check] [--since <ref>] [--attest-no-invariant --because <why>]` — require significant behavioral growth to gain an anchor or a patch-bound decision
 - `coherence regulate [--check] [--since <ref>] [--json]` — apply the anti-entropy doctrine to live readings and emit exactly one next action
 
-**The decision journal — appends only, gates nothing**
+**Durable agent record — appends only, gates nothing**
 
 - `coherence decide "<chose>" --over "<alt>" --because "<why>"` — log one choice and what it was chosen OVER
 - `coherence blocked "<what>" --because "<why>"` — log what you could NOT do — first-class, not a footnote
@@ -1595,6 +1595,7 @@ any is in **In detail** below — that half is authored, and does not cover all 
 - `coherence retract <id> --because "<what refuted it>" [--for "<replacement>"]` — withdraw a decision by appending, never by editing
 - `coherence decisions [--job|--agent|--session|--branch|--sessions|--md|--brief|--open|--compact]` — the MERGED timeline across every session file; `--open` is what was noticed and not yet chased, `--compact` folds committed session files into one per (branch, month) without changing what this prints
 - `coherence journal [--follow | --once] [--job X] [--agent Y] [--session S] [--branch B]` — the LIVE read — stream entries as agents write them, and surf the history in aggregate or one session's stream
+- `coherence experiment <create|inspect|close> ... [--session S] [--json]` (alias: `plan`) — open a plan hypothesis, freeze its predicted context/actions/criteria, then close it with criterion-total evidence
 
 **Perceive the project**
 

@@ -9,6 +9,7 @@ import { tmpProject, cleanup } from "./_helpers.ts";
 import { loadConfig } from "../src/config.ts";
 import { recordHookReads } from "../src/read-trace.ts";
 import { readCalibrationSamples } from "../src/calibration.ts";
+import { readJournal } from "../src/decisions.ts";
 
 const HOOK_CLI = join(dirname(fileURLToPath(import.meta.url)), "..", "src", "hook-cli.ts");
 
@@ -16,12 +17,13 @@ function git(root: string, ...args: string[]) {
   return spawnSync("git", args, { cwd: root, encoding: "utf8" });
 }
 
-function hook(root: string, event: "Stop" | "SubagentStop", payload: object) {
+function hook(root: string, event: "SessionStart" | "Stop" | "SubagentStop", payload: object, host?: "codex") {
   return spawnSync(process.execPath, [HOOK_CLI, event], {
     cwd: root,
     input: JSON.stringify(payload),
     encoding: "utf8",
     maxBuffer: 16 * 1024 * 1024,
+    env: { ...process.env, ...(host ? { COHERENCE_HOOK_HOST: host } : {}) },
   });
 }
 
@@ -96,4 +98,33 @@ test("hooks — main Stop snapshots without feedback while SubagentStop alone re
   } finally {
     await cleanup(owedRoot);
   }
+});
+
+test("hooks — Codex gets its own subagent continuation shape and session refresh is idempotent", async () => {
+  const root = await repo();
+  try {
+    const cfg = await loadConfig(root);
+    const first = hook(root, "SessionStart", { session_id: "codex-thread", source: "startup" }, "codex");
+    const compact = hook(root, "SessionStart", { session_id: "codex-thread", source: "compact" }, "codex");
+    assert.equal(first.status, 0, first.stderr);
+    assert.equal(compact.status, 0, compact.stderr);
+    assert.equal(readJournal(cfg).records.filter((row) => row.kind === "session" && row.session === "codex-thread").length, 1,
+      "resume/compact re-inject context without minting another logical session");
+
+    const subagent = hook(root, "SubagentStop", {
+      session_id: "codex-thread", agent_id: "codex-child", stop_hook_active: false,
+    }, "codex");
+    assert.equal(subagent.status, 0, subagent.stderr);
+    const output = JSON.parse(subagent.stdout);
+    assert.equal(output.decision, "block");
+    assert.match(output.reason, /YOUR REPLY MUST RESTATE YOUR FINAL REPORT/);
+    assert.equal(output.hookSpecificOutput, undefined,
+      "Codex does not consume Claude's SubagentStop additionalContext shape");
+
+    const repeated = hook(root, "SubagentStop", {
+      session_id: "codex-thread", agent_id: "codex-child", stop_hook_active: true,
+    }, "codex");
+    assert.equal(repeated.status, 0);
+    assert.equal(repeated.stdout, "", "the continued child gets only one final turn");
+  } finally { await cleanup(root); }
 });

@@ -35,6 +35,11 @@ import { readSurface, vacuityRefusal, Unrunnable } from "./floor.ts";
 import { CLAIM_FORMS, loadDictionary } from "./phrasebook.ts";
 import { appendDecision, renderJournal, readJournal, resolvableConjecture, compactJournal } from "./decisions.ts";
 import { runJournal } from "./journal.ts";
+import {
+  closeExperiment, createExperiment, experimentStats, readExperiments, renderExperiments,
+  ExperimentLedgerError,
+  type ExperimentActionResult, type ExperimentCriterionResult, type ExperimentLedger,
+} from "./experiment.ts";
 import { recordObservation, formatObserved } from "./observed.ts";
 import { printHooks, reportHooks, checkHooks, installHooks, uninstallHooks, runHook } from "./hooks.ts";
 import { redundancy } from "./redundancy.ts";
@@ -64,7 +69,8 @@ const since = sinceIdx >= 0 ? argv[sinceIdx + 1] : null;
 // count of candidates IS the signal. One candidate is a hunch dressed as an inquiry.
 const VALUED = new Set(["--since", "--apply", "--over", "--because", "--agent", "--job", "--file", "--for", "--session", "--branch",
   "--could-be", "--discriminated-by", "--as",
-  "--value", "--baseline", "--threshold", "--unit", "--why", "--raise-cap", "--symbol", "--outcome"]);
+  "--value", "--baseline", "--threshold", "--unit", "--why", "--raise-cap", "--symbol", "--outcome", "--host",
+  "--context", "--action", "--success", "--hypothesis", "--action-result", "--result"]);
 const many = (flag: string): string[] => argv.reduce<string[]>((acc, a, i) => (a === flag && argv[i + 1] !== undefined ? [...acc, argv[i + 1]] : acc), []);
 const one = (flag: string): string | null => { const v = many(flag); return v.length ? v[v.length - 1] : null; };
 const positional = argv.filter((a, i) => !a.startsWith("--") && !VALUED.has(argv[i - 1] ?? ""));
@@ -553,6 +559,119 @@ if (cmd === "graph") {
     follow: argv.includes("--follow"), once: argv.includes("--once"),
     job: one("--job"), agent: one("--agent"), session: one("--session"), branch: one("--branch"),
   }));
+} else if (cmd === "experiment" || cmd === "plan") {
+  // A plan becomes useful evidence only when its prediction is frozen before the work and
+  // every declared criterion is answered afterward. The ledger derives the outcome; this
+  // parser never accepts a caller-authored success/failure label.
+  const json = argv.includes("--json");
+  const action = positional[0] ?? "inspect";
+  const session = one("--session") ?? process.env.COHERENCE_SESSION ?? process.env.CODEX_THREAD_ID ?? null;
+  const usage = [
+    'usage: coherence experiment create "<hypothesis>" --context <path> --action "<step>" --success "<criterion>" --session S [--json]',
+    "       coherence experiment inspect [<id>] [--open] [--session S] [--json]",
+    "       coherence experiment close <id> --action-result 'a1=followed::<evidence>' --result 's1=met::<evidence>' --session S [--json]",
+  ];
+  const fail = async (message: string): Promise<never> => {
+    if (json) console.log(JSON.stringify({ error: message, usage }, null, 2));
+    else { console.error(message); for (const line of usage) console.error(line); }
+    return await exit(2);
+  };
+  const allowed = new Map<string, Set<string>>([
+    ["create", new Set(["--context", "--action", "--success", "--session", "--agent", "--job", "--json"])],
+    ["inspect", new Set(["--open", "--session", "--json"])],
+    ["close", new Set(["--action-result", "--result", "--session", "--agent", "--job", "--json"])],
+  ]);
+  if (!allowed.has(action)) await fail(`invalid experiment action: ${action}`);
+  const badFlags = argv.filter((arg) => arg.startsWith("--") && !allowed.get(action)!.has(arg));
+  if (badFlags.length) await fail(`unsupported flag(s) for experiment ${action}: ${badFlags.join(", ")}`);
+  const valuedByAction = new Map<string, Set<string>>([
+    ["create", new Set(["--context", "--action", "--success", "--session", "--agent", "--job"])],
+    ["inspect", new Set(["--session"])],
+    ["close", new Set(["--action-result", "--result", "--session", "--agent", "--job"])],
+  ]);
+  const missingValues = argv.filter((arg, index) => valuedByAction.get(action)!.has(arg)
+    && (argv[index + 1] === undefined || argv[index + 1].startsWith("--")));
+  if (missingValues.length) await fail(`missing value for: ${[...new Set(missingValues)].join(", ")}`);
+  const repeatedSingletons = ["--session", "--agent", "--job"].filter((flag) =>
+    argv.filter((arg) => arg === flag).length > 1);
+  if (repeatedSingletons.length) await fail(`repeatable identity is ambiguous: ${repeatedSingletons.join(", ")}`);
+
+  const parseResult = <T extends string>(raw: string, statuses: readonly T[], label: string): { id: string; status: T; evidence: string } => {
+    const equal = raw.indexOf("=");
+    const evidenceAt = raw.indexOf("::", equal + 1);
+    const id = equal < 1 ? "" : raw.slice(0, equal).trim();
+    const status = evidenceAt < 0 ? "" : raw.slice(equal + 1, evidenceAt).trim();
+    const evidence = evidenceAt < 0 ? "" : raw.slice(evidenceAt + 2).trim();
+    if (!id || !statuses.includes(status as T) || !evidence) {
+      throw new ExperimentLedgerError(`${label} must be id=${statuses.join("|")}::<non-empty evidence>`);
+    }
+    return { id, status: status as T, evidence };
+  };
+
+  try {
+    if (action === "create") {
+      if (positional.length !== 2 || !session) await fail("experiment create requires one hypothesis and an exact host session");
+      const ownerSession = session as string; // guarded above; async `fail` prevents TS control-flow narrowing
+      const opened = createExperiment(cfg, {
+        session: ownerSession,
+        hypothesis: positional[1],
+        predictedContext: many("--context"),
+        actions: many("--action"),
+        criteria: many("--success"),
+        agent: one("--agent") ?? (process.env.CODEX_THREAD_ID ? "codex" : undefined),
+        job: one("--job") ?? undefined,
+      });
+      if (json) console.log(JSON.stringify(opened, null, 2));
+      else {
+        console.log(`OPEN ${opened.id}  owner ${opened.session}`);
+        console.log(`  hypothesis: ${opened.hypothesis}`);
+        for (const item of opened.actions) console.log(`  action ${item.id}: ${item.text}`);
+        for (const item of opened.criteria) console.log(`  success ${item.id}: ${item.text}`);
+        const actionArgs = opened.actions.map((item) => `--action-result '${item.id}=unknown::<evidence>'`).join(" ");
+        const criterionArgs = opened.criteria.map((item) => `--result '${item.id}=unknown::<evidence>'`).join(" ");
+        console.log(`  close: coherence experiment close ${opened.id} ${actionArgs} ${criterionArgs} --session ${opened.session}`);
+      }
+      await exit(0);
+    }
+
+    if (action === "inspect") {
+      if (positional.length > 2) await fail("experiment inspect accepts at most one experiment id");
+      const opts = { id: positional[1] ?? null, session, openOnly: argv.includes("--open") };
+      if (json) {
+        const ledger = readExperiments(cfg);
+        const selected = ledger.experiments.filter((experiment) =>
+          (!opts.id || experiment.opened.id === opts.id)
+          && (!opts.session || experiment.opened.session === opts.session || experiment.closed?.assessor.session === opts.session)
+          && (!opts.openOnly || !experiment.closed));
+        const scoped: ExperimentLedger = {
+          records: selected.flatMap((experiment) => [experiment.opened, ...(experiment.closed ? [experiment.closed] : [])]),
+          experiments: selected,
+          open: selected.filter((experiment) => !experiment.closed),
+          closed: selected.filter((experiment) => !!experiment.closed),
+        };
+        console.log(JSON.stringify({ experiments: selected, stats: experimentStats(scoped) }, null, 2));
+      } else console.log(renderExperiments(cfg, opts).text);
+      await exit(0);
+    }
+
+    if (positional.length !== 2 || !session) await fail("experiment close requires one id and an exact assessor session");
+    const assessorSession = session as string; // guarded above; async `fail` prevents TS control-flow narrowing
+    const actionResults = many("--action-result").map((raw) =>
+      parseResult(raw, ["followed", "revised", "skipped", "unknown"] as const, "--action-result")) as ExperimentActionResult[];
+    const criterionResults = many("--result").map((raw) =>
+      parseResult(raw, ["met", "unmet", "unknown"] as const, "--result")) as ExperimentCriterionResult[];
+    const closed = closeExperiment(cfg, {
+      experiment: positional[1], session: assessorSession, actionResults, criterionResults,
+      agent: one("--agent") ?? (process.env.CODEX_THREAD_ID ? "codex" : undefined),
+      job: one("--job") ?? undefined,
+    });
+    if (json) console.log(JSON.stringify(closed, null, 2));
+    else console.log(`${closed.outcome.toUpperCase()} ${closed.experiment}  ${closed.id}`);
+    await exit(0);
+  } catch (error) {
+    if (!(error instanceof ExperimentLedgerError)) throw error;
+    await fail(error.problems.join("; "));
+  }
 } else if (cmd === "hooks") {
   // The first control interface. `--check` remains the terse gate spelling; status keeps
   // the installation bit and runtime observation visible without conflating them.
