@@ -161,10 +161,9 @@ export function neverRedFinding(node: string, claim: string, runs: number): Find
     couldBe: [
       "the invariant is genuinely hard to break — the chokepoint makes the illegal state"
       + " unrepresentable, and green is the honest answer",
-      // Deliberately worded so `readsAsInstrumentDoubt` fires on "the test itself": for this
-      // finding the apparatus IS the suspect, and a specific wording beats the canonical
-      // line, which would otherwise be prepended in its place.
-      "the oracle is vacuous — the test itself asserts something that cannot fail, over an empty"
+      // Explicitly marked because this generated candidate IS the apparatus hypothesis;
+      // write-time safety never rests on a lexical guess about "the test itself".
+      "[instrument] the oracle is vacuous — the test itself asserts something that cannot fail, over an empty"
       + " domain, through a regex that never matches, or past a guard that is never reached",
     ],
     discriminatedBy:

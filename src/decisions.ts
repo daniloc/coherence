@@ -162,22 +162,32 @@ export const LABEL_SOFT_MAX = 200;
 // the thing that produced it.
 export const INSTRUMENT_CANDIDATE =
   "the instrument is wrong — the thing that PRODUCED this number, not the thing it describes";
+export const INSTRUMENT_MARKER = "[instrument]";
 
-// DELIBERATELY NARROW. Its only job is to answer "did the author already doubt their
-// instrument?", and its failure mode is asymmetric ON PURPOSE: a false negative adds a
-// redundant canonical candidate (noise, recoverable), while a false positive would let a
-// conjecture ship WITHOUT the instrument on the list (silent, and the exact failure this
-// record exists to prevent). So it only fires on words that name a measuring apparatus,
-// and it does not try to be clever about phrasing.
+// The lexical reader exists for OLD records and rendering only. It must never discharge
+// the write-time guarantee: mentioning another apparatus is not the same as doubting the
+// one that produced the surprising reading. d-77dc0ad1 demonstrated the false-positive
+// shape exactly — "the advisory is fine ... the probe should have been writing" used the
+// word `probe`, so the canonical candidate silently disappeared. New authored wording is
+// explicit via `[instrument]`; otherwise the exact canonical candidate is added.
 const INSTRUMENT_WORDS = [
   "instrument", "measurement", "measured wrong", "harness", "decoder", "parser",
   "off-by-one", "off by one", "the tool", "the script", "the query", "the regex",
   "the counter", "the probe", "the metric", "miscount", "the test itself",
 ];
+const INSTRUMENT_AFFIRMATION =
+  /\b(?:advisory|instrument|measurement|harness|decoder|parser|tool|script|query|regex|counter|probe|metric|test)\s+(?:is|was|are|were)\s+(?:fine|correct|right|sound|working)\b/;
+
+function isExplicitInstrumentCandidate(candidate: string): boolean {
+  const t = candidate.trim();
+  return t === INSTRUMENT_CANDIDATE || t.startsWith(`${INSTRUMENT_MARKER} `);
+}
 
 /** Does this candidate already doubt the apparatus rather than the world? */
 export function readsAsInstrumentDoubt(candidate: string): boolean {
+  if (isExplicitInstrumentCandidate(candidate)) return true;
   const t = candidate.toLowerCase();
+  if (INSTRUMENT_AFFIRMATION.test(t)) return false;
   return INSTRUMENT_WORDS.some((w) => t.includes(w));
 }
 
@@ -186,11 +196,12 @@ export function readsAsInstrumentDoubt(candidate: string): boolean {
  *  failures, so the prior is not merely high — and a candidate list that omits it has
  *  already made the mistake, at WRITE time, before any reader can catch it.
  *
- *  Nothing is reordered when the author supplied their own: their wording is more
- *  specific than the canonical line ("the decoder had an off-by-one" beats "the
- *  instrument is wrong"), and specificity is the whole value. */
+ *  Nothing is reordered when the author explicitly marks their own wording: their
+ *  specific candidate (`[instrument] the decoder had an off-by-one`) beats the generic
+ *  canonical line. Lexical inference is deliberately insufficient here: redundancy is
+ *  recoverable, while a false positive silently removes the candidate. */
 export function withInstrumentCandidate(couldBe: string[]): string[] {
-  return couldBe.some(readsAsInstrumentDoubt) ? couldBe : [INSTRUMENT_CANDIDATE, ...couldBe];
+  return couldBe.some(isExplicitInstrumentCandidate) ? couldBe : [INSTRUMENT_CANDIDATE, ...couldBe];
 }
 
 export function decisionsDir(cfg: Config): string {
@@ -932,7 +943,8 @@ function entry(r: DecisionRecord, bullet: string, md: boolean, brief?: boolean):
     // is a line the eye averages over, and the whole reason this candidate is guaranteed
     // is that it is the one people skip. The tag is what makes the guarantee legible.
     out.push(`${sub}could be: ${(r.couldBe ?? [])
-      .map((c) => (readsAsInstrumentDoubt(c) ? `[instrument] ${c}` : c)).join(" · ")}`);
+      .map((c) => (readsAsInstrumentDoubt(c) && !c.trim().startsWith(`${INSTRUMENT_MARKER} `)
+        ? `${INSTRUMENT_MARKER} ${c}` : c)).join(" · ")}`);
     // Prose clips under --brief, labels never do — the same rule `because`/`over` follow.
     // This one is the ACTIONABLE field, so when it is clipped the withheld count matters
     // more than anywhere else, and `clip` always announces it.

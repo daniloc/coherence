@@ -376,7 +376,7 @@ test("the entry carries a candidate list and a test somebody can go and run", as
   await cleanup(cfg.root);
 });
 
-test("never-red names the apparatus specifically, so the canonical line is not bolted on", async () => {
+test("never-red marks the apparatus explicitly, so the canonical line is not bolted on", async () => {
   // `[instrument]` is exactly the right first hypothesis for a claim that has never gone
   // red, and a specific wording beats the canonical one — that is `withInstrumentCandidate`'s
   // own rule, applied from the advisory side.

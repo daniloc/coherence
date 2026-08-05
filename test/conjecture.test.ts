@@ -20,7 +20,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
   appendDecision, readJournal, resolve, renderJournal, newSessionId, resolvableConjecture,
-  withInstrumentCandidate, readsAsInstrumentDoubt, INSTRUMENT_CANDIDATE, LABEL_SOFT_MAX,
+  withInstrumentCandidate, readsAsInstrumentDoubt, INSTRUMENT_CANDIDATE, INSTRUMENT_MARKER,
+  LABEL_SOFT_MAX,
 } from "../src/decisions.ts";
 import { agentInstructions, stopReport } from "../src/hooks.ts";
 import { runCaptured, cleanup } from "./_helpers.ts";
@@ -58,15 +59,34 @@ test("instrument — a conjecture that never names the instrument gets it anyway
   await cleanup(cfg.root);
 });
 
-test("instrument — the author's OWN wording wins; nothing canonical is bolted on", async () => {
+test("instrument — explicitly marked author wording wins; nothing canonical is bolted on", async () => {
   // Specificity is the whole value: "the decoder had an off-by-one" beats the canonical
-  // line, so when the author already doubted the apparatus we leave the list alone.
+  // line. The marker makes that semantic claim explicit rather than asking a substring
+  // heuristic to prove it.
   const cfg = await root();
-  const rec = habitat(cfg, { couldBe: ["the decoder is doing floor(v/16) where the encoding is 1-based"] });
+  const own = `${INSTRUMENT_MARKER} the decoder is doing floor(v/16) where the encoding is 1-based`;
+  const rec = habitat(cfg, { couldBe: [own] });
   assert.equal(rec.couldBe?.length, 1, "no redundant canonical candidate");
   assert.ok(!rec.couldBe!.includes(INSTRUMENT_CANDIDATE));
   assert.ok(readsAsInstrumentDoubt(rec.couldBe![0]), "and the guarantee still holds via their wording");
+  assert.match(renderJournal(cfg).text, /\[instrument\] the decoder is doing/,
+    "an explicit marker renders once, never doubled");
   await cleanup(cfg.root);
+});
+
+test("instrument — apparatus prose cannot discharge the write-time guarantee", async () => {
+  const adopterBlame = "the advisory is fine and the adopter was wrong to keep two surfaces:"
+    + " the probe should have been writing the spec line all along";
+  assert.equal(readsAsInstrumentDoubt(adopterBlame), false,
+    "affirming the measured instrument is not instrument doubt merely because another probe is named");
+  assert.deepEqual(withInstrumentCandidate([adopterBlame]), [INSTRUMENT_CANDIDATE, adopterBlame],
+    "only exact canonical or explicitly marked wording may suppress the guarantee");
+
+  const unmarkedSpecific = "the decoder is doing floor(v/16) where the encoding is 1-based";
+  assert.equal(readsAsInstrumentDoubt(unmarkedSpecific), true,
+    "legacy records keep their specific instrument tag");
+  assert.deepEqual(withInstrumentCandidate([unmarkedSpecific]), [INSTRUMENT_CANDIDATE, unmarkedSpecific],
+    "but lexical recognition is never write-time evidence again");
 });
 
 test("instrument — the heuristic's failure mode is REDUNDANCY, never absence", async () => {
