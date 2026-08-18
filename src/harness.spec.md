@@ -30,6 +30,7 @@ rendering, and journaling remain independently addressable modules beneath this 
 - current-session activation requires exact installed-bundle evidence
 - customized hook text composes declared overrides and appends, degrading to canon on damage
 - python sources feed the same instruments as typescript at their declared regex grade
+- a declared language resolves to a real adapter or refuses, never a silent fallback
 - experiment outcomes require criterion-total evidence
 - experiment telemetry preserves its weakest provable attribution
 - activity evidence is accepted only when identity, scope, time, and command agree
@@ -88,6 +89,7 @@ rendering, and journaling remain independently addressable modules beneath this 
 - boundary "python sources feed the same instruments as typescript at their declared regex grade" at sitesOfPython via guard "python redundancy — two spellings of one domain in .py rank as a candidate; declared parity and idiom do not"
 - boundary "python sources feed the same instruments as typescript at their declared regex grade" at resolveFromBatch via guard "pytest batch — nodeid names resolve per claim, zero matches is the vanished oracle, and a torn report falls back loudly"
 - boundary "python sources feed the same instruments as typescript at their declared regex grade" at lintSinks via guard "python sinks — an f-string into a SQL context is a site, a safe-pattern expression is not, and the ratchet reds the new site"
+- boundary "a declared language resolves to a real adapter or refuses, never a silent fallback" at resolveLanguageAdapter via guard "language adapter — a project path loads and shapes the graph; unknown names refuse, never fall back"
 - boundary "experiment outcomes require criterion-total evidence" at closeExperiment via guard "close — total nonempty evidence is mandatory and outcome is derived, never supplied"
 - boundary "experiment telemetry preserves its weakest provable attribution" at closeExperiment via guard "Codex parent-only tool events close the loop as an aggregate, never exact owner evidence"
 - boundary "activity evidence is accepted only when identity, scope, time, and command agree" at isActivityRow via guard "activity — internally inconsistent scope, time, and command rows are damage, not evidence"
@@ -257,6 +259,22 @@ retires the reader's attention without retiring risk, and with no compiler behin
 a false positive can never be rescued downstream. What the regex grade deliberately does
 not count is journaled beside each instrument, so the next reader inherits the boundary
 of the instrument instead of rediscovering it.
+
+**a declared language resolves to a real adapter or refuses, never a silent fallback.**
+The graph is the one derivation everything downstream consumes, and the adapter decides
+what that derivation can see. The old `?? typescript` fallback meant a typo'd language
+name walked the wrong grammar and reported on the garbage with full confidence — the
+same walking-a-different-tree failure the config loader refuses for, one seam later. So
+an unknown bare name now refuses with the live built-in list, and the same seam is where
+a project brings its own language: a `./`-relative module exporting the LanguageAdapter
+shape, validated field-by-field so the refusal names the line that needs fixing.
+Importing project code is not new trust — the atlas already declares at the loadConfig
+crossing that running the harness in a tree executes that tree's config. What a custom
+adapter buys is the graph tier: symbols, import edges, prose, claims over them. The
+per-language instrument arms (surface counting, oracle analysis, redundancy, sinks,
+batch formats) remain harness contributions, and the documentation says so, because an
+adapter author who is not told the boundary believes they have the full field when they
+have half.
 
 **experiment outcomes require criterion-total evidence.** A
 plan is frozen before work with its predicted context, actions, criteria, and evidence

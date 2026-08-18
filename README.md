@@ -333,6 +333,39 @@ provides the batch report):
 A `passes test` claim cites the pytest function name (`test_…`); in batch mode it
 matches every parametrized case of that function and all must pass.
 
+**Bring your own language.** `language` also accepts a `./`-relative module path, so a
+project can carry its own adapter in the tree:
+
+```json
+{ "language": "./.coherence/adapters/ruby.mjs", "codeExt": ["rb"] }
+```
+
+The module default-exports the `LanguageAdapter` shape — five members, implementable at
+regex grade in under a hundred lines (`src/adapters/python.ts` is the reference):
+
+```js
+export default {
+  exts: ["rb"],
+  symbols(src)            { /* → [{ name, kind, line }] */ },
+  imports(src)            { /* → ["specifier", …] */ },
+  docAbove(lines, line)   { /* comment block above a symbol → prose */ },
+  fileDoc(lines)          { /* file-head comment → prose */ },
+};
+```
+
+A wrong-shaped module refuses naming the broken field; an unknown bare `language` name
+refuses with the built-in list rather than falling back (a wrong grammar would grade a
+different tree than you configured). Importing the module executes project code — the
+same declared trust as the config's `test`/`typecheck` argv.
+
+Know what the seam buys: a custom adapter powers the **graph tier** — symbols, import
+edges, prose, `exists`/`boundary`/`lives in` claims, serial test oracles, and everything
+language-blind (hooks, journal, mass, drift, atlas). The per-language **instrument
+arms** — novelty surface counting into the zero-anchor alarm, `via test` oracle
+analysis, redundancy ranking, interpolation-sink detection, batch report formats — are
+harness contributions, built in for TypeScript and Python today. An adapter gives your
+language a map; the deeper instruments arrive per language.
+
 ### Adopt the lifecycle control
 
 Do this after `npm install` and after `coherence.config.json` is in its final

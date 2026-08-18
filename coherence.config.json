@@ -142,6 +142,12 @@
         "security": true,
         "translates": "One host-selected lifecycle contract becomes that host's tracked project settings, stable launcher, and root mapping. Claude and Codex share the five event meanings without sharing settings syntax, matchers, launcher bytes, or bundle identity; unrelated host configuration survives the convergence."
       },
+      "resolveLanguageAdapter": {
+        "from": "project-source",
+        "to": "shell",
+        "security": true,
+        "translates": "The config's `language` value becomes the adapter whose grammar derives the entire graph — a built-in name, or a project module imported and EXECUTED from the tree under analysis (the same declared trust as loadConfig's argv). An unknown name refuses with the live built-in list rather than falling back to the typescript grammar, because a wrong adapter walks a different tree than the one configured and every downstream gate grades the garbage with full confidence."
+      },
       "surfaceOfSource": {
         "from": "project-source",
         "to": "derived-model",

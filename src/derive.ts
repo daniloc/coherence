@@ -3,14 +3,78 @@
 // renderer and verify consumes (no second walk anywhere).
 import { readFile } from "node:fs/promises";
 import { join, basename, dirname, relative, resolve } from "node:path";
+import { pathToFileURL } from "node:url";
 import type { Config, Graph, GraphNode, GraphEdge, LanguageAdapter, PlatformAdapter } from "./types.ts";
 import { parseSpec, splitWhy, findSpec, nodeDirs, codeFiles, ownerOf } from "./walk.ts";
+import { Unrunnable } from "./floor.ts";
 import { typescript } from "./adapters/typescript.ts";
 import { python } from "./adapters/python.ts";
 import { cloudflare } from "./adapters/cloudflare.ts";
 
 const LANGUAGES: Record<string, LanguageAdapter> = { typescript, python };
 const PLATFORMS: Record<string, PlatformAdapter> = { cloudflare };
+
+/** Which field of a would-be adapter is wrong, or null when the shape is complete.
+ *  Named fields in the refusal, because "invalid adapter" sends the author back to the
+ *  docs while "`fileDoc` must be a function" sends them to the line that needs one. */
+function adapterShapeProblem(a: unknown): string | null {
+  if (!a || typeof a !== "object") return "the module exports no adapter (a default export or a named `adapter` export is expected)";
+  const o = a as Record<string, unknown>;
+  if (!Array.isArray(o.exts) || o.exts.length === 0 || !o.exts.every((e) => typeof e === "string")) {
+    return "`exts` must be a non-empty array of extension strings";
+  }
+  for (const fn of ["symbols", "imports", "docAbove", "fileDoc"] as const) {
+    if (typeof o[fn] !== "function") return `\`${fn}\` must be a function`;
+  }
+  return null;
+}
+
+/**
+ * Resolve `cfg.language` to an adapter: a built-in name, or a `./`-relative project
+ * module (conventionally `.coherence/adapters/<lang>.mjs`) exporting a LanguageAdapter.
+ *
+ * AN UNKNOWN BARE NAME REFUSES. The `?? typescript` fallback this replaces meant
+ * `"language": "go"` silently walked Go files with the TypeScript grammar and reported
+ * on the garbage with full confidence — the same walking-a-DIFFERENT-tree failure
+ * loadConfig refuses for when the config itself is unreadable. Importing a project
+ * module executes project code, which is the trust the atlas already declares at the
+ * loadConfig crossing: running the harness in a tree executes that tree's config.
+ */
+export async function resolveLanguageAdapter(cfg: Config): Promise<LanguageAdapter> {
+  const name = cfg.language;
+  const builtin = LANGUAGES[name];
+  if (builtin) return builtin;
+  if (name.startsWith("./") || name.startsWith("../")) {
+    const path = resolve(cfg.root, name);
+    let mod: Record<string, unknown>;
+    try {
+      mod = await import(pathToFileURL(path).href) as Record<string, unknown>;
+    } catch (error) {
+      throw new Unrunnable([
+        `✗ [config] "language": ${JSON.stringify(name)} could not be imported`,
+        `  ${path}`,
+        `  ${error instanceof Error ? error.message : String(error)}`,
+      ]);
+    }
+    const candidate = mod.default ?? mod.adapter;
+    const problem = adapterShapeProblem(candidate);
+    if (problem) {
+      throw new Unrunnable([
+        `✗ [config] "language": ${JSON.stringify(name)} does not export a LanguageAdapter`,
+        `  ${problem}`,
+        `  required shape: { exts: string[], symbols(src), imports(src), docAbove(lines, line), fileDoc(lines) }`,
+      ]);
+    }
+    return candidate as LanguageAdapter;
+  }
+  throw new Unrunnable([
+    `✗ [config] "language": ${JSON.stringify(name)} is not a language coherence knows`,
+    `  built-ins: ${Object.keys(LANGUAGES).join(" · ")}`,
+    `  or a project adapter: "./.coherence/adapters/<lang>.mjs" — a module exporting a LanguageAdapter`,
+    `  Refusing rather than falling back: walking ${JSON.stringify(name)} files with the`,
+    "  typescript grammar would grade a DIFFERENT tree than you configured, with full confidence.",
+  ]);
+}
 
 /** THE documented-symbol predicate — one spelling, homed with the code that SETS `prose`
  *  (the `add({ …, prose: what || undefined })` call below). verify's coverage line
@@ -23,7 +87,7 @@ export const isDocumented = (n: GraphNode): boolean => !!(n.prose && String(n.pr
 
 export async function buildGraph(cfg: Config): Promise<Graph> {
   const root = cfg.root;
-  const lang = LANGUAGES[cfg.language] ?? typescript;
+  const lang = await resolveLanguageAdapter(cfg);
   const platform = cfg.platform ? PLATFORMS[cfg.platform] ?? null : null;
 
   const ignore = new Set(cfg.ignore);
