@@ -31,6 +31,15 @@
 // Markdown counts on purpose: a hand-kept doc table transcribing a code table is the one
 // duplication NO compiler will ever see, and this repo's own README says so in prose.
 //
+// Python sites are extracted at REGEX grade — no interpreter, no AST, same discipline as
+// the python arm of oracle-domain.ts: module-level dict literals, Enum class bodies,
+// list/tuple/set constants of plain string literals, and match-case / if-elif chains over
+// string literals. The grade is chosen for precision: a form the regex cannot read
+// UNAMBIGUOUSLY (a comprehension, a computed key, a dict()/frozenset() constructor call)
+// yields NO site rather than a wrong one, because python has no compiler behind it — the
+// typeLink suppression that quietly absorbs the TS false positives can never fire on a .py
+// pair, so every python site the ranker sees must have earned its precision upstream.
+//
 // THE DISCRIMINATOR — what keeps this from being a wall of noise — is that two sites the
 // TYPE SYSTEM already ties together are not findings. `const T: Record<OracleVerdict, X>`
 // is checked by tsc: the keys must be exactly the union, so the union and the table cannot
@@ -55,7 +64,7 @@ import { raiseFindings, formatRaise, type Finding } from "./raise.ts";
 // Imported, not re-typed: the first dogfood run of this very detector flagged the copy of
 // this list that used to live here against oracle-domain.ts's original — 10 shared tokens,
 // tied together by nothing. Deriving one side from the other is the fix the report asks for.
-import { NOISE_DIRS } from "./oracle-domain.ts";
+import { NOISE_DIRS, isPyTestPath } from "./oracle-domain.ts";
 
 /** How a domain was spelled out at one site. */
 export type SiteKind =
@@ -256,6 +265,120 @@ export function sitesOfMarkdown(text: string, file = "README.md"): DomainSite[] 
   return sites.filter((s) => s.keys.length >= MIN_KEYS);
 }
 
+// ── python sites ──────────────────────────────────────────────────────────────────────
+
+/** Pure (regex grade) — domain sites in one python source. Only forms a line scan can read
+ *  unambiguously become sites; everything else is deliberately silence (see header). */
+export function sitesOfPython(src: string, file = "x.py"): DomainSite[] {
+  const lines = src.split("\n");
+  const sites: DomainSite[] = [];
+  const push = (name: string, kind: SiteKind, keys: string[], line: number) => {
+    const uniq = [...new Set(keys)].sort();
+    if (uniq.length >= MIN_KEYS) sites.push({ name, kind, file, line, keys: uniq, typeLink: null });
+  };
+
+  /** Consume a bracketed body from `rest` (text after the opener) plus following lines
+   *  until the bracket balances. Returns the body and the line index it closed on, or
+   *  null when it never balances within 100 lines — an unreadable form yields no site. */
+  const collectBracket = (rest: string, next: number, opener: string): { body: string; end: number } | null => {
+    const close = ({ "[": "]", "(": ")", "{": "}" } as Record<string, string>)[opener];
+    let depth = 1, body = "", text = rest, line = next - 1;
+    for (let step = 0; step < 100; step++) {
+      for (const ch of text) {
+        if (ch === "#") break; // comment to end of line (regex grade: a "#" in a token loses)
+        if (ch === opener) depth++;
+        else if (ch === close && --depth === 0) return { body, end: line };
+        body += ch;
+      }
+      body += "\n";
+      line++;
+      if (line >= lines.length) return null;
+      text = lines[line];
+    }
+    return null;
+  };
+
+  // `x == "lit"` chains, grouped per (enclosing def, compared expression) — the same
+  // scoping guard the TS side keys by enclosing function, at line-scan grade: fusing two
+  // unrelated `kind`s across defs would manufacture a divergence out of the collision.
+  const compares = new Map<string, { keys: string[]; line: number; text: string }>();
+  let currentDef = "<module>";
+
+  for (let i = 0; i < lines.length; i++) {
+    const l = lines[i];
+    const d = /^\s*(?:async\s+)?def\s+(\w+)/.exec(l);
+    if (d) { currentDef = `${d[1]}@${i}`; continue; }
+
+    // class Mode(Enum): — the enum body's member NAMES are the domain
+    const en = /^class\s+(\w+)\s*\(\s*(?:enum\s*\.\s*)?(?:Enum|IntEnum|StrEnum|Flag|IntFlag)\s*\)\s*:/.exec(l);
+    if (en) {
+      const keys: string[] = [];
+      for (let j = i + 1; j < lines.length; j++) {
+        const b = lines[j];
+        if (!b.trim()) continue;
+        if (!/^[ \t]/.test(b)) break;
+        const m = /^\s+([A-Za-z]\w*)\s*=/.exec(b); // leading-underscore names are machinery, not members
+        if (m) keys.push(m[1]);
+      }
+      push(en[1], "enum", keys, i + 1);
+      continue;
+    }
+
+    // module-level `NAME = { … }` / `[ … ]` / `( … )` — a dict table or a string-literal list
+    const asn = /^([A-Za-z_]\w*)\s*(?::[^=]+)?=\s*([\[({])(.*)$/.exec(l);
+    if (asn) {
+      const [, name, opener, rest0] = asn;
+      const got = collectBracket(rest0, i + 1, opener);
+      if (got) {
+        if (opener === "{" && /["'][^"']*["']\s*:/.test(got.body)) {
+          push(name, "table", [...got.body.matchAll(/["']([^"']+)["']\s*:/g)].map((m) => m[1]), i + 1);
+        } else {
+          // list/tuple/set constant: EVERY element must be a plain string literal, or no site
+          const parts = got.body.split(",").map((p) => p.trim()).filter(Boolean);
+          if (parts.length && parts.every((p) => /^["'][^"']*["']$/.test(p)))
+            push(name, "list", parts.map((p) => p.slice(1, -1)), i + 1);
+        }
+        i = got.end;
+      }
+      continue;
+    }
+
+    // match x: / case "lit": — a dispatch written as structural pattern matching
+    const mm = /^(\s*)match\s+(.+?)\s*:\s*$/.exec(l);
+    if (mm) {
+      const keys: string[] = [];
+      let j = i + 1;
+      for (; j < lines.length; j++) {
+        const b = lines[j];
+        if (!b.trim()) continue;
+        if (!b.startsWith(mm[1] + " ") && !b.startsWith(mm[1] + "\t")) break;
+        const c = /^\s*case\s+(["'][^"']*["'](?:\s*\|\s*["'][^"']*["'])*)\s*:/.exec(b);
+        if (c) for (const s of c[1].matchAll(/["']([^"']*)["']/g)) keys.push(s[1]);
+      }
+      push(mm[2].slice(0, 40), "switch", keys, i + 1);
+      i = j - 1;
+      continue;
+    }
+
+    // if/elif x == "lit" — a dispatch chain is a domain spelled as control flow
+    const cmp = /^\s*(?:el)?if\s+(.*)$/.exec(l);
+    if (cmp) {
+      let expr: string | null = null, lit: string | null = null;
+      let m = /([A-Za-z_][\w.]*)\s*[=!]=\s*["']([^"']*)["']/.exec(cmp[1]);
+      if (m) { expr = m[1]; lit = m[2]; }
+      else if ((m = /["']([^"']*)["']\s*[=!]=\s*([A-Za-z_][\w.]*)/.exec(cmp[1]))) { expr = m[2]; lit = m[1]; }
+      if (expr && lit) {
+        const key = `${currentDef}::${expr}`;
+        const e = compares.get(key) ?? { keys: [], line: i + 1, text: expr.slice(0, 40) };
+        e.keys.push(lit);
+        compares.set(key, e);
+      }
+    }
+  }
+  for (const e of compares.values()) push(e.text, "compare", e.keys, e.line);
+  return sites;
+}
+
 // ── the walk ──────────────────────────────────────────────────────────────────────────
 
 const CODE_RE = /\.[mc]?[jt]sx?$/;
@@ -274,10 +397,12 @@ export async function collectSites(cfg: Config): Promise<DomainSite[]> {
       const rel = relative(cfg.root, p);
       // Tests are evidence, not a second spelling of the domain: a hand-copied list inside
       // an oracle is the boundary meta-oracle's finding (oracle-domain.ts), not this one's.
-      if (isTestPath(rel) || GENERATED.has(e.name)) continue;
+      // isPyTestPath is IMPORTED from there, not respelled — same file set, one spelling.
+      if (isTestPath(rel) || isPyTestPath(rel) || GENERATED.has(e.name)) continue;
       const src = await readFile(p, "utf8").catch(() => null);
       if (src === null) continue;
       if (CODE_RE.test(e.name)) out.push(...sitesOfSource(src, rel));
+      else if (e.name.endsWith(".py")) out.push(...sitesOfPython(src, rel));
       else if (e.name.endsWith(".md")) out.push(...sitesOfMarkdown(src, rel));
     }
   };
@@ -332,7 +457,7 @@ const siteId = (s: DomainSite) => `${s.file}#${s.kind}:${s.name}@${s.line}`;
 export function stableSiteName(s: DomainSite): string {
   const m = /^(.*)@\d+$/.exec(s.name);
   if (!m) return s.name;
-  return `${m[1]}#${createHash("sha256").update(s.keys.join(" ")).digest("hex").slice(0, 6)}`;
+  return `${m[1]}#${createHash("sha256").update(s.keys.join("\u0000")).digest("hex").slice(0, 6)}`;
 }
 
 /** A site, as a thing a reader can go and find: file, how it was spelled, what it is

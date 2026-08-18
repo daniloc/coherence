@@ -9,6 +9,21 @@
 // premise rot one layer down: keying a site by its file path meant a refactor
 // manufactured false alarms in proportion to how much code it moved. `reconcile` below
 // re-addresses moved sites without letting a copied one through.
+//
+// PYTHON GRADE. On `.py` files the same two contexts are read out of f-strings: a
+// single-line f"…" / f'…' / f-triple-quoted literal is the unit, and each `{expr}`
+// inside it is a candidate site (`{{` escapes are not; `!r` conversions, `:>10` format
+// specs and the `=` debug suffix are stripped so the EXPRESSION is what the safe
+// regexes grade). The JS sql signal — the `"${expr}"` double-quote wrap — does not
+// survive translation, because the f-string's delimiters consume the quotes; SQL-ish
+// is instead read off the literal's own text (a SQL statement shape: select…from,
+// insert into, …), while the HTML signal is byte-for-byte the JS one, a markup tag on
+// the line. Multi-line triple-quoted f-strings are invisible — this scanner is
+// line-based and the python path follows its grain — and `str.format` / `%`-formatting
+// are deliberately skipped: their expressions live OUTSIDE the literal (in call args /
+// the right operand), so a line-regex would pin `{}` or `%s` as the site and the
+// safe-pattern regexes would have no expression to grade. Precision over recall: a
+// wall of unmatched-placeholder candidates is worse than silence.
 import { join } from "node:path";
 import type { Config } from "./types.ts";
 import { scanSources, readBaseline, writeBaseline } from "./sidecar.ts";
@@ -22,6 +37,35 @@ const INTERP = /\$\{([^{}]+)\}/g;          // non-nested ${...}
 const SQL_INTERP = /"\$\{([^{}]+)\}"/g;     // "${expr}" — SQLite double-quoted identifier
 const HTML_TAG = /<\/?[a-zA-Z!]/;            // a markup tag on the line → HTML context
 const BASELINE = "sinks-baseline.json";
+
+// ── python f-strings (header: PYTHON GRADE) ──────────────────────────────────────────────
+// A single-line f-string literal, any prefix casing, rf/fr raw variants included. Triple
+// quotes first so f"""…""" is not read as an empty f"" plus trailing text.
+const PY_FSTRING = /(?<![\w"'])(?:rf|fr|f)(?:"""(.*?)"""|'''(.*?)'''|"((?:\\.|[^"\\])*)"|'((?:\\.|[^'\\])*)')/gi;
+// A SQL statement shape in the literal's own text — the python stand-in for the JS
+// `"${expr}"` quoting signal (see header). Verb pairs, not lone keywords, on purpose.
+const PY_SQL_TEXT = /\b(?:select\s.*\bfrom\b|insert\s+into\b|update\s+\S+\s+set\b|delete\s+from\b|create\s+(?:table|index|view)\b|drop\s+(?:table|index|view)\b|alter\s+table\b)/i;
+const PY_INTERP = /\{([^{}]+)\}/g;           // one interpolation, `{{`/`}}` neutralized first
+
+/** The EXPRESSION of a python interpolation: `m[1]` minus the `!r`-style conversion, the
+ *  `:>10`-style format spec, and the 3.8 `x=` debug suffix — cut at top nesting only, so
+ *  `d['a:b']`, `a[1:2]` and `a != b` keep their full text. */
+function pyExpr(raw: string): string {
+  let depth = 0, quote: string | null = null;
+  for (let i = 0; i < raw.length; i++) {
+    const ch = raw[i];
+    if (quote) { if (ch === quote) quote = null; continue; }
+    if (ch === "'" || ch === '"') quote = ch;
+    else if (ch === "(" || ch === "[") depth++;
+    else if (ch === ")" || ch === "]") depth--;
+    else if (depth === 0) {
+      if (ch === ":") return raw.slice(0, i).trim();
+      if (ch === "!" && raw[i + 1] !== "=") return raw.slice(0, i).trim();
+      if (ch === "=" && raw[i + 1] !== "=" && !"=!<>+-*/%".includes(raw[i - 1] ?? "")) return raw.slice(0, i).trim();
+    }
+  }
+  return raw.trim();
+}
 
 export interface Finding { context: string; file: string; expr: string; line: number }
 const keyOf = (x: Finding) => `${x.context}|${x.file}|${x.expr}`;
@@ -107,11 +151,13 @@ export async function lintSinks(cfg: Config, mode: "report" | "check" | "update"
 
   const findings: Finding[] = [];
   for (const { rel, text } of src) {
+    const isPy = rel.endsWith(".py");
     const lines = text.split("\n");
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
       const t = line.trimStart();
       if (t.startsWith("//") || t.startsWith("*")) continue;
+      if (isPy && t.startsWith("#")) continue;
       for (const m of line.matchAll(SQL_INTERP)) {
         const expr = m[1].trim();
         if (!safeSql.test(expr)) findings.push({ context: "sql-ident", file: rel, expr, line: i + 1 });
@@ -121,6 +167,21 @@ export async function lintSinks(cfg: Config, mode: "report" | "check" | "update"
           const expr = m[1].trim();
           if (line.includes(`"\${${m[1]}}"`)) continue; // the SQL-ident form, already handled
           if (!safeHtml.test(expr)) findings.push({ context: "html-value", file: rel, expr, line: i + 1 });
+        }
+      }
+      if (!isPy) continue;
+      // Python path (header: PYTHON GRADE). Same two contexts, same safe regexes, same
+      // Finding shape — a .py site flows into keyOf/reconcile like any other.
+      for (const f of line.matchAll(PY_FSTRING)) {
+        const body = f[1] ?? f[2] ?? f[3] ?? f[4] ?? "";
+        const isSql = PY_SQL_TEXT.test(body);
+        if (!isSql && !HTML_TAG.test(line)) continue;
+        const context = isSql ? "sql-ident" : "html-value";
+        const safe = isSql ? safeSql : safeHtml;
+        const neutral = body.replace(/\{\{|\}\}/g, "\0\0"); // `{{` is a literal brace, never a site
+        for (const m of neutral.matchAll(PY_INTERP)) {
+          const expr = pyExpr(m[1]);
+          if (expr && !safe.test(expr)) findings.push({ context, file: rel, expr, line: i + 1 });
         }
       }
     }

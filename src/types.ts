@@ -73,7 +73,7 @@ export interface Config {
   // The per-claim path also remains the FALLBACK: if the batch crashes or its report will
   // not parse, verify says so loudly and reverts to it rather than degrading in silence.
   testBatch?: string[];     // e.g. ["npx","vitest","run","--reporter=json","--outputFile=.coherence/test-report.json"]
-  testBatchFormat?: string; // report format; "vitest-json" is the only one v1 knows (and the default). An unknown value is a hard error, NOT a silent fallback.
+  testBatchFormat?: string; // report format: "vitest-json" (vitest --reporter=json; the default) or "pytest-json" (the pytest-json-report plugin's file). An unknown value is a hard error, NOT a silent fallback.
   // Batch is the DEFAULT full-tier path: unset `testBatch` is DERIVED from `test` when the
   // runner is recognizable (vitest today). Set this to "serial" to demand the old per-claim
   // profile — one full test-pool boot PER CLAIM. It is supported and it is never implicit,

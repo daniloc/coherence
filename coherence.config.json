@@ -59,7 +59,8 @@
     "dismissed": {
       "isActive": "A hover/selection highlight predicate inside the browser script render-contract.ts embeds as a string. It decides which lane is lit, grades nothing, and cannot make a verdict unearned.",
       "isProse": "redundancy.ts's site-kind classifier \u2014 it only weights a ranked ADVISORY that gates nothing. A site mis-weighted here changes the order of a report, never a verdict.",
-      "isTooling": "render-outline.ts's display grouping \u2014 which subtree prints under `tooling` in the outline. Presentation over an already-derived graph; the graph itself is unaffected."
+      "isTooling": "render-outline.ts's display grouping \u2014 which subtree prints under `tooling` in the outline. Presentation over an already-derived graph; the graph itself is unaffected.",
+      "isPyTestPath": "One shared definition exported from oracle-domain.ts and imported where python test files must be excluded (novelty surface, redundancy walk). A single spelling, not a scattered convention \u2014 and it scopes advisories, never a verdict."
     }
   },
   "sinks": {
@@ -140,6 +141,30 @@
         "to": "project-source",
         "security": true,
         "translates": "One host-selected lifecycle contract becomes that host's tracked project settings, stable launcher, and root mapping. Claude and Codex share the five event meanings without sharing settings syntax, matchers, launcher bytes, or bundle identity; unrelated host configuration survives the convergence."
+      },
+      "surfaceOfSource": {
+        "from": "project-source",
+        "to": "derived-model",
+        "security": false,
+        "translates": "One file's text becomes counted behavioral surface — exported symbols, domain variants, keyed-table keys — for both languages the harness reads. The change signal's zero-anchor alarm consumes these counts, so a language this crossing cannot see grows silently; python is read at the declared regex grade rather than not at all."
+      },
+      "analyzeParityOracle": {
+        "from": "project-source",
+        "to": "verdict",
+        "security": true,
+        "translates": "A parity oracle's own source decides whether it enumerates the LIVE shared domain or a hand-copied sample. TypeScript is walked by compiler; python by the same indent-block discipline as analyzePythonOracle — and in both, a literal list roots at nothing, a missing oracle is not-found, and neither can green a totality claim."
+      },
+      "sitesOfPython": {
+        "from": "project-source",
+        "to": "derived-model",
+        "security": false,
+        "translates": "Python enumeration sites — module dicts, Enum bodies, string-constant collections, match/elif chains — become candidate token sets for the undeclared-duplication ranker, the same shape the TS extractor emits. Advisory only; with no compiler behind .py, precision is earned at extraction because nothing downstream can rescue a false positive."
+      },
+      "lintSinks": {
+        "from": "project-source",
+        "to": "verdict",
+        "security": true,
+        "translates": "Raw interpolations into dangerous contexts — JS template literals and python f-strings alike — become the ratcheted review surface. A NEW unreviewed site fails --check; the safe-pattern config grades the bare expression identically in both languages, so switching languages cannot shrink the visible surface."
       },
       "reconcile": {
         "from": "record",

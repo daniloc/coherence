@@ -25,6 +25,19 @@
 // low net-new exports/variants, a FEATURE is net-new surface — when churn dominates
 // the alarm carries "(disregard if recent work was mostly refactor)". Advisory only:
 // like why-lint, it never changes the exit code.
+//
+// Python parity (regex grade): the same three proxies are counted for `.py` files, with
+// line-anchored regexes instead of an AST — following the deliberate precedent of
+// `analyzePythonOracle` (oracle-domain.ts) and the python adapter: no interpreter
+// subprocess, no new dependency. Module-level `def`/`class`/assignment names that do not
+// start with `_` stand in for exports; `class X(Enum)` bodies and single-line
+// `Literal[…]` aliases for enumerated domains; module-level dict literals for keyed
+// tables. Regex grade means favoring precision over recall: a missed exotic form
+// under-counts one surface item, while counting garbage would poison the alarm this
+// feeds. And it does feed one — signal.ts wires scanSurface/surfaceSignals/
+// noveltyVerdict into the zero-anchor growth gate (`needs-decision` under --check, the
+// regulator's require-decision rule), so before this a Python project grew behavioral
+// surface invisibly: the exact blind spot the module exists to close.
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import ts from "typescript";
@@ -35,8 +48,10 @@ import type { Config } from "./types.ts";
  *  top-level `Record<…>`-annotated const tables — export NOT required for tables). */
 export interface FileSurface { exports: Set<string>; domains: Map<string, Set<string>>; }
 
-/** Pure (AST only) — the surface of one source string. */
+/** Pure — the surface of one source string. `.py` file names route to the regex-grade
+ *  Python scan; everything else is the TS-AST scan. Same shape out either way. */
 export function surfaceOfSource(src: string, fileName = "x.ts"): FileSurface {
+  if (/\.py$/i.test(fileName)) return pySurfaceOfSource(src);
   const exports = new Set<string>();
   const domains = new Map<string, Set<string>>();
   const sf = ts.createSourceFile(fileName, src, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
@@ -94,8 +109,112 @@ export function surfaceOfSource(src: string, fileName = "x.ts"): FileSurface {
   return { exports, domains };
 }
 
-/** Whether a path is a test file (excluded from the surface proxies). */
-export const isTestPath = (p: string) => /\.(test|spec)\.[mc]?[jt]sx?$/.test(p) || /(^|\/)__tests__\//.test(p);
+// ── the Python scan (regex grade — see the header) ───────────────────────────────────
+
+/** Statement keywords that can open a module-level line; never a binding name. Defensive
+ *  only — most are already unmatchable because the binding regex demands a bare `=`. */
+const PY_STMT_KEYWORDS = new Set([
+  "if", "elif", "else", "for", "while", "with", "try", "except", "finally",
+  "import", "from", "return", "yield", "raise", "assert", "pass", "del",
+  "global", "nonlocal", "lambda", "match", "case", "def", "class", "async", "await",
+]);
+
+/** Enum-ish base in a `class X(...)` bases list: Enum/IntEnum/StrEnum/Flag/IntFlag,
+ *  bare or `enum.`-qualified. */
+const PY_ENUM_BASE = /\b(?:enum\s*\.\s*)?(?:Int|Str)?(?:Enum|Flag)\b/;
+
+/** Regex-grade surface of one Python module (see the header for what counts and why).
+ *  Line-anchored: module surface lives at column 0, so nested defs, methods, and
+ *  class-body bindings fall out for free. A tiny triple-quote tracker keeps example
+ *  code inside module docstrings from reading as surface. */
+function pySurfaceOfSource(src: string): FileSurface {
+  const exports = new Set<string>();
+  const domains = new Map<string, Set<string>>();
+  const put = (name: string, members: Iterable<string>) => {
+    const set = domains.get(name) ?? new Set<string>();
+    for (const m of members) set.add(m);
+    if (set.size) domains.set(name, set);
+  };
+  const lines = src.split("\n");
+  let inStr: '"""' | "'''" | null = null;
+  for (let i = 0; i < lines.length; i++) {
+    const l = lines[i];
+    if (inStr) {
+      if (((l.match(inStr === '"""' ? /"""/g : /'''/g) ?? []).length) % 2 === 1) inStr = null;
+      continue;
+    }
+    let m: RegExpExecArray | null;
+    // module-level def (decorators sit above and don't matter; multi-line defs carry the
+    // name on the def line; nested defs are indented and never match)
+    if ((m = /^(?:async\s+)?def\s+([A-Za-z_]\w*)\s*\(/.exec(l))) {
+      if (!m[1].startsWith("_")) exports.add(m[1]);
+    } else if ((m = /^class\s+([A-Za-z_]\w*)\s*(?:\(([^)]*)\))?\s*:/.exec(l))) {
+      const name = m[1];
+      if (!name.startsWith("_")) {
+        exports.add(name);
+        // enum body: NAME = value members at the class-body indent (methods and their
+        // locals sit deeper; `_`-prefixed and dunder members are not variants)
+        if (m[2] && PY_ENUM_BASE.test(m[2])) {
+          const members: string[] = [];
+          let bodyIndent: string | null = null;
+          for (let j = i + 1; j < lines.length; j++) {
+            const b = lines[j];
+            if (!b.trim()) continue;
+            if (!/^[ \t]/.test(b)) break; // dedent to module level ends the class
+            const ind = /^[ \t]*/.exec(b)![0];
+            if (bodyIndent === null) bodyIndent = ind;
+            if (ind !== bodyIndent) continue;
+            const mm = /^[ \t]+([A-Za-z]\w*)\s*=(?!=)/.exec(b);
+            if (mm) members.push(mm[1]);
+          }
+          if (members.length) put(name, members);
+        }
+      }
+    } else if ((m = /^([A-Za-z_]\w*)\s*(?::[^=]+)?=\s*\{(.*)$/.exec(l)) && !PY_STMT_KEYWORDS.has(m[1])) {
+      // NAME = { … } — a keyed table. Like the TS Record tables, counted whether or not
+      // the name is public: a module-local table is exactly the drift surface we want.
+      const name = m[1];
+      if (!name.startsWith("_")) exports.add(name);
+      const keys: string[] = [];
+      if (m[2].includes("}")) {
+        // single-line dict — keys within the braces
+        for (const km of m[2].slice(0, m[2].lastIndexOf("}")).matchAll(/["']([^"']+)["']\s*:/g)) keys.push(km[1]);
+      } else {
+        // multi-line: string keys at the first key line's indent, up to the close at
+        // the opening indent (nested dict bodies sit deeper and are skipped)
+        let keyIndent: string | null = null;
+        for (let j = i + 1; j < lines.length; j++) {
+          const b = lines[j];
+          if (!b.trim()) continue;
+          if (!/^[ \t]/.test(b)) break; // `}` (or anything) back at column 0 closes it
+          const km = /^([ \t]+)["']([^"']*)["']\s*:/.exec(b);
+          if (!km) continue;
+          if (keyIndent === null) keyIndent = km[1];
+          if (km[1] === keyIndent) keys.push(km[2]);
+        }
+      }
+      if (keys.length) put(name, keys);
+    } else if ((m = /^(?:type\s+)?([A-Za-z]\w*)\s*(?::\s*TypeAlias\s*)?=\s*(?:t\.|typing\.)?Literal\[([^\]]*)\]/.exec(l))) {
+      // Verb = Literal["get", "post"]  (also `type V = …` / `: TypeAlias =` spellings)
+      exports.add(m[1]);
+      const members = [...m[2].matchAll(/["']([^"']+)["']/g)].map((x) => x[1]);
+      if (members.length >= 2) put(m[1], members);
+    } else if ((m = /^([A-Za-z_]\w*)\s*(?::[^=]+)?=\s*(?!=)/.exec(l)) && !PY_STMT_KEYWORDS.has(m[1])) {
+      // module-level CONST / annotated assignment (`==` comparisons excluded by (?!=))
+      if (!m[1].startsWith("_")) exports.add(m[1]);
+    }
+    // triple-quoted string opener (an odd count leaves the rest of the block inside)
+    const dq = (l.match(/"""/g) ?? []).length, sq = (l.match(/'''/g) ?? []).length;
+    if (dq % 2 === 1) inStr = '"""'; else if (sq % 2 === 1) inStr = "'''";
+  }
+  return { exports, domains };
+}
+
+/** Whether a path is a test file (excluded from the surface proxies). Python spellings
+ *  mirror oracle-domain's: test_*.py / *_test.py by basename, anywhere in the tree. */
+export const isTestPath = (p: string) =>
+  /\.(test|spec)\.[mc]?[jt]sx?$/.test(p) || /(^|\/)__tests__\//.test(p) ||
+  /(^|\/)test_[^/]*\.py$/.test(p) || /_test\.py$/.test(p);
 
 /** Scan the surface of a set of files under one tree root; missing files (added or
  *  removed on the other side of the range) are simply absent. Exports and domains are
@@ -104,7 +223,7 @@ export async function scanSurface(root: string, files: Iterable<string>): Promis
   const exports = new Set<string>();
   const domains = new Map<string, Set<string>>();
   for (const rel of files) {
-    if (!/\.[mc]?[jt]sx?$/.test(rel) || isTestPath(rel)) continue;
+    if (!/\.([mc]?[jt]sx?|py)$/.test(rel) || isTestPath(rel)) continue;
     let src: string;
     try { src = await readFile(join(root, rel), "utf8"); } catch { continue; }
     const s = surfaceOfSource(src, rel);

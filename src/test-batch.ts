@@ -25,8 +25,11 @@ import type { Config } from "./types.ts";
 
 /** The report formats v1 understands. An unknown `config.testBatchFormat` is a hard
  *  error, never a fallback: a typo'd format that silently reverted to the per-claim
- *  path would look exactly like a working batch that happened to be slow. */
-export const TEST_BATCH_FORMATS = ["vitest-json"] as const;
+ *  path would look exactly like a working batch that happened to be slow.
+ *    vitest-json — `vitest run --reporter=json` (the default when the format is unset)
+ *    pytest-json — the pytest-json-report plugin's file
+ *                  (`pytest --json-report --json-report-file=<path>`) */
+export const TEST_BATCH_FORMATS = ["vitest-json", "pytest-json"] as const;
 export type TestBatchFormat = (typeof TEST_BATCH_FORMATS)[number];
 
 /** One test as the report described it. `fullName` is the runner's OWN concatenation of
@@ -63,13 +66,15 @@ export type OracleMode =
   | { kind: "refuse"; lines: string[] };
 
 /** Which runner `config.test` is driving, as far as we can tell from the command itself. */
-export type RunnerKind = "vitest" | "node-test" | "unknown";
+export type RunnerKind = "vitest" | "node-test" | "pytest" | "unknown";
 
 export function detectRunner(test: string[] | undefined): RunnerKind {
   const joined = (test ?? []).join(" ");
   if (/(^|[\s/])vitest\b/.test(joined)) return "vitest";
   // `node --test` (or a --test-name-pattern anywhere) is node's own runner.
   if (/(^|\s)--test(\s|$|=)/.test(joined) || /--test-name-pattern/.test(joined)) return "node-test";
+  // covers bare `pytest`, a path to it, and `python -m pytest` alike
+  if (/(^|[\s/])pytest\b/.test(joined)) return "pytest";
   return "unknown";
 }
 
@@ -107,6 +112,21 @@ export function deriveBatchCommand(cfg: Config): { cmd: string[] } | { why: stri
     cmd.push("--reporter=json", `--outputFile=${DERIVED_REPORT_PATH}`);
     return { cmd };
   }
+  // pytest is RECOGNIZED but not derived — the same posture as node:test, for the same
+  // reason plus one: (a) batch matching for pytest-json is function-name EQUALITY over
+  // nodeids, not `-k`'s substring semantics, so a derived batch would swap in a second
+  // matching rule the serial command never agreed to; and (b) reading a report at all
+  // needs the pytest-json-report plugin, which the command alone cannot prove is
+  // installed — a guessed command would crash into the serial fallback on every
+  // plugin-less project. So the project opts in by naming the format.
+  if (runner === "pytest") return { why: [
+    "config.test drives pytest, and coherence will not guess a batch command for it: the",
+    "batch report needs the pytest-json-report plugin, and the command alone cannot prove",
+    "it is installed. With the plugin installed (`pip install pytest-json-report`), set:",
+    `  config.testBatch: ["pytest","--json-report","--json-report-file=${DERIVED_REPORT_PATH}"]`,
+    `  config.testBatchFormat: "pytest-json"`,
+    "and every `passes test \"test_<name>\"` claim resolves from that ONE suite run.",
+  ] };
   if (runner === "node-test") return { why: [
     "config.test drives `node --test`, and coherence cannot batch it yet: node:test ships no",
     "JSON reporter (only default, dot, junit, lcov, spec, tap), and its --test-name-pattern",
@@ -173,7 +193,8 @@ const BATCH_TIMEOUT_MS = 900_000;
 const BATCH_MAX_BUFFER = 64 * 1024 * 1024;
 
 /** Resolve the configured format, or say why it cannot be. An omitted format defaults to
- *  the only one there is; an unknown one is an error the run must surface. */
+ *  vitest-json (the v1 format, kept for compatibility — a pytest project names its format
+ *  alongside its testBatch); an unknown one is an error the run must surface. */
 export function resolveBatchFormat(cfg: Config): { format: TestBatchFormat } | { error: string } {
   const raw = cfg.testBatchFormat;
   if (raw == null) return { format: "vitest-json" };
@@ -264,14 +285,74 @@ export function parseVitestJson(text: string): BatchReport {
   throw new Error("no vitest JSON report found in the output (expected an object with a `testResults` array)");
 }
 
+function collectPytest(j: any): BatchTest[] {
+  const tests: BatchTest[] = [];
+  for (const t of j.tests) {
+    // The nodeid is pytest's own full address — `path::Class::function[param]` — and it is
+    // what this format stores as `fullName`: the runner's string, taken verbatim, exactly
+    // as the vitest path takes the reporter's `fullName`. Matching (resolveFromBatch)
+    // reads the FUNCTION segment out of it rather than substring-searching the whole id.
+    const nodeid = typeof t?.nodeid === "string" ? t.nodeid : "";
+    if (!nodeid) continue;
+    const file = nodeid.includes("::") ? nodeid.slice(0, nodeid.indexOf("::")) : undefined;
+    // pytest-json-report times each PHASE in SECONDS. The `call` phase is the test body —
+    // the analogue of vitest's per-assertion duration — so it is what rides along, converted
+    // to the milliseconds BatchTest promises. A test skipped in setup has no call phase, and
+    // absence stays absence: no duration, never 0 (same rule as the vitest collector).
+    const d = t?.call?.duration;
+    const duration = typeof d === "number" && Number.isFinite(d) ? d * 1000 : undefined;
+    tests.push({ fullName: nodeid, status: String(t?.outcome ?? "unknown"), file, duration });
+  }
+  return tests;
+}
+
+/**
+ * Parse a pytest-json-report file (`pytest --json-report --json-report-file=<path>`) —
+ * the sibling of `parseVitestJson`, holding the same line: it THROWS when no report can
+ * be found, because an empty report and an unreadable one must not look alike.
+ *
+ * SCHEMA (pytest-json-report, current stable): a JSON object with a top-level `tests`
+ * array; each entry carries
+ *   { nodeid: "tests/test_x.py::test_name" | "tests/test_x.py::TestClass::test_method"
+ *             (parametrized ids append "[param]"),
+ *     outcome: "passed" | "failed" | "error" | "skipped" | "xfailed" | "xpassed",
+ *     setup/call/teardown: { duration: <seconds>, outcome: … } }
+ *
+ * The same brace scan + LAST-WINS walk as the vitest parser, for the same reason: the
+ * file form never interleaves, but a report handed over via `--from-report` may arrive
+ * embedded in captured output, and the scan costs nothing when the text is clean.
+ */
+export function parsePytestJson(text: string): BatchReport {
+  const candidates = extractJsonObjects(text);
+  for (let i = candidates.length - 1; i >= 0; i--) {
+    let j: any;
+    try { j = JSON.parse(candidates[i]); } catch { continue; }
+    if (!j || typeof j !== "object" || !Array.isArray(j.tests)) continue;
+    return { format: "pytest-json", tests: collectPytest(j) };
+  }
+  throw new Error("no pytest JSON report found in the output (expected an object with a `tests` array)");
+}
+
+/** One report text → one BatchReport, per format. The unknown case cannot reach here —
+ *  `resolveBatchFormat` refuses it as a hard error before any runner is spawned — so the
+ *  switch is exhaustive by type and a new format extends it or fails to compile. */
+export function parseBatchReport(text: string, format: TestBatchFormat): BatchReport {
+  switch (format) {
+    case "vitest-json": return parseVitestJson(text);
+    case "pytest-json": return parsePytestJson(text);
+  }
+}
+
 /** Where the command tells the runner to write its report, if it does. Covers
  *  `--outputFile=p`, `--outputFile.json=p` (vitest's per-reporter form) and
- *  `--outputFile p`. */
+ *  `--outputFile p` — plus `--json-report-file=p` / `--json-report-file p`, the
+ *  pytest-json-report spelling of the same thing (that plugin writes ONLY to a file,
+ *  never stdout, so missing this flag would read pytest's human output instead). */
 export function outputFileOf(cmd: string[]): string | null {
   for (let i = 0; i < cmd.length; i++) {
-    const m = /^--outputFile(?:\.[A-Za-z0-9_-]+)?=(.+)$/.exec(cmd[i]);
+    const m = /^(?:--outputFile(?:\.[A-Za-z0-9_-]+)?|--json-report-file)=(.+)$/.exec(cmd[i]);
     if (m) return m[1];
-    if (/^--outputFile(?:\.[A-Za-z0-9_-]+)?$/.test(cmd[i]) && i + 1 < cmd.length) return cmd[i + 1];
+    if (/^(?:--outputFile(?:\.[A-Za-z0-9_-]+)?|--json-report-file)$/.test(cmd[i]) && i + 1 < cmd.length) return cmd[i + 1];
   }
   return null;
 }
@@ -292,7 +373,7 @@ export function readReportFile(root: string, file: string, format: TestBatchForm
   try { text = readFileSync(p, "utf8"); }
   catch (e) { return { report: null, note: `--from-report ${file} could not be read: ${(e as Error).message}` }; }
   try {
-    const report = format === "vitest-json" ? parseVitestJson(text) : parseVitestJson(text);
+    const report = parseBatchReport(text, format);
     if (!report.tests.length) return { report: null, note: `--from-report ${file} parsed but contained no tests` };
     return { report, note: `${report.tests.length} test(s)` };
   } catch (e) {
@@ -344,9 +425,8 @@ export function runTestBatch(cmd: string[], root: string, format: TestBatchForma
   }
 
   try {
-    // One format today; the switch is where a second one lands, and the unknown case is
-    // already refused before we ever get here (resolveBatchFormat).
-    const report = format === "vitest-json" ? parseVitestJson(text) : parseVitestJson(text);
+    // The unknown case is already refused before we ever get here (resolveBatchFormat).
+    const report = parseBatchReport(text, format);
     if (!report.tests.length) return { report: null, note: "the report parsed but contained no tests" };
     return { report, note: `${report.tests.length} test(s)` };
   } catch (e) {
@@ -395,8 +475,34 @@ export function runTestBatch(cmd: string[], root: string, format: TestBatchForma
  * a failing or skipped match still consumed (or deliberately did not consume) suite time,
  * and the cost report is about the suite, not about the verdict.
  */
+/** The function segment of a pytest nodeid: the final `::` part, with any parametrize
+ *  suffix stripped — `tests/test_x.py::TestClass::test_method[case-1]` → `test_method`.
+ *  This is the name a `passes test "…"` claim carries on a pytest project. */
+export function pytestFunctionName(nodeid: string): string {
+  const seg = nodeid.includes("::") ? nodeid.slice(nodeid.lastIndexOf("::") + 2) : nodeid;
+  return seg.replace(/\[.*\]$/, "");
+}
+
+// The outcomes that RED a pytest match. `failed` and `error` (a raising fixture is as
+// broken as a raising test) — and `xpassed`, because an xfail-marked test that passes is
+// the expectation gone stale, which `xfail_strict` pytest itself reds; the vitest path
+// has no leniency to mirror (only literal "passed" is a pass there), so none is invented
+// here. `skipped`/`xfailed` stay NEUTRAL — not evidence, not failure — exactly as the
+// vitest path treats a skipped match.
+const PYTEST_FAIL_OUTCOMES: ReadonlySet<string> = new Set(["failed", "error", "xpassed"]);
+
 export function resolveFromBatch(report: BatchReport, name: string): { ok: boolean; detail: string; ms?: number } {
-  const matches = report.tests.filter((t) => t.fullName.includes(name));
+  // MATCHING IS PER FORMAT, because each mirrors what a claim NAMES on that runner:
+  //   vitest-json — an unanchored literal substring of `fullName`, the exact behaviour of
+  //     an escaped `-t` (see the block comment above).
+  //   pytest-json — EQUALITY with the nodeid's function segment, `[param]` stripped: a
+  //     claim names a test FUNCTION, so it matches every parametrized case of that
+  //     function and nothing else. Deliberately NOT `-k`'s substring semantics — `-k
+  //     "test_foo"` also runs `test_foo_extended`, which would make a claim's evidence
+  //     depend on unrelated tests sharing a prefix.
+  const pytest = report.format === "pytest-json";
+  const matches = report.tests.filter((t) =>
+    pytest ? pytestFunctionName(t.fullName) === name : t.fullName.includes(name));
   const timed = matches.filter((t) => typeof t.duration === "number");
   const ms = timed.length ? timed.reduce((n, t) => n + (t.duration as number), 0) : undefined;
   if (!matches.length)
@@ -406,11 +512,12 @@ export function resolveFromBatch(report: BatchReport, name: string): { ok: boole
         + ` (renamed, deleted, or never collected). The claim names an oracle that does not exist,`
         + ` so nothing is enforcing it.`,
     };
-  const failed = matches.filter((t) => t.status === "failed");
+  const failed = matches.filter((t) => (pytest ? PYTEST_FAIL_OUTCOMES.has(t.status) : t.status === "failed"));
   if (failed.length)
     return {
       ok: false, ms,
       detail: `test "${name}" — matching test FAILED in the batch report: "${failed[0].fullName}"`
+        + (failed[0].status !== "failed" ? ` (outcome: ${failed[0].status})` : "")
         + (failed.length > 1 ? ` (+${failed.length - 1} more matching failure(s))` : ""),
     };
   // Skipped/todo tests are neither evidence nor failure — the same thing the per-claim

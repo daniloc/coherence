@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-18 17:36Z",
+  "generatedAt": "2026-08-18 19:27Z",
   "root": "coherence",
   "absRoot": "/Users/daniloc/Documents/Dev/coherence",
   "nodes": [
@@ -50,13 +50,18 @@
         "boundary \"supported lifecycle hosts share one control contract without sharing host syntax\" at setLifecycleHookForHost via guard \"Codex control — install is exact, idempotent, preserving, and runnable across nested paths\"",
         "boundary \"current-session activation requires exact installed-bundle evidence\" at currentObservation via guard \"hook status — exact current bundle activates; stale, direct, replayed, and damaged evidence does not\"",
         "boundary \"customized hook text composes declared overrides and appends, degrading to canon on damage\" at composeHookText via guard \"hook text — override replaces, append follows, and damage degrades to the canonical emission\"",
+        "boundary \"python sources feed the same instruments as typescript at their declared regex grade\" at surfaceOfSource via guard \"python surface — module defs, enum variants, and dict keys count; underscore and nested names do not\"",
+        "boundary \"python sources feed the same instruments as typescript at their declared regex grade\" at analyzeParityOracle via guard \"python parity — a .py oracle that iterates the live domain passes; a literal list fails; a vanished oracle cannot pass\"",
+        "boundary \"python sources feed the same instruments as typescript at their declared regex grade\" at sitesOfPython via guard \"python redundancy — two spellings of one domain in .py rank as a candidate; declared parity and idiom do not\"",
+        "boundary \"python sources feed the same instruments as typescript at their declared regex grade\" at resolveFromBatch via guard \"pytest batch — nodeid names resolve per claim, zero matches is the vanished oracle, and a torn report falls back loudly\"",
+        "boundary \"python sources feed the same instruments as typescript at their declared regex grade\" at lintSinks via guard \"python sinks — an f-string into a SQL context is a site, a safe-pattern expression is not, and the ratchet reds the new site\"",
         "boundary \"experiment outcomes require criterion-total evidence\" at closeExperiment via guard \"close — total nonempty evidence is mandatory and outcome is derived, never supplied\"",
         "boundary \"experiment telemetry preserves its weakest provable attribution\" at closeExperiment via guard \"Codex parent-only tool events close the loop as an aggregate, never exact owner evidence\"",
         "boundary \"activity evidence is accepted only when identity, scope, time, and command agree\" at isActivityRow via guard \"activity — internally inconsistent scope, time, and command rows are damage, not evidence\"",
         "boundary \"a streamed journal entry renders exactly once across appends and compaction\" at tailJournal via guard \"tail — an appended record arrives exactly once, a compaction fold re-emits nothing and drops nothing, and a half-written line waits for its bytes\""
       ],
       "prose": "The CLI is deliberately a thin composition root. Parsing, derivation, verification,\nrendering, and journaling remain independently addressable modules beneath this boundary.",
-      "why": "**agent lifecycle preserves decisions and exposes the current change signal.** Decisions\nand risk are cheapest to surface while the agent still holds the context that produced\nthem; waiting for a later reviewer externalizes both reconstruction costs. The two stop\nsurfaces are not interchangeable: a subagent restates its report because its caller may\nsee nothing else, while the main agent has already shown its report to the user and is\nnever interrupted by shared-worktree state that may belong to another agent. Main Stop\nkeeps the calibration observation and emits no bytes; only SubagentStop carries the\njournal and patch signal forward.\n\n**significant behavioral growth acquires an anchor or patch-specific decision.** The cost\nof adding an invariant is immediate while the cost of omitting it appears later, so the\ncurrent patch must carry either enforcement or an addressable reason that it needs none.\n\n**a weaker regulation obligation never masks a stronger one.** Regulation compares live\nobligations by a lexicographic potential, with missing observations failing closed instead\nof becoming zero, and returns the single strongest action owed. V1 evaluates only rules\ndeclared in the live doctrine registry; even a no-action result makes no claim of overall\nsafety.\n\n**regulation evaluates and repairs the selected agent host.** A canonical Claude control\ncannot create a field around a Codex session, even though both hosts implement the same\nlifecycle domain. The sensor therefore names the explicit or current host in its reading,\nthe decision identity retains it, and a lifecycle redirect installs that same host. A\nforeign host value refuses before it can release or author a shell command.\n\n**task context is bounded and names its approximations.** A focused context packet is\nuseful only when its one-hop and heuristic limits stay visible; otherwise convenience is\nmisread as completeness and recreates the omission gradient this project exists to oppose.\n\n**cached decisions expose structurally expired premises.** A decision saves inference only\nwhile the repository addresses supporting it remain live. Broken explicit referents must\nbe louder than readable but stale rationale.\n\n**predicted context closure is calibrated against observed reads and outcomes.** Economy's\none-hop closure is a hypothesis about necessary reading, not cognition. Observed reads and\nlater defect labels give that model a path to correction instead of turning it into dogma.\n\n**calibration preserves the weakest host attribution of its trace.** A Codex parent\nsession file can contain parent and descendant tool use because PostToolUse supplies no\nchild id. Calibration may still compare that aggregate against a patch, but it must name\nthe aggregate rather than relabeling those writes as one agent's work. Legacy rows remain\nunscoped, shared-worktree fallback remains separate, and any unreadable row prevents a\nnew sample instead of disappearing from its denominator.\n\n**reviewed risk sites survive relocation but never duplication.** A ratchet baseline is a\ncached review, and a cached fact that expires on a rename rots the same way a decision's\npremises do — a refactor then spends a reviewer's attention on sites nobody touched, and\nattention spent on false alarms is how a real one gets waved through. Relocation changes\nwhere a reviewed site lives; duplication changes how much unreviewed surface exists, and\nonly the second is news.\n\n**pinned mass follows a value-conserving rename but never absorbs growth.** A mass\ndimension's key embeds a name someone chose — a spec H1, a measure's config key — so a\nrename re-addresses the pin, and a ratchet that reads its own re-addressing as \"gained\nparts nobody named\" prints a lie beside the unchanged total that refutes it (measured:\none H1 edit, 35 lines relabeled, zero gained, gate red). The repair must stay\ncount-conserving: only a vanished pin with the same family, unit and exact value can\nabsorb a new name, or growth and novelty would ride in under renames.\n\n**a claim goes green only on positive evidence its oracle ran.** The verifier's whole\nauthority rests on this one property, and until now no claim cited it: an audit deleted\nthe rule and the tree stayed \"✓ coherent\" while the unit test failed unseen. An exit\ncode is the runner's statement about itself, not about the named test — a filter that\nmatched nothing exits clean on every runner class this repo has measured — so green\nmust require output that names the run, the one reading absence cannot produce.\n\n**a vanished oracle reds its claim, never green-by-absence.** A renamed or deleted test\nleaves a claim citing a name nothing owns, and that claim then guards nothing while\nwearing green. Absence has to be its own observable verdict, distinct from ran-and-failed,\nbecause the two demand different repairs: a red test needs the code fixed, a vanished\noracle needs the contract re-tied to something that exists.\n\n**a declared invariant unanchored by any boundary fails coverage.** A spec may not\nassert a property that nothing enforces: that is the ratchet the whole harness turns on,\nand if it silently loosened, specs would drift back into aspiration prose. The gap has to\ncost a red at the run that opened it, while the person who opened it still holds the\ncontext to close it.\n\n**a via-test oracle that iterates no live domain fails its claim.** A totality label on a\nsampling test is worse than no label: it retires the reader's suspicion without retiring\nthe risk. Deriving the checked set from the live registry the chokepoint actually serves\nis what makes \"covers every case\" a fact about the system rather than about the fixture\nlist the author remembered.\n\n**a skipped run never clobbers an oracle's recorded verdict.** The record is the last\nknown truth, honestly dated. A fast tier that skips the executable claims every commit\nwould otherwise erase last week's real pass — or, worse, a real fail — with \"did not\nlook\", and history that can be overwritten by not looking is not history.\n\n**a named oracle that no test runs cannot pass.** The serial runner is the component the\nexecutable tier leans its trust on, and it was outside the evidence perimeter — unclaimed,\nuntested, and (measured) willing to exit clean when the cited title survived only as a\nstring in a file. The runner itself must refuse a name it cannot show ran, because every\ngreen above it inherits that refusal.\n\n**an empty derivation against a remembered surface refuses, never passes.** Every verdict\nin this file rests on the graph deriving non-empty, and nothing checked that premise:\ngutting `buildGraph` left the gate printing \"claims: 0\" and \"✓ coherent\", exit 0 —\ndeeper than a vanished oracle, because it empties every check at once while announcing\nthey all passed. The record remembers how many claims the last run graded, so a run that\nsuddenly sees zero must refuse rather than report success over nothing; the only\nlegitimate zero (a project adopting from nothing) is exactly the one with no memory, and\nit gets the adoption ladder instead. The floor deliberately stops at zero: a partial\ncollapse where every component keeps a claim is observationally identical to deliberate\npruning, and deletion has to stay free or people stop deleting. What the complement\nunderneath it actually reaches is narrower than it first appears — a component stripped of\nits claims is still a node someone can red, while a component the walk never discovered\nleaves nothing behind to notice, so an N→1 slide reads as N ordinary prunings. Pinning the\npopulation as a mass dimension is the honest answer there, because the question it settles\nis not whether anything survived but whether as much survived as last time.\n\n**lifecycle hook presence is one canonical runnable bit.** The control surface cannot\ncreate a field if every repository is free to carry a merely similar—or silently dead—\nhook. Printing, installation, and inspection therefore share one five-event value and\none stable launcher per host. Presence means exactly one shared project copy, no competing\nlocal, inline, or legacy path, an aligned host/launcher root, a correct declared root\nmapping, an enabled project-hook layer, and a runnable target. Unrelated hooks may coexist.\nHistorical journal activity is reported beside this bit but can neither redeem current\nabsence nor erase current presence.\n\n**supported lifecycle hosts share one control contract without sharing host syntax.**\nClaude and Codex expose the same five lifecycle meanings through different settings files,\nmatchers, launch commands, and response envelopes. Host parity therefore means deriving\neach complete bundle from one host-selected domain while retaining a distinct fingerprint;\ncopying Claude bytes into Codex would be resemblance, not parity.\n\n**current-session activation requires exact installed-bundle evidence.** Structural\npresence proves that the project control is runnable, not that this session loaded it. A\nsession becomes observed only when its activity names the selected host, launcher\ntransport, and current bundle fingerprint. Direct probes, stale bundles, other sessions,\nand a guessed newest session cannot establish activation; parent-session fallback stays a\nnamed attribution ceiling rather than being promoted to child evidence.\n\n**customized hook text composes declared overrides and appends, degrading to canon on\ndamage.** The canonical hook text is the harness's voice — identical across adopting\nprojects, and byte-testable because of it — but a project knows things the harness cannot:\nits own commands, its conventions, the one warning its history taught it. So a project\ngets a declared voice per event rather than a fork of the hook body, under one composition\nrule with no conflict state: the override answers what the base is, the append answers\nwhat follows it, and both may coexist; an empty override is a deliberate, visible silence,\nnot an error. Damage must degrade to the canonical emission at hook time, because the hook\nbody runs inside every agent session of every adopting project — a torn customization\nfile that broke sessions would make the journal's carrier the thing that kills the work it\nrecords — so a tear costs exactly the customization, never the session, and the loud\nsurface for it is `hooks review`, where a reader is actually looking. Events with no\ncanonical emission — main Stop, PostToolUse — speak only with a declared project voice;\nmain Stop's canonical byte-silence and the attribution reasoning behind it stand unchanged\nas the default.\n\n**experiment outcomes require criterion-total evidence.** A\nplan is frozen before work with its predicted context, actions, criteria, and evidence\ncursors. Closure answers every action and criterion exactly once, preserves the assessor,\nand derives success, failure, or inconclusive from criterion statuses rather than accepting\nan outcome label. Otherwise the ledger would turn an incomplete story into a measured loop.\n\n**experiment telemetry preserves its weakest provable attribution.** Trace and activity\nwindows may be empty, prove an exact owner session, or only prove a parent-session aggregate\nthat can include descendants; older trace may carry no observation metadata at all. Those\nfour scopes remain distinct in the immutable close record. Damaged prefixes, unreadable\nrows, and unknown or inconsistent scope refuse. That keeps compatible history without\nturning absence or uncertainty into false precision.\n\n**activity evidence is accepted only when identity, scope, time, and command agree.** A\nrow is useful precisely because later status and experiment readers stop re-deriving the\nhost event. That cached inference is safe only while its relational fields still agree:\nagent attribution names the row session, parent fallback names its parent domain, event\nidentity recomputes, time is canonical, and command kind/result agrees with name and exit\ncode. One strict reader grades that whole relation; malformed rows become counted damage,\nnever partially trusted evidence.\n\n**a streamed journal entry renders exactly once across appends and compaction.** The live\nstream exists for the one reader the settled render cannot serve — an orchestrator watching\nfive subagents mid-flight — and that reader has no way to audit the feed against the files.\nA dropped entry is a decision the orchestrator never saw, indistinguishable from one never\nmade; a duplicate teaches the opposite lie, that a question was decided twice. Both are\ncheap to produce, because the journal's files do not strictly grow: compaction moves lines\nbetween files and unlinks the originals, which a position-addressed reader replays in full.\nSo a record's identity in the stream comes from its content — the same triple the merged\ntimeline sorts by — and a moved line is one the feed already carried.\n\n(The import claims above separately prove that the composition root still reaches the\nconfiguration loader, graph derivation, verifier, spec walker, and journal.)",
+      "why": "**agent lifecycle preserves decisions and exposes the current change signal.** Decisions\nand risk are cheapest to surface while the agent still holds the context that produced\nthem; waiting for a later reviewer externalizes both reconstruction costs. The two stop\nsurfaces are not interchangeable: a subagent restates its report because its caller may\nsee nothing else, while the main agent has already shown its report to the user and is\nnever interrupted by shared-worktree state that may belong to another agent. Main Stop\nkeeps the calibration observation and emits no bytes; only SubagentStop carries the\njournal and patch signal forward.\n\n**significant behavioral growth acquires an anchor or patch-specific decision.** The cost\nof adding an invariant is immediate while the cost of omitting it appears later, so the\ncurrent patch must carry either enforcement or an addressable reason that it needs none.\n\n**a weaker regulation obligation never masks a stronger one.** Regulation compares live\nobligations by a lexicographic potential, with missing observations failing closed instead\nof becoming zero, and returns the single strongest action owed. V1 evaluates only rules\ndeclared in the live doctrine registry; even a no-action result makes no claim of overall\nsafety.\n\n**regulation evaluates and repairs the selected agent host.** A canonical Claude control\ncannot create a field around a Codex session, even though both hosts implement the same\nlifecycle domain. The sensor therefore names the explicit or current host in its reading,\nthe decision identity retains it, and a lifecycle redirect installs that same host. A\nforeign host value refuses before it can release or author a shell command.\n\n**task context is bounded and names its approximations.** A focused context packet is\nuseful only when its one-hop and heuristic limits stay visible; otherwise convenience is\nmisread as completeness and recreates the omission gradient this project exists to oppose.\n\n**cached decisions expose structurally expired premises.** A decision saves inference only\nwhile the repository addresses supporting it remain live. Broken explicit referents must\nbe louder than readable but stale rationale.\n\n**predicted context closure is calibrated against observed reads and outcomes.** Economy's\none-hop closure is a hypothesis about necessary reading, not cognition. Observed reads and\nlater defect labels give that model a path to correction instead of turning it into dogma.\n\n**calibration preserves the weakest host attribution of its trace.** A Codex parent\nsession file can contain parent and descendant tool use because PostToolUse supplies no\nchild id. Calibration may still compare that aggregate against a patch, but it must name\nthe aggregate rather than relabeling those writes as one agent's work. Legacy rows remain\nunscoped, shared-worktree fallback remains separate, and any unreadable row prevents a\nnew sample instead of disappearing from its denominator.\n\n**reviewed risk sites survive relocation but never duplication.** A ratchet baseline is a\ncached review, and a cached fact that expires on a rename rots the same way a decision's\npremises do — a refactor then spends a reviewer's attention on sites nobody touched, and\nattention spent on false alarms is how a real one gets waved through. Relocation changes\nwhere a reviewed site lives; duplication changes how much unreviewed surface exists, and\nonly the second is news.\n\n**pinned mass follows a value-conserving rename but never absorbs growth.** A mass\ndimension's key embeds a name someone chose — a spec H1, a measure's config key — so a\nrename re-addresses the pin, and a ratchet that reads its own re-addressing as \"gained\nparts nobody named\" prints a lie beside the unchanged total that refutes it (measured:\none H1 edit, 35 lines relabeled, zero gained, gate red). The repair must stay\ncount-conserving: only a vanished pin with the same family, unit and exact value can\nabsorb a new name, or growth and novelty would ride in under renames.\n\n**a claim goes green only on positive evidence its oracle ran.** The verifier's whole\nauthority rests on this one property, and until now no claim cited it: an audit deleted\nthe rule and the tree stayed \"✓ coherent\" while the unit test failed unseen. An exit\ncode is the runner's statement about itself, not about the named test — a filter that\nmatched nothing exits clean on every runner class this repo has measured — so green\nmust require output that names the run, the one reading absence cannot produce.\n\n**a vanished oracle reds its claim, never green-by-absence.** A renamed or deleted test\nleaves a claim citing a name nothing owns, and that claim then guards nothing while\nwearing green. Absence has to be its own observable verdict, distinct from ran-and-failed,\nbecause the two demand different repairs: a red test needs the code fixed, a vanished\noracle needs the contract re-tied to something that exists.\n\n**a declared invariant unanchored by any boundary fails coverage.** A spec may not\nassert a property that nothing enforces: that is the ratchet the whole harness turns on,\nand if it silently loosened, specs would drift back into aspiration prose. The gap has to\ncost a red at the run that opened it, while the person who opened it still holds the\ncontext to close it.\n\n**a via-test oracle that iterates no live domain fails its claim.** A totality label on a\nsampling test is worse than no label: it retires the reader's suspicion without retiring\nthe risk. Deriving the checked set from the live registry the chokepoint actually serves\nis what makes \"covers every case\" a fact about the system rather than about the fixture\nlist the author remembered.\n\n**a skipped run never clobbers an oracle's recorded verdict.** The record is the last\nknown truth, honestly dated. A fast tier that skips the executable claims every commit\nwould otherwise erase last week's real pass — or, worse, a real fail — with \"did not\nlook\", and history that can be overwritten by not looking is not history.\n\n**a named oracle that no test runs cannot pass.** The serial runner is the component the\nexecutable tier leans its trust on, and it was outside the evidence perimeter — unclaimed,\nuntested, and (measured) willing to exit clean when the cited title survived only as a\nstring in a file. The runner itself must refuse a name it cannot show ran, because every\ngreen above it inherits that refusal.\n\n**an empty derivation against a remembered surface refuses, never passes.** Every verdict\nin this file rests on the graph deriving non-empty, and nothing checked that premise:\ngutting `buildGraph` left the gate printing \"claims: 0\" and \"✓ coherent\", exit 0 —\ndeeper than a vanished oracle, because it empties every check at once while announcing\nthey all passed. The record remembers how many claims the last run graded, so a run that\nsuddenly sees zero must refuse rather than report success over nothing; the only\nlegitimate zero (a project adopting from nothing) is exactly the one with no memory, and\nit gets the adoption ladder instead. The floor deliberately stops at zero: a partial\ncollapse where every component keeps a claim is observationally identical to deliberate\npruning, and deletion has to stay free or people stop deleting. What the complement\nunderneath it actually reaches is narrower than it first appears — a component stripped of\nits claims is still a node someone can red, while a component the walk never discovered\nleaves nothing behind to notice, so an N→1 slide reads as N ordinary prunings. Pinning the\npopulation as a mass dimension is the honest answer there, because the question it settles\nis not whether anything survived but whether as much survived as last time.\n\n**lifecycle hook presence is one canonical runnable bit.** The control surface cannot\ncreate a field if every repository is free to carry a merely similar—or silently dead—\nhook. Printing, installation, and inspection therefore share one five-event value and\none stable launcher per host. Presence means exactly one shared project copy, no competing\nlocal, inline, or legacy path, an aligned host/launcher root, a correct declared root\nmapping, an enabled project-hook layer, and a runnable target. Unrelated hooks may coexist.\nHistorical journal activity is reported beside this bit but can neither redeem current\nabsence nor erase current presence.\n\n**supported lifecycle hosts share one control contract without sharing host syntax.**\nClaude and Codex expose the same five lifecycle meanings through different settings files,\nmatchers, launch commands, and response envelopes. Host parity therefore means deriving\neach complete bundle from one host-selected domain while retaining a distinct fingerprint;\ncopying Claude bytes into Codex would be resemblance, not parity.\n\n**current-session activation requires exact installed-bundle evidence.** Structural\npresence proves that the project control is runnable, not that this session loaded it. A\nsession becomes observed only when its activity names the selected host, launcher\ntransport, and current bundle fingerprint. Direct probes, stale bundles, other sessions,\nand a guessed newest session cannot establish activation; parent-session fallback stays a\nnamed attribution ceiling rather than being promoted to child evidence.\n\n**customized hook text composes declared overrides and appends, degrading to canon on\ndamage.** The canonical hook text is the harness's voice — identical across adopting\nprojects, and byte-testable because of it — but a project knows things the harness cannot:\nits own commands, its conventions, the one warning its history taught it. So a project\ngets a declared voice per event rather than a fork of the hook body, under one composition\nrule with no conflict state: the override answers what the base is, the append answers\nwhat follows it, and both may coexist; an empty override is a deliberate, visible silence,\nnot an error. Damage must degrade to the canonical emission at hook time, because the hook\nbody runs inside every agent session of every adopting project — a torn customization\nfile that broke sessions would make the journal's carrier the thing that kills the work it\nrecords — so a tear costs exactly the customization, never the session, and the loud\nsurface for it is `hooks review`, where a reader is actually looking. Events with no\ncanonical emission — main Stop, PostToolUse — speak only with a declared project voice;\nmain Stop's canonical byte-silence and the attribution reasoning behind it stand unchanged\nas the default.\n\n**python sources feed the same instruments as typescript at their declared regex grade.**\nThe adapter seam always promised language-agnosticism, but three analyzers and two\nscanners parsed TypeScript directly, so a python project's surface grew invisibly — the\nzero-anchor alarm never fired, parity claims skipped `.py` oracles, duplicated domains\nwent unranked, batch oracles knew one report format, and f-string interpolations were not\nsites. Each instrument now reads python at the same grade the adapters set deliberately:\nregex and indentation, in-harness, no subprocess and no new parser dependency, following\nthe precedent `analyzePythonOracle` established. The grade is declared, not hidden —\nprecision is preferred over recall everywhere, because an advisory that cries wolf\nretires the reader's attention without retiring risk, and with no compiler behind `.py`\na false positive can never be rescued downstream. What the regex grade deliberately does\nnot count is journaled beside each instrument, so the next reader inherits the boundary\nof the instrument instead of rediscovering it.\n\n**experiment outcomes require criterion-total evidence.** A\nplan is frozen before work with its predicted context, actions, criteria, and evidence\ncursors. Closure answers every action and criterion exactly once, preserves the assessor,\nand derives success, failure, or inconclusive from criterion statuses rather than accepting\nan outcome label. Otherwise the ledger would turn an incomplete story into a measured loop.\n\n**experiment telemetry preserves its weakest provable attribution.** Trace and activity\nwindows may be empty, prove an exact owner session, or only prove a parent-session aggregate\nthat can include descendants; older trace may carry no observation metadata at all. Those\nfour scopes remain distinct in the immutable close record. Damaged prefixes, unreadable\nrows, and unknown or inconsistent scope refuse. That keeps compatible history without\nturning absence or uncertainty into false precision.\n\n**activity evidence is accepted only when identity, scope, time, and command agree.** A\nrow is useful precisely because later status and experiment readers stop re-deriving the\nhost event. That cached inference is safe only while its relational fields still agree:\nagent attribution names the row session, parent fallback names its parent domain, event\nidentity recomputes, time is canonical, and command kind/result agrees with name and exit\ncode. One strict reader grades that whole relation; malformed rows become counted damage,\nnever partially trusted evidence.\n\n**a streamed journal entry renders exactly once across appends and compaction.** The live\nstream exists for the one reader the settled render cannot serve — an orchestrator watching\nfive subagents mid-flight — and that reader has no way to audit the feed against the files.\nA dropped entry is a decision the orchestrator never saw, indistinguishable from one never\nmade; a duplicate teaches the opposite lie, that a question was decided twice. Both are\ncheap to produce, because the journal's files do not strictly grow: compaction moves lines\nbetween files and unlinks the originals, which a position-addressed reader replays in full.\nSo a record's identity in the stream comes from its content — the same triple the merged\ntimeline sorts by — and a moved line is one the feed already carried.\n\n(The import claims above separately prove that the composition root still reaches the\nconfiguration loader, graph derivation, verifier, spec walker, and journal.)",
       "invariants": [
         "agent lifecycle preserves decisions and exposes the current change signal",
         "significant behavioral growth acquires an anchor or patch-specific decision",
@@ -79,6 +84,7 @@
         "supported lifecycle hosts share one control contract without sharing host syntax",
         "current-session activation requires exact installed-bundle evidence",
         "customized hook text composes declared overrides and appends, degrading to canon on damage",
+        "python sources feed the same instruments as typescript at their declared regex grade",
         "experiment outcomes require criterion-total evidence",
         "experiment telemetry preserves its weakest provable attribution",
         "activity evidence is accepted only when identity, scope, time, and command agree",
@@ -3369,7 +3375,7 @@
       "kind": "file",
       "sub": "src/lint-sinks.ts",
       "path": "src/lint-sinks.ts",
-      "prose": "lint-sinks.ts — the interpolation-surface ratchet (was mnemion's injection-lint.mjs).\nSurfaces every raw interpolation into a dangerous context (SQL identifier / HTML\nvalue), baselines the reviewed set, and RATCHETS: a NEW raw site fails `--check`. It\ndoesn't prove the baselined sites safe — it makes the surface visible and\nappend-only-with-review. The SAFE-by-construction patterns are config (`sinks`); the\ntwo contexts and the baseline live in the harness.\n\nThe baseline is a CACHED REVIEW, and a cached fact that goes stale on a rename is\npremise rot one layer down: keying a site by its file path meant a refactor\nmanufactured false alarms in proportion to how much code it moved. `reconcile` below\nre-addresses moved sites without letting a copied one through."
+      "prose": "lint-sinks.ts — the interpolation-surface ratchet (was mnemion's injection-lint.mjs).\nSurfaces every raw interpolation into a dangerous context (SQL identifier / HTML\nvalue), baselines the reviewed set, and RATCHETS: a NEW raw site fails `--check`. It\ndoesn't prove the baselined sites safe — it makes the surface visible and\nappend-only-with-review. The SAFE-by-construction patterns are config (`sinks`); the\ntwo contexts and the baseline live in the harness.\n\nThe baseline is a CACHED REVIEW, and a cached fact that goes stale on a rename is\npremise rot one layer down: keying a site by its file path meant a refactor\nmanufactured false alarms in proportion to how much code it moved. `reconcile` below\nre-addresses moved sites without letting a copied one through.\n\nPYTHON GRADE. On `.py` files the same two contexts are read out of f-strings: a\nsingle-line f\"…\" / f'…' / f-triple-quoted literal is the unit, and each `{expr}`\ninside it is a candidate site (`{{` escapes are not; `!r` conversions, `:>10` format\nspecs and the `=` debug suffix are stripped so the EXPRESSION is what the safe\nregexes grade). The JS sql signal — the `\"${expr}\"` double-quote wrap — does not\nsurvive translation, because the f-string's delimiters consume the quotes; SQL-ish\nis instead read off the literal's own text (a SQL statement shape: select…from,\ninsert into, …), while the HTML signal is byte-for-byte the JS one, a markup tag on\nthe line. Multi-line triple-quoted f-strings are invisible — this scanner is\nline-based and the python path follows its grain — and `str.format` / `%`-formatting\nare deliberately skipped: their expressions live OUTSIDE the literal (in call args /\nthe right operand), so a line-regex would pin `{}` or `%s` as the site and the\nsafe-pattern regexes would have no expression to grade. Precision over recall: a\nwall of unmatched-placeholder candidates is worse than silence."
     },
     {
       "id": "s:src/lint-sinks.ts#Finding",
@@ -3378,7 +3384,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/lint-sinks.ts",
-      "line": 26
+      "line": 70
     },
     {
       "id": "s:src/lint-sinks.ts#Move",
@@ -3387,7 +3393,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/lint-sinks.ts",
-      "line": 40
+      "line": 84
     },
     {
       "id": "s:src/lint-sinks.ts#Reconciled",
@@ -3396,7 +3402,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/lint-sinks.ts",
-      "line": 41
+      "line": 85
     },
     {
       "id": "s:src/lint-sinks.ts#reconcile",
@@ -3405,7 +3411,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/lint-sinks.ts",
-      "line": 63,
+      "line": 107,
       "prose": "Split the current sites against the baseline into MOVES and genuinely NOVEL sites.\n\n The baseline addresses a site by `context|file|expr`, so relocating a file re-addresses\n every sink inside it. That turns a refactor into a pile of false security alarms — and a\n ratchet whose alarms are routinely wrong is a ratchet reviewers learn to wave through.\n\n A move is a **matched disappearance**: an unmatched current site is a move only if some\n baselined site with the same `context|expr` has VANISHED from the live set, and each\n vanished entry absorbs exactly ONE unmatched site. Count is therefore conserved per\n `context|expr` — a site that was COPIED (the original still live) finds nothing to\n absorb it and stays novel, so the ratchet cannot be laundered by duplicating an\n already-reviewed expression into a new and more dangerous file.\n\n What this deliberately does NOT promise: when several byte-identical sites share one\n `context|expr`, WHICH new path inherits which vanished review is arbitrary (paths are\n paired in sorted order for determinism, not for meaning). The guarantee is the count —\n n vanished sites absorb n relocations and the n+1st is novel. It is also, honestly, a\n loosening: a site that moved into a genuinely more exposed file no longer FAILS the\n check. It is reported by name, from → to, so the fact stays readable rather than\n silent; that is the trade for not crying wolf on every refactor."
     },
     {
@@ -3415,7 +3421,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/lint-sinks.ts",
-      "line": 103
+      "line": 147
     },
     {
       "id": "f:src/mass.ts",
@@ -3607,7 +3613,7 @@
       "kind": "file",
       "sub": "src/novelty.ts",
       "path": "src/novelty.ts",
-      "prose": "novelty.ts — the novelty-vs-anchor advisory.\n\nThe gap this closes: `verify` checks DECLARED claims and `log` diffs the DECLARED\nledger, but nothing applied pressure to DECLARE when new load-bearing surface\nappeared. A large feature can land with zero new invariants/boundaries and the tree\nreads \"✓ coherent · no structural change\" throughout — the exact condition under\nwhich a real consumer shipped a 3,500-line surface carrying 14 bugs. This module\ncontrasts BEHAVIORAL SURFACE ADDED across a ref range against ANCHORS ADDED in the\nsame range and raises an advisory when surface runs ahead of anchors.\n\nSurface proxies (deliberately tractable and explainable, not exhaustive), all from a\nTS-AST scan of only the files git reports CHANGED in the range, at each ref:\n  · net-new exported symbols   — exported functions/consts/classes/types/enums. The\n    scan is AST-native rather than graph-derived on purpose: the graph's language\n    adapter parses `.ts` only, but real drift surface lives in `.tsx` too (the\n    motivating consumer's per-tool lookup tables were in a React component file);\n  · net-new union variants / enum members / keyed-table keys — exported string-\n    literal unions and enums, plus `Record<…>`-annotated top-level const tables\n    WHETHER OR NOT exported (a module-local keyed table is exactly the implicit-\n    domain projection surface this advisory exists to catch);\n  · LOC added/deleted          — git numstat, code extensions only, ignore-dirs out.\nTest files are excluded: tests are evidence, not surface.\n\nThe verdict self-qualifies (the churn proviso): a REFACTOR is high line-churn with\nlow net-new exports/variants, a FEATURE is net-new surface — when churn dominates\nthe alarm carries \"(disregard if recent work was mostly refactor)\". Advisory only:\nlike why-lint, it never changes the exit code."
+      "prose": "novelty.ts — the novelty-vs-anchor advisory.\n\nThe gap this closes: `verify` checks DECLARED claims and `log` diffs the DECLARED\nledger, but nothing applied pressure to DECLARE when new load-bearing surface\nappeared. A large feature can land with zero new invariants/boundaries and the tree\nreads \"✓ coherent · no structural change\" throughout — the exact condition under\nwhich a real consumer shipped a 3,500-line surface carrying 14 bugs. This module\ncontrasts BEHAVIORAL SURFACE ADDED across a ref range against ANCHORS ADDED in the\nsame range and raises an advisory when surface runs ahead of anchors.\n\nSurface proxies (deliberately tractable and explainable, not exhaustive), all from a\nTS-AST scan of only the files git reports CHANGED in the range, at each ref:\n  · net-new exported symbols   — exported functions/consts/classes/types/enums. The\n    scan is AST-native rather than graph-derived on purpose: the graph's language\n    adapter parses `.ts` only, but real drift surface lives in `.tsx` too (the\n    motivating consumer's per-tool lookup tables were in a React component file);\n  · net-new union variants / enum members / keyed-table keys — exported string-\n    literal unions and enums, plus `Record<…>`-annotated top-level const tables\n    WHETHER OR NOT exported (a module-local keyed table is exactly the implicit-\n    domain projection surface this advisory exists to catch);\n  · LOC added/deleted          — git numstat, code extensions only, ignore-dirs out.\nTest files are excluded: tests are evidence, not surface.\n\nThe verdict self-qualifies (the churn proviso): a REFACTOR is high line-churn with\nlow net-new exports/variants, a FEATURE is net-new surface — when churn dominates\nthe alarm carries \"(disregard if recent work was mostly refactor)\". Advisory only:\nlike why-lint, it never changes the exit code.\n\nPython parity (regex grade): the same three proxies are counted for `.py` files, with\nline-anchored regexes instead of an AST — following the deliberate precedent of\n`analyzePythonOracle` (oracle-domain.ts) and the python adapter: no interpreter\nsubprocess, no new dependency. Module-level `def`/`class`/assignment names that do not\nstart with `_` stand in for exports; `class X(Enum)` bodies and single-line\n`Literal[…]` aliases for enumerated domains; module-level dict literals for keyed\ntables. Regex grade means favoring precision over recall: a missed exotic form\nunder-counts one surface item, while counting garbage would poison the alarm this\nfeeds. And it does feed one — signal.ts wires scanSurface/surfaceSignals/\nnoveltyVerdict into the zero-anchor growth gate (`needs-decision` under --check, the\nregulator's require-decision rule), so before this a Python project grew behavioral\nsurface invisibly: the exact blind spot the module exists to close."
     },
     {
       "id": "s:src/novelty.ts#FileSurface",
@@ -3616,7 +3622,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/novelty.ts",
-      "line": 36,
+      "line": 49,
       "prose": "What one source file contributes to the behavioral surface: its exported symbol\n names, and its enumerated domains (exported string-literal unions and enums, plus\n top-level `Record<…>`-annotated const tables — export NOT required for tables)."
     },
     {
@@ -3626,8 +3632,8 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/novelty.ts",
-      "line": 39,
-      "prose": "Pure (AST only) — the surface of one source string."
+      "line": 53,
+      "prose": "Pure — the surface of one source string. `.py` file names route to the regex-grade\n Python scan; everything else is the TS-AST scan. Same shape out either way."
     },
     {
       "id": "s:src/novelty.ts#isTestPath",
@@ -3636,8 +3642,8 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/novelty.ts",
-      "line": 98,
-      "prose": "Whether a path is a test file (excluded from the surface proxies)."
+      "line": 215,
+      "prose": "Whether a path is a test file (excluded from the surface proxies). Python spellings\n mirror oracle-domain's: test_*.py / *_test.py by basename, anywhere in the tree."
     },
     {
       "id": "s:src/novelty.ts#scanSurface",
@@ -3646,7 +3652,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/novelty.ts",
-      "line": 103,
+      "line": 222,
       "prose": "Scan the surface of a set of files under one tree root; missing files (added or\n removed on the other side of the range) are simply absent. Exports and domains are\n keyed by NAME, merged across files, so a file move reads as churn — not novelty."
     },
     {
@@ -3656,7 +3662,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/novelty.ts",
-      "line": 121
+      "line": 240
     },
     {
       "id": "s:src/novelty.ts#surfaceSignals",
@@ -3665,7 +3671,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/novelty.ts",
-      "line": 134,
+      "line": 253,
       "prose": "Diff the surface proxies. `before`/`after` cover the CHANGED files only —\n sufficient, since an unchanged file cannot move the delta."
     },
     {
@@ -3675,7 +3681,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/novelty.ts",
-      "line": 155
+      "line": 274
     },
     {
       "id": "s:src/novelty.ts#NOVELTY_DEFAULTS",
@@ -3684,7 +3690,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/novelty.ts",
-      "line": 161
+      "line": 280
     },
     {
       "id": "s:src/novelty.ts#noveltyVerdict",
@@ -3693,7 +3699,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/novelty.ts",
-      "line": 167,
+      "line": 286,
       "prose": "The advisory decision — pure. ALARM: surface (or raw LOC) landed with ZERO anchors.\n OUTPACING: anchors were added but surface outgrew them by `ratio`. The proviso fires\n when the signal is churn-shaped: the alarm rode on LOC alone, or deletions track\n additions (a rewrite/move, not growth)."
     },
     {
@@ -3703,12 +3709,18 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/novelty.ts",
-      "line": 182,
+      "line": 301,
       "prose": "Render the advisory section (after the ledger diff). Advisory: returns nothing,\n never affects the exit code."
     },
     {
       "id": "x:typescript",
       "label": "typescript",
+      "kind": "external",
+      "sub": "module"
+    },
+    {
+      "id": "x:, ",
+      "label": ", ",
       "kind": "external",
       "sub": "module"
     },
@@ -3863,13 +3875,23 @@
       "line": 33
     },
     {
+      "id": "s:src/oracle-domain.ts#isPyTestPath",
+      "parent": "f:src/oracle-domain.ts",
+      "label": "isPyTestPath",
+      "kind": "symbol",
+      "sub": "const",
+      "path": "src/oracle-domain.ts",
+      "line": 54,
+      "prose": "Python test files, by name or path. Exported so redundancy.ts can exclude exactly the\n set of files the oracle analyzers read — a second spelling of this convention over there\n is the duplicated-domain finding that module exists to report."
+    },
+    {
       "id": "s:src/oracle-domain.ts#NOISE_DIRS",
       "parent": "f:src/oracle-domain.ts",
       "label": "NOISE_DIRS",
       "kind": "symbol",
       "sub": "const",
       "path": "src/oracle-domain.ts",
-      "line": 61,
+      "line": 66,
       "prose": "Dirs that are never source, regardless of the project's graph-`ignore`. We deliberately\ndo NOT reuse cfg.ignore: a project commonly excludes its test dir (e.g. \"__tests__\") from\nthe spec GRAPH while that is exactly where the oracle tests we must read live. Reusing the\ngraph-ignore here would make every oracle resolve NOT-FOUND and the meta-oracle inert.\nExported because redundancy.ts needs the SAME list and a second copy of it is exactly the\nduplicated-domain finding that module exists to report (it flagged the copy, so the copy died)."
     },
     {
@@ -3879,7 +3901,7 @@
       "kind": "symbol",
       "sub": "type",
       "path": "src/oracle-domain.ts",
-      "line": 383
+      "line": 402
     },
     {
       "id": "s:src/oracle-domain.ts#ParityAnalysis",
@@ -3888,7 +3910,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/oracle-domain.ts",
-      "line": 385
+      "line": 404
     },
     {
       "id": "s:src/oracle-domain.ts#analyzeParityOracle",
@@ -3897,7 +3919,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/oracle-domain.ts",
-      "line": 392
+      "line": 461
     },
     {
       "id": "s:src/oracle-domain.ts#analyzeOracle",
@@ -3906,7 +3928,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/oracle-domain.ts",
-      "line": 438
+      "line": 511
     },
     {
       "id": "f:src/panel.ts",
@@ -5076,7 +5098,7 @@
       "kind": "file",
       "sub": "src/redundancy.ts",
       "path": "src/redundancy.ts",
-      "prose": "redundancy.ts — the UNDECLARED-parity detector.\n\n`parity \"<inv>\" over <domain> between <f> and <g> via test \"<oracle>\"` is the declared\nform: someone already SUSPECTED two projections should agree and wrote it down. The\ndefect class that actually costs time is the complement — nobody declared anything and\ntwo things that should have agreed quietly didn't. Two decoders for one byte encoding\nreading 56,317 and 158 violations of the same property is not caught by any claim,\nbecause no claim existed; the DISAGREEMENT was the whole signal, and it took a human\nnoticing that a number looked absurd.\n\nRedundancy is the only detector that reaches unknown-unknowns, because a divergence\nbetween two independent computations is informative WITHOUT any prior claim about the\nvalue. So this module hunts, from source alone, for places where the project spells out\nthe SAME ENUMERATED DOMAIN more than once, and reports them as candidate parity pairs.\n\nWHY DOMAINS AND NOT SHAPES OR CLONES. Three strategies were available:\n  · signature twins — two functions with the same parameter/return types. Rejected:\n    `(s: string) => string` is not evidence of anything in a TypeScript codebase.\n  · token-stream clone detection — finds copy-paste. Rejected: copy-paste is a\n    maintenance smell; it is not a divergence RISK, and the ranking would be dominated\n    by boilerplate.\n  · duplicated enumerated domains — a set of string tokens written out twice. Chosen:\n    it is exactly the undeclared shape of a parity claim, and it carries a free second\n    signal — if the two sets are UNEQUAL the transcription has already drifted, which\n    is a finding with no declaration and no oracle behind it.\n\nA \"site\" is anywhere the source spells a set of tokens out loud: a string-literal union,\nan enum, an interface's members, an object/Record literal's keys, a switch's case labels,\nan if-chain of `x === \"lit\"` comparisons, an array/Set of string literals, the first\ncolumn of a markdown table, or a bracketed `a|b|c` alternation inside a string or regex.\nMarkdown counts on purpose: a hand-kept doc table transcribing a code table is the one\nduplication NO compiler will ever see, and this repo's own README says so in prose.\n\nTHE DISCRIMINATOR — what keeps this from being a wall of noise — is that two sites the\nTYPE SYSTEM already ties together are not findings. `const T: Record<OracleVerdict, X>`\nis checked by tsc: the keys must be exactly the union, so the union and the table cannot\ndrift. That pair is tier-1 (enshrined) and coherence has nothing to add. Only sites with\nNO type link between them are reported. Test files are excluded for the same reason from\nthe other direction: a hand-copied domain inside an oracle is already the boundary\nmeta-oracle's job (oracle-domain.ts), not a second detector's.\n\nOutput is ADVISORY and RANKED. It gates nothing and always exits 0. A wall of low-value\npairs is worse than nothing, so the default report is capped and every suppression is\ncounted out loud — `--all` shows the unfiltered tail so the precision can be judged\nrather than trusted."
+      "prose": "redundancy.ts — the UNDECLARED-parity detector.\n\n`parity \"<inv>\" over <domain> between <f> and <g> via test \"<oracle>\"` is the declared\nform: someone already SUSPECTED two projections should agree and wrote it down. The\ndefect class that actually costs time is the complement — nobody declared anything and\ntwo things that should have agreed quietly didn't. Two decoders for one byte encoding\nreading 56,317 and 158 violations of the same property is not caught by any claim,\nbecause no claim existed; the DISAGREEMENT was the whole signal, and it took a human\nnoticing that a number looked absurd.\n\nRedundancy is the only detector that reaches unknown-unknowns, because a divergence\nbetween two independent computations is informative WITHOUT any prior claim about the\nvalue. So this module hunts, from source alone, for places where the project spells out\nthe SAME ENUMERATED DOMAIN more than once, and reports them as candidate parity pairs.\n\nWHY DOMAINS AND NOT SHAPES OR CLONES. Three strategies were available:\n  · signature twins — two functions with the same parameter/return types. Rejected:\n    `(s: string) => string` is not evidence of anything in a TypeScript codebase.\n  · token-stream clone detection — finds copy-paste. Rejected: copy-paste is a\n    maintenance smell; it is not a divergence RISK, and the ranking would be dominated\n    by boilerplate.\n  · duplicated enumerated domains — a set of string tokens written out twice. Chosen:\n    it is exactly the undeclared shape of a parity claim, and it carries a free second\n    signal — if the two sets are UNEQUAL the transcription has already drifted, which\n    is a finding with no declaration and no oracle behind it.\n\nA \"site\" is anywhere the source spells a set of tokens out loud: a string-literal union,\nan enum, an interface's members, an object/Record literal's keys, a switch's case labels,\nan if-chain of `x === \"lit\"` comparisons, an array/Set of string literals, the first\ncolumn of a markdown table, or a bracketed `a|b|c` alternation inside a string or regex.\nMarkdown counts on purpose: a hand-kept doc table transcribing a code table is the one\nduplication NO compiler will ever see, and this repo's own README says so in prose.\n\nPython sites are extracted at REGEX grade — no interpreter, no AST, same discipline as\nthe python arm of oracle-domain.ts: module-level dict literals, Enum class bodies,\nlist/tuple/set constants of plain string literals, and match-case / if-elif chains over\nstring literals. The grade is chosen for precision: a form the regex cannot read\nUNAMBIGUOUSLY (a comprehension, a computed key, a dict()/frozenset() constructor call)\nyields NO site rather than a wrong one, because python has no compiler behind it — the\ntypeLink suppression that quietly absorbs the TS false positives can never fire on a .py\npair, so every python site the ranker sees must have earned its precision upstream.\n\nTHE DISCRIMINATOR — what keeps this from being a wall of noise — is that two sites the\nTYPE SYSTEM already ties together are not findings. `const T: Record<OracleVerdict, X>`\nis checked by tsc: the keys must be exactly the union, so the union and the table cannot\ndrift. That pair is tier-1 (enshrined) and coherence has nothing to add. Only sites with\nNO type link between them are reported. Test files are excluded for the same reason from\nthe other direction: a hand-copied domain inside an oracle is already the boundary\nmeta-oracle's job (oracle-domain.ts), not a second detector's.\n\nOutput is ADVISORY and RANKED. It gates nothing and always exits 0. A wall of low-value\npairs is worse than nothing, so the default report is capped and every suppression is\ncounted out loud — `--all` shows the unfiltered tail so the precision can be judged\nrather than trusted."
     },
     {
       "id": "s:src/redundancy.ts#SiteKind",
@@ -5085,7 +5107,7 @@
       "kind": "symbol",
       "sub": "type",
       "path": "src/redundancy.ts",
-      "line": 61,
+      "line": 70,
       "prose": "How a domain was spelled out at one site."
     },
     {
@@ -5095,7 +5117,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/redundancy.ts",
-      "line": 73,
+      "line": 82,
       "prose": "One place the source enumerates a set of tokens."
     },
     {
@@ -5105,7 +5127,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/redundancy.ts",
-      "line": 101,
+      "line": 110,
       "prose": "The named type an annotation ties a site to, or null."
     },
     {
@@ -5115,7 +5137,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/redundancy.ts",
-      "line": 114,
+      "line": 123,
       "prose": "Bracketed `(a|b|c)` / `<a|b|c>` alternations — an enumerated domain written as text.\n The brackets are load-bearing: without them every prose sentence containing a pipe\n would qualify. Parts must be short, word-shaped tokens."
     },
     {
@@ -5125,7 +5147,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/redundancy.ts",
-      "line": 126,
+      "line": 135,
       "prose": "Pure (AST only) — every domain site in one TypeScript/JavaScript source."
     },
     {
@@ -5135,8 +5157,18 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/redundancy.ts",
-      "line": 228,
+      "line": 237,
       "prose": "Pure — domain sites in one markdown document: table first columns, plus bracketed\n alternations in inline code. A hand-kept doc table is exactly the transcription no\n compilation can see."
+    },
+    {
+      "id": "s:src/redundancy.ts#sitesOfPython",
+      "parent": "f:src/redundancy.ts",
+      "label": "sitesOfPython",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/redundancy.ts",
+      "line": 272,
+      "prose": "Pure (regex grade) — domain sites in one python source. Only forms a line scan can read\n unambiguously become sites; everything else is deliberately silence (see header)."
     },
     {
       "id": "s:src/redundancy.ts#collectSites",
@@ -5145,7 +5177,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/redundancy.ts",
-      "line": 266
+      "line": 389
     },
     {
       "id": "s:src/redundancy.ts#RedundancyPair",
@@ -5154,7 +5186,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/redundancy.ts",
-      "line": 290
+      "line": 415
     },
     {
       "id": "s:src/redundancy.ts#Suppressed",
@@ -5163,7 +5195,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/redundancy.ts",
-      "line": 299
+      "line": 424
     },
     {
       "id": "s:src/redundancy.ts#RedundancyOpts",
@@ -5172,7 +5204,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/redundancy.ts",
-      "line": 301
+      "line": 426
     },
     {
       "id": "s:src/redundancy.ts#REDUNDANCY_DEFAULTS",
@@ -5181,7 +5213,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/redundancy.ts",
-      "line": 311,
+      "line": 436,
       "prose": "`Required<RedundancyOpts>`, not a bare object literal: the first dogfood run flagged this\ntable against the interface above it (5 shared keys, tied by nothing). The annotation makes\ntsc the oracle, which is the tier-1 fix — and the pair now suppresses as compiler-enforced."
     },
     {
@@ -5191,7 +5223,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/redundancy.ts",
-      "line": 332,
+      "line": 457,
       "prose": "The site's name with any POSITIONAL suffix replaced by a digest of its own tokens.\n\n Alternation sites are named `alternation@<line>` — the line is INSIDE the name, so\n dropping the `@line` from the id is not enough. Two ways to fix it and only one works:\n stripping the suffix outright fuses every alternation in a file into one key (two real\n findings collapse, and the second is swallowed), while digesting the token set keeps\n them apart and does not move when the file does. A changed token set IS a different\n enumeration, so re-keying on it is the honest behaviour rather than a leak."
     },
     {
@@ -5201,7 +5233,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/redundancy.ts",
-      "line": 340,
+      "line": 465,
       "prose": "A site, as a thing a reader can go and find: file, how it was spelled, what it is\n called. No line, no token count, no score."
     },
     {
@@ -5211,7 +5243,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/redundancy.ts",
-      "line": 348,
+      "line": 473,
       "prose": "THE PAIR'S IDENTITY IS THE PAIR OF SITES, sorted so A|B and B|A are one question.\n\n Everything else the report prints about a pair is excluded on purpose, and the score is\n the one that matters: `df` is computed over the WHOLE TREE, so a token appearing in one\n more unrelated file re-ranks every pair in the repo. A key holding the score would open\n a fresh question on an edit that touched neither site."
     },
     {
@@ -5221,7 +5253,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/redundancy.ts",
-      "line": 364,
+      "line": 489,
       "prose": "Pure — pair the sites and rank them. `declared` is the set of symbol names any parity\nclaim already names (domain / fnA / fnB): a declared agreement is not a finding, which\nis the point of the whole command.\n\nThe score is deliberately small and explainable:\n  |shared| × (0.35 + 0.65·distinctness) × mediumW × fileW × divergenceW\nwhere distinctness is the fraction of shared tokens that appear at NO third site (two\nsites owning a private vocabulary is the strong case; tokens scattered everywhere are\nproject idiom), mediumW favours code↔prose (no compiler can ever check it), fileW\ndiscounts same-file pairs, and divergenceW rewards sets that ALREADY disagree — a\ntranscription that has drifted is a finding on its own evidence."
     },
     {
@@ -5231,7 +5263,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/redundancy.ts",
-      "line": 453,
+      "line": 578,
       "prose": "The symbol names any parity claim already names — those pairs are declared, not found."
     },
     {
@@ -5241,7 +5273,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/redundancy.ts",
-      "line": 470,
+      "line": 595,
       "prose": "THE REPORTING FLOOR, in one place. The render shows these and — separately — these are\n the only pairs allowed to become journal entries. Sharing the function rather than\n restating the filter is the point: \"raise only what the advisory already reports\" has\n to be enforced by construction, or the two copies drift and raising quietly widens."
     },
     {
@@ -5251,7 +5283,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/redundancy.ts",
-      "line": 475
+      "line": 600
     },
     {
       "id": "s:src/redundancy.ts#pairFindings",
@@ -5260,7 +5292,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/redundancy.ts",
-      "line": 525,
+      "line": 650,
       "prose": "A pair, as a QUESTION. The render already forms this suspicion and then throws it away\n by printing it — \"either the difference is intended (say so), or one side drifted\" is a\n conjecture with two candidates, verbatim, scrolled past once per run forever.\n\n The observation carries line numbers and a score because it is a SNAPSHOT of what was\n seen; identity comes from `pairSubject`, which carries neither. Separating the two is\n what lets the sentence be useful and the key be stable at the same time."
     },
     {
@@ -5270,7 +5302,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/redundancy.ts",
-      "line": 569
+      "line": 694
     },
     {
       "id": "s:src/redundancy.ts#redundancy",
@@ -5279,7 +5311,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/redundancy.ts",
-      "line": 572,
+      "line": 697,
       "prose": "The `coherence redundancy` command. Advisory: always returns 0."
     },
     {
@@ -6115,8 +6147,8 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/test-batch.ts",
-      "line": 29,
-      "prose": "The report formats v1 understands. An unknown `config.testBatchFormat` is a hard\n error, never a fallback: a typo'd format that silently reverted to the per-claim\n path would look exactly like a working batch that happened to be slow."
+      "line": 32,
+      "prose": "The report formats v1 understands. An unknown `config.testBatchFormat` is a hard\n error, never a fallback: a typo'd format that silently reverted to the per-claim\n path would look exactly like a working batch that happened to be slow.\n   vitest-json — `vitest run --reporter=json` (the default when the format is unset)\n   pytest-json — the pytest-json-report plugin's file\n                 (`pytest --json-report --json-report-file=<path>`)"
     },
     {
       "id": "s:src/test-batch.ts#TestBatchFormat",
@@ -6125,7 +6157,7 @@
       "kind": "symbol",
       "sub": "type",
       "path": "src/test-batch.ts",
-      "line": 30
+      "line": 33
     },
     {
       "id": "s:src/test-batch.ts#BatchTest",
@@ -6134,7 +6166,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/test-batch.ts",
-      "line": 40,
+      "line": 43,
       "prose": "One test as the report described it. `fullName` is the runner's OWN concatenation of\n the suite path and the test title — the exact string its `-t` filter matches against,\n which is what makes batch matching a mirror rather than a re-implementation.\n\n `duration` is the runner's own per-assertion timing in milliseconds, and it is OPTIONAL\n ON PURPOSE: a report that omits it (an older reporter, a hand-written fixture) must not\n be read as \"this test took zero time\". Absence is absence — every consumer below carries\n that distinction rather than defaulting to 0."
     },
     {
@@ -6144,7 +6176,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/test-batch.ts",
-      "line": 41
+      "line": 44
     },
     {
       "id": "s:src/test-batch.ts#BatchOutcome",
@@ -6153,7 +6185,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/test-batch.ts",
-      "line": 44,
+      "line": 47,
       "prose": "A batch attempt: the report, or null with the reason the run must fall back."
     },
     {
@@ -6163,7 +6195,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/test-batch.ts",
-      "line": 48,
+      "line": 51,
       "prose": "What the executable tier is allowed to do this run. `serialAllowed: false` with a null\n report is a REFUSAL — the claim skips rather than quietly taking the slow path."
     },
     {
@@ -6173,7 +6205,7 @@
       "kind": "symbol",
       "sub": "type",
       "path": "src/test-batch.ts",
-      "line": 59,
+      "line": 62,
       "prose": "HOW THE EXECUTABLE TIER WILL RUN — decided once, from config + flags, before any claim.\n\nThe serial per-claim path is not reachable by accident any more. It boots the project's\nwhole test pool once per claim, and on a real repo that is 20-35 minutes for evidence one\nboot already contains; a default nobody chose should not have that shape. So the mode is\nexplicit: batch when we can (configured or DERIVED), read a report when handed one, and\notherwise REFUSE — a consumer has to type the name of the slow profile to get it."
     },
     {
@@ -6183,7 +6215,7 @@
       "kind": "symbol",
       "sub": "type",
       "path": "src/test-batch.ts",
-      "line": 66,
+      "line": 69,
       "prose": "Which runner `config.test` is driving, as far as we can tell from the command itself."
     },
     {
@@ -6193,7 +6225,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/test-batch.ts",
-      "line": 68
+      "line": 71
     },
     {
       "id": "s:src/test-batch.ts#DERIVED_REPORT_PATH",
@@ -6202,7 +6234,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/test-batch.ts",
-      "line": 78,
+      "line": 83,
       "prose": "Where a derived batch command writes its report. Inside `.coherence/` because that dir\n already exists, is already the harness's, and is already committed-or-ignored per project."
     },
     {
@@ -6212,7 +6244,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/test-batch.ts",
-      "line": 93,
+      "line": 98,
       "prose": "Derive a whole-suite batch command from `config.test`, so a project that never heard of\n`testBatch` still gets batching. Vitest only in v1, and deliberately so: the safety\nargument for batching is that matching MIRRORS the runner's own name filter, and that was\nverified for vitest against the real binary. It does NOT hold for `node --test`, whose\n`--test-name-pattern` matches each individual test name rather than a concatenated one\n(measured), and which ships no JSON reporter at all — so node:test is recognized and\nrefused with instructions instead of guessed at."
     },
     {
@@ -6222,7 +6254,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/test-batch.ts",
-      "line": 126,
+      "line": 146,
       "prose": "Decide the mode. Order is precedence: an explicit flag always beats a derivation."
     },
     {
@@ -6232,7 +6264,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/test-batch.ts",
-      "line": 156,
+      "line": 176,
       "prose": "The cost framing the serial path prints EVERY time it runs — explicit opt-in or crash\n fallback alike. A profile this expensive should never be quiet about what it is doing."
     },
     {
@@ -6242,8 +6274,8 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/test-batch.ts",
-      "line": 177,
-      "prose": "Resolve the configured format, or say why it cannot be. An omitted format defaults to\n the only one there is; an unknown one is an error the run must surface."
+      "line": 198,
+      "prose": "Resolve the configured format, or say why it cannot be. An omitted format defaults to\n vitest-json (the v1 format, kept for compatibility — a pytest project names its format\n alongside its testBatch); an unknown one is an error the run must surface."
     },
     {
       "id": "s:src/test-batch.ts#extractJsonObjects",
@@ -6252,7 +6284,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/test-batch.ts",
-      "line": 193,
+      "line": 214,
       "prose": "Every top-level `{…}` region in a string, brace-balanced and string-literal aware.\n\nNeeded because a reporter that writes to stdout does not own stdout: a test calling\n`process.stdout.write` puts its bytes in the same stream, and a whole-string\n`JSON.parse` then throws on the first stray character (measured — see the release\nnotes). Scanning for the object is what makes the obvious `--reporter=json` command\nwork anyway; `--outputFile` avoids the question entirely and is what the docs advise."
     },
     {
@@ -6262,8 +6294,28 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/test-batch.ts",
-      "line": 254,
+      "line": 275,
       "prose": "Parse a `vitest run --reporter=json` report. Throws (never returns an empty report)\nwhen no report can be found — an empty report and an unreadable one must not look\nalike, because one of them would resolve every claim RED on a healthy suite.\n\nSCHEMA, verified against vitest 4.1.10 rather than assumed:\n  { testResults: [ { name: <abs file>, status, assertionResults: [\n      { ancestorTitles: string[], fullName: string, title: string,\n        status: \"passed\" | \"failed\" | \"skipped\" | …, failureMessages: string[],\n        duration?: number } ] } ] }\nand `fullName === [...ancestorTitles, title].join(\" \")`.\n\n`duration` is the per-assertion runtime in MILLISECONDS as the runner measured it, and\nit is what the holding-cost report prefers over coherence's own wall clock (which, on a\nbatch-resolved claim, would be timing a map lookup). It is optional in the schema and\noptional here: a report without it yields tests with no `duration`, never zeroes."
+    },
+    {
+      "id": "s:src/test-batch.ts#parsePytestJson",
+      "parent": "f:src/test-batch.ts",
+      "label": "parsePytestJson",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/test-batch.ts",
+      "line": 325,
+      "prose": "Parse a pytest-json-report file (`pytest --json-report --json-report-file=<path>`) —\nthe sibling of `parseVitestJson`, holding the same line: it THROWS when no report can\nbe found, because an empty report and an unreadable one must not look alike.\n\nSCHEMA (pytest-json-report, current stable): a JSON object with a top-level `tests`\narray; each entry carries\n  { nodeid: \"tests/test_x.py::test_name\" | \"tests/test_x.py::TestClass::test_method\"\n            (parametrized ids append \"[param]\"),\n    outcome: \"passed\" | \"failed\" | \"error\" | \"skipped\" | \"xfailed\" | \"xpassed\",\n    setup/call/teardown: { duration: <seconds>, outcome: … } }\n\nThe same brace scan + LAST-WINS walk as the vitest parser, for the same reason: the\nfile form never interleaves, but a report handed over via `--from-report` may arrive\nembedded in captured output, and the scan costs nothing when the text is clean."
+    },
+    {
+      "id": "s:src/test-batch.ts#parseBatchReport",
+      "parent": "f:src/test-batch.ts",
+      "label": "parseBatchReport",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/test-batch.ts",
+      "line": 339,
+      "prose": "One report text → one BatchReport, per format. The unknown case cannot reach here —\n `resolveBatchFormat` refuses it as a hard error before any runner is spawned — so the\n switch is exhaustive by type and a new format extends it or fails to compile."
     },
     {
       "id": "s:src/test-batch.ts#outputFileOf",
@@ -6272,8 +6324,8 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/test-batch.ts",
-      "line": 270,
-      "prose": "Where the command tells the runner to write its report, if it does. Covers\n `--outputFile=p`, `--outputFile.json=p` (vitest's per-reporter form) and\n `--outputFile p`."
+      "line": 351,
+      "prose": "Where the command tells the runner to write its report, if it does. Covers\n `--outputFile=p`, `--outputFile.json=p` (vitest's per-reporter form) and\n `--outputFile p` — plus `--json-report-file=p` / `--json-report-file p`, the\n pytest-json-report spelling of the same thing (that plugin writes ONLY to a file,\n never stdout, so missing this flag would read pytest's human output instead)."
     },
     {
       "id": "s:src/test-batch.ts#readReportFile",
@@ -6282,7 +6334,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/test-batch.ts",
-      "line": 289,
+      "line": 370,
       "prose": "Read a report the project ALREADY produced (`verify --from-report <file>`) instead of\nrunning the suite ourselves.\n\nWHY THIS IS THE CHEAPEST TIER. A project with an outer gate — a `check.mjs`, a CI step —\nhas usually just run the whole suite for its own reasons. Without this flag coherence\nruns it a SECOND time to learn what that run already knew. Measured in a consuming repo:\ntheir outer gate ran 298 tests, then the full tier paid the same suite's import cost 18\nmore times. With `--from-report` the full tier is one suite run plus a file read."
     },
     {
@@ -6292,8 +6344,18 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/test-batch.ts",
-      "line": 313,
+      "line": 394,
       "prose": "Run the whole suite once and return the report, or null plus the reason a fallback is\nowed. Never throws — a batch that cannot be trusted degrades to the per-claim path,\nloudly, and the caller prints the note.\n\nTHE EXIT CODE IS DELIBERATELY IGNORED. A suite with a failing test exits nonzero, and\nthat is precisely the run whose report is most worth reading. A crash is the runner not\nrunning (spawn error, timeout, signal) or a report that will not parse — never \"some\ntest was red\"."
+    },
+    {
+      "id": "s:src/test-batch.ts#pytestFunctionName",
+      "parent": "f:src/test-batch.ts",
+      "label": "pytestFunctionName",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/test-batch.ts",
+      "line": 481,
+      "prose": "The function segment of a pytest nodeid: the final `::` part, with any parametrize\n suffix stripped — `tests/test_x.py::TestClass::test_method[case-1]` → `test_method`.\n This is the name a `passes test \"…\"` claim carries on a pytest project."
     },
     {
       "id": "s:src/test-batch.ts#resolveFromBatch",
@@ -6302,8 +6364,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/test-batch.ts",
-      "line": 398,
-      "prose": "Resolve ONE claim's named test against the batch report — the mirror of what\n`execNamedTest` learns from a scoped runner invocation.\n\nMATCHING MIRRORS `-t`. Verified against vitest 4.1.10: `-t` is an UNANCHORED REGEX\ntested against `fullName`, so `-t \"totality covers\"` matches\n\"write policy totality covers every op\" — a substring that spans the describe/test\nboundary. The per-claim path always `reEscape`s the name first, and an escaped pattern\nmatched unanchored is exactly a literal substring test. Hence `fullName.includes(name)`\n— not equality (which would red every claim anchored to a describe title, the common\ncase) and not a live regex (which would re-open the `(a+b)` hole that escaping closed:\nmeasured, the unescaped form matched ZERO tests and exited 0).\n\nTHREE STATES, AND THE THIRD IS THE POINT. A report distinguishes what an exit code\ncannot:\n  (a) the named test RAN and PASSED   → green\n  (b) the named test RAN and FAILED   → red, naming the failing test\n  (c) the named test DOES NOT EXIST   → red, and said so as its own distinct verdict\nState (c) is the defect the per-claim path collapses into (a): `vitest -t` exits 0 when\nthe filter matched nothing, so a renamed or deleted oracle reads as a pass unless the\nproject hand-configured `config.testMatch` to demand \"N passed\" in the output. That is a\nhole plugged by a config knob the project has to know to set. Here it is closed\nSTRUCTURALLY — there is no exit code to misread, absence is directly observable, and\n`testMatch` has nothing left to do for a batched claim. Same move as a typo'd claim verb\nor an unknown claim kind: eliminate the failure mode rather than paper over it.\n\nGREEN REQUIRES POSITIVE EVIDENCE: at least one matching test that actually PASSED, and\nnone that failed.\n\nATTRIBUTION IS PER CLAIM. This resolves ONE claim's oracle and returns ONE claim's\ndetail, naming that oracle and the specific test that failed. A batch verdict of \"the\nsuite is red\" would be a regression on the per-claim path, so no caller aggregates:\nthe batch is shared EVIDENCE, never a shared verdict.\n\n`ms` — THE HOLDING COST OF THIS CLAIM: the summed runner-reported duration of every test\nthe claim's name matched, because a claim that matches three tests is buying all three.\nIt is present ONLY when at least one match actually carried a duration; a report with no\ntimings answers \"unknown\", not \"free\". The sum spans matches whatever their status, since\na failing or skipped match still consumed (or deliberately did not consume) suite time,\nand the cost report is about the suite, not about the verdict."
+      "line": 494
     },
     {
       "id": "f:src/tree.ts",
@@ -7006,6 +7067,15 @@
       "prose": "mass.test.ts — the MASS RATCHET (src/mass.ts). What is actually at risk here is not the\narithmetic (summing line counts is not where a bug hides) but the three places the\nratchet could quietly LIE:\n  · ABSENCE READ AS ZERO — no lockfile reported as \"0 transitive deps\" would turn a\n    deleted file into a triumphant shrink. The dimension must be OMITTED.\n  · AN UNMEASURABLE PROBE READ AS ZERO — a bundle-size command that exits 1 must FAIL\n    the check, not report a heroic reduction.\n  · A GATE THAT SAYS NOTHING ACTIONABLE — growth must instruct `coherence decide`, not\n    print a diff the reader already had.\nEach of those has a test below that fails if the behaviour is reversed."
     },
     {
+      "id": "f:test/novelty-python.test.ts",
+      "parent": "c:test",
+      "label": "novelty-python.test.ts",
+      "kind": "file",
+      "sub": "test/novelty-python.test.ts",
+      "path": "test/novelty-python.test.ts",
+      "prose": "novelty-python.test.ts — Python parity for the novelty-vs-anchor advisory. The gap\nthis guards: signal.ts's zero-anchor growth alarm rides on scanSurface/surfaceSignals/\nnoveltyVerdict, and until the regex-grade Python scan landed, a Python project grew\nbehavioral surface invisibly — no exports, no variants, no alarm. These tests pin what\nCOUNTS (module defs/classes/consts, Enum members, dict keys, Literal alternatives),\nwhat deliberately does NOT (underscore-prefixed names, nested defs, methods, docstring\nexample code, test files), and that Python growth registers exactly the way TS growth\ndoes — through the same public API, no signature changes."
+    },
+    {
       "id": "f:test/novelty.test.ts",
       "parent": "c:test",
       "label": "novelty.test.ts",
@@ -7120,6 +7190,15 @@
       "prose": "prose.test.ts — the PROSE-ROT detector. The failure it exists to catch: one argument\ncached verbatim on two reading surfaces, one copy updated, the other left to rot — and\nno reader able to see it without diffing both.\n\nThe load-bearing tests here are the NEGATIVE CONTROLS, because this is the advisory\nclass where one false positive teaches people to ignore the instrument: a genuine\nparaphrase of the same idea must NOT pair (that is a summary doing its job), and a\nsentence stamped into more places than maxDf must NOT pair (that is boilerplate, not a\ncached argument). The positive case — a mostly-verbatim copy with a local edit — must\npair AND be labeled DIVERGED, ranked above pairs that still agree."
     },
     {
+      "id": "f:test/pytest-batch.test.ts",
+      "parent": "c:test",
+      "label": "pytest-batch.test.ts",
+      "kind": "file",
+      "sub": "test/pytest-batch.test.ts",
+      "path": "test/pytest-batch.test.ts",
+      "prose": "pytest-batch.test.ts — the \"pytest-json\" batch format (pytest-json-report's file,\n`pytest --json-report --json-report-file=<path>`), held to the same invariants the\nvitest-json format pinned in test-batch.test.ts:\n  · a vanished oracle reds its claim, never green-by-absence — zero matching nodeids\n    is its own named state;\n  · a claim goes green only on positive evidence its oracle ran — outcomes come from\n    report entries, never exit codes;\n  · an unknown testBatchFormat is a hard error; a torn report falls back LOUDLY to\n    the serial per-claim path.\n\nTHE FIXTURE IS SHAPED LIKE THE REAL THING: a top-level `tests` array whose entries\ncarry `nodeid` (path::Class::function, parametrized ids appending \"[param]\"),\n`outcome` (passed | failed | error | skipped | xfailed | xpassed), and per-phase\nsetup/call/teardown timings in SECONDS. No real pytest is booted here.\n\nMATCHING IS EQUALITY WITH THE FUNCTION SEGMENT, not substring: the fixture contains\n\"test_rejects_unknown_kind\" (all cases green) alongside a FAILING\n\"test_rejects_unknown_kind_extended\" — under `-k`-style substring matching the claim\nbelow would inherit that failure, so its green is the proof of the equality rule."
+    },
+    {
       "id": "f:test/python-oracle.test.ts",
       "parent": "c:test",
       "label": "python-oracle.test.ts",
@@ -7133,6 +7212,15 @@
       "label": ");\n  assert.equal(a.verdict, ",
       "kind": "external",
       "sub": "module"
+    },
+    {
+      "id": "f:test/python-parity.test.ts",
+      "parent": "c:test",
+      "label": "python-parity.test.ts",
+      "kind": "file",
+      "sub": "test/python-parity.test.ts",
+      "path": "test/python-parity.test.ts",
+      "prose": "python-parity.test.ts — the python arms grown in this change, pinned end to end:\nthe PARITY meta-oracle now reads .py oracles (the `.py` skip in analyzeParityOracle is\ngone), and the redundancy detector extracts python domain sites at the same regex grade.\nVerdict semantics are the TS branch's, exactly: an oracle must enumerate the DECLARED\ndomain (a hand-copied literal list is no-enumeration), and a vanished oracle is\nnot-found — never a pass. On the redundancy side, the same precision filters apply\nunchanged: declared parity suppresses, and high-df idiom tokens never pair."
     },
     {
       "id": "f:test/raise.test.ts",
@@ -7202,6 +7290,15 @@
       "sub": "test/signal.test.ts",
       "path": "test/signal.test.ts",
       "prose": "signal.test.ts — per-change pressure: surface must gain an anchor or a patch-bound reason."
+    },
+    {
+      "id": "f:test/sinks-python.test.ts",
+      "parent": "c:test",
+      "label": "sinks-python.test.ts",
+      "kind": "file",
+      "sub": "test/sinks-python.test.ts",
+      "path": "test/sinks-python.test.ts",
+      "prose": "sinks-python.test.ts — the PYTHON GRADE of the interpolation-surface ratchet\n(src/lint-sinks.ts, header: PYTHON GRADE). The JS path reads `${…}` template-literal\ninterpolations; this pins that a `.py` f-string flows through the SAME machinery:\n  · a `{expr}` inside a SQL-shaped f-string is a `sql-ident` site — python's sql signal\n    is the literal's own text (select…from), because the f-string's delimiters consume\n    the `\"${expr}\"` quote wrap that carries the signal in JS;\n  · the configured safe regexes grade the python EXPRESSION identically (a safeSql\n    match is not a site), `{{` escapes are literal braces, format-spec/conversion\n    suffixes are stripped so `{w:>4}` pins the expression `w`;\n  · a python site has ordinary `context|file|expr` identity — pinned by --update-baseline,\n    and a NEW .py site reds --check while the TS sites alongside are untouched."
     },
     {
       "id": "f:test/sinks.test.ts",
@@ -8505,6 +8602,12 @@
       "id": "f:src/novelty.ts->f:src/types.ts:imports",
       "source": "f:src/novelty.ts",
       "target": "f:src/types.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/novelty.ts->x:, :imports",
+      "source": "f:src/novelty.ts",
+      "target": "x:, ",
       "kind": "imports"
     },
     {
@@ -10896,6 +10999,30 @@
       "kind": "imports"
     },
     {
+      "id": "f:test/novelty-python.test.ts->x:node:test:imports",
+      "source": "f:test/novelty-python.test.ts",
+      "target": "x:node:test",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/novelty-python.test.ts->x:node:assert/strict:imports",
+      "source": "f:test/novelty-python.test.ts",
+      "target": "x:node:assert/strict",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/novelty-python.test.ts->f:src/novelty.ts:imports",
+      "source": "f:test/novelty-python.test.ts",
+      "target": "f:src/novelty.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/novelty-python.test.ts->f:test/_helpers.ts:imports",
+      "source": "f:test/novelty-python.test.ts",
+      "target": "f:test/_helpers.ts",
+      "kind": "imports"
+    },
+    {
       "id": "f:test/novelty.test.ts->x:node:test:imports",
       "source": "f:test/novelty.test.ts",
       "target": "x:node:test",
@@ -11268,6 +11395,48 @@
       "kind": "imports"
     },
     {
+      "id": "f:test/pytest-batch.test.ts->x:node:test:imports",
+      "source": "f:test/pytest-batch.test.ts",
+      "target": "x:node:test",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/pytest-batch.test.ts->x:node:assert/strict:imports",
+      "source": "f:test/pytest-batch.test.ts",
+      "target": "x:node:assert/strict",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/pytest-batch.test.ts->x:node:path:imports",
+      "source": "f:test/pytest-batch.test.ts",
+      "target": "x:node:path",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/pytest-batch.test.ts->x:node:fs/promises:imports",
+      "source": "f:test/pytest-batch.test.ts",
+      "target": "x:node:fs/promises",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/pytest-batch.test.ts->f:src/verify.ts:imports",
+      "source": "f:test/pytest-batch.test.ts",
+      "target": "f:src/verify.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/pytest-batch.test.ts->f:src/test-batch.ts:imports",
+      "source": "f:test/pytest-batch.test.ts",
+      "target": "f:src/test-batch.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/pytest-batch.test.ts->f:test/_helpers.ts:imports",
+      "source": "f:test/pytest-batch.test.ts",
+      "target": "f:test/_helpers.ts",
+      "kind": "imports"
+    },
+    {
       "id": "f:test/python-oracle.test.ts->x:node:test:imports",
       "source": "f:test/python-oracle.test.ts",
       "target": "x:node:test",
@@ -11295,6 +11464,36 @@
       "id": "f:test/python-oracle.test.ts->x:);\n  assert.equal(a.verdict, :imports",
       "source": "f:test/python-oracle.test.ts",
       "target": "x:);\n  assert.equal(a.verdict, ",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/python-parity.test.ts->x:node:test:imports",
+      "source": "f:test/python-parity.test.ts",
+      "target": "x:node:test",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/python-parity.test.ts->x:node:assert/strict:imports",
+      "source": "f:test/python-parity.test.ts",
+      "target": "x:node:assert/strict",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/python-parity.test.ts->f:src/oracle-domain.ts:imports",
+      "source": "f:test/python-parity.test.ts",
+      "target": "f:src/oracle-domain.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/python-parity.test.ts->f:src/redundancy.ts:imports",
+      "source": "f:test/python-parity.test.ts",
+      "target": "f:src/redundancy.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/python-parity.test.ts->f:test/_helpers.ts:imports",
+      "source": "f:test/python-parity.test.ts",
+      "target": "f:test/_helpers.ts",
       "kind": "imports"
     },
     {
@@ -11648,6 +11847,42 @@
     {
       "id": "f:test/signal.test.ts->f:test/_helpers.ts:imports",
       "source": "f:test/signal.test.ts",
+      "target": "f:test/_helpers.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/sinks-python.test.ts->x:node:test:imports",
+      "source": "f:test/sinks-python.test.ts",
+      "target": "x:node:test",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/sinks-python.test.ts->x:node:assert/strict:imports",
+      "source": "f:test/sinks-python.test.ts",
+      "target": "x:node:assert/strict",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/sinks-python.test.ts->x:node:fs/promises:imports",
+      "source": "f:test/sinks-python.test.ts",
+      "target": "x:node:fs/promises",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/sinks-python.test.ts->x:node:path:imports",
+      "source": "f:test/sinks-python.test.ts",
+      "target": "x:node:path",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/sinks-python.test.ts->f:src/lint-sinks.ts:imports",
+      "source": "f:test/sinks-python.test.ts",
+      "target": "f:src/lint-sinks.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/sinks-python.test.ts->f:test/_helpers.ts:imports",
+      "source": "f:test/sinks-python.test.ts",
       "target": "f:test/_helpers.ts",
       "kind": "imports"
     },

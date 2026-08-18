@@ -79,3 +79,29 @@ test("reEscape — regex metacharacters in a runner name are escaped to match li
   // Every metacharacter is backslash-prefixed; the raw name would compile to a different pattern.
   assert.equal(escaped, "Patient send \\+ transcript \\(v2\\)");
 });
+
+test("imports — python spells the edge unquoted; a string mention never satisfies it", async () => {
+  const { mkdtemp, mkdir, writeFile, rm } = await import("node:fs/promises");
+  const { tmpdir } = await import("node:os");
+  const { join } = await import("node:path");
+  const root = await mkdtemp(join(tmpdir(), "coh-imports-"));
+  try {
+    await writeFile(join(root, "report.py"),
+      "from app.domain import label_for\nimport os\n\ndef run():\n    return label_for('paid')\n");
+    await writeFile(join(root, "strings.py"),
+      "NOTE = 'we should import app.domain someday'\n");
+    await writeFile(join(root, "main.ts"), 'import { x } from "./registry";\n');
+    const form = CLAIM_FORMS.find((f) => f.name === "imports")!;
+    const ctx = { nodeDir: root, root, fast: false } as never;
+    const py = form.match("report.py imports app.domain")!;
+    assert.equal((await form.evaluate(ctx, py)).kind, "pass",
+      "a real `from app.domain import …` satisfies the python grammar");
+    const bare = form.match("report.py imports os")!;
+    assert.equal((await form.evaluate(ctx, bare)).kind, "pass", "plain `import os` counts too");
+    const mention = form.match("strings.py imports app.domain")!;
+    assert.equal((await form.evaluate(ctx, mention)).kind, "fail",
+      "a specifier living only inside a string is not an import edge");
+    const ts = form.match("main.ts imports ./registry")!;
+    assert.equal((await form.evaluate(ctx, ts)).kind, "pass", "the quoted TS grammar is untouched");
+  } finally { await rm(root, { recursive: true, force: true }); }
+});

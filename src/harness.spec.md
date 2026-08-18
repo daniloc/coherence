@@ -29,6 +29,7 @@ rendering, and journaling remain independently addressable modules beneath this 
 - supported lifecycle hosts share one control contract without sharing host syntax
 - current-session activation requires exact installed-bundle evidence
 - customized hook text composes declared overrides and appends, degrading to canon on damage
+- python sources feed the same instruments as typescript at their declared regex grade
 - experiment outcomes require criterion-total evidence
 - experiment telemetry preserves its weakest provable attribution
 - activity evidence is accepted only when identity, scope, time, and command agree
@@ -82,6 +83,11 @@ rendering, and journaling remain independently addressable modules beneath this 
 - boundary "supported lifecycle hosts share one control contract without sharing host syntax" at setLifecycleHookForHost via guard "Codex control — install is exact, idempotent, preserving, and runnable across nested paths"
 - boundary "current-session activation requires exact installed-bundle evidence" at currentObservation via guard "hook status — exact current bundle activates; stale, direct, replayed, and damaged evidence does not"
 - boundary "customized hook text composes declared overrides and appends, degrading to canon on damage" at composeHookText via guard "hook text — override replaces, append follows, and damage degrades to the canonical emission"
+- boundary "python sources feed the same instruments as typescript at their declared regex grade" at surfaceOfSource via guard "python surface — module defs, enum variants, and dict keys count; underscore and nested names do not"
+- boundary "python sources feed the same instruments as typescript at their declared regex grade" at analyzeParityOracle via guard "python parity — a .py oracle that iterates the live domain passes; a literal list fails; a vanished oracle cannot pass"
+- boundary "python sources feed the same instruments as typescript at their declared regex grade" at sitesOfPython via guard "python redundancy — two spellings of one domain in .py rank as a candidate; declared parity and idiom do not"
+- boundary "python sources feed the same instruments as typescript at their declared regex grade" at resolveFromBatch via guard "pytest batch — nodeid names resolve per claim, zero matches is the vanished oracle, and a torn report falls back loudly"
+- boundary "python sources feed the same instruments as typescript at their declared regex grade" at lintSinks via guard "python sinks — an f-string into a SQL context is a site, a safe-pattern expression is not, and the ratchet reds the new site"
 - boundary "experiment outcomes require criterion-total evidence" at closeExperiment via guard "close — total nonempty evidence is mandatory and outcome is derived, never supplied"
 - boundary "experiment telemetry preserves its weakest provable attribution" at closeExperiment via guard "Codex parent-only tool events close the loop as an aggregate, never exact owner evidence"
 - boundary "activity evidence is accepted only when identity, scope, time, and command agree" at isActivityRow via guard "activity — internally inconsistent scope, time, and command rows are damage, not evidence"
@@ -237,6 +243,20 @@ surface for it is `hooks review`, where a reader is actually looking. Events wit
 canonical emission — main Stop, PostToolUse — speak only with a declared project voice;
 main Stop's canonical byte-silence and the attribution reasoning behind it stand unchanged
 as the default.
+
+**python sources feed the same instruments as typescript at their declared regex grade.**
+The adapter seam always promised language-agnosticism, but three analyzers and two
+scanners parsed TypeScript directly, so a python project's surface grew invisibly — the
+zero-anchor alarm never fired, parity claims skipped `.py` oracles, duplicated domains
+went unranked, batch oracles knew one report format, and f-string interpolations were not
+sites. Each instrument now reads python at the same grade the adapters set deliberately:
+regex and indentation, in-harness, no subprocess and no new parser dependency, following
+the precedent `analyzePythonOracle` established. The grade is declared, not hidden —
+precision is preferred over recall everywhere, because an advisory that cries wolf
+retires the reader's attention without retiring risk, and with no compiler behind `.py`
+a false positive can never be rescued downstream. What the regex grade deliberately does
+not count is journaled beside each instrument, so the next reader inherits the boundary
+of the instrument instead of rediscovering it.
 
 **experiment outcomes require criterion-total evidence.** A
 plan is frozen before work with its predicted context, actions, criteria, and evidence

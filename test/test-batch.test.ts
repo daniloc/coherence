@@ -133,7 +133,7 @@ test("format — unknown values are refused; omitted defaults to the only format
   assert.deepEqual(resolveBatchFormat(cfg("/x", { testBatchFormat: "vitest-json" })), { format: "vitest-json" });
   const bad = resolveBatchFormat(cfg("/x", { testBatchFormat: "vitest_json" }));
   assert.ok("error" in bad && /not a format coherence knows/.test(bad.error), JSON.stringify(bad));
-  assert.deepEqual([...TEST_BATCH_FORMATS], ["vitest-json"]);
+  assert.deepEqual([...TEST_BATCH_FORMATS], ["vitest-json", "pytest-json"]);
 });
 
 test("outputFile — all three spellings the runner accepts are recognized", () => {

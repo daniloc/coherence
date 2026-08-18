@@ -311,6 +311,28 @@ Add `coherence.config.json` to the project root. Minimal:
 }
 ```
 
+**Python projects** are first-class: every instrument — surface counting into the
+zero-anchor alarm, `boundary`/`parity` claims over `.py` oracles, the duplicate-domain
+advisory, batched pytest oracles, f-string sink ratcheting — reads Python at the same
+deliberate regex grade as the adapters. A working configuration (`pytest-json-report`
+provides the batch report):
+
+```json
+{
+  "language": "python",
+  "codeExt": ["py"],
+  "testDir": "tests/",
+  "test": [".venv/bin/python", "-m", "pytest", "-k"],
+  "testMatch": "[1-9]\\d* passed",
+  "testBatch": [".venv/bin/python", "-m", "pytest", "--json-report", "--json-report-file=.coherence/test-report.json"],
+  "testBatchFormat": "pytest-json",
+  "ignore": ["node_modules", ".git", ".venv", "__pycache__", ".pytest_cache"]
+}
+```
+
+A `passes test` claim cites the pytest function name (`test_…`); in batch mode it
+matches every parametrized case of that function and all must pass.
+
 ### Adopt the lifecycle control
 
 Do this after `npm install` and after `coherence.config.json` is in its final

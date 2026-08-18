@@ -235,7 +235,13 @@ export const CLAIM_FORMS: ClaimForm[] = [
     evaluate: async (ctx, m) => {
       try {
         const src = await readFile(join(ctx.nodeDir, m[1]), "utf8");
-        const re = new RegExp(`from\\s+["']${m[2].replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}["']`);
+        const spec = m[2].replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        // Python spells the same edge without quotes: `from app.domain import X` /
+        // `import app.domain`. The claim file's own extension picks the grammar, so a
+        // .py claim can never be satisfied by the specifier appearing in a string.
+        const re = m[1].endsWith(".py")
+          ? new RegExp(`^\\s*(?:from\\s+${spec}\\s+import\\b|import\\s+${spec}\\b)`, "m")
+          : new RegExp(`from\\s+["']${spec}["']`);
         return re.test(src) ? { kind: "pass", detail: "" } : { kind: "fail", detail: `no import of ${m[2]}` };
       } catch { return { kind: "fail", detail: `cannot read ${m[1]}` }; }
     },

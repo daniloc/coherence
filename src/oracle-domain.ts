@@ -48,9 +48,14 @@ export interface OracleAnalysis {
   hasFloor?: boolean;
 }
 
+/** Python test files, by name or path. Exported so redundancy.ts can exclude exactly the
+ *  set of files the oracle analyzers read — a second spelling of this convention over there
+ *  is the duplicated-domain finding that module exists to report. */
+export const isPyTestPath = (p: string) => /(^|\/)test_[^/]*\.py$|_test\.py$/.test(p);
+
 /** A test file (NOT a *.spec.md — those are coherence specs, not runnable tests). */
 const isTestFile = (name: string) =>
-  name !== "spec.md" && (/\.(test|spec)\.[mc]?[jt]sx?$/.test(name) || /^test_.*\.py$|_test\.py$/.test(name));
+  name !== "spec.md" && (/\.(test|spec)\.[mc]?[jt]sx?$/.test(name) || isPyTestPath(name));
 
 // Dirs that are never source, regardless of the project's graph-`ignore`. We deliberately
 // do NOT reuse cfg.ignore: a project commonly excludes its test dir (e.g. "__tests__") from
@@ -313,42 +318,56 @@ function hasFloorAssertion(body: ts.Node): boolean {
  * `def <name>(` or `class <Name>` exactly (pytest -k will still substring-match for
  * the runner, but analysis anchors exactly, mirroring the TS describe rule).
  */
-function analyzePythonOracle(src: string, oracleName: string): Omit<OracleAnalysis, "file"> | null {
+const escRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+/** The indent block a python anchor owns: `def <name>(` (any indent) or `class <Name>`,
+ *  exact-name, decorators included (parametrize domains live there), running to the next
+ *  non-blank line at <= the anchor's indent. One spelling of the anchor/indent discipline,
+ *  shared by the coverage arm and the parity arm — not two. */
+function pyAnchorBlock(src: string, name: string): string | null {
   const lines = src.split("\n");
-  // exact anchor: def <name>( at any indent, or class <Name>
-  const defRe = new RegExp(`^(\\s*)(?:async\\s+)?def\\s+${oracleName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*\\(`);
-  const clsRe = new RegExp(`^(\\s*)class\\s+${oracleName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`);
+  const defRe = new RegExp(`^(\\s*)(?:async\\s+)?def\\s+${escRe(name)}\\s*\\(`);
+  const clsRe = new RegExp(`^(\\s*)class\\s+${escRe(name)}\\b`);
   let start = -1, indent = "";
   for (let i = 0; i < lines.length; i++) {
     const m = defRe.exec(lines[i]) ?? clsRe.exec(lines[i]);
     if (m) { start = i; indent = m[1]; break; }
   }
   if (start < 0) return null;
-  // block: from the anchor to the next non-blank line at <= the anchor's indent
   let end = lines.length;
   for (let i = start + 1; i < lines.length; i++) {
     const l = lines[i];
     if (!l.trim()) continue;
     if (!l.startsWith(indent + " ") && !l.startsWith(indent + "\t")) { end = i; break; }
   }
-  // decorators above the anchor belong to it (parametrize domains live there)
   let decoStart = start;
   while (decoStart > 0 && lines[decoStart - 1].trim().startsWith("@")) decoStart--;
-  const block = lines.slice(decoStart, end).join("\n");
-  const importedNames = new Set<string>();
-  for (const l of lines) {
-    let m = /^from\s+\S+\s+import\s+(.+)$/.exec(l.trim());
-    if (m) for (const part of m[1].split(",")) importedNames.add(part.trim().split(/\s+as\s+/).pop()!.trim());
-    m = /^import\s+([A-Za-z_][\w.]*)/.exec(l.trim());
-    if (m) importedNames.add(m[1].split(".")[0]);
-  }
-  // domains: for X in <domain>:  |  @pytest.mark.parametrize("...", <domain>)
+  return lines.slice(decoStart, end).join("\n");
+}
+
+/** Every iterated-domain expression in a python block, textually:
+ *  `for X in <domain>:` and `@pytest.mark.parametrize("...", <domain>)`. */
+function pyDomains(block: string): string[] {
   const domains: string[] = [];
   let m: RegExpExecArray | null;
   const forRe = /for\s+[\w,\s()]+\s+in\s+([^:]+):/g;
   while ((m = forRe.exec(block))) domains.push(m[1].trim());
   const parRe = /parametrize\(\s*["'][^"']+["']\s*,\s*((?:\[[^\]]*\])|[A-Za-z_][\w.()]*)/g;
   while ((m = parRe.exec(block))) domains.push(m[1].trim());
+  return domains;
+}
+
+function analyzePythonOracle(src: string, oracleName: string): Omit<OracleAnalysis, "file"> | null {
+  const block = pyAnchorBlock(src, oracleName);
+  if (block === null) return null;
+  const importedNames = new Set<string>();
+  for (const l of src.split("\n")) {
+    let m = /^from\s+\S+\s+import\s+(.+)$/.exec(l.trim());
+    if (m) for (const part of m[1].split(",")) importedNames.add(part.trim().split(/\s+as\s+/).pop()!.trim());
+    m = /^import\s+([A-Za-z_][\w.]*)/.exec(l.trim());
+    if (m) importedNames.add(m[1].split(".")[0]);
+  }
+  const domains = pyDomains(block);
   if (domains.length === 0)
     return { verdict: "no-iteration", detail: "no for-in / parametrize over a domain" };
   const classify = (d: string): "live" | "literal" => {
@@ -389,15 +408,69 @@ export interface ParityAnalysis {
   file?: string;
 }
 
+/** The root NAME a python domain expression hangs off of — the leftmost identifier, after
+ *  unwrapping the order/materialize helpers (`sorted(X)`, `list(X)`, …), mirroring what
+ *  iterTargetOf does for `Object.keys(X)` / property chains on the TS side. `registry.X`
+ *  roots at `registry`, exactly as a TS property chain roots at its leftmost identifier. */
+function pyDomainRoot(d: string): string | null {
+  let e = d.trim();
+  const WRAP = /^(?:sorted|list|set|tuple|frozenset|enumerate|reversed|iter)\s*\(\s*(.*?)\s*\)$/;
+  for (let guard = 0; guard < 6; guard++) {
+    const m = WRAP.exec(e);
+    if (!m) break;
+    e = m[1].split(",")[0].trim(); // sorted(X, key=…) → X
+  }
+  const m = /^([A-Za-z_]\w*)/.exec(e);
+  return m ? m[1] : null;
+}
+
+/**
+ * Python arm of the PARITY meta-oracle — regex/indent grade like analyzePythonOracle, with
+ * the TS branch's verdict semantics preserved exactly: (a) some for-in/parametrize domain
+ * must ROOT at the declared domain symbol (an inline literal list roots at nothing, so a
+ * hand-copied sample reads NO-ENUMERATION, never ok), and (b) both projection names must
+ * appear in the oracle's block, else ONE-SIDED. Returns null when the anchor is absent from
+ * this file — the caller keeps scanning, and a vanished oracle ends at NOT-FOUND, which is
+ * never a pass.
+ */
+function analyzePythonParity(
+  src: string, oracleName: string, domain: string, f: string, g: string,
+): Omit<ParityAnalysis, "file"> | null {
+  const block = pyAnchorBlock(src, oracleName);
+  if (block === null) return null;
+  const domains = pyDomains(block);
+  const enumerates = domains.some((d) => pyDomainRoot(d) === domain);
+  if (!enumerates) {
+    const roots = [...new Set(domains)].slice(0, 3);
+    return {
+      verdict: "no-enumeration",
+      detail: domains.length
+        ? `iterates ${roots.map((r) => `\`${r.slice(0, 40)}\``).join(", ")} — never the declared domain \`${domain}\``
+        : `no domain iteration at all — hand-enumerated cases cannot be a parity totality over \`${domain}\``,
+    };
+  }
+  const missing = [f, g].filter((s) => !new RegExp(`\\b${escRe(s)}\\b`).test(block));
+  if (missing.length)
+    return {
+      verdict: "one-sided",
+      detail: `enumerates \`${domain}\` but never exercises ${missing.map((s) => `\`${s}\``).join(" or ")} — a parity oracle must drive BOTH projections`,
+    };
+  return { verdict: "ok", detail: `enumerates \`${domain}\` and drives both \`${f}\` and \`${g}\`` };
+}
+
 export async function analyzeParityOracle(
   cfg: Config, oracleName: string, domain: string, f: string, g: string,
 ): Promise<ParityAnalysis> {
   const files = await findTestFiles(cfg);
   for (const rel of files) {
-    if (rel.endsWith(".py")) continue; // TS/JS only (the parity form is TS-first for now)
     let src: string;
     try { src = await readFile(join(cfg.root, rel), "utf8"); } catch { continue; }
     if (!src.includes(oracleName)) continue; // cheap pre-filter
+    if (rel.endsWith(".py")) {
+      const py = analyzePythonParity(src, oracleName, domain, f, g);
+      if (py) return { ...py, file: rel };
+      continue;
+    }
     const sf = parse(src, basename(rel));
     const desc = findDescribe(sf, oracleName);
     if (!desc) continue;
