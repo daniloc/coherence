@@ -1,8 +1,17 @@
-# coherence-harness
+# coherence
 
 A standalone coherence harness for agent-developed projects. It derives a
 multi-resolution graph from a `*.spec.md` tree plus the code, renders a navigable
 outline and an agent map, and verifies that the docs/claims haven't rotted.
+
+```sh
+npm install --save-dev @danilocampos/coherence
+npx coherence hooks install --host claude   # the lifecycle field: journal + instructions in every agent session
+npx coherence verify                        # derive the graph and grade the claims
+```
+
+Requires **Node ≥22**. The [full installation section](#install) covers configuration,
+the Codex host, and activating the lifecycle control properly.
 
 That is the mechanism. The **purpose** is narrower and worth stating before any of it:
 the expensive resource in a codebase is not bytes and not lines — it is **inference**,
@@ -249,20 +258,28 @@ the type system's job, tier-1), and it does **not** verify that a claim is the
 **right** claim (that's the human's judgment — axiom #5, judge ≠ notary). It is a
 coherence layer, not a proof system. Treat every green run accordingly.
 
-## Install from GitHub (no npm registry)
+## Install
 
-Add it as a git dependency. npm clones the repo and runs `prepare` (which builds
-`dist/`), then links the `coherence` bin.
+Published on npm as [`@danilocampos/coherence`](https://www.npmjs.com/package/@danilocampos/coherence)
+(the unscoped name was taken). Install it as a dev dependency; the `coherence` and
+`coherence-hook` bins link into the consuming project:
+
+```sh
+npm install --save-dev @danilocampos/coherence
+```
+
+Releases are tag-driven with npm provenance: each published version is built by CI
+from the matching `v*` tag, so the registry artifact is traceable to its commit.
+Use `>=0.32.0` — the 0.31.0 artifact is deprecated (broken dependency declaration).
+
+To qualify unreleased work, a git dependency still works — npm clones the repo and
+runs `prepare` (which builds `dist/`):
 
 ```jsonc
 // package.json
 "devDependencies": {
-  "coherence-harness": "github:daniloc/coherence"   // pin the release tag you have qualified
+  "@danilocampos/coherence": "github:daniloc/coherence#main"   // or pin a tag/commit
 }
-```
-
-```sh
-npm install
 ```
 
 Then add scripts that call the bin:
@@ -277,8 +294,10 @@ Then add scripts that call the bin:
 }
 ```
 
-Requires **Node ≥22** in the consuming project (the build targets ES2022; the
-harness uses only Node built-ins, no runtime deps).
+Requires **Node ≥22** in the consuming project (the build targets ES2022). One
+runtime dependency: `typescript`, which the default language adapter and the
+source-reading advisories parse with — npm dedupes it when the consuming project
+already has it.
 
 ## Configure the target project
 
@@ -296,7 +315,7 @@ Add `coherence.config.json` to the project root. Minimal:
 
 Do this after `npm install` and after `coherence.config.json` is in its final
 directory. Run the commands from that directory—the **coherence root**, where the
-consuming `package.json` installed `coherence-harness`. `npx` below resolves that
+consuming `package.json` installed `@danilocampos/coherence`. `npx` below resolves that
 project-local dependency; no global installation is assumed.
 
 1. **Name each host's project root when it differs.** The host project root is the
