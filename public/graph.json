@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-08-05 03:49Z",
+  "generatedAt": "2026-08-18 17:01Z",
   "root": "coherence",
-  "absRoot": "/Users/daniloc/Documents/Development/coherence",
+  "absRoot": "/Users/daniloc/Documents/Dev/coherence",
   "nodes": [
     {
       "id": "c:.",
@@ -49,13 +49,14 @@
         "boundary \"lifecycle hook presence is one canonical runnable bit\" at inspectLifecycleHook via guard \"control — presence is the complete canonical bundle, never a partial or lookalike\"",
         "boundary \"supported lifecycle hosts share one control contract without sharing host syntax\" at setLifecycleHookForHost via guard \"Codex control — install is exact, idempotent, preserving, and runnable across nested paths\"",
         "boundary \"current-session activation requires exact installed-bundle evidence\" at currentObservation via guard \"hook status — exact current bundle activates; stale, direct, replayed, and damaged evidence does not\"",
+        "boundary \"customized hook text composes declared overrides and appends, degrading to canon on damage\" at composeHookText via guard \"hook text — override replaces, append follows, and damage degrades to the canonical emission\"",
         "boundary \"experiment outcomes require criterion-total evidence\" at closeExperiment via guard \"close — total nonempty evidence is mandatory and outcome is derived, never supplied\"",
         "boundary \"experiment telemetry preserves its weakest provable attribution\" at closeExperiment via guard \"Codex parent-only tool events close the loop as an aggregate, never exact owner evidence\"",
         "boundary \"activity evidence is accepted only when identity, scope, time, and command agree\" at isActivityRow via guard \"activity — internally inconsistent scope, time, and command rows are damage, not evidence\"",
         "boundary \"a streamed journal entry renders exactly once across appends and compaction\" at tailJournal via guard \"tail — an appended record arrives exactly once, a compaction fold re-emits nothing and drops nothing, and a half-written line waits for its bytes\""
       ],
       "prose": "The CLI is deliberately a thin composition root. Parsing, derivation, verification,\nrendering, and journaling remain independently addressable modules beneath this boundary.",
-      "why": "**agent lifecycle preserves decisions and exposes the current change signal.** Decisions\nand risk are cheapest to surface while the agent still holds the context that produced\nthem; waiting for a later reviewer externalizes both reconstruction costs. The two stop\nsurfaces are not interchangeable: a subagent restates its report because its caller may\nsee nothing else, while the main agent has already shown its report to the user and is\nnever interrupted by shared-worktree state that may belong to another agent. Main Stop\nkeeps the calibration observation and emits no bytes; only SubagentStop carries the\njournal and patch signal forward.\n\n**significant behavioral growth acquires an anchor or patch-specific decision.** The cost\nof adding an invariant is immediate while the cost of omitting it appears later, so the\ncurrent patch must carry either enforcement or an addressable reason that it needs none.\n\n**a weaker regulation obligation never masks a stronger one.** Regulation compares live\nobligations by a lexicographic potential, with missing observations failing closed instead\nof becoming zero, and returns the single strongest action owed. V1 evaluates only rules\ndeclared in the live doctrine registry; even a no-action result makes no claim of overall\nsafety.\n\n**regulation evaluates and repairs the selected agent host.** A canonical Claude control\ncannot create a field around a Codex session, even though both hosts implement the same\nlifecycle domain. The sensor therefore names the explicit or current host in its reading,\nthe decision identity retains it, and a lifecycle redirect installs that same host. A\nforeign host value refuses before it can release or author a shell command.\n\n**task context is bounded and names its approximations.** A focused context packet is\nuseful only when its one-hop and heuristic limits stay visible; otherwise convenience is\nmisread as completeness and recreates the omission gradient this project exists to oppose.\n\n**cached decisions expose structurally expired premises.** A decision saves inference only\nwhile the repository addresses supporting it remain live. Broken explicit referents must\nbe louder than readable but stale rationale.\n\n**predicted context closure is calibrated against observed reads and outcomes.** Economy's\none-hop closure is a hypothesis about necessary reading, not cognition. Observed reads and\nlater defect labels give that model a path to correction instead of turning it into dogma.\n\n**calibration preserves the weakest host attribution of its trace.** A Codex parent\nsession file can contain parent and descendant tool use because PostToolUse supplies no\nchild id. Calibration may still compare that aggregate against a patch, but it must name\nthe aggregate rather than relabeling those writes as one agent's work. Legacy rows remain\nunscoped, shared-worktree fallback remains separate, and any unreadable row prevents a\nnew sample instead of disappearing from its denominator.\n\n**reviewed risk sites survive relocation but never duplication.** A ratchet baseline is a\ncached review, and a cached fact that expires on a rename rots the same way a decision's\npremises do — a refactor then spends a reviewer's attention on sites nobody touched, and\nattention spent on false alarms is how a real one gets waved through. Relocation changes\nwhere a reviewed site lives; duplication changes how much unreviewed surface exists, and\nonly the second is news.\n\n**pinned mass follows a value-conserving rename but never absorbs growth.** A mass\ndimension's key embeds a name someone chose — a spec H1, a measure's config key — so a\nrename re-addresses the pin, and a ratchet that reads its own re-addressing as \"gained\nparts nobody named\" prints a lie beside the unchanged total that refutes it (measured:\none H1 edit, 35 lines relabeled, zero gained, gate red). The repair must stay\ncount-conserving: only a vanished pin with the same family, unit and exact value can\nabsorb a new name, or growth and novelty would ride in under renames.\n\n**a claim goes green only on positive evidence its oracle ran.** The verifier's whole\nauthority rests on this one property, and until now no claim cited it: an audit deleted\nthe rule and the tree stayed \"✓ coherent\" while the unit test failed unseen. An exit\ncode is the runner's statement about itself, not about the named test — a filter that\nmatched nothing exits clean on every runner class this repo has measured — so green\nmust require output that names the run, the one reading absence cannot produce.\n\n**a vanished oracle reds its claim, never green-by-absence.** A renamed or deleted test\nleaves a claim citing a name nothing owns, and that claim then guards nothing while\nwearing green. Absence has to be its own observable verdict, distinct from ran-and-failed,\nbecause the two demand different repairs: a red test needs the code fixed, a vanished\noracle needs the contract re-tied to something that exists.\n\n**a declared invariant unanchored by any boundary fails coverage.** A spec may not\nassert a property that nothing enforces: that is the ratchet the whole harness turns on,\nand if it silently loosened, specs would drift back into aspiration prose. The gap has to\ncost a red at the run that opened it, while the person who opened it still holds the\ncontext to close it.\n\n**a via-test oracle that iterates no live domain fails its claim.** A totality label on a\nsampling test is worse than no label: it retires the reader's suspicion without retiring\nthe risk. Deriving the checked set from the live registry the chokepoint actually serves\nis what makes \"covers every case\" a fact about the system rather than about the fixture\nlist the author remembered.\n\n**a skipped run never clobbers an oracle's recorded verdict.** The record is the last\nknown truth, honestly dated. A fast tier that skips the executable claims every commit\nwould otherwise erase last week's real pass — or, worse, a real fail — with \"did not\nlook\", and history that can be overwritten by not looking is not history.\n\n**a named oracle that no test runs cannot pass.** The serial runner is the component the\nexecutable tier leans its trust on, and it was outside the evidence perimeter — unclaimed,\nuntested, and (measured) willing to exit clean when the cited title survived only as a\nstring in a file. The runner itself must refuse a name it cannot show ran, because every\ngreen above it inherits that refusal.\n\n**an empty derivation against a remembered surface refuses, never passes.** Every verdict\nin this file rests on the graph deriving non-empty, and nothing checked that premise:\ngutting `buildGraph` left the gate printing \"claims: 0\" and \"✓ coherent\", exit 0 —\ndeeper than a vanished oracle, because it empties every check at once while announcing\nthey all passed. The record remembers how many claims the last run graded, so a run that\nsuddenly sees zero must refuse rather than report success over nothing; the only\nlegitimate zero (a project adopting from nothing) is exactly the one with no memory, and\nit gets the adoption ladder instead. The floor deliberately stops at zero: a partial\ncollapse where every component keeps a claim is observationally identical to deliberate\npruning, and deletion has to stay free or people stop deleting. What the complement\nunderneath it actually reaches is narrower than it first appears — a component stripped of\nits claims is still a node someone can red, while a component the walk never discovered\nleaves nothing behind to notice, so an N→1 slide reads as N ordinary prunings. Pinning the\npopulation as a mass dimension is the honest answer there, because the question it settles\nis not whether anything survived but whether as much survived as last time.\n\n**lifecycle hook presence is one canonical runnable bit.** The control surface cannot\ncreate a field if every repository is free to carry a merely similar—or silently dead—\nhook. Printing, installation, and inspection therefore share one five-event value and\none stable launcher per host. Presence means exactly one shared project copy, no competing\nlocal, inline, or legacy path, an aligned host/launcher root, a correct declared root\nmapping, an enabled project-hook layer, and a runnable target. Unrelated hooks may coexist.\nHistorical journal activity is reported beside this bit but can neither redeem current\nabsence nor erase current presence.\n\n**supported lifecycle hosts share one control contract without sharing host syntax.**\nClaude and Codex expose the same five lifecycle meanings through different settings files,\nmatchers, launch commands, and response envelopes. Host parity therefore means deriving\neach complete bundle from one host-selected domain while retaining a distinct fingerprint;\ncopying Claude bytes into Codex would be resemblance, not parity.\n\n**current-session activation requires exact installed-bundle evidence.** Structural\npresence proves that the project control is runnable, not that this session loaded it. A\nsession becomes observed only when its activity names the selected host, launcher\ntransport, and current bundle fingerprint. Direct probes, stale bundles, other sessions,\nand a guessed newest session cannot establish activation; parent-session fallback stays a\nnamed attribution ceiling rather than being promoted to child evidence.\n\n**experiment outcomes require criterion-total evidence.** A\nplan is frozen before work with its predicted context, actions, criteria, and evidence\ncursors. Closure answers every action and criterion exactly once, preserves the assessor,\nand derives success, failure, or inconclusive from criterion statuses rather than accepting\nan outcome label. Otherwise the ledger would turn an incomplete story into a measured loop.\n\n**experiment telemetry preserves its weakest provable attribution.** Trace and activity\nwindows may be empty, prove an exact owner session, or only prove a parent-session aggregate\nthat can include descendants; older trace may carry no observation metadata at all. Those\nfour scopes remain distinct in the immutable close record. Damaged prefixes, unreadable\nrows, and unknown or inconsistent scope refuse. That keeps compatible history without\nturning absence or uncertainty into false precision.\n\n**activity evidence is accepted only when identity, scope, time, and command agree.** A\nrow is useful precisely because later status and experiment readers stop re-deriving the\nhost event. That cached inference is safe only while its relational fields still agree:\nagent attribution names the row session, parent fallback names its parent domain, event\nidentity recomputes, time is canonical, and command kind/result agrees with name and exit\ncode. One strict reader grades that whole relation; malformed rows become counted damage,\nnever partially trusted evidence.\n\n**a streamed journal entry renders exactly once across appends and compaction.** The live\nstream exists for the one reader the settled render cannot serve — an orchestrator watching\nfive subagents mid-flight — and that reader has no way to audit the feed against the files.\nA dropped entry is a decision the orchestrator never saw, indistinguishable from one never\nmade; a duplicate teaches the opposite lie, that a question was decided twice. Both are\ncheap to produce, because the journal's files do not strictly grow: compaction moves lines\nbetween files and unlinks the originals, which a position-addressed reader replays in full.\nSo a record's identity in the stream comes from its content — the same triple the merged\ntimeline sorts by — and a moved line is one the feed already carried.\n\n(The import claims above separately prove that the composition root still reaches the\nconfiguration loader, graph derivation, verifier, spec walker, and journal.)",
+      "why": "**agent lifecycle preserves decisions and exposes the current change signal.** Decisions\nand risk are cheapest to surface while the agent still holds the context that produced\nthem; waiting for a later reviewer externalizes both reconstruction costs. The two stop\nsurfaces are not interchangeable: a subagent restates its report because its caller may\nsee nothing else, while the main agent has already shown its report to the user and is\nnever interrupted by shared-worktree state that may belong to another agent. Main Stop\nkeeps the calibration observation and emits no bytes; only SubagentStop carries the\njournal and patch signal forward.\n\n**significant behavioral growth acquires an anchor or patch-specific decision.** The cost\nof adding an invariant is immediate while the cost of omitting it appears later, so the\ncurrent patch must carry either enforcement or an addressable reason that it needs none.\n\n**a weaker regulation obligation never masks a stronger one.** Regulation compares live\nobligations by a lexicographic potential, with missing observations failing closed instead\nof becoming zero, and returns the single strongest action owed. V1 evaluates only rules\ndeclared in the live doctrine registry; even a no-action result makes no claim of overall\nsafety.\n\n**regulation evaluates and repairs the selected agent host.** A canonical Claude control\ncannot create a field around a Codex session, even though both hosts implement the same\nlifecycle domain. The sensor therefore names the explicit or current host in its reading,\nthe decision identity retains it, and a lifecycle redirect installs that same host. A\nforeign host value refuses before it can release or author a shell command.\n\n**task context is bounded and names its approximations.** A focused context packet is\nuseful only when its one-hop and heuristic limits stay visible; otherwise convenience is\nmisread as completeness and recreates the omission gradient this project exists to oppose.\n\n**cached decisions expose structurally expired premises.** A decision saves inference only\nwhile the repository addresses supporting it remain live. Broken explicit referents must\nbe louder than readable but stale rationale.\n\n**predicted context closure is calibrated against observed reads and outcomes.** Economy's\none-hop closure is a hypothesis about necessary reading, not cognition. Observed reads and\nlater defect labels give that model a path to correction instead of turning it into dogma.\n\n**calibration preserves the weakest host attribution of its trace.** A Codex parent\nsession file can contain parent and descendant tool use because PostToolUse supplies no\nchild id. Calibration may still compare that aggregate against a patch, but it must name\nthe aggregate rather than relabeling those writes as one agent's work. Legacy rows remain\nunscoped, shared-worktree fallback remains separate, and any unreadable row prevents a\nnew sample instead of disappearing from its denominator.\n\n**reviewed risk sites survive relocation but never duplication.** A ratchet baseline is a\ncached review, and a cached fact that expires on a rename rots the same way a decision's\npremises do — a refactor then spends a reviewer's attention on sites nobody touched, and\nattention spent on false alarms is how a real one gets waved through. Relocation changes\nwhere a reviewed site lives; duplication changes how much unreviewed surface exists, and\nonly the second is news.\n\n**pinned mass follows a value-conserving rename but never absorbs growth.** A mass\ndimension's key embeds a name someone chose — a spec H1, a measure's config key — so a\nrename re-addresses the pin, and a ratchet that reads its own re-addressing as \"gained\nparts nobody named\" prints a lie beside the unchanged total that refutes it (measured:\none H1 edit, 35 lines relabeled, zero gained, gate red). The repair must stay\ncount-conserving: only a vanished pin with the same family, unit and exact value can\nabsorb a new name, or growth and novelty would ride in under renames.\n\n**a claim goes green only on positive evidence its oracle ran.** The verifier's whole\nauthority rests on this one property, and until now no claim cited it: an audit deleted\nthe rule and the tree stayed \"✓ coherent\" while the unit test failed unseen. An exit\ncode is the runner's statement about itself, not about the named test — a filter that\nmatched nothing exits clean on every runner class this repo has measured — so green\nmust require output that names the run, the one reading absence cannot produce.\n\n**a vanished oracle reds its claim, never green-by-absence.** A renamed or deleted test\nleaves a claim citing a name nothing owns, and that claim then guards nothing while\nwearing green. Absence has to be its own observable verdict, distinct from ran-and-failed,\nbecause the two demand different repairs: a red test needs the code fixed, a vanished\noracle needs the contract re-tied to something that exists.\n\n**a declared invariant unanchored by any boundary fails coverage.** A spec may not\nassert a property that nothing enforces: that is the ratchet the whole harness turns on,\nand if it silently loosened, specs would drift back into aspiration prose. The gap has to\ncost a red at the run that opened it, while the person who opened it still holds the\ncontext to close it.\n\n**a via-test oracle that iterates no live domain fails its claim.** A totality label on a\nsampling test is worse than no label: it retires the reader's suspicion without retiring\nthe risk. Deriving the checked set from the live registry the chokepoint actually serves\nis what makes \"covers every case\" a fact about the system rather than about the fixture\nlist the author remembered.\n\n**a skipped run never clobbers an oracle's recorded verdict.** The record is the last\nknown truth, honestly dated. A fast tier that skips the executable claims every commit\nwould otherwise erase last week's real pass — or, worse, a real fail — with \"did not\nlook\", and history that can be overwritten by not looking is not history.\n\n**a named oracle that no test runs cannot pass.** The serial runner is the component the\nexecutable tier leans its trust on, and it was outside the evidence perimeter — unclaimed,\nuntested, and (measured) willing to exit clean when the cited title survived only as a\nstring in a file. The runner itself must refuse a name it cannot show ran, because every\ngreen above it inherits that refusal.\n\n**an empty derivation against a remembered surface refuses, never passes.** Every verdict\nin this file rests on the graph deriving non-empty, and nothing checked that premise:\ngutting `buildGraph` left the gate printing \"claims: 0\" and \"✓ coherent\", exit 0 —\ndeeper than a vanished oracle, because it empties every check at once while announcing\nthey all passed. The record remembers how many claims the last run graded, so a run that\nsuddenly sees zero must refuse rather than report success over nothing; the only\nlegitimate zero (a project adopting from nothing) is exactly the one with no memory, and\nit gets the adoption ladder instead. The floor deliberately stops at zero: a partial\ncollapse where every component keeps a claim is observationally identical to deliberate\npruning, and deletion has to stay free or people stop deleting. What the complement\nunderneath it actually reaches is narrower than it first appears — a component stripped of\nits claims is still a node someone can red, while a component the walk never discovered\nleaves nothing behind to notice, so an N→1 slide reads as N ordinary prunings. Pinning the\npopulation as a mass dimension is the honest answer there, because the question it settles\nis not whether anything survived but whether as much survived as last time.\n\n**lifecycle hook presence is one canonical runnable bit.** The control surface cannot\ncreate a field if every repository is free to carry a merely similar—or silently dead—\nhook. Printing, installation, and inspection therefore share one five-event value and\none stable launcher per host. Presence means exactly one shared project copy, no competing\nlocal, inline, or legacy path, an aligned host/launcher root, a correct declared root\nmapping, an enabled project-hook layer, and a runnable target. Unrelated hooks may coexist.\nHistorical journal activity is reported beside this bit but can neither redeem current\nabsence nor erase current presence.\n\n**supported lifecycle hosts share one control contract without sharing host syntax.**\nClaude and Codex expose the same five lifecycle meanings through different settings files,\nmatchers, launch commands, and response envelopes. Host parity therefore means deriving\neach complete bundle from one host-selected domain while retaining a distinct fingerprint;\ncopying Claude bytes into Codex would be resemblance, not parity.\n\n**current-session activation requires exact installed-bundle evidence.** Structural\npresence proves that the project control is runnable, not that this session loaded it. A\nsession becomes observed only when its activity names the selected host, launcher\ntransport, and current bundle fingerprint. Direct probes, stale bundles, other sessions,\nand a guessed newest session cannot establish activation; parent-session fallback stays a\nnamed attribution ceiling rather than being promoted to child evidence.\n\n**customized hook text composes declared overrides and appends, degrading to canon on\ndamage.** The canonical hook text is the harness's voice — identical across adopting\nprojects, and byte-testable because of it — but a project knows things the harness cannot:\nits own commands, its conventions, the one warning its history taught it. So a project\ngets a declared voice per event rather than a fork of the hook body, under one composition\nrule with no conflict state: the override answers what the base is, the append answers\nwhat follows it, and both may coexist; an empty override is a deliberate, visible silence,\nnot an error. Damage must degrade to the canonical emission at hook time, because the hook\nbody runs inside every agent session of every adopting project — a torn customization\nfile that broke sessions would make the journal's carrier the thing that kills the work it\nrecords — so a tear costs exactly the customization, never the session, and the loud\nsurface for it is `hooks review`, where a reader is actually looking. Events with no\ncanonical emission — main Stop, PostToolUse — speak only with a declared project voice;\nmain Stop's canonical byte-silence and the attribution reasoning behind it stand unchanged\nas the default.\n\n**experiment outcomes require criterion-total evidence.** A\nplan is frozen before work with its predicted context, actions, criteria, and evidence\ncursors. Closure answers every action and criterion exactly once, preserves the assessor,\nand derives success, failure, or inconclusive from criterion statuses rather than accepting\nan outcome label. Otherwise the ledger would turn an incomplete story into a measured loop.\n\n**experiment telemetry preserves its weakest provable attribution.** Trace and activity\nwindows may be empty, prove an exact owner session, or only prove a parent-session aggregate\nthat can include descendants; older trace may carry no observation metadata at all. Those\nfour scopes remain distinct in the immutable close record. Damaged prefixes, unreadable\nrows, and unknown or inconsistent scope refuse. That keeps compatible history without\nturning absence or uncertainty into false precision.\n\n**activity evidence is accepted only when identity, scope, time, and command agree.** A\nrow is useful precisely because later status and experiment readers stop re-deriving the\nhost event. That cached inference is safe only while its relational fields still agree:\nagent attribution names the row session, parent fallback names its parent domain, event\nidentity recomputes, time is canonical, and command kind/result agrees with name and exit\ncode. One strict reader grades that whole relation; malformed rows become counted damage,\nnever partially trusted evidence.\n\n**a streamed journal entry renders exactly once across appends and compaction.** The live\nstream exists for the one reader the settled render cannot serve — an orchestrator watching\nfive subagents mid-flight — and that reader has no way to audit the feed against the files.\nA dropped entry is a decision the orchestrator never saw, indistinguishable from one never\nmade; a duplicate teaches the opposite lie, that a question was decided twice. Both are\ncheap to produce, because the journal's files do not strictly grow: compaction moves lines\nbetween files and unlinks the originals, which a position-addressed reader replays in full.\nSo a record's identity in the stream comes from its content — the same triple the merged\ntimeline sorts by — and a moved line is one the feed already carried.\n\n(The import claims above separately prove that the composition root still reaches the\nconfiguration loader, graph derivation, verifier, spec walker, and journal.)",
       "invariants": [
         "agent lifecycle preserves decisions and exposes the current change signal",
         "significant behavioral growth acquires an anchor or patch-specific decision",
@@ -77,6 +78,7 @@
         "lifecycle hook presence is one canonical runnable bit",
         "supported lifecycle hosts share one control contract without sharing host syntax",
         "current-session activation requires exact installed-bundle evidence",
+        "customized hook text composes declared overrides and appends, degrading to canon on damage",
         "experiment outcomes require criterion-total evidence",
         "experiment telemetry preserves its weakest provable attribution",
         "activity evidence is accepted only when identity, scope, time, and command agree",
@@ -2609,6 +2611,89 @@
       "prose": "hook-cli.ts — dependency-light lifecycle entrypoint; do not route high-frequency hooks\nthrough cli.ts, whose full command registry eagerly loads the TypeScript analysis stack."
     },
     {
+      "id": "f:src/hook-text.ts",
+      "parent": "c:src",
+      "label": "hook-text.ts",
+      "kind": "file",
+      "sub": "src/hook-text.ts",
+      "path": "src/hook-text.ts",
+      "prose": "hook-text.ts — the project's declared voice at each lifecycle crossing.\n\nThe canonical hook text is the HARNESS's voice: identical in every adopting project,\nasserted byte-wise by tests, printed verbatim by `coherence hooks`. But a project has\nthings only it can say — a build convention, a deploy hazard, a house rule about who\ntouches migrations — and the moment an agent starts is exactly when that voice must be\nheard. This module is the customization surface: per lifecycle event, a project may\nkeep `.coherence/hooks/<Event>.override.md` (replaces the canonical emission wholly)\nand/or `.coherence/hooks/<Event>.append.md` (follows whatever the base is).\n\nONE COMPOSITION RULE, and both files coexisting is not a conflict, because they answer\ndifferent questions: the override decides WHAT THE BASE IS (project text instead of the\nharness's, including an empty override that silences the event entirely); the append\ndecides WHAT FOLLOWS IT. Override-with-append is therefore an ordinary, meaningful\nstate — the project's base, then the project's addendum.\n\nDAMAGE DEGRADES TO CANON HERE, LOUDLY ELSEWHERE. This code runs inside every agent\nsession of every adopting project; a torn customization file (unreadable, a directory\nsquatting on the path) must cost exactly the customization, never the session. So\n`readHookText` never throws — it records the problem and leaves the slot null, and the\ncaller falls back to the canonical emission. The loud surface for that damage is\n`coherence hooks review`, which exists to be read by a human with time to fix things.\n\nTokens are honest: `{{session}}`, `{{agent}}`, `{{cli}}`, `{{scope}}` substitute only\nwhen a value was actually supplied. An unsupplied token stays literal, so the reader\ncan SEE it was never substituted instead of getting a silently empty hole."
+    },
+    {
+      "id": "s:src/hook-text.ts#HOOK_TEXT_DIR",
+      "parent": "f:src/hook-text.ts",
+      "label": "HOOK_TEXT_DIR",
+      "kind": "symbol",
+      "sub": "const",
+      "path": "src/hook-text.ts",
+      "line": 32
+    },
+    {
+      "id": "s:src/hook-text.ts#HookTextFile",
+      "parent": "f:src/hook-text.ts",
+      "label": "HookTextFile",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/hook-text.ts",
+      "line": 34
+    },
+    {
+      "id": "s:src/hook-text.ts#HookTextCustomization",
+      "parent": "f:src/hook-text.ts",
+      "label": "HookTextCustomization",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/hook-text.ts",
+      "line": 36
+    },
+    {
+      "id": "s:src/hook-text.ts#HookTextTokens",
+      "parent": "f:src/hook-text.ts",
+      "label": "HookTextTokens",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/hook-text.ts",
+      "line": 43
+    },
+    {
+      "id": "s:src/hook-text.ts#hookTextPaths",
+      "parent": "f:src/hook-text.ts",
+      "label": "hookTextPaths",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/hook-text.ts",
+      "line": 45
+    },
+    {
+      "id": "s:src/hook-text.ts#readHookText",
+      "parent": "f:src/hook-text.ts",
+      "label": "readHookText",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/hook-text.ts",
+      "line": 64
+    },
+    {
+      "id": "s:src/hook-text.ts#substituteHookTokens",
+      "parent": "f:src/hook-text.ts",
+      "label": "substituteHookTokens",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/hook-text.ts",
+      "line": 77,
+      "prose": "One pass; only the four known tokens, only when supplied. Any other `{{...}}` text is\n the project's own to keep — this is a substitution, not a template language."
+    },
+    {
+      "id": "s:src/hook-text.ts#composeHookText",
+      "parent": "f:src/hook-text.ts",
+      "label": "composeHookText",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/hook-text.ts",
+      "line": 87,
+      "prose": "Override replaces the canonical base wholly (dynamic parts included — a project that\n overrides owns the whole emission); the append follows whatever the base turned out\n to be. An empty base with no append composes to \"\" and the caller emits nothing."
+    },
+    {
       "id": "f:src/hooks.ts",
       "parent": "c:src",
       "label": "hooks.ts",
@@ -2624,7 +2709,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 52,
+      "line": 53,
       "prose": "The text every agent is handed at startup. Short on purpose: it is paid for by\n every agent on every job, and an instruction nobody finishes reading is a comment."
     },
     {
@@ -2634,7 +2719,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 112,
+      "line": 113,
       "prose": "A Stop feedback turn stops again. Hosts mark that second pass so a non-blocking nudge\ncan be emitted exactly once instead of accidentally becoming an eight-turn gate."
     },
     {
@@ -2644,7 +2729,7 @@
       "kind": "symbol",
       "sub": "type",
       "path": "src/hooks.ts",
-      "line": 117
+      "line": 118
     },
     {
       "id": "s:src/hooks.ts#composeStopFeedback",
@@ -2653,7 +2738,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 127,
+      "line": 128,
       "prose": "Host semantics make this distinction consequential: any `additionalContext` continues\nthe conversation. A subagent's parent may genuinely need the final report restated;\nthe main user just read it. Main Stop therefore emits nothing. Shared-worktree state\ncannot be promoted into a task-local obligation merely because this agent stopped."
     },
     {
@@ -2663,7 +2748,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 149,
+      "line": 150,
       "prose": "`coherence hook <event>` — the hook body itself, so nothing has to be written to\n disk or kept in sync with a script file. Reads the event payload on stdin (unused\n today, but hooks are fed JSON and ignoring it silently would be rude to the next\n person who needs a field from it) and prints the documented output shape."
     },
     {
@@ -2673,7 +2758,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 263,
+      "line": 296,
       "prose": "What a subagent is told as it finishes. Split out of `runHook` so it is reachable\n without a stdin pipe — the hook body drains stdin, and a report you can only observe\n by feeding a process is a report nobody tests."
     },
     {
@@ -2683,7 +2768,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/hooks.ts",
-      "line": 338
+      "line": 371
     },
     {
       "id": "s:src/hooks.ts#CurrentHookObservation",
@@ -2692,7 +2777,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/hooks.ts",
-      "line": 350
+      "line": 383
     },
     {
       "id": "s:src/hooks.ts#activeHookHost",
@@ -2701,7 +2786,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 375,
+      "line": 408,
       "prose": "Which host owns the current shell. Explicit selection always wins."
     },
     {
@@ -2711,7 +2796,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 381,
+      "line": 414,
       "prose": "Never pick the newest session: concurrency makes \"latest\" an attribution bug."
     },
     {
@@ -2721,7 +2806,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 409
+      "line": 442
     },
     {
       "id": "s:src/hooks.ts#hookStatus",
@@ -2730,7 +2815,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 485,
+      "line": 518,
       "prose": "Structural configuration, historical memory, and this exact session stay separate."
     },
     {
@@ -2740,7 +2825,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 566,
+      "line": 599,
       "prose": "`coherence hooks status` — report the switch and the observation beside it."
     },
     {
@@ -2750,7 +2835,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 573,
+      "line": 606,
       "prose": "`coherence hooks --check` — the binary current-control gate. Observation never redeems absence."
     },
     {
@@ -2760,7 +2845,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 583
+      "line": 616
     },
     {
       "id": "s:src/hooks.ts#uninstallHooks",
@@ -2769,7 +2854,17 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 600
+      "line": 633
+    },
+    {
+      "id": "s:src/hooks.ts#reviewHooks",
+      "parent": "f:src/hooks.ts",
+      "label": "reviewHooks",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/hooks.ts",
+      "line": 650,
+      "prose": "`coherence hooks review` — every event's EFFECTIVE emission, with its provenance.\n The hook body degrades an unreadable customization to canon silently, because a torn\n file must not break a session; THIS is the loud surface where that damage lands, and\n the exit code carries it."
     },
     {
       "id": "s:src/hooks.ts#printHooks",
@@ -2778,7 +2873,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 615,
+      "line": 698,
       "prose": "`coherence hooks` — print one host's canonical block, plus the\n instruction text so a reader can see what agents will actually be told."
     },
     {
@@ -6857,6 +6952,15 @@
       "prose": "hook-stop.test.ts — main and subagent conclusions are different delivery surfaces."
     },
     {
+      "id": "f:test/hook-text.test.ts",
+      "parent": "c:test",
+      "label": "hook-text.test.ts",
+      "kind": "file",
+      "sub": "test/hook-text.test.ts",
+      "path": "test/hook-text.test.ts",
+      "prose": "hook-text.test.ts — the project's voice at each lifecycle crossing: override replaces\nthe canonical emission, append follows it, and a torn customization file costs exactly\nthe customization (silent canon fallback at hook time, loud in `hooks review`)."
+    },
+    {
       "id": "f:test/hooks-cli.test.ts",
       "parent": "c:test",
       "label": "hooks-cli.test.ts",
@@ -8062,6 +8166,30 @@
       "kind": "imports"
     },
     {
+      "id": "f:src/hook-text.ts->x:node:fs:imports",
+      "source": "f:src/hook-text.ts",
+      "target": "x:node:fs",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/hook-text.ts->x:node:path:imports",
+      "source": "f:src/hook-text.ts",
+      "target": "x:node:path",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/hook-text.ts->f:src/control.ts:imports",
+      "source": "f:src/hook-text.ts",
+      "target": "f:src/control.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/hook-text.ts->f:src/types.ts:imports",
+      "source": "f:src/hook-text.ts",
+      "target": "f:src/types.ts",
+      "kind": "imports"
+    },
+    {
       "id": "f:src/hooks.ts->x:node:fs:imports",
       "source": "f:src/hooks.ts",
       "target": "x:node:fs",
@@ -8083,6 +8211,12 @@
       "id": "f:src/hooks.ts->f:src/control.ts:imports",
       "source": "f:src/hooks.ts",
       "target": "f:src/control.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/hooks.ts->f:src/hook-text.ts:imports",
+      "source": "f:src/hooks.ts",
+      "target": "f:src/hook-text.ts",
       "kind": "imports"
     },
     {
@@ -10393,6 +10527,60 @@
       "id": "f:test/hook-stop.test.ts->f:src/hooks.ts:imports",
       "source": "f:test/hook-stop.test.ts",
       "target": "f:src/hooks.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/hook-text.test.ts->x:node:test:imports",
+      "source": "f:test/hook-text.test.ts",
+      "target": "x:node:test",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/hook-text.test.ts->x:node:assert/strict:imports",
+      "source": "f:test/hook-text.test.ts",
+      "target": "x:node:assert/strict",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/hook-text.test.ts->x:node:child_process:imports",
+      "source": "f:test/hook-text.test.ts",
+      "target": "x:node:child_process",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/hook-text.test.ts->x:node:util:imports",
+      "source": "f:test/hook-text.test.ts",
+      "target": "x:node:util",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/hook-text.test.ts->x:node:fs/promises:imports",
+      "source": "f:test/hook-text.test.ts",
+      "target": "x:node:fs/promises",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/hook-text.test.ts->x:node:path:imports",
+      "source": "f:test/hook-text.test.ts",
+      "target": "x:node:path",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/hook-text.test.ts->x:node:url:imports",
+      "source": "f:test/hook-text.test.ts",
+      "target": "x:node:url",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/hook-text.test.ts->f:test/_helpers.ts:imports",
+      "source": "f:test/hook-text.test.ts",
+      "target": "f:test/_helpers.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/hook-text.test.ts->f:src/hook-text.ts:imports",
+      "source": "f:test/hook-text.test.ts",
+      "target": "f:src/hook-text.ts",
       "kind": "imports"
     },
     {

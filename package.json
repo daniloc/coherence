@@ -1,6 +1,6 @@
 {
   "name": "@danilocampos/coherence",
-  "version": "0.31.0",
+  "version": "0.32.0",
   "description": "A spec + coherence harness for agent-developed projects: derive a multi-resolution graph from *.spec.md + code, render an explorable outline and an agent map, and verify claims/narrative/coverage. Language and platform specifics live behind adapters.",
   "license": "MIT",
   "author": "Danilo Campos <mail@danilocampos.com>",
@@ -40,7 +40,9 @@
     "prepare": "npm run build"
   },
   "devDependencies": {
-    "@types/node": "^22.0.0",
+    "@types/node": "^22.0.0"
+  },
+  "dependencies": {
     "typescript": "^5.7.0"
   }
 }

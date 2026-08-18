@@ -24,7 +24,7 @@ async function fixture(): Promise<string> {
     "coherence.config.json": JSON.stringify({
       entryDir: "app", codeExt: ["ts"], language: "typescript", platform: null,
     }),
-    "package.json": JSON.stringify({ name: "coherence-harness" }),
+    "package.json": JSON.stringify({ name: "@danilocampos/coherence" }),
     "src/hook-cli.ts": "export const hookTarget = true;\n",
     "app/app.spec.md": "# app\n\nFixture.\n\n## works when\n\n- app.ts exists at this node\n",
     "app/app.ts": "export const value = 1;\n",

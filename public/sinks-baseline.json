@@ -3,6 +3,7 @@
   "html-value|src/due.ts|cli",
   "html-value|src/due.ts|scope",
   "html-value|src/hooks.ts|agentInstructions(\"s-<minted per agent>\")",
+  "html-value|src/hooks.ts|agentInstructions(\"s-<minted per agent>\", cli)",
   "html-value|src/hooks.ts|cli",
   "html-value|src/hooks.ts|scope",
   "html-value|src/observed.ts|id",

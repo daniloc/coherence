@@ -458,7 +458,7 @@ function runnableTarget(cfg: Config): HookTarget {
   const binary = join(cfg.root, "node_modules", ".bin", "coherence-hook");
   if (executableFile(binary)) return { path: binary, present: true, kind: "binary" };
   const source = join(cfg.root, "src", "hook-cli.ts");
-  if (packageName(cfg.root) === "coherence-harness" && readableFile(source)) {
+  if (packageName(cfg.root) === "@danilocampos/coherence" && readableFile(source)) {
     return { path: source, present: true, kind: "source" };
   }
   return { path: binary, present: false, kind: "missing" };

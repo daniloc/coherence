@@ -1,12 +1,12 @@
 [
   {
     "key": "deps|dev",
-    "value": 2,
+    "value": 1,
     "unit": "deps"
   },
   {
     "key": "deps|direct",
-    "value": 0,
+    "value": 1,
     "unit": "deps"
   },
   {
@@ -16,17 +16,17 @@
   },
   {
     "key": "files|total",
-    "value": 114,
+    "value": 116,
     "unit": "files"
   },
   {
     "key": "lines|Executable contracts",
-    "value": 14746,
+    "value": 15008,
     "unit": "lines"
   },
   {
     "key": "lines|Harness core",
-    "value": 19827,
+    "value": 20009,
     "unit": "lines"
   },
   {
@@ -36,12 +36,12 @@
   },
   {
     "key": "lines|total",
-    "value": 34798,
+    "value": 35242,
     "unit": "lines"
   },
   {
     "key": "measure|graph-claims",
-    "value": 39,
+    "value": 40,
     "unit": "claims"
   },
   {
@@ -51,12 +51,12 @@
   },
   {
     "key": "symbols|total",
-    "value": 616,
+    "value": 625,
     "unit": "symbols"
   },
   {
     "key": "undocumented|symbols",
-    "value": 271,
+    "value": 277,
     "unit": "symbols"
   }
 ]

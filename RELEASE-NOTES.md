@@ -14,6 +14,43 @@ evidence inside that record.
 
 ---
 
+## v0.32.0 — the project's voice in the emissions, and the first npm publish
+
+The canonical hook text is the harness's: identical in every adopting project, which is
+what keeps it byte-testable. What a project knows and the harness cannot — its own
+commands, its conventions, the one warning its history taught it — now has a declared
+surface. `.coherence/hooks/<Event>.override.md` replaces an event's canonical emission;
+`<Event>.append.md` follows it. One composition rule with no conflict state: the override
+(if any) is the base, otherwise the canonical text is, and the append follows. An empty
+override is a deliberate, visible silence. Events with no canonical emission (main `Stop`,
+`PostToolUse`) speak only when a project declares a voice there, and the stop-loop guard
+still outranks it; main `Stop`'s canonical byte-silence and its attribution reasoning
+stand unchanged as the default. Tokens `{{session}}`, `{{agent}}`, `{{cli}}`, and
+`{{scope}}` substitute at emission, and a token the harness cannot supply stays honestly
+literal. A customization file that cannot be read costs exactly the customization — the
+event falls back to canon rather than breaking the agent's session — and the loud surface
+is the new `coherence hooks review`, which prints every event's effective emission with
+provenance and a `warning:` line per unreadable file.
+
+The claim is guarded in both directions: override replaces, append follows, damage
+degrades to canon — and the live loop was closed twice in the experiment ledger before
+release. An in-repo probe carried both start and stop voices into a real subagent's reply
+with `{{session}}` matching its journal attribution; a packed-tarball adopter fixture
+proved the same chain through `hooks install`, the installed binary, and a real headless
+session. That second experiment also caught what unit tests could not: the packed CLI
+crashed in a fresh adopter because `typescript` was a devDependency while three modules
+import it at load. It is a runtime dependency now, which is the honest description of a
+harness whose default language adapter parses TypeScript.
+
+This is also the first version published to npm, as `@danilocampos/coherence` (unscoped
+`coherence` is taken). Publishing is tag-driven with OIDC trusted publishing — no token
+lives in this repository — and the package self-detection literals now key on the scoped
+name, which the rename had silently broken.
+
+756 tests. `verify` green. Typecheck, build, generated reading surfaces, both lifecycle
+controls, premise leases, conventions, injection sites, mass, atlas, and the
+significant-change gate all held before release.
+
 ## v0.31.0 — the field reaches Codex, and its evidence keeps its scope
 
 The lifecycle controller is now host-selectable. Claude and Codex share one five-event

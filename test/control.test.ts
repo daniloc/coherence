@@ -319,7 +319,7 @@ printf '%s\n%s\n%s\n' "$PWD" "$COHERENCE_PROJECT_ROOT" "$1" > "$CLAUDE_PROJECT_D
 test("control — the source fallback is a readable regular file and runs from the coherence root", async () => {
   const root = await tmpProject();
   try {
-    await writeFile(join(root, "package.json"), JSON.stringify({ name: "coherence-harness" }));
+    await writeFile(join(root, "package.json"), JSON.stringify({ name: "@danilocampos/coherence" }));
     const source = join(root, "src", "hook-cli.ts");
     await mkdir(dirname(source), { recursive: true });
     await writeFile(source, `import { writeFileSync } from "node:fs";
