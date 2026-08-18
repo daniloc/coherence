@@ -14,6 +14,18 @@ evidence inside that record.
 
 ---
 
+## v0.32.1 — when you fix a bug, decide what happens to its class
+
+One addition to the canonical start-hook instruction, in doctrine order. Dissolve: make
+the bug class unrepresentable — remove the duplicated state, narrow the type, collapse
+the second spelling of the domain that let two copies disagree. Declare: pin it — an
+invariant anchored by a boundary whose guard goes red if the class returns, plus a
+refutation line recording what was actually observed broken, because a fixed bug is a
+measured negative control and it is evidence only if it is written down. A spot fix is
+the floor, not the fix, and it costs a journal entry naming why the stronger rungs were
+out of reach — so an unexamined patch and a considered one stop looking alike. Canonical
+rather than project voice: the ladder is the shipped doctrine, not local convention.
+
 ## v0.32.0 — the project's voice in the emissions, and the first npm publish
 
 The canonical hook text is the harness's: identical in every adopting project, which is
