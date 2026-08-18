@@ -1,7 +1,26 @@
 {
-  "name": "coherence-harness",
+  "name": "@danilocampos/coherence",
   "version": "0.31.0",
   "description": "A spec + coherence harness for agent-developed projects: derive a multi-resolution graph from *.spec.md + code, render an explorable outline and an agent map, and verify claims/narrative/coverage. Language and platform specifics live behind adapters.",
+  "license": "MIT",
+  "author": "Danilo Campos <mail@danilocampos.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/daniloc/coherence.git"
+  },
+  "homepage": "https://github.com/daniloc/coherence#readme",
+  "keywords": [
+    "agents",
+    "spec",
+    "coherence",
+    "claude-code",
+    "codex",
+    "harness",
+    "verification"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "type": "module",
   "bin": {
     "coherence": "dist/cli.js",
