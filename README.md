@@ -447,6 +447,37 @@ settings, launcher, and mapping for inspection. It is not the preferred installe
 launcher and mapping paths are coherence-owned: `install` repairs drift at those names,
 while `uninstall --host …` removes them only if their bytes still prove coherence ownership.
 
+### The project's voice in the emissions
+
+The canonical hook text is the harness's: identical in every adopting project, which is
+what keeps it byte-testable. What your project knows and the harness cannot — its own
+commands, its conventions, the one warning its history taught it — goes in per-event
+files under `.coherence/hooks/`:
+
+- `<Event>.override.md` **replaces** that event's canonical emission
+- `<Event>.append.md` **follows** whatever the base said
+
+for any of the five lifecycle events. One composition rule, no conflict state: the
+override (if any) is the base, otherwise the canonical text is; the append follows it.
+An **empty** override deliberately silences the event. Events that canonically emit
+nothing (main `Stop`, `PostToolUse`) speak only when a project declares a voice there —
+and the stop-loop guard still outranks it. Tokens `{{session}}`, `{{agent}}`, `{{cli}}`
+and `{{scope}}` substitute at emission (`{{agent}}` is only guaranteed at the start
+events); a token the harness cannot supply stays honestly literal.
+
+A customization file that cannot be read costs exactly the customization: the event falls
+back to its canonical emission rather than breaking the agent's session. The loud surface
+for both damage and review is:
+
+```sh
+npx coherence hooks review
+```
+
+which prints every event's **effective** emission with provenance — canonical, override,
+append, silenced — and a `warning:` line per unreadable file. Commit `.coherence/hooks/`
+alongside the decisions folder: the voice is part of the field, and it should travel with
+the repository.
+
 ### Regulate the field: one next action
 
 An instrument answers one question. A regulator decides which answer should change what
@@ -1774,7 +1805,7 @@ any is in **In detail** below — that half is authored, and does not cover all 
 
 - `coherence doctrine [--json]` — print the versioned law the regulator is allowed to apply
 - `coherence phrasebook` — print the claim-form table straight from the `CLAIM_FORMS` registry
-- `coherence hooks [status|install|uninstall|print] [--check] [--json] [--host <claude|codex>] [--session <id>]` — the lifecycle control — converge on one canonical, runnable shared hook bundle
+- `coherence hooks [status|install|uninstall|print|review] [--check] [--json] [--host <claude|codex>] [--session <id>]` — the lifecycle control — converge on one canonical, runnable shared hook bundle
 - `coherence hook <event>` — the hook BODY, invoked by the harness rather than by you
 
 <!-- coherence:commands:end -->

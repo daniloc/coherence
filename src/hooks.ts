@@ -23,9 +23,10 @@ import { join } from "node:path";
 import { readJournal, openSession, resolve } from "./decisions.ts";
 import {
   canonicalLifecycleHookSettings, inspectLifecycleHook, setLifecycleHook,
-  lifecycleHookScript, lifecycleRootMapping, resolveHookProjectRoot,
-  type HookHost, type LifecycleHookInspection,
+  lifecycleHookScript, lifecycleRootMapping, resolveHookProjectRoot, LIFECYCLE_HOOK_EVENTS,
+  type HookHost, type LifecycleHookInspection, type LifecycleHookEvent,
 } from "./control.ts";
+import { composeHookText, readHookText, HOOK_TEXT_DIR } from "./hook-text.ts";
 import { readDue, formatDue } from "./due.ts";
 import {
   activityReplayKey, readActivity, recordActivity,
@@ -42,7 +43,7 @@ import type { Config } from "./types.ts";
 function projectCli(cfg: Config): string {
   try {
     const pkg = JSON.parse(readFileSync(join(cfg.root, "package.json"), "utf8"));
-    if (pkg?.name === "coherence-harness" && existsSync(join(cfg.root, "src", "cli.ts"))) return "node src/cli.ts";
+    if (pkg?.name === "@danilocampos/coherence" && existsSync(join(cfg.root, "src", "cli.ts"))) return "node src/cli.ts";
   } catch { /* an absent package is an ordinary consumer project */ }
   return "npx coherence";
 }
@@ -198,7 +199,12 @@ export async function runHook(cfg: Config, event: string): Promise<number> {
     // A hook that throws breaks every session in every adopting project on repin. This
     // reading is worth strictly less than that, so it can fail to nothing.
     const due = await readDue(cfg).then((r) => formatDue(r, cli, scope)).catch(() => []);
-    emit(host, event, [agentInstructions(rec.session, cli, rec.agent), ...due].join("\n"));
+    const canonical = [agentInstructions(rec.session, cli, rec.agent), ...due].join("\n");
+    // The project's declared voice composes here — an override replaces the canon, an
+    // append follows it. An empty override is a deliberate silence, so a falsy text
+    // emits nothing at all.
+    const text = composeHookText(canonical, readHookText(cfg, event), { session: rec.session, agent: rec.agent, cli, scope });
+    if (text) emit(host, event, text);
     return 0;
   }
 
@@ -208,6 +214,9 @@ export async function runHook(cfg: Config, event: string): Promise<number> {
   if (event === "PostToolUse") {
     const { recordHookReads } = await import("./read-trace.ts");
     recordHookReads(cfg, payload);
+    // Deliberately dependency-light: with nothing declared on disk this is two stat
+    // calls and out. The project voice is the only reason this event ever speaks.
+    emitProjectVoice(cfg, host, event, hostScope);
     return 0;
   }
 
@@ -216,11 +225,15 @@ export async function runHook(cfg: Config, event: string): Promise<number> {
     // guard, that turn stops again, receives the same feedback again, and loops until the
     // host's hard cap — expensive signaling turning into an accidental gate.
     if (stopFeedbackActive(payload)) return 0;
-    // Stop fires once per main-agent turn. Preserve that measurement cadence, but emit no
-    // stdout: this shared worktree cannot attribute a patch-wide obligation to this agent.
+    // Stop fires once per main-agent turn. Preserve that measurement cadence. The
+    // CANONICAL emission stays byte-empty: a shared worktree cannot attribute a
+    // patch-wide obligation to the agent that just stopped, and the user already read
+    // its report. The one exception is a project-declared voice — an explicit project
+    // choice, and one that still sits behind the stop_hook_active loop guard above.
     const session = String(hostScope ?? process.env.COHERENCE_SESSION ?? "unknown");
     const { recordCalibrationSample } = await import("./calibration.ts");
     await recordCalibrationSample(cfg, session).catch(() => null);
+    emitProjectVoice(cfg, host, event, session);
     return 0;
   }
 
@@ -248,13 +261,33 @@ export async function runHook(cfg: Config, event: string): Promise<number> {
       text: `CHANGE SIGNAL unavailable: ${e instanceof Error ? e.message : String(e)}`,
     }));
     const feedback = composeStopFeedback(event, stopReport(cfg, childSession), change);
-    if (feedback !== null) emit(host, event, feedback);
+    // The project's declared voice composes over the canonical report — override
+    // replaces, append follows, and an empty override silences even this surface.
+    const text = composeHookText(feedback ?? "", readHookText(cfg, event), {
+      cli: projectCli(cfg),
+      ...(childSession ? { session: childSession, scope: `--session ${JSON.stringify(childSession)}` } : {}),
+    });
+    if (text) emit(host, event, text);
     return 0;
   }
 
   // An unknown event is not an error: hook sets grow, and a harness that crashes on a
   // new event name breaks every session that added one.
   return 0;
+}
+
+/** Events with no canonical emission still honor a declared project voice. Kept out of
+ *  the hot branches so PostToolUse pays two stat calls, not a token build, when the
+ *  project has declared nothing. */
+function emitProjectVoice(cfg: Config, host: ActivityHost, event: string, sessionScope: unknown): void {
+  const custom = readHookText(cfg, event as LifecycleHookEvent);
+  if (custom.override === null && custom.append === null) return;
+  const session = sessionScope === undefined || sessionScope === null ? undefined : String(sessionScope);
+  const text = composeHookText("", custom, {
+    cli: projectCli(cfg),
+    ...(session ? { session, scope: `--session ${JSON.stringify(session)}` } : {}),
+  });
+  if (text) emit(host, event, text);
 }
 
 /** What a subagent is told as it finishes. Split out of `runHook` so it is reachable
@@ -610,6 +643,56 @@ export async function uninstallHooks(cfg: Config, json = false, host: HookHost =
   return status.control.valid && !status.control.present ? 0 : 1;
 }
 
+/** `coherence hooks review` — every event's EFFECTIVE emission, with its provenance.
+ *  The hook body degrades an unreadable customization to canon silently, because a torn
+ *  file must not break a session; THIS is the loud surface where that damage lands, and
+ *  the exit code carries it. */
+export function reviewHooks(cfg: Config): number {
+  const cli = projectCli(cfg);
+  const problems: string[] = [];
+  console.log(`Effective lifecycle emissions — what each event will actually say for this project.
+
+A project customizes an event with \`.coherence/hooks/<Event>.override.md\` (replaces the
+canonical emission) and \`.coherence/hooks/<Event>.append.md\` (follows it). An EMPTY
+override silences the event entirely. An unreadable customization file degrades to the
+canonical emission at runtime — silently there, loudly here, as warnings below.
+
+Tokens {{session}} {{agent}} {{cli}} {{scope}} substitute at emission; they are shown
+unsubstituted below, exactly as authored ({{agent}} is only guaranteed at
+SubagentStart/SessionStart).`);
+  for (const event of LIFECYCLE_HOOK_EVENTS) {
+    const custom = readHookText(cfg, event);
+    problems.push(...custom.problems);
+    const overridePath = join(HOOK_TEXT_DIR, `${event}.override.md`);
+    const appendPath = join(HOOK_TEXT_DIR, `${event}.append.md`);
+    const provenance = custom.override && custom.append
+      ? `override (${overridePath}) + append (${appendPath})`
+      : custom.override ? `override (${overridePath})`
+        : custom.append ? `canonical + append (${appendPath})`
+          : "canonical";
+    console.log(`\n--- ${event} · ${provenance} ---`);
+    const parts: string[] = [];
+    if (custom.override) {
+      // Mirror the runtime composition exactly: a byte-empty override composes to a
+      // falsy text and the event emits nothing at all.
+      parts.push(custom.override.text === "" ? "(silenced — empty override)" : custom.override.text);
+    } else if (event === "SubagentStart" || event === "SessionStart") {
+      parts.push(`${agentInstructions("s-<minted per agent>", cli)}\n<appended at runtime: due instrument advisories, when any are live>`);
+    } else if (event === "SubagentStop") {
+      parts.push("<composed at stop time: the child session's journal count, repository"
+        + " damage if any, the final-report restatement, open conjectures, and the change signal>");
+    } else if (event === "Stop") {
+      parts.push("(no canonical emission — main Stop is byte-silent by design)");
+    } else {
+      parts.push("(no canonical emission — records file reads only)");
+    }
+    if (custom.append) parts.push(custom.append.text);
+    console.log(parts.join("\n\n"));
+  }
+  for (const problem of problems) console.log(`warning: ${problem}`);
+  return problems.length ? 1 : 0;
+}
+
 /** `coherence hooks` — print one host's canonical block, plus the
  *  instruction text so a reader can see what agents will actually be told. */
 export function printHooks(cfg: Config, host: HookHost = "claude"): void {
@@ -638,6 +721,10 @@ job and branch with \`coherence decisions [--job X] [--agent Y] [--branch B] [--
 \`coherence decisions --open\` narrows it to the OPEN CONJECTURES — the standing list of
 things this project noticed and did not chase, which is the entry most likely to decay
 because the agent that saw it is gone.
+
+A project may put its own voice into these emissions — \`.coherence/hooks/<Event>.override.md\`
+replaces an event's canonical text, \`<Event>.append.md\` follows it — and \`coherence hooks
+review\` prints every event's effective emission with its provenance.
 
 --- what each agent is told (with a fresh session id per agent) ----------------
 ${agentInstructions("s-<minted per agent>")}

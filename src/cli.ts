@@ -41,7 +41,7 @@ import {
   type ExperimentActionResult, type ExperimentCriterionResult, type ExperimentLedger,
 } from "./experiment.ts";
 import { recordObservation, formatObserved } from "./observed.ts";
-import { printHooks, reportHooks, checkHooks, installHooks, uninstallHooks, runHook } from "./hooks.ts";
+import { printHooks, reviewHooks, reportHooks, checkHooks, installHooks, uninstallHooks, runHook } from "./hooks.ts";
 import type { HookHost } from "./control.ts";
 import { redundancy } from "./redundancy.ts";
 import { prose } from "./prose.ts";
@@ -696,8 +696,11 @@ if (cmd === "graph") {
     ["install", new Set(["--json", "--host", "--session"])],
     ["uninstall", new Set(["--json", "--host", "--session"])],
     ["print", new Set(["--host"])],
+    // Review takes NO flags — not even --host, because emission CONTENT is
+    // host-independent; only the delivery envelope differs per host.
+    ["review", new Set<string>([])],
   ]);
-  const usage = "usage: coherence hooks [status|install|uninstall|print] [--check]"
+  const usage = "usage: coherence hooks [status|install|uninstall|print|review] [--check]"
     + " [--host <claude|codex>] [--session <id>] [--json]";
   const actionFlags = allowed.get(action);
   const badFlags = actionFlags
@@ -733,6 +736,7 @@ if (cmd === "graph") {
   if (action === "install") await exit(await installHooks(cfg, json, host, session));
   if (action === "uninstall") await exit(await uninstallHooks(cfg, json, host, session));
   if (action === "print") { printHooks(cfg, host); await exit(0); }
+  if (action === "review") await exit(reviewHooks(cfg));
 } else if (cmd === "hook") {
   // The hook BODY, so nothing has to be written to disk or kept in sync with a script.
   await exit(await runHook(cfg, positional[0] ?? ""));

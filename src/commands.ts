@@ -254,7 +254,7 @@ export const COMMANDS: Command[] = [
   { name: "phrasebook", group: "reference", summary: "print the claim-form table straight from the `CLAIM_FORMS` registry" },
   {
     name: "hooks", group: "reference",
-    usage: "[status|install|uninstall|print] [--check] [--json] [--host <claude|codex>] [--session <id>]",
+    usage: "[status|install|uninstall|print|review] [--check] [--json] [--host <claude|codex>] [--session <id>]",
     summary: "the lifecycle control — converge on one canonical, runnable shared hook bundle",
   },
   { name: "hook", group: "reference", usage: "<event>", summary: "the hook BODY, invoked by the harness rather than by you" },

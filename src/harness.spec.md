@@ -28,6 +28,7 @@ rendering, and journaling remain independently addressable modules beneath this 
 - lifecycle hook presence is one canonical runnable bit
 - supported lifecycle hosts share one control contract without sharing host syntax
 - current-session activation requires exact installed-bundle evidence
+- customized hook text composes declared overrides and appends, degrading to canon on damage
 - experiment outcomes require criterion-total evidence
 - experiment telemetry preserves its weakest provable attribution
 - activity evidence is accepted only when identity, scope, time, and command agree
@@ -80,6 +81,7 @@ rendering, and journaling remain independently addressable modules beneath this 
 - boundary "lifecycle hook presence is one canonical runnable bit" at inspectLifecycleHook via guard "control — presence is the complete canonical bundle, never a partial or lookalike"
 - boundary "supported lifecycle hosts share one control contract without sharing host syntax" at setLifecycleHookForHost via guard "Codex control — install is exact, idempotent, preserving, and runnable across nested paths"
 - boundary "current-session activation requires exact installed-bundle evidence" at currentObservation via guard "hook status — exact current bundle activates; stale, direct, replayed, and damaged evidence does not"
+- boundary "customized hook text composes declared overrides and appends, degrading to canon on damage" at composeHookText via guard "hook text — override replaces, append follows, and damage degrades to the canonical emission"
 - boundary "experiment outcomes require criterion-total evidence" at closeExperiment via guard "close — total nonempty evidence is mandatory and outcome is derived, never supplied"
 - boundary "experiment telemetry preserves its weakest provable attribution" at closeExperiment via guard "Codex parent-only tool events close the loop as an aggregate, never exact owner evidence"
 - boundary "activity evidence is accepted only when identity, scope, time, and command agree" at isActivityRow via guard "activity — internally inconsistent scope, time, and command rows are damage, not evidence"
@@ -219,6 +221,22 @@ session becomes observed only when its activity names the selected host, launche
 transport, and current bundle fingerprint. Direct probes, stale bundles, other sessions,
 and a guessed newest session cannot establish activation; parent-session fallback stays a
 named attribution ceiling rather than being promoted to child evidence.
+
+**customized hook text composes declared overrides and appends, degrading to canon on
+damage.** The canonical hook text is the harness's voice — identical across adopting
+projects, and byte-testable because of it — but a project knows things the harness cannot:
+its own commands, its conventions, the one warning its history taught it. So a project
+gets a declared voice per event rather than a fork of the hook body, under one composition
+rule with no conflict state: the override answers what the base is, the append answers
+what follows it, and both may coexist; an empty override is a deliberate, visible silence,
+not an error. Damage must degrade to the canonical emission at hook time, because the hook
+body runs inside every agent session of every adopting project — a torn customization
+file that broke sessions would make the journal's carrier the thing that kills the work it
+records — so a tear costs exactly the customization, never the session, and the loud
+surface for it is `hooks review`, where a reader is actually looking. Events with no
+canonical emission — main Stop, PostToolUse — speak only with a declared project voice;
+main Stop's canonical byte-silence and the attribution reasoning behind it stand unchanged
+as the default.
 
 **experiment outcomes require criterion-total evidence.** A
 plan is frozen before work with its predicted context, actions, criteria, and evidence

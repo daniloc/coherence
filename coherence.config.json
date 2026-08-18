@@ -219,6 +219,12 @@
         "security": false,
         "translates": "A lifecycle event the selected agent host hands this process becomes durable journal state or a transient read/activity row carrying host, transport, and bundle identity. It writes memory but never a verdict, so a tear loses history rather than earning a green."
       },
+      "composeHookText": {
+        "from": "project-source",
+        "to": "reading-surface",
+        "security": false,
+        "translates": "Project-authored override and append files become part of the text injected into an agent's context at each lifecycle event: base = override ?? canonical, the append follows, and an unreadable file degrades to the canonical emission \u2014 a torn customization costs the project's voice, never the session. It can mislead an agent, but it cannot touch a verdict."
+      },
       "currentObservation": {
         "from": "record",
         "to": "verdict",
