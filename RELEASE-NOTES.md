@@ -14,6 +14,39 @@ evidence inside that record.
 
 ---
 
+## v0.33.0 — python is first-class, and the language seam opens
+
+Every instrument now reads Python at the same deliberate regex grade the adapters set:
+novelty counts module defs, Enum variants, and dict keys into the zero-anchor alarm;
+`boundary` and `parity` claims analyze `.py` oracles instead of skipping them — a
+literal list still fails, a vanished oracle still cannot pass; redundancy ranks python
+enumeration sites; `testBatchFormat: "pytest-json"` resolves a whole batched pytest run
+per claim by nodeid equality, one suite boot instead of one per claim; lint-sinks
+ratchets f-string interpolations into SQL and HTML contexts with the same safe-pattern
+config grading the bare expression. The `imports` claim speaks python's unquoted
+grammar. One invariant pins all of it, anchored at five chokepoints, each with a guard
+that reds if its arm regresses. A live fixture project proved every leg before release:
+batch verify green, the alarm firing on python surface by name, a planted duplicate
+ranked, a planted f-string red, parity green and red in both directions.
+
+The language seam itself is now project-extensible: `language` accepts a `./`-relative
+module path — conventionally `.coherence/adapters/<lang>.mjs` — exporting the five-member
+LanguageAdapter shape, validated field-by-field so the refusal names the line that needs
+fixing. And the silent `?? typescript` fallback is gone: an unknown language name refuses
+with the live built-in list, because a wrong grammar grades a different tree than the one
+configured, with full confidence. An adapter buys the graph tier; the per-language
+instrument arms remain harness contributions, and the README says so out loud.
+
+The verification also healed an instrument: a literal NUL byte in redundancy.ts had
+been zeroing the whole 716-line file out of the mass ratchet (a NUL-bearing file counts
+as binary, lines 0). The byte is now its escape sequence, the recovered mass is pinned
+as measurement recovery, and whether a source file that classifies as binary should be
+reported rather than silently subtracted stands as an open conjecture in the journal.
+
+772 tests. `verify` green. Typecheck, build, generated reading surfaces, both lifecycle
+controls, premise leases, conventions, injection sites, mass, atlas, and the
+significant-change gate all held before release.
+
 ## v0.32.1 — when you fix a bug, decide what happens to its class
 
 One addition to the canonical start-hook instruction, in doctrine order. Dissolve: make
