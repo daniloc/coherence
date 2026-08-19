@@ -313,11 +313,32 @@ Add `coherence.config.json` to the project root. Minimal:
 }
 ```
 
-**Python projects** are first-class: every instrument — surface counting into the
-zero-anchor alarm, `boundary`/`parity` claims over `.py` oracles, the duplicate-domain
-advisory, batched pytest oracles, f-string sink ratcheting — reads Python at the same
-deliberate regex grade as the adapters. A working configuration (`pytest-json-report`
-provides the batch report):
+**Languages.** Three are built in — `"language": "typescript"`, `"python"`, or `"ruby"`
+resolves against grammar binaries that ship with the package (`grammars/`, provenance
+alongside), and every instrument reads them through those grammars. What each language
+gets today, with the per-instrument query tables as the source of truth:
+
+| Instrument | typescript | python | ruby | your adapter |
+|---|---|---|---|---|
+| Graph, claims, prose (`tree-sitter.ts`) | ✓ | ✓ | ✓ | ✓ |
+| Serial test oracles (`test` argv + `testMatch`) | ✓ | ✓ | ✓ | ✓ |
+| Everything language-blind (hooks, journal, mass, drift, atlas) | ✓ | ✓ | ✓ | ✓ |
+| Surface → zero-anchor alarm (`SURFACE_LANGUAGES`, novelty.ts) | ✓ | ✓ | — | — |
+| `via test` oracle + parity analysis (oracle-domain.ts) | ✓ | ✓ | — | — |
+| Duplicate-domain ranking (`SITE_LANGUAGES`, redundancy.ts) | ✓ | ✓ | — | — |
+| Injection sinks (`SINK_LANGUAGES`, lint-sinks.ts) | ✓ | ✓ | ✓ | — |
+| Batched oracles (`testBatchFormat`) | vitest-json | pytest-json | serial | serial |
+
+A `—` costs you the instrument, never a false verdict: an uncovered language simply
+contributes nothing there. One consequence worth knowing: `via test` claims in an
+uncovered language fail oracle analysis rather than pass vacuously — set
+`"oracleDomain": false` until the language has an oracle arm.
+
+Serial oracles are runner-agnostic — the claim's oracle name is appended to `test` and
+`testMatch` guards the output — so rspec is `"test": ["bundle", "exec", "rspec", "-e"]`,
+go is `["go", "test", "-run"]`, and so on. Only batch formats are enumerated.
+
+**A python configuration**, end to end (`pytest-json-report` provides the batch report):
 
 ```json
 {
@@ -335,58 +356,55 @@ provides the batch report):
 A `passes test` claim cites the pytest function name (`test_…`); in batch mode it
 matches every parametrized case of that function and all must pass.
 
-**Bring your own language.** `language` also accepts a `./`-relative module path, so a
-project can carry its own adapter in the tree:
+**Adding a language is a ladder** — each rung is useful on its own:
+
+**Rung 1 — a built-in name.** `typescript`, `python`, `ruby`: config only, nothing to
+write. An unknown bare name refuses with the live built-in list rather than falling
+back (a wrong grammar would grade a different tree than you configured).
+
+**Rung 2 — a project adapter: the graph tier for any language.** `language` accepts a
+`./`-relative module path, and for most languages you never write parsing: modern
+tree-sitter grammar packages ship a prebuilt wasm (no native toolchain —
+`web-tree-sitter` runs it sandboxed), and the shipped factory turns a grammar plus
+~30 lines of capture queries into an adapter. Go, for example:
 
 ```json
-{ "language": "./.coherence/adapters/ruby.mjs", "codeExt": ["rb"] }
+{ "language": "./.coherence/adapters/go.mjs", "codeExt": ["go"] }
 ```
-
-The module default-exports the `LanguageAdapter` shape — five members, implementable at
-regex grade in under a hundred lines (the built-in specs in `src/adapters/tree-sitter.ts`
-are the reference):
 
 ```js
-export default {
-  exts: ["rb"],
-  symbols(src)            { /* → [{ name, kind, line }] */ },
-  imports(src)            { /* → ["specifier", …] */ },
-  docAbove(lines, line)   { /* comment block above a symbol → prose */ },
-  fileDoc(lines)          { /* file-head comment → prose */ },
-};
+// .coherence/adapters/go.mjs — npm i -D tree-sitter-go for the grammar wasm
+import { makeTreeSitterAdapter } from "@danilocampos/coherence/dist/adapters/tree-sitter.js";
+export default await makeTreeSitterAdapter({
+  exts: ["go"],
+  symbolQuery: `
+    (function_declaration name: (identifier) @function)
+    (method_declaration name: (field_identifier) @method)
+    (type_declaration (type_spec name: (type_identifier) @type))
+  `,
+  importQuery: `(import_spec path: (interpreted_string_literal) @spec)`,
+  lineComment: "//",
+}, new URL("../../node_modules/tree-sitter-go/tree-sitter-go.wasm", import.meta.url).pathname);
 ```
 
-A wrong-shaped module refuses naming the broken field; an unknown bare `language` name
-refuses with the built-in list rather than falling back (a wrong grammar would grade a
-different tree than you configured). Importing the module executes project code — the
-same declared trust as the config's `test`/`typecheck` argv.
+Capture names become symbol kinds; the shipped specs in `src/adapters/tree-sitter.ts`
+are the reference, including the `docs` override hook for languages whose prose lives
+somewhere richer than line comments. A module can also hand-implement the five
+`LanguageAdapter` members directly — both shapes serve the same seam. A wrong-shaped
+module refuses naming the broken field. Importing the module executes project code —
+the same declared trust as the config's `test`/`typecheck` argv.
 
-For most languages you don't even write the parsing: the harness ships a
-**tree-sitter-backed factory**, and modern grammar packages ship a prebuilt wasm — no
-native toolchain, `web-tree-sitter` runs it sandboxed. An adapter module shrinks to a
-grammar plus capture queries (the shipped `ruby` spec is the reference, ~30 lines):
-
-```js
-// .coherence/adapters/ruby.mjs — npm i -D tree-sitter-ruby for the grammar wasm
-import { makeTreeSitterAdapter, ruby } from "@danilocampos/coherence/dist/adapters/tree-sitter.js";
-export default await makeTreeSitterAdapter(
-  ruby, new URL("../../node_modules/tree-sitter-ruby/tree-sitter-ruby.wasm", import.meta.url).pathname);
-```
-
-For a language with no shipped spec, write your own `TreeSitterLanguageSpec` — a symbol
-query whose capture names are the symbol kinds, an import query, and the line-comment
-prefix — or implement the five members by hand at regex grade; both serve the same seam.
-(Measured before this shipped: on this repository's own 63 TypeScript files, the regex
-adapter missed zero symbols a real parse found — the grammar path exists to make the
-next language cheap, not because regex grade was failing.)
-
-Know what the seam buys: a custom adapter powers the **graph tier** — symbols, import
-edges, prose, `exists`/`boundary`/`lives in` claims, serial test oracles, and everything
-language-blind (hooks, journal, mass, drift, atlas). The per-language **instrument
-arms** — novelty surface counting into the zero-anchor alarm, `via test` oracle
-analysis, redundancy ranking, interpolation-sink detection, batch report formats — are
-harness contributions, built in for TypeScript and Python today. An adapter gives your
-language a map; the deeper instruments arrive per language.
+**Rung 3 — the full field: instrument rows.** Since the instrument arms read languages
+as data, giving a language an instrument is a table row plus capture queries, not an
+analyzer: a `SURFACE_LANGUAGES` row (novelty.ts) feeds the zero-anchor alarm, a
+`SITE_LANGUAGES` row (redundancy.ts) feeds duplicate-domain ranking, a
+`SINK_LANGUAGES` row (lint-sinks.ts) feeds the injection ratchet, and oracle-domain.ts
+carries the `via test` analysis. These live in the harness today, so rung 3 is a
+contribution — small ones, as the ruby sinks row (three lines) shows — and the house
+rule for every row is the one this repo's own migration was held to: build the new
+reader beside an existing witness and gate them against a real corpus before trusting
+it. A batch report format (`testBatchFormat`) is likewise a registered parser in
+test-batch.ts; serial oracles need nothing.
 
 ### Adopt the lifecycle control
 
