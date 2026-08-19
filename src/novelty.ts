@@ -26,21 +26,21 @@
 // the alarm carries "(disregard if recent work was mostly refactor)". Advisory only:
 // like why-lint, it never changes the exit code.
 //
-// Python parity (regex grade): the same three proxies are counted for `.py` files, with
-// line-anchored regexes instead of an AST — following the deliberate precedent of
-// `analyzePythonOracle` (oracle-domain.ts) and the python adapter: no interpreter
-// subprocess, no new dependency. Module-level `def`/`class`/assignment names that do not
-// start with `_` stand in for exports; `class X(Enum)` bodies and single-line
-// `Literal[…]` aliases for enumerated domains; module-level dict literals for keyed
-// tables. Regex grade means favoring precision over recall: a missed exotic form
-// under-counts one surface item, while counting garbage would poison the alarm this
-// feeds. And it does feed one — signal.ts wires scanSurface/surfaceSignals/
-// noveltyVerdict into the zero-anchor growth gate (`needs-decision` under --check, the
-// regulator's require-decision rule), so before this a Python project grew behavioral
-// surface invisibly: the exact blind spot the module exists to close.
+// Every language is counted through its GRAMMAR (phase 2b, arm 2): a per-language
+// query names the surface shapes — exported declarations, string-literal unions, enum
+// bodies, keyed tables, `Literal[…]` aliases — and one mechanism extracts names and
+// members from the captured nodes. The TS side previously used the compiler API and
+// ported clean, per the pre-registered conjecture d-a5ca8273; the python side was
+// line-anchored regex, and its port's deltas were enumerated at the gate. Precision
+// over recall still: a missed exotic form under-counts one surface item, while
+// counting garbage would poison the alarm this feeds. And it does feed one —
+// signal.ts wires scanSurface/surfaceSignals/noveltyVerdict into the zero-anchor
+// growth gate (`needs-decision` under --check, the regulator's require-decision
+// rule): the exact blind spot the module exists to close.
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
-import ts from "typescript";
+import { Query, type Node } from "web-tree-sitter";
+import { grammarHandle } from "./adapters/tree-sitter.ts";
 import type { Config } from "./types.ts";
 
 /** What one source file contributes to the behavioral surface: its exported symbol
@@ -48,164 +48,174 @@ import type { Config } from "./types.ts";
  *  top-level `Record<…>`-annotated const tables — export NOT required for tables). */
 export interface FileSurface { exports: Set<string>; domains: Map<string, Set<string>>; }
 
-/** Pure — the surface of one source string. `.py` file names route to the regex-grade
- *  Python scan; everything else is the TS-AST scan. Same shape out either way. */
-export function surfaceOfSource(src: string, fileName = "x.ts"): FileSurface {
-  if (/\.py$/i.test(fileName)) return pySurfaceOfSource(src);
-  const exports = new Set<string>();
-  const domains = new Map<string, Set<string>>();
-  const sf = ts.createSourceFile(fileName, src, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
-  const isExported = (n: ts.Node): boolean =>
-    !!(ts.canHaveModifiers(n) && ts.getModifiers(n)?.some((m) => m.kind === ts.SyntaxKind.ExportKeyword));
-  const put = (name: string, members: Iterable<string>) => {
-    const set = domains.get(name) ?? new Set<string>();
-    for (const m of members) set.add(m);
-    if (set.size) domains.set(name, set);
-  };
-
-  for (const stmt of sf.statements) {
-    const exported = isExported(stmt);
-    // type X = "a" | "b" | …  (string-literal union — an enumerated domain)
-    if (ts.isTypeAliasDeclaration(stmt)) {
-      if (exported) exports.add(stmt.name.text);
-      if (exported && ts.isUnionTypeNode(stmt.type)) {
-        const members: string[] = [];
-        for (const t of stmt.type.types)
-          if (ts.isLiteralTypeNode(t) && ts.isStringLiteral(t.literal)) members.push(t.literal.text);
-        if (members.length >= 2) put(stmt.name.text, members);
-      }
-    }
-    if (ts.isEnumDeclaration(stmt)) {
-      if (exported) { exports.add(stmt.name.text); put(stmt.name.text, stmt.members.map((m) => m.name.getText(sf))); }
-    }
-    if ((ts.isFunctionDeclaration(stmt) || ts.isClassDeclaration(stmt) || ts.isInterfaceDeclaration(stmt)) && stmt.name && exported)
-      exports.add(stmt.name.text);
-    // const T: Record<K, V> = { … } (or `… satisfies Record<…>`) — a keyed lookup table.
-    // Counted whether or not exported: a module-local table keyed by an implicit domain
-    // is precisely the projection surface that drifts (the motivating consumer's
-    // TOOL_KIND/READ_SUMMARY tables were local to a component file).
-    if (ts.isVariableStatement(stmt)) {
-      for (const d of stmt.declarationList.declarations) {
-        if (!ts.isIdentifier(d.name)) continue;
-        if (exported) exports.add(d.name.text);
-        if (!d.initializer) continue;
-        let init: ts.Expression = d.initializer;
-        let recordTyped = !!(d.type && /\bRecord\s*</.test(d.type.getText(sf)));
-        while (ts.isSatisfiesExpression(init) || ts.isAsExpression(init) || ts.isParenthesizedExpression(init)) {
-          if ((ts.isSatisfiesExpression(init) || ts.isAsExpression(init)) && /\bRecord\s*</.test(init.type.getText(sf)))
-            recordTyped = true;
-          init = init.expression;
-        }
-        if (!recordTyped || !ts.isObjectLiteralExpression(init)) continue;
-        const keys: string[] = [];
-        for (const p of init.properties) {
-          if ((ts.isPropertyAssignment(p) || ts.isMethodDeclaration(p) || ts.isShorthandPropertyAssignment(p)) && p.name)
-            keys.push(ts.isStringLiteral(p.name) ? p.name.text : p.name.getText(sf));
-        }
-        if (keys.length) put(d.name.text, keys);
-      }
-    }
-  }
-  return { exports, domains };
+// ── the per-language surface data (queries, not scanners) ────────────────────────────
+// Capture classes: `export` — a name node added to exports; `domain.name`+`domain.body`
+// — an enumerated domain and the node its members are read from; `table.name`+
+// `table.obj` — a keyed table (counted whether or not exported) and its object node;
+// `lit.name`+`lit.body` — a Literal-style alias. Member extraction is one mechanism
+// below; a language contributes patterns, never verdict logic.
+interface SurfaceLanguage {
+  ext: RegExp;
+  grammar: string;
+  query: string;
+  /** exports whose names match are dropped (python's `_` convention). */
+  privateName?: RegExp;
 }
 
-// ── the Python scan (regex grade — see the header) ───────────────────────────────────
+const SURFACE_LANGUAGES: SurfaceLanguage[] = [
+  {
+    ext: /\.[mc]?[jt]sx?$/i,
+    grammar: "typescript",
+    query: `
+      (export_statement declaration: (function_declaration name: (identifier) @export))
+      (export_statement declaration: (generator_function_declaration name: (identifier) @export))
+      (export_statement declaration: (class_declaration name: (type_identifier) @export))
+      (export_statement declaration: (abstract_class_declaration name: (type_identifier) @export))
+      (export_statement declaration: (interface_declaration name: (type_identifier) @export))
+      (export_statement declaration: (lexical_declaration (variable_declarator name: (identifier) @export)))
+      (export_statement declaration: (type_alias_declaration name: (type_identifier) @export))
+      (export_statement declaration: (enum_declaration name: (identifier) @export))
+      (export_statement declaration: (type_alias_declaration name: (type_identifier) @domain.name value: (union_type) @domain.body))
+      (export_statement declaration: (enum_declaration name: (identifier) @domain.name body: (enum_body) @domain.body))
+      (program (lexical_declaration (variable_declarator name: (identifier) @table.name type: (type_annotation (_) @_ty) value: (object) @table.obj
+        (#match? @_ty "Record\\s*<"))))
+      (program (export_statement declaration: (lexical_declaration (variable_declarator name: (identifier) @table.name type: (type_annotation (_) @_ty) value: (object) @table.obj
+        (#match? @_ty "Record\\s*<")))))
+      (program (lexical_declaration (variable_declarator name: (identifier) @table.name value: (satisfies_expression (object) @table.obj (_) @_ty)
+        (#match? @_ty "Record\\s*<"))))
+      (program (export_statement declaration: (lexical_declaration (variable_declarator name: (identifier) @table.name value: (satisfies_expression (object) @table.obj (_) @_ty)
+        (#match? @_ty "Record\\s*<")))))
+      (program (lexical_declaration (variable_declarator name: (identifier) @table.name value: (as_expression (object) @table.obj (_) @_ty)
+        (#match? @_ty "Record\\s*<"))))
+      (program (export_statement declaration: (lexical_declaration (variable_declarator name: (identifier) @table.name value: (as_expression (object) @table.obj (_) @_ty)
+        (#match? @_ty "Record\\s*<")))))
+    `,
+  },
+  {
+    ext: /\.py$/i,
+    grammar: "python",
+    privateName: /^_/,
+    query: `
+      (module (function_definition name: (identifier) @export))
+      (module (decorated_definition (function_definition name: (identifier) @export)))
+      (module (class_definition name: (identifier) @export))
+      (module (decorated_definition (class_definition name: (identifier) @export)))
+      (module (expression_statement (assignment left: (identifier) @export)))
+      (class_definition name: (identifier) @domain.name superclasses: (argument_list) @_bases body: (block) @domain.body
+        (#match? @_bases "(Int|Str)?(Enum|Flag)"))
+      (module (expression_statement (assignment left: (identifier) @table.name right: (dictionary) @table.obj)))
+      (module (expression_statement (assignment left: (identifier) @lit.name right: (subscript value: (_) @_lv) @lit.body
+        (#match? @_lv "Literal"))))
+    `,
+  },
+];
 
-/** Statement keywords that can open a module-level line; never a binding name. Defensive
- *  only — most are already unmatchable because the binding regex demands a bare `=`. */
-const PY_STMT_KEYWORDS = new Set([
-  "if", "elif", "else", "for", "while", "with", "try", "except", "finally",
-  "import", "from", "return", "yield", "raise", "assert", "pass", "del",
-  "global", "nonlocal", "lambda", "match", "case", "def", "class", "async", "await",
-]);
+/** Top-level member names of a captured domain/table node, by node type. One mechanism
+ *  for every language: the node kind, not the language, decides how members read out. */
+function membersOf(node: Node): string[] {
+  const out: string[] = [];
+  switch (node.type) {
+    case "union_type": {
+      // string-literal union alternatives, flattened; ≥2 enforced by the caller
+      const walk = (n: Node): void => {
+        for (const c of n.namedChildren) {
+          if (!c) continue;
+          if (c.type === "union_type") walk(c);
+          else if (c.type === "literal_type" && c.namedChildren[0]?.type === "string")
+            out.push(c.namedChildren[0].text.slice(1, -1));
+        }
+      };
+      walk(node);
+      return out;
+    }
+    case "enum_body":
+      for (const c of node.namedChildren) {
+        const name = c?.childForFieldName?.("name") ?? (c?.type === "property_identifier" || c?.type === "string" ? c : null);
+        if (name) out.push(name.type === "string" ? name.text.slice(1, -1) : name.text);
+        else if (c && (c.type === "property_identifier" || c.type === "enum_assignment"))
+          out.push((c.childForFieldName("name") ?? c).text);
+      }
+      return out;
+    case "object":
+      for (const c of node.namedChildren) {
+        if (!c) continue;
+        if (c.type === "pair" || c.type === "method_definition") {
+          const key = c.childForFieldName("name") ?? c.childForFieldName("key");
+          if (key) out.push(key.type === "string" ? key.text.slice(1, -1) : key.text);
+        } else if (c.type === "shorthand_property_identifier") out.push(c.text);
+      }
+      return out;
+    case "block": // python enum body: NAME = value assignments at body level
+      for (const c of node.namedChildren) {
+        if (c?.type !== "expression_statement") continue;
+        const a = c.namedChildren[0];
+        if (a?.type !== "assignment") continue;
+        const left = a.childForFieldName("left");
+        if (left?.type === "identifier" && /^[A-Za-z]/.test(left.text)) out.push(left.text);
+      }
+      return out;
+    case "dictionary":
+      for (const c of node.namedChildren) {
+        if (c?.type !== "pair") continue;
+        const key = c.childForFieldName("key");
+        if (key?.type === "string") out.push(key.text.replace(/^[rbuf]*["']/i, "").replace(/["']$/, ""));
+      }
+      return out;
+    case "subscript": // Literal["a", "b"]
+      for (const c of node.namedChildren)
+        if (c?.type === "string") out.push(c.text.replace(/^["']/, "").replace(/["']$/, ""));
+      return out;
+    default:
+      return out;
+  }
+}
 
-/** Enum-ish base in a `class X(...)` bases list: Enum/IntEnum/StrEnum/Flag/IntFlag,
- *  bare or `enum.`-qualified. */
-const PY_ENUM_BASE = /\b(?:enum\s*\.\s*)?(?:Int|Str)?(?:Enum|Flag)\b/;
+const surfaceQueryCache = new Map<string, Promise<{ parser: import("web-tree-sitter").Parser; query: Query }>>();
+function surfaceHandle(lang: SurfaceLanguage): Promise<{ parser: import("web-tree-sitter").Parser; query: Query }> {
+  let cached = surfaceQueryCache.get(lang.grammar);
+  if (!cached) {
+    cached = grammarHandle(lang.grammar).then(({ language, parser }) => ({ parser, query: new Query(language, lang.query) }));
+    surfaceQueryCache.set(lang.grammar, cached);
+  }
+  return cached;
+}
 
-/** Regex-grade surface of one Python module (see the header for what counts and why).
- *  Line-anchored: module surface lives at column 0, so nested defs, methods, and
- *  class-body bindings fall out for free. A tiny triple-quote tracker keeps example
- *  code inside module docstrings from reading as surface. */
-function pySurfaceOfSource(src: string): FileSurface {
+/** The surface of one source string, read through the file's grammar. A file no
+ *  language claims contributes nothing (unknown extensions were never surface). */
+export async function surfaceOfSource(src: string, fileName = "x.ts"): Promise<FileSurface> {
   const exports = new Set<string>();
   const domains = new Map<string, Set<string>>();
+  const lang = SURFACE_LANGUAGES.find((l) => l.ext.test(fileName));
+  if (!lang) return { exports, domains };
+  const { parser, query } = await surfaceHandle(lang);
+  const tree = parser.parse(src);
+  if (!tree) return { exports, domains };
   const put = (name: string, members: Iterable<string>) => {
     const set = domains.get(name) ?? new Set<string>();
     for (const m of members) set.add(m);
     if (set.size) domains.set(name, set);
   };
-  const lines = src.split("\n");
-  let inStr: '"""' | "'''" | null = null;
-  for (let i = 0; i < lines.length; i++) {
-    const l = lines[i];
-    if (inStr) {
-      if (((l.match(inStr === '"""' ? /"""/g : /'''/g) ?? []).length) % 2 === 1) inStr = null;
-      continue;
+  for (const match of query.matches(tree.rootNode)) {
+    const by = new Map(match.captures.map((c) => [c.name, c.node]));
+    const exp = by.get("export");
+    if (exp && !(lang.privateName?.test(exp.text))) exports.add(exp.text);
+    const domainName = by.get("domain.name"), domainBody = by.get("domain.body");
+    if (domainName && domainBody && !(lang.privateName?.test(domainName.text))) {
+      const members = membersOf(domainBody);
+      // a union needs ≥2 string alternatives to be a domain; other bodies count as-is
+      if (members.length >= (domainBody.type === "union_type" ? 2 : 1)) put(domainName.text, members);
     }
-    let m: RegExpExecArray | null;
-    // module-level def (decorators sit above and don't matter; multi-line defs carry the
-    // name on the def line; nested defs are indented and never match)
-    if ((m = /^(?:async\s+)?def\s+([A-Za-z_]\w*)\s*\(/.exec(l))) {
-      if (!m[1].startsWith("_")) exports.add(m[1]);
-    } else if ((m = /^class\s+([A-Za-z_]\w*)\s*(?:\(([^)]*)\))?\s*:/.exec(l))) {
-      const name = m[1];
-      if (!name.startsWith("_")) {
-        exports.add(name);
-        // enum body: NAME = value members at the class-body indent (methods and their
-        // locals sit deeper; `_`-prefixed and dunder members are not variants)
-        if (m[2] && PY_ENUM_BASE.test(m[2])) {
-          const members: string[] = [];
-          let bodyIndent: string | null = null;
-          for (let j = i + 1; j < lines.length; j++) {
-            const b = lines[j];
-            if (!b.trim()) continue;
-            if (!/^[ \t]/.test(b)) break; // dedent to module level ends the class
-            const ind = /^[ \t]*/.exec(b)![0];
-            if (bodyIndent === null) bodyIndent = ind;
-            if (ind !== bodyIndent) continue;
-            const mm = /^[ \t]+([A-Za-z]\w*)\s*=(?!=)/.exec(b);
-            if (mm) members.push(mm[1]);
-          }
-          if (members.length) put(name, members);
-        }
-      }
-    } else if ((m = /^([A-Za-z_]\w*)\s*(?::[^=]+)?=\s*\{(.*)$/.exec(l)) && !PY_STMT_KEYWORDS.has(m[1])) {
-      // NAME = { … } — a keyed table. Like the TS Record tables, counted whether or not
-      // the name is public: a module-local table is exactly the drift surface we want.
-      const name = m[1];
-      if (!name.startsWith("_")) exports.add(name);
-      const keys: string[] = [];
-      if (m[2].includes("}")) {
-        // single-line dict — keys within the braces
-        for (const km of m[2].slice(0, m[2].lastIndexOf("}")).matchAll(/["']([^"']+)["']\s*:/g)) keys.push(km[1]);
-      } else {
-        // multi-line: string keys at the first key line's indent, up to the close at
-        // the opening indent (nested dict bodies sit deeper and are skipped)
-        let keyIndent: string | null = null;
-        for (let j = i + 1; j < lines.length; j++) {
-          const b = lines[j];
-          if (!b.trim()) continue;
-          if (!/^[ \t]/.test(b)) break; // `}` (or anything) back at column 0 closes it
-          const km = /^([ \t]+)["']([^"']*)["']\s*:/.exec(b);
-          if (!km) continue;
-          if (keyIndent === null) keyIndent = km[1];
-          if (km[1] === keyIndent) keys.push(km[2]);
-        }
-      }
-      if (keys.length) put(name, keys);
-    } else if ((m = /^(?:type\s+)?([A-Za-z]\w*)\s*(?::\s*TypeAlias\s*)?=\s*(?:t\.|typing\.)?Literal\[([^\]]*)\]/.exec(l))) {
-      // Verb = Literal["get", "post"]  (also `type V = …` / `: TypeAlias =` spellings)
-      exports.add(m[1]);
-      const members = [...m[2].matchAll(/["']([^"']+)["']/g)].map((x) => x[1]);
-      if (members.length >= 2) put(m[1], members);
-    } else if ((m = /^([A-Za-z_]\w*)\s*(?::[^=]+)?=\s*(?!=)/.exec(l)) && !PY_STMT_KEYWORDS.has(m[1])) {
-      // module-level CONST / annotated assignment (`==` comparisons excluded by (?!=))
-      if (!m[1].startsWith("_")) exports.add(m[1]);
+    const tableName = by.get("table.name"), tableObj = by.get("table.obj");
+    if (tableName && tableObj) {
+      const keys = membersOf(tableObj);
+      if (keys.length) put(tableName.text, keys);
     }
-    // triple-quoted string opener (an odd count leaves the rest of the block inside)
-    const dq = (l.match(/"""/g) ?? []).length, sq = (l.match(/'''/g) ?? []).length;
-    if (dq % 2 === 1) inStr = '"""'; else if (sq % 2 === 1) inStr = "'''";
+    const litName = by.get("lit.name"), litBody = by.get("lit.body");
+    if (litName && litBody && !(lang.privateName?.test(litName.text))) {
+      exports.add(litName.text);
+      const members = membersOf(litBody);
+      if (members.length >= 2) put(litName.text, members);
+    }
   }
   return { exports, domains };
 }
@@ -226,7 +236,7 @@ export async function scanSurface(root: string, files: Iterable<string>): Promis
     if (!/\.([mc]?[jt]sx?|py)$/.test(rel) || isTestPath(rel)) continue;
     let src: string;
     try { src = await readFile(join(root, rel), "utf8"); } catch { continue; }
-    const s = surfaceOfSource(src, rel);
+    const s = await surfaceOfSource(src, rel);
     for (const e of s.exports) exports.add(e);
     for (const [name, members] of s.domains) {
       const set = domains.get(name) ?? new Set<string>();

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-19 14:46Z",
+  "generatedAt": "2026-08-19 14:57Z",
   "root": "coherence",
   "absRoot": "/Users/daniloc/Documents/Dev/coherence",
   "nodes": [
@@ -2783,7 +2783,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 124,
+      "line": 128,
       "prose": "A Stop feedback turn stops again. Hosts mark that second pass so a non-blocking nudge\ncan be emitted exactly once instead of accidentally becoming an eight-turn gate."
     },
     {
@@ -2793,7 +2793,7 @@
       "kind": "symbol",
       "sub": "type",
       "path": "src/hooks.ts",
-      "line": 129
+      "line": 133
     },
     {
       "id": "s:src/hooks.ts#composeStopFeedback",
@@ -2802,7 +2802,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 139,
+      "line": 143,
       "prose": "Host semantics make this distinction consequential: any `additionalContext` continues\nthe conversation. A subagent's parent may genuinely need the final report restated;\nthe main user just read it. Main Stop therefore emits nothing. Shared-worktree state\ncannot be promoted into a task-local obligation merely because this agent stopped."
     },
     {
@@ -2812,7 +2812,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 161,
+      "line": 165,
       "prose": "`coherence hook <event>` — the hook body itself, so nothing has to be written to\n disk or kept in sync with a script file. Reads the event payload on stdin (unused\n today, but hooks are fed JSON and ignoring it silently would be rude to the next\n person who needs a field from it) and prints the documented output shape."
     },
     {
@@ -2822,7 +2822,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 307,
+      "line": 311,
       "prose": "What a subagent is told as it finishes. Split out of `runHook` so it is reachable\n without a stdin pipe — the hook body drains stdin, and a report you can only observe\n by feeding a process is a report nobody tests."
     },
     {
@@ -2832,7 +2832,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/hooks.ts",
-      "line": 382
+      "line": 386
     },
     {
       "id": "s:src/hooks.ts#CurrentHookObservation",
@@ -2841,7 +2841,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/hooks.ts",
-      "line": 394
+      "line": 398
     },
     {
       "id": "s:src/hooks.ts#activeHookHost",
@@ -2850,7 +2850,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 419,
+      "line": 423,
       "prose": "Which host owns the current shell. Explicit selection always wins."
     },
     {
@@ -2860,7 +2860,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 425,
+      "line": 429,
       "prose": "Never pick the newest session: concurrency makes \"latest\" an attribution bug."
     },
     {
@@ -2870,7 +2870,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 453
+      "line": 457
     },
     {
       "id": "s:src/hooks.ts#hookStatus",
@@ -2879,7 +2879,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 529,
+      "line": 533,
       "prose": "Structural configuration, historical memory, and this exact session stay separate."
     },
     {
@@ -2889,7 +2889,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 610,
+      "line": 614,
       "prose": "`coherence hooks status` — report the switch and the observation beside it."
     },
     {
@@ -2899,7 +2899,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 617,
+      "line": 621,
       "prose": "`coherence hooks --check` — the binary current-control gate. Observation never redeems absence."
     },
     {
@@ -2909,7 +2909,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 627
+      "line": 631
     },
     {
       "id": "s:src/hooks.ts#uninstallHooks",
@@ -2918,7 +2918,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 644
+      "line": 648
     },
     {
       "id": "s:src/hooks.ts#reviewHooks",
@@ -2927,7 +2927,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 661,
+      "line": 665,
       "prose": "`coherence hooks review` — every event's EFFECTIVE emission, with its provenance.\n The hook body degrades an unreadable customization to canon silently, because a torn\n file must not break a session; THIS is the loud surface where that damage lands, and\n the exit code carries it."
     },
     {
@@ -2937,7 +2937,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 709,
+      "line": 713,
       "prose": "`coherence hooks` — print one host's canonical block, plus the\n instruction text so a reader can see what agents will actually be told."
     },
     {
@@ -3671,7 +3671,7 @@
       "kind": "file",
       "sub": "src/novelty.ts",
       "path": "src/novelty.ts",
-      "prose": "novelty.ts — the novelty-vs-anchor advisory.\n\nThe gap this closes: `verify` checks DECLARED claims and `log` diffs the DECLARED\nledger, but nothing applied pressure to DECLARE when new load-bearing surface\nappeared. A large feature can land with zero new invariants/boundaries and the tree\nreads \"✓ coherent · no structural change\" throughout — the exact condition under\nwhich a real consumer shipped a 3,500-line surface carrying 14 bugs. This module\ncontrasts BEHAVIORAL SURFACE ADDED across a ref range against ANCHORS ADDED in the\nsame range and raises an advisory when surface runs ahead of anchors.\n\nSurface proxies (deliberately tractable and explainable, not exhaustive), all from a\nTS-AST scan of only the files git reports CHANGED in the range, at each ref:\n  · net-new exported symbols   — exported functions/consts/classes/types/enums. The\n    scan is AST-native rather than graph-derived on purpose: the graph's language\n    adapter parses `.ts` only, but real drift surface lives in `.tsx` too (the\n    motivating consumer's per-tool lookup tables were in a React component file);\n  · net-new union variants / enum members / keyed-table keys — exported string-\n    literal unions and enums, plus `Record<…>`-annotated top-level const tables\n    WHETHER OR NOT exported (a module-local keyed table is exactly the implicit-\n    domain projection surface this advisory exists to catch);\n  · LOC added/deleted          — git numstat, code extensions only, ignore-dirs out.\nTest files are excluded: tests are evidence, not surface.\n\nThe verdict self-qualifies (the churn proviso): a REFACTOR is high line-churn with\nlow net-new exports/variants, a FEATURE is net-new surface — when churn dominates\nthe alarm carries \"(disregard if recent work was mostly refactor)\". Advisory only:\nlike why-lint, it never changes the exit code.\n\nPython parity (regex grade): the same three proxies are counted for `.py` files, with\nline-anchored regexes instead of an AST — following the deliberate precedent of\n`analyzePythonOracle` (oracle-domain.ts) and the python adapter: no interpreter\nsubprocess, no new dependency. Module-level `def`/`class`/assignment names that do not\nstart with `_` stand in for exports; `class X(Enum)` bodies and single-line\n`Literal[…]` aliases for enumerated domains; module-level dict literals for keyed\ntables. Regex grade means favoring precision over recall: a missed exotic form\nunder-counts one surface item, while counting garbage would poison the alarm this\nfeeds. And it does feed one — signal.ts wires scanSurface/surfaceSignals/\nnoveltyVerdict into the zero-anchor growth gate (`needs-decision` under --check, the\nregulator's require-decision rule), so before this a Python project grew behavioral\nsurface invisibly: the exact blind spot the module exists to close."
+      "prose": "novelty.ts — the novelty-vs-anchor advisory.\n\nThe gap this closes: `verify` checks DECLARED claims and `log` diffs the DECLARED\nledger, but nothing applied pressure to DECLARE when new load-bearing surface\nappeared. A large feature can land with zero new invariants/boundaries and the tree\nreads \"✓ coherent · no structural change\" throughout — the exact condition under\nwhich a real consumer shipped a 3,500-line surface carrying 14 bugs. This module\ncontrasts BEHAVIORAL SURFACE ADDED across a ref range against ANCHORS ADDED in the\nsame range and raises an advisory when surface runs ahead of anchors.\n\nSurface proxies (deliberately tractable and explainable, not exhaustive), all from a\nTS-AST scan of only the files git reports CHANGED in the range, at each ref:\n  · net-new exported symbols   — exported functions/consts/classes/types/enums. The\n    scan is AST-native rather than graph-derived on purpose: the graph's language\n    adapter parses `.ts` only, but real drift surface lives in `.tsx` too (the\n    motivating consumer's per-tool lookup tables were in a React component file);\n  · net-new union variants / enum members / keyed-table keys — exported string-\n    literal unions and enums, plus `Record<…>`-annotated top-level const tables\n    WHETHER OR NOT exported (a module-local keyed table is exactly the implicit-\n    domain projection surface this advisory exists to catch);\n  · LOC added/deleted          — git numstat, code extensions only, ignore-dirs out.\nTest files are excluded: tests are evidence, not surface.\n\nThe verdict self-qualifies (the churn proviso): a REFACTOR is high line-churn with\nlow net-new exports/variants, a FEATURE is net-new surface — when churn dominates\nthe alarm carries \"(disregard if recent work was mostly refactor)\". Advisory only:\nlike why-lint, it never changes the exit code.\n\nEvery language is counted through its GRAMMAR (phase 2b, arm 2): a per-language\nquery names the surface shapes — exported declarations, string-literal unions, enum\nbodies, keyed tables, `Literal[…]` aliases — and one mechanism extracts names and\nmembers from the captured nodes. The TS side previously used the compiler API and\nported clean, per the pre-registered conjecture d-a5ca8273; the python side was\nline-anchored regex, and its port's deltas were enumerated at the gate. Precision\nover recall still: a missed exotic form under-counts one surface item, while\ncounting garbage would poison the alarm this feeds. And it does feed one —\nsignal.ts wires scanSurface/surfaceSignals/noveltyVerdict into the zero-anchor\ngrowth gate (`needs-decision` under --check, the regulator's require-decision\nrule): the exact blind spot the module exists to close."
     },
     {
       "id": "s:src/novelty.ts#FileSurface",
@@ -3690,8 +3690,8 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/novelty.ts",
-      "line": 53,
-      "prose": "Pure — the surface of one source string. `.py` file names route to the regex-grade\n Python scan; everything else is the TS-AST scan. Same shape out either way."
+      "line": 185,
+      "prose": "The surface of one source string, read through the file's grammar. A file no\n language claims contributes nothing (unknown extensions were never surface)."
     },
     {
       "id": "s:src/novelty.ts#isTestPath",
@@ -3700,7 +3700,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/novelty.ts",
-      "line": 215,
+      "line": 225,
       "prose": "Whether a path is a test file (excluded from the surface proxies). Python spellings\n mirror oracle-domain's: test_*.py / *_test.py by basename, anywhere in the tree."
     },
     {
@@ -3710,7 +3710,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/novelty.ts",
-      "line": 222,
+      "line": 232,
       "prose": "Scan the surface of a set of files under one tree root; missing files (added or\n removed on the other side of the range) are simply absent. Exports and domains are\n keyed by NAME, merged across files, so a file move reads as churn — not novelty."
     },
     {
@@ -3720,7 +3720,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/novelty.ts",
-      "line": 240
+      "line": 250
     },
     {
       "id": "s:src/novelty.ts#surfaceSignals",
@@ -3729,7 +3729,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/novelty.ts",
-      "line": 253,
+      "line": 263,
       "prose": "Diff the surface proxies. `before`/`after` cover the CHANGED files only —\n sufficient, since an unchanged file cannot move the delta."
     },
     {
@@ -3739,7 +3739,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/novelty.ts",
-      "line": 274
+      "line": 284
     },
     {
       "id": "s:src/novelty.ts#NOVELTY_DEFAULTS",
@@ -3748,7 +3748,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/novelty.ts",
-      "line": 280
+      "line": 290
     },
     {
       "id": "s:src/novelty.ts#noveltyVerdict",
@@ -3757,7 +3757,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/novelty.ts",
-      "line": 286,
+      "line": 296,
       "prose": "The advisory decision — pure. ALARM: surface (or raw LOC) landed with ZERO anchors.\n OUTPACING: anchors were added but surface outgrew them by `ratio`. The proviso fires\n when the signal is churn-shaped: the alarm rode on LOC alone, or deletions track\n additions (a rewrite/move, not growth)."
     },
     {
@@ -3767,14 +3767,8 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/novelty.ts",
-      "line": 301,
+      "line": 311,
       "prose": "Render the advisory section (after the ledger diff). Advisory: returns nothing,\n never affects the exit code."
-    },
-    {
-      "id": "x:typescript",
-      "label": "typescript",
-      "kind": "external",
-      "sub": "module"
     },
     {
       "id": "f:src/observed.ts",
@@ -3981,6 +3975,12 @@
       "sub": "function",
       "path": "src/oracle-domain.ts",
       "line": 511
+    },
+    {
+      "id": "x:typescript",
+      "label": "typescript",
+      "kind": "external",
+      "sub": "module"
     },
     {
       "id": "f:src/panel.ts",
@@ -8624,9 +8624,15 @@
       "kind": "imports"
     },
     {
-      "id": "f:src/novelty.ts->x:typescript:imports",
+      "id": "f:src/novelty.ts->x:web-tree-sitter:imports",
       "source": "f:src/novelty.ts",
-      "target": "x:typescript",
+      "target": "x:web-tree-sitter",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/novelty.ts->f:src/adapters/tree-sitter.ts:imports",
+      "source": "f:src/novelty.ts",
+      "target": "f:src/adapters/tree-sitter.ts",
       "kind": "imports"
     },
     {

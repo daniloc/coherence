@@ -18,16 +18,16 @@ const fs = (exports: string[] = [], domains: Array<[string, string[]]> = []): Fi
 
 // ── surfaceOfSource — the AST proxies ────────────────────────────────────────────────
 
-test("surfaceOfSource — exported string-literal union is an enumerated domain", () => {
-  const s = surfaceOfSource(`export type ToolName = "set_field" | "read_record" | "web_search";`);
+test("surfaceOfSource — exported string-literal union is an enumerated domain", async () => {
+  const s = await surfaceOfSource(`export type ToolName = "set_field" | "read_record" | "web_search";`);
   assert.deepEqual([...s.domains.get("ToolName")!].sort(), ["read_record", "set_field", "web_search"]);
   assert.ok(s.exports.has("ToolName"));
 });
 
-test("surfaceOfSource — a NON-exported Record table still counts (the motivating bug class)", () => {
+test("surfaceOfSource — a NON-exported Record table still counts (the motivating bug class)", async () => {
   // The consumer's TOOL_KIND/READ_SUMMARY tables were module-local consts in a .tsx
   // component — behavioral surface no export-based proxy can see.
-  const s = surfaceOfSource(
+  const s = await surfaceOfSource(
     `const TOOL_KIND: Record<string, Kind> = { web_search: "evidence", set_field: "edit" };\n` +
     `export const VISIBLE: Record<string, string> = { a: "x" };`,
     "Thread.tsx",
@@ -38,8 +38,8 @@ test("surfaceOfSource — a NON-exported Record table still counts (the motivati
   assert.ok(s.exports.has("VISIBLE"));
 });
 
-test("surfaceOfSource — satisfies Record<…> and enums count; plain object literals do not", () => {
-  const s = surfaceOfSource(
+test("surfaceOfSource — satisfies Record<…> and enums count; plain object literals do not", async () => {
+  const s = await surfaceOfSource(
     `export const T = { a: 1, b: 2 } satisfies Record<K, number>;\n` +
     `export enum Mode { Fast, Slow }\n` +
     `const notATable = { x: 1 };`,
@@ -49,8 +49,8 @@ test("surfaceOfSource — satisfies Record<…> and enums count; plain object li
   assert.equal(s.domains.get("notATable"), undefined);
 });
 
-test("surfaceOfSource — exported functions/classes/interfaces/consts are exports; non-literal unions are not domains", () => {
-  const s = surfaceOfSource(
+test("surfaceOfSource — exported functions/classes/interfaces/consts are exports; non-literal unions are not domains", async () => {
+  const s = await surfaceOfSource(
     `export function f() {}\nexport class C {}\nexport interface I { x: number }\n` +
     `export const k = 1;\nfunction hidden() {}\nexport type U = A | B;`,
   );

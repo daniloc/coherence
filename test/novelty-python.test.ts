@@ -60,8 +60,8 @@ Verb = Literal["get", "post"]
 `;
 
 test("python surface — module defs, enum variants, and dict keys count; underscore and nested names do not", async (t) => {
-  await t.test("exact surface of one module: 8 exports, 3 domains, 6 members", () => {
-    const s = surfaceOfSource(MODULE_PY, "module.py");
+  await t.test("exact surface of one module: 8 exports, 3 domains, 6 members", async () => {
+    const s = await surfaceOfSource(MODULE_PY, "module.py");
     // N module-level defs/classes/consts: MODEL, MAX_RETRIES, fetch, stream, Client,
     // Mode, ROUTES, Verb — and nothing else.
     assert.deepEqual(
@@ -77,8 +77,8 @@ test("python surface — module defs, enum variants, and dict keys count; unders
     assert.equal(s.exports.size + totalMembers, 8 + 6);
   });
 
-  await t.test("underscore-prefixed and nested names are excluded", () => {
-    const s = surfaceOfSource(MODULE_PY, "module.py");
+  await t.test("underscore-prefixed and nested names are excluded", async () => {
+    const s = await surfaceOfSource(MODULE_PY, "module.py");
     assert.ok(!s.exports.has("_PRIVATE"), "_PRIVATE is private by convention");
     assert.ok(!s.exports.has("_helper"), "_helper is private by convention");
     assert.ok(!s.exports.has("inner"), "nested def is not module surface");
