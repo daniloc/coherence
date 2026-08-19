@@ -294,12 +294,10 @@ Then add scripts that call the bin:
 }
 ```
 
-Requires **Node ≥22** in the consuming project (the build targets ES2022). Two
-runtime dependencies: `web-tree-sitter`, the wasm parser runtime behind the built-in
-language adapters (their grammar binaries ship with the package under `grammars/`),
-and `typescript`, which the source-reading advisories still parse with until they
-migrate to the same grammars — npm dedupes it when the consuming project already
-has it.
+Requires **Node ≥22** in the consuming project (the build targets ES2022). One
+runtime dependency: `web-tree-sitter`, the wasm parser runtime behind every language
+instrument (the grammar binaries ship with the package under `grammars/`, provenance
+alongside).
 
 ## Configure the target project
 
@@ -388,18 +386,22 @@ export default await makeTreeSitterAdapter({
 ```
 
 Capture names become symbol kinds; the shipped specs in `src/adapters/tree-sitter.ts`
-are the reference, including the `docs` override hook for languages whose prose lives
-somewhere richer than line comments. A module can also hand-implement the five
-`LanguageAdapter` members directly — both shapes serve the same seam. A wrong-shaped
+are the reference. Prose extraction is a named `docStyle` strategy (`"line"`,
+`"jsdoc"`, `"docstring"`); a project module may instead supply its own `docs`
+functions or hand-implement the five `LanguageAdapter` members directly — rung 2 is
+code territory by definition, and both shapes serve the same seam. A wrong-shaped
 module refuses naming the broken field. Importing the module executes project code —
 the same declared trust as the config's `test`/`typecheck` argv.
 
-**Rung 3 — the full field: instrument rows.** Since the instrument arms read languages
-as data, giving a language an instrument is a table row plus capture queries, not an
-analyzer: a `SURFACE_LANGUAGES` row (novelty.ts) feeds the zero-anchor alarm, a
+**Rung 3 — the full field: instrument rows.** The instrument arms read languages as
+pure data, so giving a language an instrument is a table row of capture queries, not
+an analyzer: a `SURFACE_LANGUAGES` row (novelty.ts) feeds the zero-anchor alarm, a
 `SITE_LANGUAGES` row (redundancy.ts) feeds duplicate-domain ranking, a
-`SINK_LANGUAGES` row (lint-sinks.ts) feeds the injection ratchet, and oracle-domain.ts
-carries the `via test` analysis. These live in the harness today, so rung 3 is a
+`SINK_LANGUAGES` row (lint-sinks.ts) feeds the injection ratchet, and an
+`ORACLE_LANGUAGES` row (oracle-domain.ts) carries the `via test` analysis. The rule
+every row lives under is enforced, not aspirational: a built-in pack carries queries,
+patterns, and named strategies — **never functions** — and a guard sweeps every table
+for violations (`language-packs.ts`). Rows live in the harness today, so rung 3 is a
 contribution — small ones, as the ruby sinks row (three lines) shows — and the house
 rule for every row is the one this repo's own migration was held to: build the new
 reader beside an existing witness and gate them against a real corpus before trusting
