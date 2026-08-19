@@ -57,15 +57,16 @@ interface SinkLanguage {
   grammar: string;
   query: string;
   sql: "quote-wrap" | "text-shape";
-  /** e.g. python: only f-prefixed strings interpolate meaningfully for this ratchet. */
-  accept?: (strText: string) => boolean;
+  /** Container-text gate, a PATTERN not a predicate (pack purity: data, never code) —
+   *  e.g. python: only f-prefixed strings interpolate meaningfully for this ratchet. */
+  acceptString?: RegExp;
 }
-const SINK_LANGUAGES: SinkLanguage[] = [
+export const SINK_LANGUAGES: SinkLanguage[] = [
   { ext: ".ts", grammar: "typescript", sql: "quote-wrap",
     query: "(template_string (template_substitution) @expr) @str" },
   { ext: ".py", grammar: "python", sql: "text-shape",
     query: "(string (interpolation) @expr) @str",
-    accept: (s) => /^[rbu]*f/i.test(s) },
+    acceptString: /^[rbu]*f/i },
   { ext: ".rb", grammar: "ruby", sql: "text-shape",
     query: "(string (interpolation) @expr) @str" },
 ];
@@ -181,7 +182,7 @@ export async function lintSinks(cfg: Config, mode: "report" | "check" | "update"
       const str = match.captures.find((c) => c.name === "str")?.node;
       const interp = match.captures.find((c) => c.name === "expr")?.node;
       if (!str || !interp) continue;
-      if (lang.accept && !lang.accept(str.text)) continue;
+      if (lang.acceptString && !lang.acceptString.test(str.text)) continue;
       const isSql = lang.sql === "quote-wrap"
         ? text[interp.startIndex - 1] === '"' && text[interp.endIndex] === '"'
         : SQL_TEXT.test(str.text);

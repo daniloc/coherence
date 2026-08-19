@@ -33,6 +33,7 @@ rendering, and journaling remain independently addressable modules beneath this 
 - a declared language resolves to a real adapter or refuses, never a silent fallback
 - a grammar-backed adapter derives the graph through the same language seam
 - instrument arms read languages through shared grammar queries, never a parallel scanner
+- a built-in language pack is data: queries, patterns, and named strategies, never code
 - experiment outcomes require criterion-total evidence
 - experiment telemetry preserves its weakest provable attribution
 - activity evidence is accepted only when identity, scope, time, and command agree
@@ -94,6 +95,7 @@ rendering, and journaling remain independently addressable modules beneath this 
 - boundary "a declared language resolves to a real adapter or refuses, never a silent fallback" at resolveLanguageAdapter via guard "language adapter — a project path loads and shapes the graph; unknown names refuse, never fall back"
 - boundary "a grammar-backed adapter derives the graph through the same language seam" at makeTreeSitterAdapter via guard "tree-sitter — a grammar-backed adapter derives ruby symbols, imports, and prose through the same seam"
 - boundary "instrument arms read languages through shared grammar queries, never a parallel scanner" at lintSinks via guard "ruby sinks — an interpolation into a SQL context is a site and the safe pattern exempts"
+- boundary "a built-in language pack is data: queries, patterns, and named strategies, never code" at builtinLanguagePacks via guard "language packs — every built-in pack is function-free data across all five instrument tables"
 - boundary "experiment outcomes require criterion-total evidence" at closeExperiment via guard "close — total nonempty evidence is mandatory and outcome is derived, never supplied"
 - boundary "experiment telemetry preserves its weakest provable attribution" at closeExperiment via guard "Codex parent-only tool events close the loop as an aggregate, never exact owner evidence"
 - boundary "activity evidence is accepted only when identity, scope, time, and command agree" at isActivityRow via guard "activity — internally inconsistent scope, time, and command rows are damage, not evidence"
@@ -309,6 +311,18 @@ scan re-pinned the baseline with every delta enumerated: nineteen real nested-br
 sites gained, one self-match artifact gone. A new language now gains the whole
 instrument from a table row — ruby's took three lines and no scanner — which is the
 two-tier boundary dissolving arm by arm.
+
+**a built-in language pack is data: queries, patterns, and named strategies, never
+code.** The declarative baseline is what keeps "add a language" a table-row act instead
+of an expert contribution — and it is a rule that erodes one convenient function at a
+time unless something refuses. So the packs are inspectable values aggregated in one
+place, and a guard sweeps them for function-valued fields by path: the hand-rolled
+scanner class is unrepresentable at the seam, not merely discouraged. The rule's edge
+is honest about what a pack may name — strategies from a closed, mechanism-owned set
+("jsdoc", "docstring", "cooked-string") — because some knowledge is genuinely
+procedural; naming it keeps the procedure written once where every language can reach
+it. Project adapter modules remain code territory by definition: purity governs what
+ships built in, where a single spelling is the entire point.
 
 **experiment outcomes require criterion-total evidence.** A
 plan is frozen before work with its predicted context, actions, criteria, and evidence

@@ -34,8 +34,8 @@
 // Every site is read through the file's GRAMMAR (phase 2b, arm 3): a per-language query
 // names the forms that count — module-level dict literals, Enum class bodies, list/tuple/
 // set constants of plain string literals, match-case / if-elif chains on the python side;
-// unions, enums, shapes, tables, switches and comparison chains on the TS side — and one
-// mechanism per language turns captured nodes into sites. The TS side previously walked
+// unions, enums, shapes, tables, switches and comparison chains on the TS side — and ONE
+// capture-class mechanism turns captured nodes into sites for every language. The TS side previously walked
 // the compiler API (syntax only — it never consulted a type checker, so `typeLink` reads
 // identically off the grammar's annotation nodes); the python side was a line scan. The
 // precision discipline survives the port: a form the query does not name (a comprehension,
@@ -103,17 +103,47 @@ export interface DomainSite {
 const isProse = (k: SiteKind) => k === "md-table" || k === "alternation";
 
 // ── the per-language site data (queries, not scanners) ────────────────────────────────
-// Capture classes per pattern: `union.*` / `enum.*` / `shape.*` / `nested.*` — a named
-// enumeration and the node its members read from (`*.decl` carries the line); `var.*` — a
-// declarator whose initializer may be a table or list; `switch` — a case dispatch; `cmp` —
-// one `x === "lit"` comparison, grouped into chains below; `lit.text` — a string/regex a
-// bracketed alternation may hide in. A language contributes patterns, never verdict logic.
+// CAPTURE-COMPLETE: a built-in pack carries ONLY query text and the names of
+// mechanism-owned strategies — never functions, and no grammar vocabulary survives in
+// the shared mechanism. Site patterns name the enumerating forms (`*.decl` carries the
+// reported line, `*.name` the reported name, `*.body` the node members aggregate under).
+// Member patterns put the per-grammar walking INTO the query: each pairs one
+// member-grade capture with the HOLDER node it is a direct child of
+// (`@shape.member`+`@shape.of`, `@table.key`+`@table.of`, `@list.item`+`@list.of`,
+// `@enum.member`+`@enum.of`, `@switch.label`+`@switch.labelof`, `@union.member` and
+// `@union.alt` under their unions), so the mechanism aggregates per site by CAPTURE
+// CLASS and captured-node identity, never by node type. `.lit`-suffixed members are
+// string literals; the generic unquoting they need is mechanism, selected by the pack's
+// `strings` strategy name. The `@cmp.*` patterns spell exactly the comparison forms the
+// retired scanners accepted — the python CMP regexes became the anchored
+// `comparison_operator` shapes below (operators, bare-quote requirement and
+// chain-middle matches included); `@peel.*` name the wrapper layers a TS initializer
+// hides under; `@scope` every node that opens a function scope, so chain GROUPING (still
+// mechanism — it is policy) reads scopes off captures by position, never by node-type
+// name. `@skip` / `@interp` / `@lit.sub` mark the nodes the retired walks filtered
+// (comments, f-string interpolations, template substitutions) for identity-dropping —
+// the capture-side residue of kids().
 
-interface SiteLanguage { grammar: string; query: string }
+interface SiteLanguage {
+  grammar: string;
+  query: string;
+  /** How a captured string literal yields its token — a mechanism-owned unquoting
+   *  strategy by NAME (pack purity: data, never code): `cooked` decodes escape
+   *  sequences (the retired TS compiler walk read cooked text); `raw` strips the quote
+   *  runs and any prefix but leaves escapes alone (what the retired python scan saw). */
+  strings: "cooked" | "raw";
+  /** How `@cmp` captures group into chains: `operand` keys every comparison match
+   *  directly (the TS grade — whole operand nodes); `condition` mirrors the retired
+   *  python line scan — at most one comparison per if/elif condition, name-first
+   *  (`x == "lit"`) shapes preferred over lit-first, exactly as CMP_A outranked CMP_B. */
+  compare: "operand" | "condition";
+}
 
-const SITE_LANGUAGES: Record<"typescript" | "python", SiteLanguage> = {
+export const SITE_LANGUAGES: Record<"typescript" | "python", SiteLanguage> = {
   typescript: {
     grammar: "typescript",
+    strings: "cooked",
+    compare: "operand",
     query: `
       (type_alias_declaration name: (type_identifier) @union.name value: (union_type) @union.body) @union.decl
       (enum_declaration name: (identifier) @enum.name body: (enum_body) @enum.body) @enum.decl
@@ -121,22 +151,77 @@ const SITE_LANGUAGES: Record<"typescript" | "python", SiteLanguage> = {
       (type_alias_declaration name: (type_identifier) @shape.name value: (object_type) @shape.body) @shape.decl
       (property_signature name: (property_identifier) @nested.name type: (type_annotation (object_type) @nested.body)) @nested.decl
       (variable_declarator name: (identifier) @var.name value: (_) @var.init) @var.decl
-      (switch_statement) @switch
-      (binary_expression operator: ["===" "!==" "==" "!="]) @cmp
+      (switch_statement body: (switch_body) @switch.body) @switch.decl
+      (binary_expression left: [(identifier) (member_expression)] @cmp.expr operator: ["===" "!==" "==" "!="] right: (string) @cmp.lit) @cmp
+      (binary_expression left: (string) @cmp.lit operator: ["===" "!==" "==" "!="] right: [(identifier) (member_expression)] @cmp.expr) @cmp
       (string) @lit.text
       (template_string) @lit.text
-      (regex) @lit.text
+      (regex) @lit.raw
+      (union_type (_) @union.alt) @union.altof
+      (union_type (literal_type (string) @union.member)) @union.memberof
+      (enum_body (property_identifier) @enum.member) @enum.of
+      (enum_body (string) @enum.member.lit) @enum.of
+      (enum_body (enum_assignment name: (property_identifier) @enum.member)) @enum.of
+      (enum_body (enum_assignment name: (string) @enum.member.lit)) @enum.of
+      (interface_body [(property_signature name: (property_identifier) @shape.member) (method_signature name: (property_identifier) @shape.member)]) @shape.of
+      (object_type [(property_signature name: (property_identifier) @shape.member) (method_signature name: (property_identifier) @shape.member)]) @shape.of
+      (interface_declaration name: (type_identifier) @nested.owner body: (interface_body (property_signature name: (property_identifier) type: (type_annotation (object_type))) @nested.owned))
+      (variable_declarator type: (type_annotation (_) @var.type)) @var.typed
+      (as_expression (_) @peel.item) @peel.as
+      (satisfies_expression (_) @peel.item) @peel.sat
+      (parenthesized_expression (_) @peel.item) @peel.paren
+      (new_expression arguments: (arguments (_) @peel.item)) @peel.new
+      (object) @table.body
+      (object (pair key: (property_identifier) @table.key)) @table.of
+      (object (pair key: (number) @table.key)) @table.of
+      (object (pair key: (string) @table.key.lit)) @table.of
+      (object (method_definition name: (property_identifier) @table.key)) @table.of
+      (object (method_definition name: (number) @table.key)) @table.of
+      (object (method_definition name: (string) @table.key.lit)) @table.of
+      (object (shorthand_property_identifier) @table.key) @table.of
+      (array) @list.body
+      (array (string) @list.item) @list.of
+      (array (_) @list.alt) @list.of
+      (switch_statement value: (parenthesized_expression (_) @switch.subject)) @switch.subjof
+      (switch_body (switch_case value: (string) @switch.label)) @switch.labelof
+      (template_string (template_substitution) @lit.sub)
+      [(function_declaration) (generator_function_declaration) (function_expression) (generator_function) (arrow_function) (method_definition)] @scope
+      (comment) @skip
     `,
   },
   python: {
     grammar: "python",
+    strings: "raw",
+    compare: "condition",
     query: `
-      (module (class_definition name: (identifier) @enum.name superclasses: (argument_list) @enum.bases body: (block) @enum.body) @enum.decl)
-      (module (decorated_definition (class_definition name: (identifier) @enum.name superclasses: (argument_list) @enum.bases body: (block) @enum.body) @enum.decl))
-      (module (expression_statement (assignment left: (identifier) @asn.name right: [(dictionary) (list) (tuple) (set)] @asn.body)))
-      (match_statement) @match
-      (if_statement) @pycmp
-      (elif_clause) @pycmp
+      (module (class_definition name: (identifier) @enum.name superclasses: (argument_list) @enum.bases (#match? @enum.bases "^\\\\(\\\\s*(enum\\\\s*\\\\.\\\\s*)?(Enum|IntEnum|StrEnum|Flag|IntFlag)\\\\s*\\\\)$") body: (block) @enum.body) @enum.decl)
+      (module (decorated_definition (class_definition name: (identifier) @enum.name superclasses: (argument_list) @enum.bases (#match? @enum.bases "^\\\\(\\\\s*(enum\\\\s*\\\\.\\\\s*)?(Enum|IntEnum|StrEnum|Flag|IntFlag)\\\\s*\\\\)$") body: (block) @enum.body) @enum.decl))
+      (module (expression_statement (assignment left: (identifier) @var.name right: [(dictionary) (list) (tuple) (set)] @var.init) @var.decl))
+      (match_statement body: (block) @switch.body) @switch.decl
+      (if_statement condition: (_) @cmp.cond) @cmp.clause
+      (elif_clause condition: (_) @cmp.cond) @cmp.clause
+      ((block (expression_statement (assignment left: (identifier) @enum.member (#match? @enum.member "^[A-Za-z]")))) @enum.of)
+      (dictionary) @table.body
+      (dictionary (pair key: (string) @table.key.lit)) @table.of
+      [(list) (tuple) (set)] @list.body
+      ((list (string) @list.item) @list.of (#match? @list.item "^(\\"(?!\\"\\")|'(?!''))"))
+      ((tuple (string) @list.item) @list.of (#match? @list.item "^(\\"(?!\\"\\")|'(?!''))"))
+      ((set (string) @list.item) @list.of (#match? @list.item "^(\\"(?!\\"\\")|'(?!''))"))
+      (list (_) @list.alt) @list.of
+      (tuple (_) @list.alt) @list.of
+      (set (_) @list.alt) @list.of
+      (match_statement subject: (_) @switch.subject) @switch.subjof
+      (block (case_clause . (case_pattern (string) @switch.label) . (block))) @switch.labelof
+      (block (case_clause . (case_pattern (union_pattern) @switch.union) . (block))) @switch.labelof
+      (union_pattern (string) @switch.ulabel) @switch.unionof
+      (union_pattern (_) @switch.ualt) @switch.unionof
+      ((comparison_operator . [(identifier) (attribute)] @cmp.cand.expr . operators: ["==" "!="] . (string) @cmp.cand.lit) @cmp.cand (#match? @cmp.cand.lit "^[\\"']"))
+      ((comparison_operator (_) . [(identifier) (attribute)] @cmp.cand.expr . operators: ["==" "!="] . (string) @cmp.cand.lit) @cmp.cand (#match? @cmp.cand.lit "^[\\"']"))
+      ((comparison_operator . (string) @cmp.cand.lit . operators: ["==" "!="] . [(identifier) (attribute)] @cmp.cand.expr) @cmp.cand (#match? @cmp.cand.lit "^[\\"']"))
+      ((comparison_operator (_) . (string) @cmp.cand.lit . operators: ["==" "!="] . [(identifier) (attribute)] @cmp.cand.expr) @cmp.cand (#match? @cmp.cand.lit "^[\\"']"))
+      (string (interpolation) @interp)
+      (function_definition) @scope
+      (comment) @skip
     `,
   },
 };
@@ -199,154 +284,287 @@ export function alternationsIn(text: string): string[][] {
 
 const MIN_KEYS = 3;
 
-/** Pure (grammar only) — every domain site in one TypeScript/JavaScript source. */
-export function sitesOfSource(src: string, file = "x.ts"): DomainSite[] {
-  const { parser, query } = SITE_HANDLES.typescript;
+// ── the mechanism: one capture-class engine for every grammar ─────────────────────────
+// Everything below aggregates CAPTURED NODES by class name and node identity — it never
+// asks a node its type. The one sanctioned exception is `typeLinkOf` above (the brief's
+// own carve-out: typeLink reads TS annotation nodes, and only ever runs on `@var.type` /
+// `@peel.item` captures no other language emits).
+
+/** `cooked` strategy — literal content with quotes/backticks off and escape sequences
+ *  resolved: the retired compiler walk read cooked text, and a `"\\"` key must stay the
+ *  same token. */
+const cook = (s: Node) => s.text.slice(1, -1).replace(
+  /\\(?:u\{([0-9a-fA-F]+)\}|u([0-9a-fA-F]{4})|x([0-9a-fA-F]{2})|([\s\S]))/g,
+  (_, uB, u4, x2, ch) => uB || u4 || x2
+    ? String.fromCodePoint(parseInt(uB ?? u4 ?? x2, 16))
+    : ({ n: "\n", t: "\t", r: "\r", b: "\b", f: "\f", v: "\v", "0": "\0" } as Record<string, string>)[ch] ?? ch,
+);
+
+/** `raw` strategy — the quote runs (and any r/b/f-style prefix) off, escapes left raw:
+ *  what the retired python line scan captured. Text-only, so it needs no grammar. */
+const rawCook = (s: Node): string => {
+  const start = /^[A-Za-z]*("""|'''|"|')/.exec(s.text)?.[0].length ?? 1;
+  const end = /("""|'''|"|')$/.exec(s.text)?.[1].length ?? 1;
+  return s.text.slice(start, s.text.length - end);
+};
+
+// The `condition` compare strategy's spelling of one captured comparison — the retired
+// scanner's OWN patterns, applied to the captured operands so its artifacts survive the
+// port exactly: the literal is the first quoted span of the string node's text (so
+// `"a'b"` still reads as `a`), and the expression is the word-dot run nearest the
+// operator (so `a.b().c == "x"` still reads as `c`). Text-only — no grammar names.
+const quotedSpan = (t: string) => /["']([^"']*)["']/.exec(t)?.[1];
+const leadRun = (t: string) => /^[A-Za-z_][\w.]*/.exec(t)?.[0];
+const tailRun = (t: string) => /[A-Za-z_][\w.]*$/.exec(t)?.[0];
+
+const within = (n: Node, outer: Node) => n.startIndex >= outer.startIndex && n.endIndex <= outer.endIndex;
+const byStart = (a: Node, b: Node) => a.startIndex - b.startIndex;
+
+/** Pure (grammar grade) — every domain site one language's query finds in one source.
+ *  Only the forms the query names become sites; everything else is deliberately silence. */
+function grammarSites(langKey: keyof typeof SITE_LANGUAGES, src: string, file: string): DomainSite[] {
+  const lang = SITE_LANGUAGES[langKey];
+  const { parser, query } = SITE_HANDLES[langKey];
   const tree = parser.parse(src);
   if (!tree) return [];
+  const cookStr = lang.strings === "cooked" ? cook : rawCook;
+  const matches = query.matches(tree.rootNode);
+
   const sites: DomainSite[] = [];
-  const push = (name: string, kind: SiteKind, keys: string[], n: Node, typeLink: string | null = null) => {
+  const push = (name: string, kind: SiteKind, keys: string[], line: number, typeLink: string | null = null) => {
     const uniq = [...new Set(keys)].sort();
-    if (uniq.length >= MIN_KEYS) sites.push({ name, kind, file, line: lineOf(n), keys: uniq, typeLink });
+    if (uniq.length >= MIN_KEYS) sites.push({ name, kind, file, line, keys: uniq, typeLink });
   };
+
+  // ── pass 1: aggregate member-grade captures by class and holder identity ──
+  const held = new Map<string, Map<number, Node[]>>();
+  const addHeld = (cls: string, holder: Node, n: Node) => {
+    const m = held.get(cls) ?? held.set(cls, new Map()).get(cls)!;
+    const a = m.get(holder.id);
+    if (a) a.push(n); else m.set(holder.id, [n]);
+  };
+  const heldBy = (cls: string, holderId: number): Node[] => held.get(cls)?.get(holderId) ?? [];
+  /** member class → the holder class its pattern pairs it with */
+  const HELD: [string, string][] = [
+    ["union.alt", "union.altof"], ["union.member", "union.memberof"],
+    ["enum.member", "enum.of"], ["enum.member.lit", "enum.of"],
+    ["shape.member", "shape.of"],
+    ["table.key", "table.of"], ["table.key.lit", "table.of"],
+    ["list.item", "list.of"], ["list.alt", "list.of"],
+    ["switch.label", "switch.labelof"], ["switch.union", "switch.labelof"],
+    ["switch.ulabel", "switch.unionof"], ["switch.ualt", "switch.unionof"],
+    ["switch.subject", "switch.subjof"],
+    ["var.type", "var.typed"],
+  ];
+  const skips = new Set<number>();          // @skip — comments, dropped by identity
+  const interps: Node[] = [];               // @interp — f-string interpolations
+  const litSubs: Node[] = [];               // @lit.sub — template substitutions
+  const scopes: Node[] = [];                // @scope — function-scope openers
+  const nestedOwner = new Map<number, string>();
+  const peels = new Map<number, { cls: "as" | "sat" | "paren" | "new"; items: Node[] }>();
+  const tableBodies = new Set<number>();
+  const listBodies = new Set<number>();
+  const cands: { node: Node; expr: Node; lit: Node }[] = [];
+
+  for (const match of matches) {
+    const by = new Map(match.captures.map((c) => [c.name, c.node]));
+    if (by.has("skip")) { skips.add(by.get("skip")!.id); continue; }
+    if (by.has("interp")) { interps.push(by.get("interp")!); continue; }
+    if (by.has("lit.sub")) { litSubs.push(by.get("lit.sub")!); continue; }
+    if (by.has("scope")) { scopes.push(by.get("scope")!); continue; }
+    if (by.has("table.body")) { tableBodies.add(by.get("table.body")!.id); continue; }
+    if (by.has("list.body")) { listBodies.add(by.get("list.body")!.id); continue; }
+    if (by.has("nested.owner")) { nestedOwner.set(by.get("nested.owned")!.id, by.get("nested.owner")!.text); continue; }
+    if (by.has("cmp.cand")) { cands.push({ node: by.get("cmp.cand")!, expr: by.get("cmp.cand.expr")!, lit: by.get("cmp.cand.lit")! }); continue; }
+    if (by.has("peel.item")) {
+      for (const cls of ["as", "sat", "paren", "new"] as const) {
+        const outer = by.get(`peel.${cls}`);
+        if (!outer) continue;
+        const p = peels.get(outer.id) ?? peels.set(outer.id, { cls, items: [] }).get(outer.id)!;
+        p.items.push(by.get("peel.item")!);
+        break;
+      }
+      continue;
+    }
+    for (const [m, h] of HELD)
+      if (by.has(m) && by.has(h)) { addHeld(m, by.get(h)!, by.get(m)!); break; }
+  }
+  for (const p of peels.values()) p.items.sort(byStart);
+  const nonSkip = (n: Node) => !skips.has(n.id);
+  const noInterp = (n: Node) => !interps.some((i) => within(i, n));
+
   // `x === "lit"` chains are collected per compared-expression, because a dispatch is
   // spread over an if-chain by construction. Keyed by ENCLOSING FUNCTION as well as by
   // expression text: grouping `e.kind` file-wide fused two unrelated `e`s in promise.ts on
-  // the first dogfood run and manufactured a divergence out of the collision.
-  const compares = new Map<string, { keys: string[]; node: Node; text: string }>();
-  const FN_SCOPES = new Set(["function_declaration", "generator_function_declaration", "function_expression", "generator_function", "arrow_function", "method_definition"]);
-  const fnScopeOf = (n: Node): number => {
-    for (let p: Node | null = n.parent; p; p = p.parent) if (FN_SCOPES.has(p.type)) return p.startIndex;
-    return -1;
+  // the first dogfood run and manufactured a divergence out of the collision. The scope is
+  // read POSITIONALLY off the innermost `@scope` capture containing the node — the walk by
+  // ancestor node type moved into the query.
+  const compares = new Map<string, { keys: string[]; line: number; text: string }>();
+  const scopeKeyOf = (n: Node): string => {
+    let best: Node | null = null;
+    for (const s of scopes)
+      if (s.startIndex <= n.startIndex && n.endIndex <= s.endIndex)
+        if (!best || s.startIndex > best.startIndex || (s.startIndex === best.startIndex && s.endIndex < best.endIndex)) best = s;
+    return best ? String(best.startIndex) : "-1";
   };
-  /** Cooked literal content: quotes/backticks off, escape sequences resolved — the
-   *  compiler walk read cooked text, and a `"\\"` key must stay the same token. */
-  const cook = (s: Node) => s.text.slice(1, -1).replace(
-    /\\(?:u\{([0-9a-fA-F]+)\}|u([0-9a-fA-F]{4})|x([0-9a-fA-F]{2})|([\s\S]))/g,
-    (_, uB, u4, x2, ch) => uB || u4 || x2
-      ? String.fromCodePoint(parseInt(uB ?? u4 ?? x2, 16))
-      : ({ n: "\n", t: "\t", r: "\r", b: "\b", f: "\f", v: "\v", "0": "\0" } as Record<string, string>)[ch] ?? ch,
-  );
 
-  /** interface / type-literal member names — identifier-named members only, as before. */
-  const shapeKeys = (body: Node): string[] => kids(body).flatMap((m) => {
-    if (m.type !== "property_signature" && m.type !== "method_signature") return [];
-    const nm = m.childForFieldName("name");
-    return nm?.type === "property_identifier" ? [nm.text] : [];
-  });
-
-  /** Object-literal keys: pairs, shorthand and methods with plain names; spreads and
-   *  computed keys yield nothing (same shape the compiler walk read). */
-  const objKeys = (obj: Node): string[] => kids(obj).flatMap((p) => {
-    if (p.type === "shorthand_property_identifier") return [p.text];
-    if (p.type !== "pair" && p.type !== "method_definition") return [];
-    const key = p.childForFieldName("key") ?? p.childForFieldName("name");
-    if (!key) return [];
-    if (key.type === "property_identifier" || key.type === "number") return [key.text];
-    return key.type === "string" ? [cook(key)] : [];
-  });
-
-  for (const match of query.matches(tree.rootNode)) {
+  // ── pass 2: site matches, in match order ──
+  for (const match of matches) {
     const by = new Map(match.captures.map((c) => [c.name, c.node]));
-    // type X = "a" | "b" | … — the canonical enumerated domain (every alternative a string)
+    // type X = "a" | "b" | … — the canonical enumerated domain (every alternative a
+    // string). Reachability walks the captured holder/alt graph: an alternative counts
+    // only if its union is the body or another reachable alternative — which is exactly
+    // the retired flat() recursion, minus the node-type test it used to need.
     if (by.has("union.body")) {
+      const body = by.get("union.body")!;
+      const seen = new Set<number>([body.id]);
+      const queue = [body.id];
       const leaves: Node[] = [];
-      const flat = (u: Node): void => { for (const c of kids(u)) (c.type === "union_type" ? flat(c) : leaves.push(c)); };
-      flat(by.get("union.body")!);
-      const members = leaves.flatMap((t) => (t.type === "literal_type" && kids(t)[0]?.type === "string" ? [cook(kids(t)[0]!)] : []));
-      if (members.length === leaves.length) push(by.get("union.name")!.text, "union", members, by.get("union.decl")!);
+      while (queue.length) {
+        const h = queue.pop()!;
+        for (const a of heldBy("union.alt", h)) {
+          if (!nonSkip(a) || seen.has(a.id)) continue;
+          seen.add(a.id);
+          if (heldBy("union.alt", a.id).some(nonSkip)) queue.push(a.id);
+          else leaves.push(a);
+        }
+      }
+      const members = [...seen].flatMap((id) => heldBy("union.member", id));
+      if (members.length === leaves.length)
+        push(by.get("union.name")!.text, "union", members.map(cookStr), lineOf(by.get("union.decl")!));
     } else if (by.has("enum.body")) {
-      const keys = kids(by.get("enum.body")!).flatMap((m) => {
-        if (m.type === "property_identifier") return [m.text];
-        if (m.type === "string") return [cook(m)];
-        if (m.type !== "enum_assignment") return [];
-        const nm = m.childForFieldName("name") ?? kids(m)[0];
-        return nm ? [nm.type === "string" ? cook(nm) : nm.text] : [];
-      });
-      push(by.get("enum.name")!.text, "enum", keys, by.get("enum.decl")!);
+      const bodyId = by.get("enum.body")!.id;
+      const keys = [
+        ...heldBy("enum.member", bodyId).map((m) => m.text),
+        ...heldBy("enum.member.lit", bodyId).map(cookStr),
+      ];
+      push(by.get("enum.name")!.text, "enum", keys, lineOf(by.get("enum.decl")!));
     // interface / type-literal members — a shape is an enumerated domain of field names
     } else if (by.has("shape.body")) {
-      push(by.get("shape.name")!.text, "shape", shapeKeys(by.get("shape.body")!), by.get("shape.decl")!);
+      push(by.get("shape.name")!.text, "shape", heldBy("shape.member", by.get("shape.body")!.id).map((m) => m.text), lineOf(by.get("shape.decl")!));
     // an ANONYMOUS type literal on a property (`novelty?: { minSurface?: number; … }`) is
     // still a domain — and its defaults table lives elsewhere, untyped, free to drift. Name
-    // it `<Owner>.<prop>` so the report says where it is.
+    // it `<Owner>.<prop>` so the report says where it is (`@nested.owner` captures the
+    // owning interface's name; a type-alias literal owns nothing, as before).
     } else if (by.has("nested.body")) {
       const decl = by.get("nested.decl")!;
-      const parent = decl.parent;
-      const owner = parent?.type === "interface_body" && parent.parent?.type === "interface_declaration"
-        ? parent.parent.childForFieldName("name")?.text ?? "" : "";
-      push(`${owner ? owner + "." : ""}${by.get("nested.name")!.text}`, "shape", shapeKeys(by.get("nested.body")!), decl);
-    // const T: Record<…> = { … } / [ "a", "b" ] / new Set([…]) — tables and lists
-    } else if (by.has("var.decl")) {
+      const owner = nestedOwner.get(decl.id) ?? "";
+      push(`${owner ? owner + "." : ""}${by.get("nested.name")!.text}`, "shape", heldBy("shape.member", by.get("nested.body")!.id).map((m) => m.text), lineOf(decl));
+    // const T: Record<…> = { … } / [ "a", "b" ] / new Set([…]) — tables and lists. The
+    // initializer is unwrapped through the captured `@peel.*` layers (as / satisfies /
+    // parens collect the type link; a single-argument `new` unwraps once, then peels only
+    // as/parens, linklessly — the retired walk's exact two-phase shape).
+    } else if (by.has("var.decl") && by.has("var.init")) {
       const decl = by.get("var.decl")!;
-      let init: Node = by.get("var.init")!;
-      const ann = decl.childForFieldName("type");
-      let link = typeLinkOf(ann ? kids(ann)[0] : undefined);
+      let link = typeLinkOf((heldBy("var.type", decl.id).filter(nonSkip))[0]);
+      let init = by.get("var.init")!;
       for (;;) {
-        if (init.type === "as_expression" || init.type === "satisfies_expression") {
-          if (!link) {
-            const t = kids(init)[1];
-            link = t ? typeLinkOf(t) : init.children.some((c) => c?.type === "const") ? "const" : null;
-          }
-        } else if (init.type !== "parenthesized_expression") break;
-        const inner = kids(init)[0];
-        if (!inner) break;
-        init = inner;
+        const p = peels.get(init.id);
+        if (!p || p.cls === "new") break;
+        const items = p.items.filter(nonSkip);
+        if (p.cls !== "paren" && !link)
+          // one non-comment child means `as const` — the only `as` the grammar gives no
+          // named type node (measured; journal d-…): the retired children-scan for the
+          // `const` token becomes a count.
+          link = items[1] ? typeLinkOf(items[1]) : items.length === 1 ? "const" : null;
+        if (!items[0]) break;
+        init = items[0];
       }
-      if (init.type === "new_expression") {
-        const args = init.childForFieldName("arguments");
-        const argKids = args ? kids(args) : [];
-        if (argKids.length === 1) {
-          let a = argKids[0];
-          while (a.type === "as_expression" || a.type === "parenthesized_expression") {
-            const inner = kids(a)[0];
+      const pn = peels.get(init.id);
+      if (pn?.cls === "new") {
+        const args = pn.items.filter(nonSkip);
+        if (args.length === 1) {
+          let a = args[0];
+          for (;;) {
+            const q = peels.get(a.id);
+            if (!q || (q.cls !== "as" && q.cls !== "paren")) break;
+            const inner = q.items.filter(nonSkip)[0];
             if (!inner) break;
             a = inner;
           }
           init = a;
         }
       }
-      if (init.type === "object") push(by.get("var.name")!.text, "table", objKeys(init), decl, link);
-      else if (init.type === "array") {
-        const elems = kids(init);
-        if (elems.length && elems.every((e) => e.type === "string")) push(by.get("var.name")!.text, "list", elems.map(cook), decl, link);
+      if (tableBodies.has(init.id)) {
+        const keys = [
+          ...heldBy("table.key", init.id).map((k) => k.text),
+          ...heldBy("table.key.lit", init.id).flatMap((k) => {
+            if (!noInterp(k)) return [];        // an interpolated key is not a token
+            const v = cookStr(k);
+            return v ? [v] : [];                // an empty key names nothing
+          }),
+        ];
+        push(by.get("var.name")!.text, "table", keys, lineOf(decl), link);
+      } else if (listBodies.has(init.id)) {
+        // EVERY element must be a plain string literal, or no site: items are the
+        // query-accepted strings, alts every non-comment element — equal counts or silence.
+        const items = heldBy("list.item", init.id);
+        const alts = heldBy("list.alt", init.id).filter(nonSkip);
+        if (alts.length && items.length === alts.length)
+          push(by.get("var.name")!.text, "list", items.map(cookStr), lineOf(decl), link);
       }
-    // switch (x) { case "a": … }
-    } else if (by.has("switch")) {
-      const sw = by.get("switch")!;
-      const value = sw.childForFieldName("value");
-      const expr = value ? kids(value)[0] : undefined;
-      const body = sw.childForFieldName("body");
-      const labels = body ? kids(body).flatMap((c) => {
-        if (c.type !== "switch_case") return [];
-        const v = c.childForFieldName("value");
-        return v?.type === "string" ? [cook(v)] : [];
-      }) : [];
-      push((expr?.text ?? "").slice(0, 40), "switch", labels, sw);
-    // x === "lit" — a dispatch chain is a domain spelled as control flow
+    // switch (x) { case "a": … } / match x: / case "lit": — a dispatch written as case
+    // analysis. A python union pattern (`case "a" | "b":`) counts only when every branch
+    // is a string; guards, captures and comma patterns never captured, so they yield
+    // nothing, as before.
+    } else if (by.has("switch.body")) {
+      const decl = by.get("switch.decl")!;
+      const bodyId = by.get("switch.body")!.id;
+      const subject = heldBy("switch.subject", decl.id).filter(nonSkip).sort(byStart)[0];
+      const keys = heldBy("switch.label", bodyId).filter(noInterp).map(cookStr);
+      for (const u of heldBy("switch.union", bodyId)) {
+        const ul = heldBy("switch.ulabel", u.id);
+        if (heldBy("switch.ualt", u.id).filter(nonSkip).length === ul.length)
+          for (const l of ul) keys.push(cookStr(l));
+      }
+      push((subject?.text ?? "").slice(0, 40), "switch", keys, lineOf(decl));
+    // x === "lit" — a dispatch chain is a domain spelled as control flow (operand grade:
+    // every captured comparison is a chain entry)
     } else if (by.has("cmp")) {
       const n = by.get("cmp")!;
-      const left = n.childForFieldName("left"), right = n.childForFieldName("right");
-      if (!left || !right) continue;
-      const [lit, other] = left.type === "string" ? [left, right] : right.type === "string" ? [right, left] : [null, null];
-      if (lit && other && (other.type === "identifier" || other.type === "member_expression")) {
-        const text = other.text.slice(0, 40);
-        const key = `${fnScopeOf(n)}::${text}`;
-        const e = compares.get(key) ?? { keys: [], node: n, text };
-        e.keys.push(cook(lit));
-        compares.set(key, e);
-      }
+      const text = by.get("cmp.expr")!.text.slice(0, 40);
+      const key = `${scopeKeyOf(n)}::${text}`;
+      const e = compares.get(key) ?? { keys: [], line: lineOf(n), text };
+      e.keys.push(cookStr(by.get("cmp.lit")!));
+      compares.set(key, e);
+    // if/elif x == "lit" — condition grade: at most ONE comparison per clause counts, the
+    // first name-first candidate if any (else the first lit-first one) — the retired
+    // scanner's CMP_A-over-CMP_B priority, read off capture positions.
+    } else if (by.has("cmp.cond")) {
+      const clause = by.get("cmp.clause")!;
+      const cond = by.get("cmp.cond")!;
+      const inCond = cands.filter((c) => within(c.node, cond));
+      const nameFirst = inCond.filter((c) => c.expr.startIndex < c.lit.startIndex).sort((x, y) => x.expr.startIndex - y.expr.startIndex);
+      const litFirst = inCond.filter((c) => c.lit.startIndex < c.expr.startIndex).sort((x, y) => x.lit.startIndex - y.lit.startIndex);
+      const pick = nameFirst[0] ?? litFirst[0];
+      if (!pick) continue;
+      const expr = pick.expr.startIndex < pick.lit.startIndex ? tailRun(pick.expr.text) : leadRun(pick.expr.text);
+      const lit = quotedSpan(pick.lit.text);
+      // the retired guard was a truthiness test, so a clause whose WINNING literal reads
+      // empty (`char == '"'` — the quoted-span artifact) contributed nothing; keep that.
+      if (!expr || !lit) continue;
+      const key = `${scopeKeyOf(clause)}::${expr}`;
+      const e = compares.get(key) ?? { keys: [], line: lineOf(clause), text: expr.slice(0, 40) };
+      e.keys.push(lit);
+      compares.set(key, e);
     // bracketed alternations inside string / regex literals (templates only when they
     // hold no substitution — a `${…}` means the text is not an enumeration)
     } else if (by.has("lit.text")) {
       const n = by.get("lit.text")!;
-      if (n.type === "template_string" && kids(n).some((c) => c.type === "template_substitution")) continue;
-      const text = n.type === "regex" ? n.text : cook(n);
-      for (const parts of alternationsIn(text)) push(`alternation@${lineOf(n)}`, "alternation", parts, n);
+      if (litSubs.some((s) => within(s, n))) continue;
+      for (const parts of alternationsIn(cookStr(n))) push(`alternation@${lineOf(n)}`, "alternation", parts, lineOf(n));
+    } else if (by.has("lit.raw")) {
+      const n = by.get("lit.raw")!;
+      for (const parts of alternationsIn(n.text)) push(`alternation@${lineOf(n)}`, "alternation", parts, lineOf(n));
     }
   }
-  for (const e of compares.values()) push(e.text, "compare", e.keys, e.node);
+  for (const e of compares.values()) push(e.text, "compare", e.keys, e.line);
   return sites;
+}
+
+/** Pure (grammar only) — every domain site in one TypeScript/JavaScript source. */
+export function sitesOfSource(src: string, file = "x.ts"): DomainSite[] {
+  return grammarSites("typescript", src, file);
 }
 
 // ── markdown sites ────────────────────────────────────────────────────────────────────
@@ -395,121 +613,15 @@ export function sitesOfMarkdown(text: string, file = "README.md"): DomainSite[] 
 
 // ── python sites ──────────────────────────────────────────────────────────────────────
 
-/** Pure (grammar grade) — domain sites in one python source. Only the forms the query
- *  names become sites; everything else is deliberately silence (see header). */
+/** Pure (grammar grade) — domain sites in one python source, through the same
+ *  capture-class engine as every other language. Only the forms the query names become
+ *  sites; everything else is deliberately silence (see header). The retired scan's
+ *  acceptances survive in the pack, not in code: the Enum base-list regex is the
+ *  `@enum.bases` #match? predicate, "plain string literal" is the bare-quote #match? on
+ *  `@list.item`, and the CMP_A/CMP_B comparison patterns are the anchored
+ *  `@cmp.cand` shapes (their spelling artifacts kept by the `condition` strategy). */
 export function sitesOfPython(src: string, file = "x.py"): DomainSite[] {
-  const { parser, query } = SITE_HANDLES.python;
-  const tree = parser.parse(src);
-  if (!tree) return [];
-  const sites: DomainSite[] = [];
-  const push = (name: string, kind: SiteKind, keys: string[], line: number) => {
-    const uniq = [...new Set(keys)].sort();
-    if (uniq.length >= MIN_KEYS) sites.push({ name, kind, file, line, keys: uniq, typeLink: null });
-  };
-
-  /** Raw content between the quote runs (r"…"/'''…''' handled by the grammar's own
-   *  string_start/string_end, escapes left raw — what the line scan captured). */
-  const pyCook = (s: Node): string => {
-    const start = s.children.find((c) => c?.type === "string_start")?.text.length ?? 1;
-    const end = s.children.find((c) => c?.type === "string_end")?.text.length ?? 1;
-    return s.text.slice(start, s.text.length - end);
-  };
-  /** A "plain string literal" in the retired scan's sense: bare quotes, no prefix, no
-   *  f-string interpolation. */
-  const plainString = (s: Node): boolean => {
-    if (s.type !== "string" || s.namedChildren.some((c) => c?.type === "interpolation")) return false;
-    const st = s.children.find((c) => c?.type === "string_start")?.text;
-    return st === '"' || st === "'";
-  };
-  /** Members of an Enum class body: NAME = value assignments at body level. */
-  const enumKeys = (body: Node): string[] => kids(body).flatMap((st) => {
-    if (st.type !== "expression_statement") return [];
-    const a = kids(st)[0];
-    if (a?.type !== "assignment") return [];
-    const left = a.childForFieldName("left");
-    // leading-underscore names are machinery, not members
-    return left?.type === "identifier" && /^[A-Za-z]/.test(left.text) ? [left.text] : [];
-  });
-
-  // `x == "lit"` chains, grouped per (enclosing def, compared expression) — the same
-  // scoping guard the TS side keys by enclosing function: fusing two unrelated `kind`s
-  // across defs would manufacture a divergence out of the collision. The literal and the
-  // compared name are read with the retired scan's own patterns, applied to the grammar's
-  // condition node — the grammar decides WHICH text is a dispatch condition, the pattern
-  // keeps the exact expr/literal spelling the ranker always saw.
-  const compares = new Map<string, { keys: string[]; line: number; text: string }>();
-  const fnScopeOf = (n: Node): string => {
-    for (let p: Node | null = n.parent; p; p = p.parent) if (p.type === "function_definition") return String(p.startIndex);
-    return "<module>";
-  };
-  const CMP_A = /([A-Za-z_][\w.]*)\s*[=!]=\s*["']([^"']*)["']/;
-  const CMP_B = /["']([^"']*)["']\s*[=!]=\s*([A-Za-z_][\w.]*)/;
-
-  for (const match of query.matches(tree.rootNode)) {
-    const by = new Map(match.captures.map((c) => [c.name, c.node]));
-    // class Mode(Enum): — the enum body's member NAMES are the domain. The base list must
-    // be exactly one Enum-family name, optionally `enum.`-qualified — the same single-base
-    // form the line scan accepted.
-    if (by.has("enum.bases")) {
-      if (!/^\(\s*(?:enum\s*\.\s*)?(?:Enum|IntEnum|StrEnum|Flag|IntFlag)\s*\)$/.test(by.get("enum.bases")!.text)) continue;
-      push(by.get("enum.name")!.text, "enum", enumKeys(by.get("enum.body")!), lineOf(by.get("enum.decl")!));
-    // module-level `NAME = { … }` / `[ … ]` / `( … )` — a dict table or a string-literal list
-    } else if (by.has("asn.body")) {
-      const name = by.get("asn.name")!.text;
-      const line = lineOf(by.get("asn.name")!);
-      const body = by.get("asn.body")!;
-      if (body.type === "dictionary") {
-        const keys = kids(body).flatMap((p) => {
-          if (p.type !== "pair") return [];
-          const k = p.childForFieldName("key");
-          if (k?.type !== "string" || k.namedChildren.some((c) => c?.type === "interpolation")) return [];
-          const v = pyCook(k);
-          return v ? [v] : [];
-        });
-        push(name, "table", keys, line);
-      } else {
-        // list/tuple/set constant: EVERY element must be a plain string literal, or no site
-        const elems = kids(body);
-        if (elems.length && elems.every(plainString)) push(name, "list", elems.map(pyCook), line);
-      }
-    // match x: / case "lit": — a dispatch written as structural pattern matching. A clause
-    // counts only when its whole pattern is string literals (one, or a `|` alternation);
-    // guards, captures, comma patterns and wildcards yield nothing, as before.
-    } else if (by.has("match")) {
-      const ms = by.get("match")!;
-      const subject = ms.childForFieldName("subject");
-      const body = ms.childForFieldName("body");
-      const keys: string[] = [];
-      if (body) for (const cc of kids(body)) {
-        if (cc.type !== "case_clause") continue;
-        const clauseKids = kids(cc);
-        const patterns = clauseKids.filter((c) => c.type === "case_pattern");
-        if (patterns.length !== 1 || clauseKids.some((c) => c.type === "if_clause")) continue;
-        const inner = kids(patterns[0])[0];
-        if (!inner) continue;
-        if (inner.type === "string" && !inner.namedChildren.some((c) => c?.type === "interpolation")) keys.push(pyCook(inner));
-        else if (inner.type === "union_pattern" && kids(inner).every((p) => p.type === "string")) for (const p of kids(inner)) keys.push(pyCook(p));
-      }
-      push((subject?.text ?? "").slice(0, 40), "switch", keys, lineOf(ms));
-    // if/elif x == "lit" — a dispatch chain is a domain spelled as control flow
-    } else if (by.has("pycmp")) {
-      const clause = by.get("pycmp")!;
-      const cond = clause.childForFieldName("condition");
-      if (!cond) continue;
-      let expr: string | null = null, lit: string | null = null;
-      let m = CMP_A.exec(cond.text);
-      if (m) { expr = m[1]; lit = m[2]; }
-      else if ((m = CMP_B.exec(cond.text))) { expr = m[2]; lit = m[1]; }
-      if (expr && lit) {
-        const key = `${fnScopeOf(clause)}::${expr}`;
-        const e = compares.get(key) ?? { keys: [], line: lineOf(clause), text: expr.slice(0, 40) };
-        e.keys.push(lit);
-        compares.set(key, e);
-      }
-    }
-  }
-  for (const e of compares.values()) push(e.text, "compare", e.keys, e.line);
-  return sites;
+  return grammarSites("python", src, file);
 }
 
 // ── the walk ──────────────────────────────────────────────────────────────────────────

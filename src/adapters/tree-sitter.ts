@@ -35,9 +35,13 @@ export interface TreeSitterLanguageSpec {
   lineComment: string;
   /** Captured names to drop (e.g. `constructor` — a member the grammar names but the graph never should). */
   excludeSymbolNames?: RegExp;
-  /** Prose extraction overrides for languages whose doc conventions outgrow a line
-   *  prefix — TS block comments, python docstrings. Built-in specs carry the logic
-   *  the regex adapters proved; a contributed spec may rely on the generic scanners. */
+  /** Prose-extraction strategy, NAMED from a closed set the mechanism owns — a pack
+   *  carries data, never code (the pack-purity invariant). "line" reads lineComment
+   *  blocks; "jsdoc" adds block comments; "docstring" prefers the literal below a
+   *  def/class. Default "line". */
+  docStyle?: "line" | "jsdoc" | "docstring";
+  /** Escape hatch for PROJECT adapter modules only (rung 2 is code territory by
+   *  definition). Built-in packs must not use it — the purity guard enforces that. */
   docs?: { docAbove(lines: string[], line: number): string; fileDoc(lines: string[]): string };
 }
 
@@ -150,6 +154,13 @@ const pythonDocs = {
   },
 };
 
+/** The closed strategy set the `docStyle` field names. "line" is absent on purpose:
+ *  it is the factory's default scanners below, parameterized by lineComment. */
+const DOC_STRATEGIES: Record<string, { docAbove(lines: string[], line: number): string; fileDoc(lines: string[]): string } | undefined> = {
+  jsdoc: typescriptDocs,
+  docstring: pythonDocs,
+};
+
 /** TypeScript at query grade: exported top-level declarations + class methods. Mirrors
  *  the retired regex adapter's declared intent; corpus-diffed against it before the
  *  swap (63 files, 625 symbols, zero missed — the 2 deltas are regex over-reports). */
@@ -173,7 +184,7 @@ export const typescript: TreeSitterLanguageSpec = {
   `,
   lineComment: "//",
   excludeSymbolNames: /^constructor$/,
-  docs: typescriptDocs,
+  docStyle: "jsdoc",
 };
 
 /** Python at query grade: module-level defs/classes/assignments + class methods,
@@ -197,7 +208,7 @@ export const python: TreeSitterLanguageSpec = {
     (import_from_statement module_name: (relative_import) @spec)
   `,
   lineComment: "#",
-  docs: pythonDocs,
+  docStyle: "docstring",
 };
 
 function cleanLineComments(raw: string[], prefix: string): string {
@@ -249,13 +260,13 @@ export async function makeTreeSitterAdapter(
       }
       return specs;
     },
-    docAbove: spec.docs?.docAbove ?? ((lines: string[], lineNo: number) => {
+    docAbove: spec.docs?.docAbove ?? DOC_STRATEGIES[spec.docStyle ?? "line"]?.docAbove ?? ((lines: string[], lineNo: number) => {
       let j = lineNo - 2; // lineNo is 1-based; start at the line above the symbol
       const block: string[] = [];
       while (j >= 0 && lines[j].trim().startsWith(commentPrefix)) { block.unshift(lines[j]); j--; }
       return cleanLineComments(block, commentPrefix);
     }),
-    fileDoc: spec.docs?.fileDoc ?? ((lines: string[]) => {
+    fileDoc: spec.docs?.fileDoc ?? DOC_STRATEGIES[spec.docStyle ?? "line"]?.fileDoc ?? ((lines: string[]) => {
       let i = 0;
       if (lines[0]?.startsWith("#!")) i = 1;
       while (i < lines.length && !lines[i].trim()) i++;

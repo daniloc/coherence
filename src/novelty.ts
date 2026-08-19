@@ -48,12 +48,27 @@ import type { Config } from "./types.ts";
  *  top-level `Record<…>`-annotated const tables — export NOT required for tables). */
 export interface FileSurface { exports: Set<string>; domains: Map<string, Set<string>>; }
 
-// ── the per-language surface data (queries, not scanners) ────────────────────────────
-// Capture classes: `export` — a name node added to exports; `domain.name`+`domain.body`
-// — an enumerated domain and the node its members are read from; `table.name`+
-// `table.obj` — a keyed table (counted whether or not exported) and its object node;
-// `lit.name`+`lit.body` — a Literal-style alias. Member extraction is one mechanism
-// below; a language contributes patterns, never verdict logic.
+// ── the per-language surface data (queries, not scanners — and CAPTURE-COMPLETE) ─────
+// Pack purity: a row carries query text and regex fields only — no functions, and no
+// grammar vocabulary left behind in the mechanism (the old `membersOf` switched on six
+// grammar node types; its knowledge now lives in the queries as member captures).
+// Capture classes, aggregated by the one mechanism below:
+//   `@export`                    — a name node added to exports;
+//   `@domain.name`+`@domain.member` — an enumerated body (TS/python enums): one match
+//                                  per member, the same name capture in each;
+//   `@table.name`+`@table.key`   — a keyed table (counted whether or not exported);
+//   `@lit.name`+`@lit.member`    — a string-literal domain (TS unions, python
+//                                  `Literal[…]`); the ≥2-member floor is mechanism.
+// A class may also capture `<cls>.body` when the grammar splits members across
+// matches — TS unions nest left-associatively ((("a"|"b")|"c")|"d"), so a direct-child
+// pattern sees one LEVEL only and web-tree-sitter 0.26 has no wildcard-depth operator.
+// The union members therefore arrive through two patterns: the outermost level rides
+// the anchored alias pattern (same-match `@lit.name`), and each deeper level fires the
+// UNION-PARENTED pattern `(union_type (union_type (literal_type …)))` — the exact
+// chain shape, so a union sitting under a non-union node (an object-type field, a
+// generic argument) matches neither pattern, preserving the old union-edges-only walk.
+// Those deeper matches carry no name; the mechanism attaches them to the enclosing
+// captured `@lit.body` by byte range.
 interface SurfaceLanguage {
   ext: RegExp;
   grammar: string;
@@ -62,7 +77,12 @@ interface SurfaceLanguage {
   privateName?: RegExp;
 }
 
-const SURFACE_LANGUAGES: SurfaceLanguage[] = [
+// The object-member alternation shared by the six TS table forms: pair keys, method
+// names, shorthand properties — direct children of the table's object literal only.
+const TS_TABLE_MEMBERS =
+  `(object [(pair key: (_) @table.key) (method_definition name: (_) @table.key) (shorthand_property_identifier) @table.key])`;
+
+export const SURFACE_LANGUAGES: SurfaceLanguage[] = [
   {
     ext: /\.[mc]?[jt]sx?$/i,
     grammar: "typescript",
@@ -75,19 +95,22 @@ const SURFACE_LANGUAGES: SurfaceLanguage[] = [
       (export_statement declaration: (lexical_declaration (variable_declarator name: (identifier) @export)))
       (export_statement declaration: (type_alias_declaration name: (type_identifier) @export))
       (export_statement declaration: (enum_declaration name: (identifier) @export))
-      (export_statement declaration: (type_alias_declaration name: (type_identifier) @domain.name value: (union_type) @domain.body))
-      (export_statement declaration: (enum_declaration name: (identifier) @domain.name body: (enum_body) @domain.body))
-      (program (lexical_declaration (variable_declarator name: (identifier) @table.name type: (type_annotation (_) @_ty) value: (object) @table.obj
+      (export_statement declaration: (type_alias_declaration name: (type_identifier) @lit.name value: (union_type) @lit.body))
+      (export_statement declaration: (type_alias_declaration name: (type_identifier) @lit.name value: (union_type (literal_type (string) @lit.member))))
+      (union_type (union_type (literal_type (string) @lit.member)))
+      (export_statement declaration: (enum_declaration name: (identifier) @domain.name
+        body: (enum_body [(property_identifier) @domain.member (string) @domain.member (enum_assignment name: (_) @domain.member)])))
+      (program (lexical_declaration (variable_declarator name: (identifier) @table.name type: (type_annotation (_) @_ty) value: ${TS_TABLE_MEMBERS}
         (#match? @_ty "Record\\s*<"))))
-      (program (export_statement declaration: (lexical_declaration (variable_declarator name: (identifier) @table.name type: (type_annotation (_) @_ty) value: (object) @table.obj
+      (program (export_statement declaration: (lexical_declaration (variable_declarator name: (identifier) @table.name type: (type_annotation (_) @_ty) value: ${TS_TABLE_MEMBERS}
         (#match? @_ty "Record\\s*<")))))
-      (program (lexical_declaration (variable_declarator name: (identifier) @table.name value: (satisfies_expression (object) @table.obj (_) @_ty)
+      (program (lexical_declaration (variable_declarator name: (identifier) @table.name value: (satisfies_expression ${TS_TABLE_MEMBERS} (_) @_ty)
         (#match? @_ty "Record\\s*<"))))
-      (program (export_statement declaration: (lexical_declaration (variable_declarator name: (identifier) @table.name value: (satisfies_expression (object) @table.obj (_) @_ty)
+      (program (export_statement declaration: (lexical_declaration (variable_declarator name: (identifier) @table.name value: (satisfies_expression ${TS_TABLE_MEMBERS} (_) @_ty)
         (#match? @_ty "Record\\s*<")))))
-      (program (lexical_declaration (variable_declarator name: (identifier) @table.name value: (as_expression (object) @table.obj (_) @_ty)
+      (program (lexical_declaration (variable_declarator name: (identifier) @table.name value: (as_expression ${TS_TABLE_MEMBERS} (_) @_ty)
         (#match? @_ty "Record\\s*<"))))
-      (program (export_statement declaration: (lexical_declaration (variable_declarator name: (identifier) @table.name value: (as_expression (object) @table.obj (_) @_ty)
+      (program (export_statement declaration: (lexical_declaration (variable_declarator name: (identifier) @table.name value: (as_expression ${TS_TABLE_MEMBERS} (_) @_ty)
         (#match? @_ty "Record\\s*<")))))
     `,
   },
@@ -101,74 +124,28 @@ const SURFACE_LANGUAGES: SurfaceLanguage[] = [
       (module (class_definition name: (identifier) @export))
       (module (decorated_definition (class_definition name: (identifier) @export)))
       (module (expression_statement (assignment left: (identifier) @export)))
-      (class_definition name: (identifier) @domain.name superclasses: (argument_list) @_bases body: (block) @domain.body
-        (#match? @_bases "(Int|Str)?(Enum|Flag)"))
-      (module (expression_statement (assignment left: (identifier) @table.name right: (dictionary) @table.obj)))
-      (module (expression_statement (assignment left: (identifier) @lit.name right: (subscript value: (_) @_lv) @lit.body
+      (class_definition name: (identifier) @domain.name superclasses: (argument_list) @_bases
+        body: (block (expression_statement (assignment left: (identifier) @domain.member)))
+        (#match? @_bases "(Int|Str)?(Enum|Flag)") (#match? @domain.member "^[A-Za-z]"))
+      (module (expression_statement (assignment left: (identifier) @table.name right: (dictionary (pair key: (string) @table.key)))))
+      (module (expression_statement (assignment left: (identifier) @lit.name right: (subscript value: (_) @_lv subscript: (string) @lit.member)
         (#match? @_lv "Literal"))))
     `,
   },
 ];
 
-/** Top-level member names of a captured domain/table node, by node type. One mechanism
- *  for every language: the node kind, not the language, decides how members read out. */
-function membersOf(node: Node): string[] {
-  const out: string[] = [];
-  switch (node.type) {
-    case "union_type": {
-      // string-literal union alternatives, flattened; ≥2 enforced by the caller
-      const walk = (n: Node): void => {
-        for (const c of n.namedChildren) {
-          if (!c) continue;
-          if (c.type === "union_type") walk(c);
-          else if (c.type === "literal_type" && c.namedChildren[0]?.type === "string")
-            out.push(c.namedChildren[0].text.slice(1, -1));
-        }
-      };
-      walk(node);
-      return out;
-    }
-    case "enum_body":
-      for (const c of node.namedChildren) {
-        const name = c?.childForFieldName?.("name") ?? (c?.type === "property_identifier" || c?.type === "string" ? c : null);
-        if (name) out.push(name.type === "string" ? name.text.slice(1, -1) : name.text);
-        else if (c && (c.type === "property_identifier" || c.type === "enum_assignment"))
-          out.push((c.childForFieldName("name") ?? c).text);
-      }
-      return out;
-    case "object":
-      for (const c of node.namedChildren) {
-        if (!c) continue;
-        if (c.type === "pair" || c.type === "method_definition") {
-          const key = c.childForFieldName("name") ?? c.childForFieldName("key");
-          if (key) out.push(key.type === "string" ? key.text.slice(1, -1) : key.text);
-        } else if (c.type === "shorthand_property_identifier") out.push(c.text);
-      }
-      return out;
-    case "block": // python enum body: NAME = value assignments at body level
-      for (const c of node.namedChildren) {
-        if (c?.type !== "expression_statement") continue;
-        const a = c.namedChildren[0];
-        if (a?.type !== "assignment") continue;
-        const left = a.childForFieldName("left");
-        if (left?.type === "identifier" && /^[A-Za-z]/.test(left.text)) out.push(left.text);
-      }
-      return out;
-    case "dictionary":
-      for (const c of node.namedChildren) {
-        if (c?.type !== "pair") continue;
-        const key = c.childForFieldName("key");
-        if (key?.type === "string") out.push(key.text.replace(/^[rbuf]*["']/i, "").replace(/["']$/, ""));
-      }
-      return out;
-    case "subscript": // Literal["a", "b"]
-      for (const c of node.namedChildren)
-        if (c?.type === "string") out.push(c.text.replace(/^["']/, "").replace(/["']$/, ""));
-      return out;
-    default:
-      return out;
-  }
-}
+// ── the one mechanism: aggregate captures by CLASS, never by grammar node type ───────
+// Floors and privacy are POLICY, shared by every language: a string-literal domain
+// needs ≥2 alternatives to be a domain; enum bodies and keyed tables count from one;
+// a module-local `_TABLE = {…}` still counts (tables were never privacy-filtered).
+const MEMBER_FLOOR: Record<string, number> = { domain: 1, table: 1, lit: 2 };
+const PRIVATE_EXEMPT = new Set(["table"]);
+
+/** One generic unquote for a captured string node: strip letter prefixes (python's
+ *  r/b/u/f) plus one quote each side. A no-op on unquoted member text (identifiers,
+ *  numbers, computed keys), so every member capture funnels through it. */
+const unquote = (text: string): string =>
+  text.replace(/^[A-Za-z]*["']/, "").replace(/["']$/, "");
 
 const surfaceQueryCache = new Map<string, Promise<{ parser: import("web-tree-sitter").Parser; query: Query }>>();
 function surfaceHandle(lang: SurfaceLanguage): Promise<{ parser: import("web-tree-sitter").Parser; query: Query }> {
@@ -190,31 +167,52 @@ export async function surfaceOfSource(src: string, fileName = "x.ts"): Promise<F
   const { parser, query } = await surfaceHandle(lang);
   const tree = parser.parse(src);
   if (!tree) return { exports, domains };
-  const put = (name: string, members: Iterable<string>) => {
-    const set = domains.get(name) ?? new Set<string>();
-    for (const m of members) set.add(m);
-    if (set.size) domains.set(name, set);
+  // Aggregation state: members per (class, name) across matches; captured body spans;
+  // members whose match carried no name (the grammar split them off — TS union levels).
+  const collected = new Map<string, Map<string, Set<string>>>();
+  const bodies: Array<{ cls: string; name: string; start: number; end: number }> = [];
+  const strays: Array<{ cls: string; start: number; text: string }> = [];
+  const membersFor = (cls: string, name: string): Set<string> => {
+    let per = collected.get(cls);
+    if (!per) collected.set(cls, (per = new Map()));
+    let set = per.get(name);
+    if (!set) per.set(name, (set = new Set()));
+    return set;
   };
   for (const match of query.matches(tree.rootNode)) {
-    const by = new Map(match.captures.map((c) => [c.name, c.node]));
-    const exp = by.get("export");
-    if (exp && !(lang.privateName?.test(exp.text))) exports.add(exp.text);
-    const domainName = by.get("domain.name"), domainBody = by.get("domain.body");
-    if (domainName && domainBody && !(lang.privateName?.test(domainName.text))) {
-      const members = membersOf(domainBody);
-      // a union needs ≥2 string alternatives to be a domain; other bodies count as-is
-      if (members.length >= (domainBody.type === "union_type" ? 2 : 1)) put(domainName.text, members);
+    let name: { cls: string; text: string } | undefined;
+    let body: { cls: string; node: Node } | undefined;
+    const members: Array<{ cls: string; node: Node }> = [];
+    for (const c of match.captures) {
+      if (c.name === "export") {
+        if (!(lang.privateName?.test(c.node.text))) exports.add(c.node.text);
+      } else if (c.name.endsWith(".name")) name = { cls: c.name.slice(0, -".name".length), text: c.node.text };
+      else if (c.name.endsWith(".body")) body = { cls: c.name.slice(0, -".body".length), node: c.node };
+      else if (c.name.endsWith(".member") || c.name.endsWith(".key"))
+        members.push({ cls: c.name.replace(/\.(member|key)$/, ""), node: c.node });
     }
-    const tableName = by.get("table.name"), tableObj = by.get("table.obj");
-    if (tableName && tableObj) {
-      const keys = membersOf(tableObj);
-      if (keys.length) put(tableName.text, keys);
+    if (name) {
+      if (!PRIVATE_EXEMPT.has(name.cls) && lang.privateName?.test(name.text)) continue;
+      const set = membersFor(name.cls, name.text);
+      for (const m of members) set.add(unquote(m.node.text));
+      if (body) bodies.push({ cls: body.cls, name: name.text, start: body.node.startIndex, end: body.node.endIndex });
+    } else {
+      for (const m of members) strays.push({ cls: m.cls, start: m.node.startIndex, text: unquote(m.node.text) });
     }
-    const litName = by.get("lit.name"), litBody = by.get("lit.body");
-    if (litName && litBody && !(lang.privateName?.test(litName.text))) {
-      exports.add(litName.text);
-      const members = membersOf(litBody);
-      if (members.length >= 2) put(litName.text, members);
+  }
+  // A stray belongs to the same-class body whose byte range contains it; one no body
+  // claims was never domain surface (a function-signature union, a non-exported alias).
+  for (const s of strays) {
+    const home = bodies.find((b) => b.cls === s.cls && s.start >= b.start && s.start < b.end);
+    if (home) membersFor(home.cls, home.name).add(s.text);
+  }
+  for (const [cls, per] of collected) {
+    const floor = MEMBER_FLOOR[cls] ?? 1;
+    for (const [name, members] of per) {
+      if (members.size < floor) continue;
+      const set = domains.get(name) ?? new Set<string>();
+      for (const m of members) set.add(m);
+      domains.set(name, set);
     }
   }
   return { exports, domains };

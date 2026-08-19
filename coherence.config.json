@@ -58,9 +58,10 @@
   "conventions": {
     "dismissed": {
       "isActive": "A hover/selection highlight predicate inside the browser script render-contract.ts embeds as a string. It decides which lane is lit, grades nothing, and cannot make a verdict unearned.",
-      "isProse": "redundancy.ts's site-kind classifier \u2014 it only weights a ranked ADVISORY that gates nothing. A site mis-weighted here changes the order of a report, never a verdict.",
-      "isTooling": "render-outline.ts's display grouping \u2014 which subtree prints under `tooling` in the outline. Presentation over an already-derived graph; the graph itself is unaffected.",
-      "isPyTestPath": "One shared definition exported from oracle-domain.ts and imported where python test files must be excluded (novelty surface, redundancy walk). A single spelling, not a scattered convention \u2014 and it scopes advisories, never a verdict."
+      "isProse": "redundancy.ts's site-kind classifier — it only weights a ranked ADVISORY that gates nothing. A site mis-weighted here changes the order of a report, never a verdict.",
+      "isTooling": "render-outline.ts's display grouping — which subtree prints under `tooling` in the outline. Presentation over an already-derived graph; the graph itself is unaffected.",
+      "isPyTestPath": "One shared definition exported from oracle-domain.ts and imported where python test files must be excluded (novelty surface, redundancy walk). A single spelling, not a scattered convention — and it scopes advisories, never a verdict.",
+      "scopeKeyOf": "redundancy.ts's chain-grouping key — which enclosing scope a compare chain belongs to, computed by capture containment. It shapes how an ADVISORY groups candidates; it grades nothing and cannot make a verdict unearned."
     }
   },
   "sinks": {
@@ -68,11 +69,11 @@
   },
   "atlas": {
     "charts": {
-      "project-source": "The repository under analysis as it is on disk: *.spec.md prose, source text, coherence.config.json, git history. Agent-authored and arbitrary \u2014 never trusted as a statement about itself, only as text to be read.",
-      "derived-model": "The graph the harness builds from that text \u2014 components, claims, symbols, import edges \u2014 plus the config it was walked with. Everything downstream is computed over this and nothing re-reads the tree.",
+      "project-source": "The repository under analysis as it is on disk: *.spec.md prose, source text, coherence.config.json, git history. Agent-authored and arbitrary — never trusted as a statement about itself, only as text to be read.",
+      "derived-model": "The graph the harness builds from that text — components, claims, symbols, import edges — plus the config it was walked with. Everything downstream is computed over this and nothing re-reads the tree.",
       "shell": "The other side of a process boundary: the commands the harness spawns for evidence (test runner, typecheck, project `measures` probes) and the hook process the agent harness spawns to reach the journal. Nothing here is the harness's own memory, and an exit code is the only fact that crosses.",
-      "record": "The durable memory a LATER run compares against \u2014 .coherence/status.json, the pinned baselines in public/, the decision journal. Every ratchet in this repo is a comparison against this chart, which is why a byte of garbage in it is a gate that went quiet.",
-      "verdict": "What a gate is permitted to SAY: a claim's green/red/skip, a ratchet's held/failed, the process exit code. The scarcest chart in the system \u2014 a fact reaches it only through a crossing that earned it.",
+      "record": "The durable memory a LATER run compares against — .coherence/status.json, the pinned baselines in public/, the decision journal. Every ratchet in this repo is a comparison against this chart, which is why a byte of garbage in it is a gate that went quiet.",
+      "verdict": "What a gate is permitted to SAY: a claim's green/red/skip, a ratchet's held/failed, the process exit code. The scarcest chart in the system — a fact reaches it only through a crossing that earned it.",
       "reading-surface": "What a human or an agent then reads: public/_*.html, AGENTS.md, CLAUDE.md, the terminal reports. Derived text with no authority of its own; it can mislead, but it cannot turn a red green."
     },
     "transitions": {
@@ -80,19 +81,19 @@
         "from": "project-source",
         "to": "derived-model",
         "security": true,
-        "translates": "The single ingress: arbitrary repository text becomes the model every downstream gate is computed over. Nothing after this re-reads the tree, so whatever the walk drops is not wrong here \u2014 it is absent everywhere, silently. floor.ts's non-vacuity refusal exists because of exactly this crossing, and grades the collapse rather than the crossing."
+        "translates": "The single ingress: arbitrary repository text becomes the model every downstream gate is computed over. Nothing after this re-reads the tree, so whatever the walk drops is not wrong here — it is absent everywhere, silently. floor.ts's non-vacuity refusal exists because of exactly this crossing, and grades the collapse rather than the crossing."
       },
       "loadConfig": {
         "from": "project-source",
         "to": "shell",
         "security": true,
-        "translates": "The repository's own coherence.config.json becomes argv the harness spawns \u2014 `test`, `typecheck`, and every `mass.measures` command. Running the harness in a tree executes that tree's config; readJsonOrRefuse makes an unparseable config refuse rather than revert to defaults, but a parseable one is obeyed."
+        "translates": "The repository's own coherence.config.json becomes argv the harness spawns — `test`, `typecheck`, and every `mass.measures` command. Running the harness in a tree executes that tree's config; readJsonOrRefuse makes an unparseable config refuse rather than revert to defaults, but a parseable one is obeyed."
       },
       "readJsonOrRefuse": {
         "from": "record",
         "to": "derived-model",
         "security": true,
-        "translates": "The one door every remembered fact enters through \u2014 status.json, each ratchet baseline, the journal. It separates ABSENT (legitimate: first run, nothing pinned) from UNREADABLE (never legitimate), because the `catch \u2192 return default` it replaced turned a single garbage byte into every floor on the page quietly agreeing."
+        "translates": "The one door every remembered fact enters through — status.json, each ratchet baseline, the journal. It separates ABSENT (legitimate: first run, nothing pinned) from UNREADABLE (never legitimate), because the `catch → return default` it replaced turned a single garbage byte into every floor on the page quietly agreeing."
       },
       "analyzeOracle": {
         "from": "project-source",
@@ -104,7 +105,7 @@
         "from": "derived-model",
         "to": "shell",
         "security": true,
-        "translates": "A claim's oracle NAME becomes a test selection in a spawned runner. A name that exists nowhere exits nonzero \u2014 the vanished oracle cannot pass by selecting nothing."
+        "translates": "A claim's oracle NAME becomes a test selection in a spawned runner. A name that exists nowhere exits nonzero — the vanished oracle cannot pass by selecting nothing."
       },
       "execNamedTest": {
         "from": "shell",
@@ -116,7 +117,7 @@
         "from": "shell",
         "to": "verdict",
         "security": true,
-        "translates": "One batched runner's output is split back into per-claim verdicts. ZERO matching tests is its own named state, never a quiet pass \u2014 the batch's efficiency must not buy back the absence it would otherwise hide."
+        "translates": "One batched runner's output is split back into per-claim verdicts. ZERO matching tests is its own named state, never a quiet pass — the batch's efficiency must not buy back the absence it would otherwise hide."
       },
       "runVerify": {
         "from": "derived-model",
@@ -128,13 +129,13 @@
         "from": "derived-model",
         "to": "verdict",
         "security": true,
-        "translates": "The floor beneath every other crossing on this map: before any claim is graded, the derived surface is checked against what the record remembers. An empty derivation over a remembered one REFUSES \u2014 `0 of 0` never renders as coherent."
+        "translates": "The floor beneath every other crossing on this map: before any claim is graded, the derived surface is checked against what the record remembers. An empty derivation over a remembered one REFUSES — `0 of 0` never renders as coherent."
       },
       "recordVerify": {
         "from": "verdict",
         "to": "record",
         "security": true,
-        "translates": "This run's verdicts become the memory the next run compares against \u2014 the only writer to that chart. A skip merges rather than overwrites, so a scoped run can never launder a real red into an absence."
+        "translates": "This run's verdicts become the memory the next run compares against — the only writer to that chart. A skip merges rather than overwrites, so a scoped run can never launder a real red into an absence."
       },
       "setLifecycleHookForHost": {
         "from": "derived-model",
@@ -188,7 +189,7 @@
         "from": "record",
         "to": "verdict",
         "security": true,
-        "translates": "The pinned mass is re-addressed after renames. A vanished pin is inherited only when family, unit and EXACT value all match \u2014 a rename that also grew absorbs nothing, so growth cannot ride in under a relabel."
+        "translates": "The pinned mass is re-addressed after renames. A vanished pin is inherited only when family, unit and EXACT value all match — a rename that also grew absorbs nothing, so growth cannot ride in under a relabel."
       },
       "auditPremiseLeases": {
         "from": "record",
@@ -200,7 +201,7 @@
         "from": "project-source",
         "to": "verdict",
         "security": false,
-        "translates": "A diff's shape becomes a demand: behavioral growth with zero anchors needs an invariant or an explicit attestation. It grades process, not evidence \u2014 a tear here delays a claim, it does not fabricate one."
+        "translates": "A diff's shape becomes a demand: behavioral growth with zero anchors needs an invariant or an explicit attestation. It grades process, not evidence — a tear here delays a claim, it does not fabricate one."
       },
       "selectRegulation": {
         "from": "derived-model",
@@ -236,7 +237,7 @@
         "from": "record",
         "to": "reading-surface",
         "security": false,
-        "translates": "Recorded read-traces and labeled outcomes become a report on how well the context predictor did. It gates nothing \u2014 the crossing carries a measurement out to a reader, never back into a verdict."
+        "translates": "Recorded read-traces and labeled outcomes become a report on how well the context predictor did. It gates nothing — the crossing carries a measurement out to a reader, never back into a verdict."
       },
       "calibrationPaths": {
         "from": "record",
@@ -248,7 +249,7 @@
         "from": "derived-model",
         "to": "reading-surface",
         "security": false,
-        "translates": "The graph becomes the smallest packet an agent needs for one task. Bounded and byte-stable, and every approximation it makes is named in the packet \u2014 a reader must be able to see what was left out."
+        "translates": "The graph becomes the smallest packet an agent needs for one task. Bounded and byte-stable, and every approximation it makes is named in the packet — a reader must be able to see what was left out."
       },
       "runHook": {
         "from": "shell",
@@ -260,7 +261,7 @@
         "from": "project-source",
         "to": "reading-surface",
         "security": false,
-        "translates": "Project-authored override and append files become part of the text injected into an agent's context at each lifecycle event: base = override ?? canonical, the append follows, and an unreadable file degrades to the canonical emission \u2014 a torn customization costs the project's voice, never the session. It can mislead an agent, but it cannot touch a verdict."
+        "translates": "Project-authored override and append files become part of the text injected into an agent's context at each lifecycle event: base = override ?? canonical, the append follows, and an unreadable file degrades to the canonical emission — a torn customization costs the project's voice, never the session. It can mislead an agent, but it cannot touch a verdict."
       },
       "currentObservation": {
         "from": "record",
@@ -274,6 +275,9 @@
         "security": true,
         "translates": "The selected host's project hook surface is read to produce ONE structural control bit: Claude's shared and local settings, or Codex's hooks.json plus the relevant project config.toml controls, together with that host's aligned launcher root, root mapping, and runnable target. Host-specific syntax cannot weaken singularity: a checker that accepts two firing paths, an inline competitor, a disabled feature, or managed-only exclusion is not a binary control, only a substring detector with a nicer report."
       }
+    },
+    "nonTransition": {
+      "builtinLanguagePacks": "Aggregates the five in-harness pack tables for inspection and the purity oracle. No crossing: harness constants in, harness constants out — it exists so the pack-purity guard has one perimeter to sweep and so conformance checking has a future home."
     }
   }
 }

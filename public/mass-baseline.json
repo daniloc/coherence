@@ -16,32 +16,32 @@
   },
   {
     "key": "files|total",
-    "value": 122,
+    "value": 124,
     "unit": "files"
   },
   {
     "key": "lines|Executable contracts",
-    "value": 15834,
+    "value": 15855,
     "unit": "lines"
   },
   {
     "key": "lines|Harness core",
-    "value": 21419,
+    "value": 21758,
     "unit": "lines"
   },
   {
     "key": "lines|Source adapters",
-    "value": 392,
+    "value": 403,
     "unit": "lines"
   },
   {
     "key": "lines|total",
-    "value": 37645,
+    "value": 38016,
     "unit": "lines"
   },
   {
     "key": "measure|graph-claims",
-    "value": 47,
+    "value": 48,
     "unit": "claims"
   },
   {
@@ -51,12 +51,12 @@
   },
   {
     "key": "symbols|total",
-    "value": 635,
+    "value": 645,
     "unit": "symbols"
   },
   {
     "key": "undocumented|symbols",
-    "value": 278,
+    "value": 282,
     "unit": "symbols"
   }
 ]

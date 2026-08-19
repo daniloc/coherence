@@ -20,17 +20,22 @@
 // `via test` claim → the boundary fails until the domain is derived from the live SSOT
 // (or, for a legitimate source-property guard, re-declared with `via guard` — see verify).
 //
-// The TS/JS arm reads oracle sources through the shared tree-sitter grammar handle
-// (phase 2b, arm 4 — the `typescript` compiler-API dependency is gone): the same
-// scope/iteration-root resolution the compiler walk performed, re-expressed as node
-// walks over the grammar tree. The walks mirror the retired compiler visitors 1:1;
-// classification here is scope-dependent (an identifier's verdict depends on how the
-// FILE binds it), which is walk-shaped work — the grammar contributes the parse, not
-// a capture table.
+// SHAPE (the declarative baseline). Everything a LANGUAGE contributes lives in one row of
+// ORACLE_LANGUAGES below — query text, regex sources, wrapper-name lists, detail
+// templates: data, never functions (the pack-purity rule). Everything that DECIDES lives
+// once, below the table, and is language-blind: the verdict lattices, the conservative
+// unknown-identifier rule, the floor semantics, the detail rendering. Between the two sit
+// the mechanism-owned EXTRACTION STRATEGIES the rows name by grade — "grammar-query"
+// resolves a row's tree-sitter queries into DomainRefs and a Scope (node walks ported 1:1
+// from the retired compiler visitors; the 898-comparison gate proved the walk, and the
+// query port was re-gated the same way); "indent-regex" resolves a row's regex fields the
+// way the retired python analyzers did, quirks preserved on purpose (d-3aa0cbff kept
+// python at this grade; this table is the re-open condition it named). Cooked-string
+// title matching is likewise a named strategy: escape decoding is language-blind.
 import { readFile } from "node:fs/promises";
 import { readdir } from "node:fs/promises";
 import { join, relative } from "node:path";
-import type { Node } from "web-tree-sitter";
+import { Query, type Node, type Parser } from "web-tree-sitter";
 import { grammarHandle } from "./adapters/tree-sitter.ts";
 import type { Config } from "./types.ts";
 
@@ -54,14 +59,213 @@ export interface OracleAnalysis {
   hasFloor?: boolean;
 }
 
+// ── ORACLE_LANGUAGES: the per-language oracle data ───────────────────────────────────
+// One row per language; a row carries ONLY query text, regex/string fields, and the
+// names of mechanism-owned strategies. How each domain CLASSIFIES — and every verdict —
+// is decided once, below, from the DomainRefs the row's grade strategy extracts.
+
+/** Why one iterated domain classified the way it did. The classifier (one, language-
+ *  blind) emits these; a row's detailTemplates renders them, so a language can vary its
+ *  phrasing without owning any verdict logic (python phrases every live reason the same
+ *  way; typescript phrases each resolution). Placeholders: {expr} the iterated
+ *  expression's display text, {expr40}/{expr50} the same truncated, {root} the resolved
+ *  root identifier. */
+export type OracleDetailReason =
+  | "inline-literal" // the domain is itself an array/list/regex literal
+  | "call"           // a bare call result with no resolvable root — live by definition
+  | "imported"       // roots at an imported binding (the live SSOT)
+  | "live-local"     // roots at a local bound to a call/query result
+  | "const-array"    // roots at a same-file const array/regex literal — the hand-list
+  | "call-root"      // a call hanging off an unknown root — conservatively live
+  | "opaque-root"    // an unknown identifier (param, closure, anchor symbol) — live
+  | "unresolved";    // nothing resolvable at all — conservatively live
+
+interface OracleLanguageCommon {
+  /** How this language's test files are recognized, by name or path. */
+  testFilePattern: RegExp;
+  /** Transparent wrappers root resolution sees through — names only, never functions
+   *  (TS: `Object.keys(X)` → X for the coverage AND parity arms; python: `sorted(X)` → X
+   *  for the parity arm — the coverage arm never unwrapped, and still does not). */
+  unwrapCalls: string[];
+  /** Rendering for each classification reason — see OracleDetailReason. */
+  detailTemplates: Record<OracleDetailReason, string>;
+  /** Detail when the anchor block iterates no domain at all. */
+  noIterationDetail: string;
+  /** Detail when the anchor exists but has no body (only the query grade can see one). */
+  emptyAnchorDetail?: string;
+  /** Appended when >1 domains all classify literal ({n} = how many more). A row without
+   *  one reports only the first literal domain, as the python arm always has. */
+  multiLiteralSuffix?: string;
+}
+
+/** A language read at query grade: a shared tree-sitter grammar plus capture patterns.
+ *  Capture classes — anchor: `anchor.call`/`anchor.fn`/`anchor.args` (a named test
+ *  block; the title is arg 0, matched cooked); scope: `scope.import` (a name bound by an
+ *  import — live), `scope.specifier` (a named-import specifier; alias wins over name),
+ *  `scope.name`+`scope.decl` (a local declarator, classified literal-vs-live from its
+ *  initializer); iteration: `for.stmt`+`for.domain`, `iter.call`+`iter.recv`+
+ *  `iter.method`, `each.call`+`each.recv`+`each.args`, `spread.el`; floor: any match is
+ *  a domain-size lower bound. A row contributes patterns, never verdict logic. */
+export interface QueryOracleLanguage extends OracleLanguageCommon {
+  grade: "grammar-query";
+  grammar: string;
+  /** Title comparison strategy, from the closed set the mechanism owns: "cooked-string"
+   *  decodes escapes/template fragments before comparing — escape decoding is
+   *  language-blind, so it is mechanism, named here rather than carried as code. */
+  titleMatch: "cooked-string";
+  anchorQuery: string;
+  scopeQuery: string;
+  iterationQuery: string;
+  floorQuery: string;
+  /** Receiver methods peeled while resolving a chain to its source collection. */
+  chainMethods: string[];
+  /** A spread whose HOST node is one of these types is not domain iteration (object
+   *  spread never was); one whose inner expression is one of these is a literal already.
+   *  Node-type names are data here so the mechanism never hardcodes a grammar's. */
+  spreadNotHost: string[];
+  spreadNotInner: string[];
+}
+
+/** A language read at regex/indent grade (no grammar; d-3aa0cbff declared the grade).
+ *  anchorPatterns anchor a named block exactly ({name} = the escaped oracle name;
+ *  capture 1 = the block's indent); domainPatterns each capture one iterated-domain
+ *  expression; importPatterns bind live names; literalDomainPatterns mark a domain
+ *  expression as a hand-list; floorPattern is the domain-size lower bound. */
+export interface RegexOracleLanguage extends OracleLanguageCommon {
+  grade: "indent-regex";
+  anchorPatterns: string[];
+  domainPatterns: RegExp[];
+  importPatterns: { fromImport: RegExp; plainImport: RegExp };
+  literalDomainPatterns: RegExp[];
+  floorPattern: RegExp;
+}
+
+export type OracleLanguageSpec = QueryOracleLanguage | RegexOracleLanguage;
+
+export const ORACLE_LANGUAGES: { typescript: QueryOracleLanguage; python: RegexOracleLanguage } = {
+  typescript: {
+    grade: "grammar-query",
+    grammar: "typescript",
+    testFilePattern: /\.(test|spec)\.[mc]?[jt]sx?$/,
+    titleMatch: "cooked-string",
+    // A named test block: describe("<title>", body) — bare or as a member property
+    // (`x.describe(...)`); the title must be a cooked string, matched by the mechanism.
+    anchorQuery: `
+      (call_expression
+        function: [
+          (identifier) @anchor.fn
+          (member_expression property: (property_identifier) @anchor.fn)
+        ]
+        arguments: (arguments) @anchor.args
+        (#eq? @anchor.fn "describe")) @anchor.call
+    `,
+    // What binds a name in the file: imports in every clause form (live), and local
+    // declarators (their initializer decides literal-vs-live, mechanism-side).
+    scopeQuery: `
+      (import_statement (import_clause (identifier) @scope.import))
+      (import_statement (import_clause (namespace_import (identifier) @scope.import)))
+      (import_statement (import_clause (named_imports (import_specifier) @scope.specifier)))
+      (import_statement (import_require_clause (identifier) @scope.import))
+      (lexical_declaration (variable_declarator name: (identifier) @scope.name) @scope.decl)
+      (variable_declaration (variable_declarator name: (identifier) @scope.name) @scope.decl)
+    `,
+    // What iteration looks like: for-of/for-in (one grammar node covers both), a
+    // receiver-iterating method call, the it/test/describe `.each` parameterization
+    // idiom (the each ARGUMENT is the domain; missing this form misclassifies the most
+    // idiomatic totality oracles as NO-ITERATION), and spread of a collection.
+    iterationQuery: `
+      (for_in_statement right: (_) @for.domain) @for.stmt
+      (call_expression
+        function: (member_expression object: (_) @iter.recv property: (property_identifier) @iter.method)
+        (#any-of? @iter.method "forEach" "map" "flatMap" "filter" "every" "some" "reduce" "reduceRight")) @iter.call
+      (call_expression
+        function: (member_expression object: (identifier) @each.recv property: (property_identifier) @each.method)
+        arguments: (arguments) @each.args
+        (#eq? @each.method "each")
+        (#any-of? @each.recv "it" "test" "describe")) @each.call
+      (spread_element) @spread.el
+    `,
+    // A domain-size lower bound: a floor matcher whose ASSERTED expression references a
+    // size (`expect(domain.length).toBeGreaterThanOrEqual(n)` — not `toBeGreaterThan(0)`
+    // on some scalar), or a bare `.length`/`.size`/`.count` `>=`/`>` comparison.
+    floorQuery: `
+      (call_expression
+        function: (member_expression object: (_) @floor.target property: (property_identifier) @floor.matcher)
+        (#any-of? @floor.matcher "toBeGreaterThan" "toBeGreaterThanOrEqual")
+        (#match? @floor.target "\\\\.(length|size|count)\\\\b"))
+      ((binary_expression operator: [">=" ">"]) @floor.compare
+        (#match? @floor.compare "\\\\.(length|size|count)\\\\b"))
+    `,
+    unwrapCalls: ["Object.keys", "Object.values", "Object.entries", "Array.from"],
+    chainMethods: ["map", "forEach", "flatMap", "filter", "every", "some", "reduce", "reduceRight", "find", "findIndex", "sort"],
+    spreadNotHost: ["object"],
+    spreadNotInner: ["array"],
+    detailTemplates: {
+      "inline-literal": "inline {expr40} literal",
+      "call": "call {expr50}",
+      "imported": "imported `{root}`",
+      "live-local": "live local `{root}` (call/query result)",
+      "const-array": "same-file const array `{root}`",
+      "call-root": "call on `{root}`",
+      "opaque-root": "`{root}` (non-literal root)",
+      "unresolved": "unresolved domain {expr40}",
+    },
+    noIterationDetail: "no for-of / .forEach / .map / spread over a domain",
+    emptyAnchorDetail: "describe has no body",
+    multiLiteralSuffix: " (+{n} more, all literal)",
+  },
+  python: {
+    grade: "indent-regex",
+    testFilePattern: /(^|\/)test_[^/]*\.py$|_test\.py$/,
+    // `def <name>(` (async allowed, any indent) or `class <Name>`, exact-name — pytest
+    // -k will still substring-match for the runner, but analysis anchors exactly,
+    // mirroring the TS describe rule. Capture 1 is the indent the block runs to.
+    anchorPatterns: ["^(\\s*)(?:async\\s+)?def\\s+{name}\\s*\\(", "^(\\s*)class\\s+{name}\\b"],
+    // `for X in <domain>:` and `@pytest.mark.parametrize("...", <domain>)`.
+    domainPatterns: [
+      /for\s+[\w,\s()]+\s+in\s+([^:]+):/,
+      /parametrize\(\s*["'][^"']+["']\s*,\s*((?:\[[^\]]*\])|[A-Za-z_][\w.()]*)/,
+    ],
+    importPatterns: {
+      fromImport: /^from\s+\S+\s+import\s+(.+)$/,
+      plainImport: /^import\s+([A-Za-z_][\w.]*)/,
+    },
+    // An inline list/tuple literal, or a hand-chosen `range(...)` bound.
+    literalDomainPatterns: [/^[\[(]/, /^range\(/],
+    // A len(...) lower-bound assertion anywhere in the block.
+    floorPattern: /len\([^)]*\)\s*>=?\s*\d|assert\s+[^\n]*len\(/,
+    unwrapCalls: ["sorted", "list", "set", "tuple", "frozenset", "enumerate", "reversed", "iter"],
+    // Regex grade resolves no local scope, so it phrases every live reason identically
+    // (tuned conservative like the TS unknown-identifier rule: only an UNAMBIGUOUS
+    // hand-list reads literal — never a false fail) and every literal reason as the
+    // inline hand-list it is. live-local/const-array are unreachable at this grade;
+    // their entries keep the table total by verdict kind.
+    detailTemplates: {
+      "inline-literal": "inline {expr40} literal",
+      "call": "for-in/parametrize over {expr}",
+      "imported": "for-in/parametrize over {expr}",
+      "live-local": "for-in/parametrize over {expr}",
+      "const-array": "inline {expr40} literal",
+      "call-root": "for-in/parametrize over {expr}",
+      "opaque-root": "for-in/parametrize over {expr}",
+      "unresolved": "for-in/parametrize over {expr}",
+    },
+    noIterationDetail: "no for-in / parametrize over a domain",
+  },
+};
+
 /** Python test files, by name or path. Exported so redundancy.ts can exclude exactly the
  *  set of files the oracle analyzers read — a second spelling of this convention over there
  *  is the duplicated-domain finding that module exists to report. */
-export const isPyTestPath = (p: string) => /(^|\/)test_[^/]*\.py$|_test\.py$/.test(p);
+export const isPyTestPath = (p: string) => ORACLE_LANGUAGES.python.testFilePattern.test(p);
 
 /** A test file (NOT a *.spec.md — those are coherence specs, not runnable tests). */
 const isTestFile = (name: string) =>
-  name !== "spec.md" && (/\.(test|spec)\.[mc]?[jt]sx?$/.test(name) || isPyTestPath(name));
+  name !== "spec.md" && Object.values(ORACLE_LANGUAGES).some((row) => row.testFilePattern.test(name));
+
+/** The language row that reads one discovered test file. */
+const rowFor = (rel: string): OracleLanguageSpec =>
+  Object.values(ORACLE_LANGUAGES).find((row) => row.testFilePattern.test(rel)) ?? ORACLE_LANGUAGES.typescript;
 
 // Dirs that are never source, regardless of the project's graph-`ignore`. We deliberately
 // do NOT reuse cfg.ignore: a project commonly excludes its test dir (e.g. "__tests__") from
@@ -87,32 +291,100 @@ async function findTestFiles(cfg: Config): Promise<string[]> {
   return out;
 }
 
-/** parse a source string through the shared typescript grammar (JS/TS both parse fine
- *  for our purposes; a null tree — allocation failure — reads as "no describe here"). */
-async function parseTs(src: string): Promise<Node | null> {
-  const { parser } = await grammarHandle("typescript");
-  const tree = parser.parse(src);
-  return tree ? tree.rootNode : null;
+// ── the language-blind spine: what a grade strategy must extract ─────────────────────
+// One iterated domain, reduced to what classification needs. `root` is the leftmost
+// identifier the coverage arm resolves against scope; `parityRoot` is the leftmost
+// identifier after unwrapCalls peel (identical at query grade; the regex grade's
+// coverage arm never unwrapped and still does not — that asymmetry is the OLD contract).
+interface DomainRef {
+  /** display text for details (query grade: the unwrapped expression; regex grade: raw). */
+  text: string;
+  root: string | null;
+  parityRoot: string | null;
+  selfLiteral: boolean;
+  isCall: boolean;
 }
 
-/** Pre-order walk over named nodes — the same visit order the compiler visitors used. */
+/** Import/local bindings resolved for one file, so the classifier can decide whether an
+ *  iterated identifier is LIVE (imported / call result) or LITERAL (local hand-list). */
+interface Scope {
+  imported: Set<string>;                 // names bound by an import (live SSOT)
+  localArrayConst: Map<string, boolean>; // local const name → true iff initialized to an array/regex literal
+  localOther: Set<string>;               // local names bound to something NON-literal (call result, etc.) = live
+}
+
+/** Everything both verdict lattices consume for one found anchor. */
+interface AnchorView {
+  /** The anchor exists but owns no body node (query grade only). */
+  emptyAnchor?: boolean;
+  domains: DomainRef[];
+  scope: Scope;
+  hasFloor: boolean;
+  /** Does the anchor's block exercise this name? (parity's both-projections check). */
+  mentions: (name: string) => boolean;
+}
+
+const EMPTY_SCOPE: Scope = { imported: new Set(), localArrayConst: new Map(), localOther: new Set() };
+
+const escRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+/** Resolve one oracle anchor in one file through the row's grade strategy. */
+function anchorView(row: OracleLanguageSpec, src: string, oracleName: string): Promise<AnchorView | null> | AnchorView | null {
+  return row.grade === "grammar-query" ? queryAnchorView(row, src, oracleName) : regexAnchorView(row, src, oracleName);
+}
+
+// ── the "grammar-query" strategy ─────────────────────────────────────────────────────
+// Runs a row's queries over the shared tree-sitter grammar handle and resolves the
+// captures into DomainRefs/Scope. The expression resolution below (cast unwrapping,
+// leftmost-root walking, cooked strings) mirrors the retired compiler visitors 1:1 —
+// classification is scope-dependent, which is walk-shaped work; the grammar contributes
+// the parse and the row contributes the patterns, never the verdicts.
+
+interface QueryHandles { parser: Parser; anchor: Query; scope: Query; iteration: Query; floor: Query }
+const queryHandleCache = new Map<string, Promise<QueryHandles>>();
+function queryHandles(row: QueryOracleLanguage): Promise<QueryHandles> {
+  let cached = queryHandleCache.get(row.grammar);
+  if (!cached) {
+    cached = (async () => {
+      const { language, parser } = await grammarHandle(row.grammar);
+      return {
+        parser,
+        anchor: new Query(language, row.anchorQuery),
+        scope: new Query(language, row.scopeQuery),
+        iteration: new Query(language, row.iterationQuery),
+        floor: new Query(language, row.floorQuery),
+      };
+    })();
+    queryHandleCache.set(row.grammar, cached);
+  }
+  return cached;
+}
+
+/** Pre-order among pattern anchors: by start, outermost first on ties — the same visit
+ *  order the retired walk (and the compiler visitors before it) produced. */
+const preorder = (a: Node, b: Node) => a.startIndex - b.startIndex || b.endIndex - a.endIndex;
+
+/** Pre-order walk over named nodes (parity's identifier collection still walks). */
 function walk(n: Node, fn: (n: Node) => void): void {
   fn(n);
   for (const c of n.namedChildren) if (c) walk(c, fn);
 }
 
-/** The named arguments of a call/new expression, comments (grammar "extras") excluded —
- *  the compiler's `node.arguments` never contained trivia, so neither may this. */
+/** Named children minus comments — the grammar names trivia as nodes; the compiler's
+ *  `node.arguments` never contained trivia, so neither may any argument list here. */
+const nonComment = (n: Node): Node[] => n.namedChildren.filter((c): c is Node => !!c && c.type !== "comment");
+
+/** The named arguments of a call/new expression, comments excluded. */
 function callArgs(call: Node): Node[] {
   const args = call.childForFieldName("arguments");
-  if (!args) return [];
-  return args.namedChildren.filter((c): c is Node => !!c && c.type !== "comment");
+  return args ? nonComment(args) : [];
 }
 
 const UNESCAPE: Record<string, string> = { n: "\n", t: "\t", r: "\r", b: "\b", f: "\f", v: "\v", "0": "\0" };
 
-/** The cooked text of a string literal or substitution-free template — the compiler's
- *  `.text` decoded escapes, so the fragments+escapes must be reassembled the same way. */
+/** The "cooked-string" strategy: the cooked text of a string literal or substitution-free
+ *  template — the compiler's `.text` decoded escapes, so fragments+escapes reassemble the
+ *  same way. Language-blind (escape decoding owes nothing to the grammar), so mechanism. */
 function stringText(node: Node): string | null {
   if (node.type !== "string" && node.type !== "template_string") return null;
   if (node.type === "template_string" && node.namedChildren.some((c) => c?.type === "template_substitution")) return null;
@@ -125,37 +397,23 @@ function stringText(node: Node): string | null {
   return out;
 }
 
-/** Is this call_expression a `describe("<name>", …)` (or it.describe / Deno.test-style)? */
-function describeName(node: Node): string | null {
-  if (node.type !== "call_expression") return null;
-  const callee = node.childForFieldName("function");
-  const name =
-    callee?.type === "identifier" ? callee.text :
-    callee?.type === "member_expression" ? (callee.childForFieldName("property")?.text ?? null) :
-    null;
-  if (name !== "describe") return null;
-  const arg0 = callArgs(node)[0];
-  return arg0 ? stringText(arg0) : null;
-}
-
-/** Find the describe(...) call node whose title === oracleName. First match wins. */
-function findDescribe(rootNode: Node, oracleName: string): Node | null {
-  let found: Node | null = null;
-  const visit = (n: Node) => {
-    if (found) return;
-    if (describeName(n) === oracleName) { found = n; return; }
-    for (const c of n.namedChildren) if (c) visit(c);
-  };
-  visit(rootNode);
-  return found;
-}
-
-/** Collect import/require bindings and local declarations in a source file, so we can
- *  resolve whether an iterated identifier is LIVE (imported) or LITERAL (local array). */
-interface Scope {
-  imported: Set<string>;                 // names bound by an import (live SSOT)
-  localArrayConst: Map<string, boolean>; // local const name → true iff initialized to an array/regex literal
-  localOther: Set<string>;               // local names bound to something NON-literal (call result, etc.) = live
+/** First anchor (pre-order) whose cooked title === oracleName. */
+function findAnchor(anchor: Query, rootNode: Node, oracleName: string): { call: Node; args: Node } | null {
+  const hits: { call: Node; args: Node }[] = [];
+  for (const m of anchor.matches(rootNode)) {
+    let call: Node | undefined, args: Node | undefined;
+    for (const c of m.captures) {
+      if (c.name === "anchor.call") call = c.node;
+      else if (c.name === "anchor.args") args = c.node;
+    }
+    if (call && args) hits.push({ call, args });
+  }
+  hits.sort((a, b) => preorder(a.call, b.call));
+  for (const h of hits) {
+    const title = nonComment(h.args)[0];
+    if (title && stringText(title) === oracleName) return h;
+  }
+  return null;
 }
 
 /** unwrap `as const`, `satisfies`, parens down to the wrapped expression. */
@@ -163,7 +421,7 @@ function unwrapCasts(e: Node, withSatisfies = true): Node {
   for (let guard = 0; guard < 12; guard++) {
     if (e.type === "parenthesized_expression" || e.type === "as_expression" ||
         (withSatisfies && e.type === "satisfies_expression")) {
-      const inner = e.namedChildren.find((c) => !!c && c.type !== "comment");
+      const inner = nonComment(e)[0];
       if (!inner) break;
       e = inner;
       continue;
@@ -173,28 +431,10 @@ function unwrapCasts(e: Node, withSatisfies = true): Node {
   return e;
 }
 
-function buildScope(rootNode: Node): Scope {
+function buildScope(scope: Query, rootNode: Node): Scope {
   const imported = new Set<string>();
   const localArrayConst = new Map<string, boolean>();
   const localOther = new Set<string>();
-
-  const recordImportClause = (clause: Node) => {
-    for (const c of clause.namedChildren) {
-      if (!c) continue;
-      if (c.type === "identifier") imported.add(c.text); // default import
-      else if (c.type === "namespace_import") {
-        const id = c.namedChildren.find((x) => x?.type === "identifier");
-        if (id) imported.add(id.text);
-      } else if (c.type === "named_imports") {
-        for (const spec of c.namedChildren) {
-          if (spec?.type !== "import_specifier") continue;
-          // the LOCAL binding: the alias when present, else the imported name
-          const local = spec.childForFieldName("alias") ?? spec.childForFieldName("name");
-          if (local) imported.add(local.text);
-        }
-      }
-    }
-  };
 
   const isLiteralDomain = (init: Node | null): boolean => {
     if (!init) return false;
@@ -209,32 +449,25 @@ function buildScope(rootNode: Node): Scope {
     return false;
   };
 
-  walk(rootNode, (n) => {
-    if (n.type === "import_statement") {
-      for (const c of n.namedChildren) {
-        if (!c) continue;
-        if (c.type === "import_clause") recordImportClause(c);
-        // `import X = require("…")`
-        if (c.type === "import_require_clause") {
-          const id = c.namedChildren.find((x) => x?.type === "identifier");
-          if (id) imported.add(id.text);
-        }
-      }
+  for (const m of scope.matches(rootNode)) {
+    let name: Node | undefined, decl: Node | undefined;
+    for (const c of m.captures) {
+      if (c.name === "scope.import") imported.add(c.node.text);
+      else if (c.name === "scope.specifier") {
+        // the LOCAL binding: the alias when present, else the imported name
+        const local = c.node.childForFieldName("alias") ?? c.node.childForFieldName("name");
+        if (local) imported.add(local.text);
+      } else if (c.name === "scope.name") name = c.node;
+      else if (c.name === "scope.decl") decl = c.node;
     }
-    if (n.type === "lexical_declaration" || n.type === "variable_declaration") {
-      for (const d of n.namedChildren) {
-        if (d?.type !== "variable_declarator") continue;
-        const name = d.childForFieldName("name");
-        if (name?.type !== "identifier") continue;
-        const init = d.childForFieldName("value");
-        // require("…") destructure/binding → treat as imported (live)
-        const callee = init?.type === "call_expression" ? init.childForFieldName("function") : null;
-        if (callee?.type === "identifier" && callee.text === "require") { imported.add(name.text); continue; }
-        if (isLiteralDomain(init)) localArrayConst.set(name.text, true);
-        else localOther.add(name.text); // bound to a call result, member access, etc. → live-ish
-      }
-    }
-  });
+    if (!name || !decl) continue;
+    const init = decl.childForFieldName("value");
+    // require("…") destructure/binding → treat as imported (live)
+    const callee = init?.type === "call_expression" ? init.childForFieldName("function") : null;
+    if (callee?.type === "identifier" && callee.text === "require") { imported.add(name.text); continue; }
+    if (isLiteralDomain(init)) localArrayConst.set(name.text, true);
+    else localOther.add(name.text); // bound to a call result, member access, etc. → live-ish
+  }
   return { imported, localArrayConst, localOther };
 }
 
@@ -242,26 +475,27 @@ function buildScope(rootNode: Node): Scope {
  *  expression ITSELF is a literal (array/regex) regardless of any identifier. */
 interface IterTarget { root: Node | null; selfLiteral: boolean; text: string; isCall: boolean; }
 
-function iterTargetOf(expr: Node): IterTarget {
+function iterTargetOf(expr: Node, row: QueryOracleLanguage): IterTarget {
   let e: Node = expr;
-  // unwrap Object.keys(X) / Object.values(X) / Object.entries(X) / Array.from(X) to X
+  const unwrap = new Set(row.unwrapCalls);
+  const chain = new Set(row.chainMethods);
+  // unwrap the row's transparent helpers (Object.keys(X) / Array.from(X) / …) to X
   const unwrapHelper = (c: Node): Node | null => {
     const callee = c.childForFieldName("function");
     if (callee?.type === "member_expression") {
       const objNode = callee.childForFieldName("object");
       if (objNode?.type === "identifier") {
-        const obj = objNode.text, meth = callee.childForFieldName("property")?.text ?? "";
+        const key = `${objNode.text}.${callee.childForFieldName("property")?.text ?? ""}`;
         const arg0 = callArgs(c)[0];
-        if (obj === "Object" && (meth === "keys" || meth === "values" || meth === "entries") && arg0) return arg0;
-        if (obj === "Array" && meth === "from" && arg0) return arg0;
+        if (unwrap.has(key) && arg0) return arg0;
       }
     }
     return null;
   };
-  // peel chained .map/.filter/etc and Object.keys/Array.from wrappers down to the source collection
+  // peel chained .map/.filter/etc and helper wrappers down to the source collection
   for (let guard = 0; guard < 12; guard++) {
     if (e.type === "parenthesized_expression" || e.type === "as_expression" || e.type === "satisfies_expression") {
-      const inner = e.namedChildren.find((c) => !!c && c.type !== "comment");
+      const inner = nonComment(e)[0];
       if (!inner) break;
       e = inner; continue;
     }
@@ -270,7 +504,7 @@ function iterTargetOf(expr: Node): IterTarget {
       if (helper) { e = helper; continue; }
       // X.map(...)/X.filter(...) → recurse into X (the receiver is the domain)
       const callee = e.childForFieldName("function");
-      if (callee?.type === "member_expression" && CHAIN_METHODS.has(callee.childForFieldName("property")?.text ?? "")) {
+      if (callee?.type === "member_expression" && chain.has(callee.childForFieldName("property")?.text ?? "")) {
         const obj = callee.childForFieldName("object");
         if (obj) { e = obj; continue; }
       }
@@ -303,132 +537,92 @@ function iterTargetOf(expr: Node): IterTarget {
   return { root, selfLiteral, text, isCall };
 }
 
-const CHAIN_METHODS = new Set(["map", "forEach", "flatMap", "filter", "every", "some", "reduce", "reduceRight", "find", "findIndex", "sort"]);
-const ITER_METHODS = new Set(["forEach", "map", "flatMap", "filter", "every", "some", "reduce", "reduceRight"]);
-
-interface Loop { domain: Node; }
-
-/** Find every domain-iteration construct anywhere inside `block`. */
-function findLoops(block: Node): Loop[] {
-  const loops: Loop[] = [];
-  walk(block, (n) => {
-    // for…of / for…in over a collection (one grammar node covers both forms)
-    if (n.type === "for_in_statement") {
-      const right = n.childForFieldName("right");
-      if (right) loops.push({ domain: right });
+/** Every domain-iteration construct inside `block`, in the visit order the retired walk
+ *  produced (pre-order among the constructs' own nodes). */
+function findLoops(row: QueryOracleLanguage, iteration: Query, block: Node): Node[] {
+  const hits: { anchor: Node; domain: Node }[] = [];
+  for (const m of iteration.matches(block)) {
+    const cap = (name: string) => m.captures.find((c) => c.name === name)?.node;
+    const forStmt = cap("for.stmt");
+    if (forStmt) {
+      const d = cap("for.domain");
+      if (d) hits.push({ anchor: forStmt, domain: d });
+      continue;
     }
-    if (n.type === "call_expression") {
-      const callee = n.childForFieldName("function");
-      if (callee?.type === "member_expression") {
-        const meth = callee.childForFieldName("property")?.text ?? "";
-        const obj = callee.childForFieldName("object");
-        // X.forEach(...) / X.map(...) etc — the RECEIVER is the iterated domain
-        if (obj && ITER_METHODS.has(meth)) loops.push({ domain: obj });
-        // it.each(X)(...) / test.each(X)(...) / describe.each(X)(...) — the vitest/jest
-        // parameterization idiom. The each ARGUMENT is the iterated domain; missing this
-        // form misclassifies the most idiomatic totality oracles as NO-ITERATION.
-        if (meth === "each" && obj?.type === "identifier" && ["it", "test", "describe"].includes(obj.text)) {
-          const arg0 = callArgs(n)[0];
-          if (arg0) loops.push({ domain: arg0 });
-        }
-      }
+    const iterCall = cap("iter.call");
+    if (iterCall) {
+      // X.forEach(...) / X.map(...) etc — the RECEIVER is the iterated domain
+      const d = cap("iter.recv");
+      if (d) hits.push({ anchor: iterCall, domain: d });
+      continue;
     }
-    // spread of a collection: [...X] (only when X is a collection, not a literal already;
-    // object spread `{...X}` was a different compiler node — never a loop, so still not one)
-    if (n.type === "spread_element" && n.parent?.type !== "object") {
-      const inner = n.namedChildren.find((c) => !!c && c.type !== "comment");
-      if (inner && inner.type !== "array") loops.push({ domain: inner });
+    const eachCall = cap("each.call");
+    if (eachCall) {
+      // it.each(X)(...) — the each ARGUMENT is the iterated domain
+      const args = cap("each.args");
+      const d = args ? nonComment(args)[0] : undefined;
+      if (d) hits.push({ anchor: eachCall, domain: d });
+      continue;
     }
-  });
-  return loops;
-}
-
-/** Classify a single iterated domain expression against the file scope. */
-function classifyDomain(d: Node, scope: Scope): { verdict: "live" | "literal"; detail: string } {
-  const t = iterTargetOf(d);
-  // an inline array/regex literal as the domain → LITERAL
-  if (t.selfLiteral) return { verdict: "literal", detail: `inline ${t.text.slice(0, 40)} literal` };
-  // a bare call expression (verifyTotality(), liveTables(), state.storage.sql.exec(...)) → LIVE
-  if (t.isCall && !t.root) return { verdict: "live", detail: `call ${t.text.slice(0, 50)}` };
-  if (t.root) {
-    const name = t.root.text;
-    if (scope.imported.has(name)) return { verdict: "live", detail: `imported \`${name}\`` };
-    if (scope.localOther.has(name)) return { verdict: "live", detail: `live local \`${name}\` (call/query result)` };
-    if (scope.localArrayConst.get(name)) return { verdict: "literal", detail: `same-file const array \`${name}\`` };
-    // unknown identifier (param, closure var, anchor symbol passed in) — treat as LIVE:
-    // it is NOT a same-file array literal, so it cannot be the sampling-oracle smell.
-    if (t.isCall) return { verdict: "live", detail: `call on \`${name}\`` };
-    return { verdict: "live", detail: `\`${name}\` (non-literal root)` };
+    const spread = cap("spread.el");
+    if (spread) {
+      // spread of a collection: [...X] — but never object spread, and not a literal already
+      if (spread.parent && row.spreadNotHost.includes(spread.parent.type)) continue;
+      const inner = nonComment(spread)[0];
+      if (inner && !row.spreadNotInner.includes(inner.type)) hits.push({ anchor: spread, domain: inner });
+    }
   }
-  // a call result with no resolvable root identifier → LIVE (e.g. (await q()).rows)
-  if (t.isCall) return { verdict: "live", detail: `call ${t.text.slice(0, 50)}` };
-  // anything else we couldn't resolve: be conservative, call it LIVE (avoid false fails)
-  return { verdict: "live", detail: `unresolved domain ${t.text.slice(0, 40)}` };
+  hits.sort((a, b) => preorder(a.anchor, b.anchor));
+  return hits.map((h) => h.domain);
 }
 
-/**
- * Analyze one oracle by name. Scans the project's test files for `describe("<name>")`,
- * then classifies the iteration domain of its assertion loops.
- *
- * The block-level verdict: LIVE if ANY loop ranges over a live-derived collection (the
- * oracle's *primary* totality loop is enough — a block may also contain a source-grep
- * `it()`); LITERAL if it has loops but ALL of them iterate literals/local arrays;
- * NO-ITERATION if it has no domain-iteration construct at all.
- */
-const FLOOR_MATCHERS = new Set(["toBeGreaterThan", "toBeGreaterThanOrEqual"]);
-
-/** Best-effort: does the oracle assert a lower bound on its domain size? Catches
- *  the vitest/jest floor matchers and a bare `.length`/`.size`/`.count` `>=`/`>`
- *  comparison. A LIVE oracle without one passes vacuously the moment its domain
- *  empties — the false-green class the meta-oracle can't see from liveness alone. */
-function hasFloorAssertion(body: Node): boolean {
-  const sizeRe = /\.(length|size|count)\b/;
-  let found = false;
-  walk(body, (n) => {
-    if (found) return;
-    // A floor matcher whose ASSERTED expression references a domain size, i.e.
-    // `expect(domain.length).toBeGreaterThanOrEqual(n)` — not `expect(v).toBeGreaterThan(0)`
-    // on some scalar value (which is not a domain-size floor).
-    if (n.type === "call_expression") {
-      const callee = n.childForFieldName("function");
-      if (callee?.type === "member_expression" &&
-          FLOOR_MATCHERS.has(callee.childForFieldName("property")?.text ?? "") &&
-          sizeRe.test(callee.childForFieldName("object")?.text ?? "")) {
-        found = true; return;
-      }
-    }
-    // A bare `.length`/`.size`/`.count` `>=`/`>` comparison.
-    if (n.type === "binary_expression") {
-      const op = n.childForFieldName("operator")?.text;
-      if ((op === ">=" || op === ">") && sizeRe.test(n.text)) { found = true; return; }
-    }
+async function queryAnchorView(row: QueryOracleLanguage, src: string, oracleName: string): Promise<AnchorView | null> {
+  const h = await queryHandles(row);
+  // JS/TS both parse fine for our purposes; a null tree (allocation failure) reads as
+  // "no anchor here", exactly as the parse helper always has.
+  const tree = h.parser.parse(src);
+  if (!tree) return null;
+  const found = findAnchor(h.anchor, tree.rootNode, oracleName);
+  if (!found) return null;
+  const body = nonComment(found.args)[1];
+  if (!body) return { emptyAnchor: true, domains: [], scope: EMPTY_SCOPE, hasFloor: false, mentions: () => false };
+  const domains = findLoops(row, h.iteration, body).map((d): DomainRef => {
+    const t = iterTargetOf(d, row);
+    const root = t.root?.text ?? null;
+    return { text: t.text, root, parityRoot: root, selfLiteral: t.selfLiteral, isCall: t.isCall };
   });
-  return found;
+  const scope = buildScope(h.scope, tree.rootNode);
+  const hasFloor = h.floor.matches(body).length > 0;
+  // The compiler counted every Identifier node, property names included; the grammar
+  // splits those kinds, so every *identifier node type counts.
+  let ids: Set<string> | null = null;
+  const mentions = (name: string): boolean => {
+    if (!ids) {
+      ids = new Set<string>();
+      walk(body, (n) => { if (n.type.endsWith("identifier")) ids!.add(n.text); });
+    }
+    return ids.has(name);
+  };
+  return { domains, scope, hasFloor, mentions };
 }
 
+// ── the "indent-regex" strategy ──────────────────────────────────────────────────────
+// Resolves a row's regex fields the way the retired python analyzers did: the anchor
+// owns the indent block below it (decorators included — parametrize domains live
+// there), domains read out textually, and imports are the only scope. Quirks are the
+// contract, preserved on purpose — see d-3aa0cbff for the grade ruling.
 
-/**
- * Python arm of the meta-oracle — regex-based (no Python AST available here), tuned
- * conservative like the TS unknown-identifier rule: only verdicts that are UNAMBIGUOUS
- * from the source text (an inline list literal as the loop/parametrize domain) read as
- * LITERAL; a name that appears in an import line, a call result, or anything we cannot
- * resolve reads as LIVE — never a false fail. The oracle name must match a
- * `def <name>(` or `class <Name>` exactly (pytest -k will still substring-match for
- * the runner, but analysis anchors exactly, mirroring the TS describe rule).
- */
-const escRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-
-/** The indent block a python anchor owns: `def <name>(` (any indent) or `class <Name>`,
- *  exact-name, decorators included (parametrize domains live there), running to the next
- *  non-blank line at <= the anchor's indent. One spelling of the anchor/indent discipline,
+/** The indent block a row's anchor patterns own: first line matching any pattern
+ *  (pattern order per line), running to the next non-blank line at <= the anchor's
+ *  indent, decorators above included. One spelling of the anchor/indent discipline,
  *  shared by the coverage arm and the parity arm — not two. */
-function pyAnchorBlock(src: string, name: string): string | null {
+function indentBlock(row: RegexOracleLanguage, src: string, name: string): string | null {
   const lines = src.split("\n");
-  const defRe = new RegExp(`^(\\s*)(?:async\\s+)?def\\s+${escRe(name)}\\s*\\(`);
-  const clsRe = new RegExp(`^(\\s*)class\\s+${escRe(name)}\\b`);
+  const patterns = row.anchorPatterns.map((p) => new RegExp(p.replaceAll("{name}", () => escRe(name))));
   let start = -1, indent = "";
   for (let i = 0; i < lines.length; i++) {
-    const m = defRe.exec(lines[i]) ?? clsRe.exec(lines[i]);
+    let m: RegExpExecArray | null = null;
+    for (const re of patterns) { m = re.exec(lines[i]); if (m) break; }
     if (m) { start = i; indent = m[1]; break; }
   }
   if (start < 0) return null;
@@ -443,48 +637,135 @@ function pyAnchorBlock(src: string, name: string): string | null {
   return lines.slice(decoStart, end).join("\n");
 }
 
-/** Every iterated-domain expression in a python block, textually:
- *  `for X in <domain>:` and `@pytest.mark.parametrize("...", <domain>)`. */
-function pyDomains(block: string): string[] {
+/** Every iterated-domain expression in a block, textually, in pattern order. */
+function regexDomains(row: RegexOracleLanguage, block: string): string[] {
   const domains: string[] = [];
-  let m: RegExpExecArray | null;
-  const forRe = /for\s+[\w,\s()]+\s+in\s+([^:]+):/g;
-  while ((m = forRe.exec(block))) domains.push(m[1].trim());
-  const parRe = /parametrize\(\s*["'][^"']+["']\s*,\s*((?:\[[^\]]*\])|[A-Za-z_][\w.()]*)/g;
-  while ((m = parRe.exec(block))) domains.push(m[1].trim());
+  for (const p of row.domainPatterns) {
+    const re = new RegExp(p.source, "g");
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(block))) domains.push(m[1].trim());
+  }
   return domains;
 }
 
-function analyzePythonOracle(src: string, oracleName: string): Omit<OracleAnalysis, "file"> | null {
-  const block = pyAnchorBlock(src, oracleName);
-  if (block === null) return null;
-  const importedNames = new Set<string>();
+/** Names bound by an import line — the live SSOT side of the regex-grade scope. */
+function regexImports(row: RegexOracleLanguage, src: string): Set<string> {
+  const imported = new Set<string>();
   for (const l of src.split("\n")) {
-    let m = /^from\s+\S+\s+import\s+(.+)$/.exec(l.trim());
-    if (m) for (const part of m[1].split(",")) importedNames.add(part.trim().split(/\s+as\s+/).pop()!.trim());
-    m = /^import\s+([A-Za-z_][\w.]*)/.exec(l.trim());
-    if (m) importedNames.add(m[1].split(".")[0]);
+    let m = row.importPatterns.fromImport.exec(l.trim());
+    if (m) for (const part of m[1].split(",")) imported.add(part.trim().split(/\s+as\s+/).pop()!.trim());
+    m = row.importPatterns.plainImport.exec(l.trim());
+    if (m) imported.add(m[1].split(".")[0]);
   }
-  const domains = pyDomains(block);
-  if (domains.length === 0)
-    return { verdict: "no-iteration", detail: "no for-in / parametrize over a domain" };
-  const classify = (d: string): "live" | "literal" => {
-    if (/^[\[(]/.test(d)) return "literal";                 // inline list/tuple literal
-    if (/^range\(/.test(d)) return "literal";               // hand-chosen bound
-    const root = d.split(/[.([]/)[0].trim();
-    if (importedNames.has(root)) return "live";              // imported SSOT
-    if (/\(/.test(d)) return "live";                        // call result
-    return "live";                                           // unknown name — conservative
+  return imported;
+}
+
+/** The root NAME a regex-grade domain expression hangs off of for the PARITY arm — the
+ *  leftmost identifier after unwrapping the row's order/materialize helpers
+ *  (`sorted(X)`, `list(X)`, …), mirroring what the query grade's resolution does for
+ *  `Object.keys(X)` / property chains. `registry.X` roots at `registry`, exactly as a
+ *  property chain roots at its leftmost identifier. */
+function regexParityRoot(row: RegexOracleLanguage, d: string): string | null {
+  let e = d.trim();
+  const WRAP = new RegExp(`^(?:${row.unwrapCalls.join("|")})\\s*\\(\\s*(.*?)\\s*\\)$`);
+  for (let guard = 0; guard < 6; guard++) {
+    const m = WRAP.exec(e);
+    if (!m) break;
+    e = m[1].split(",")[0].trim(); // sorted(X, key=…) → X
+  }
+  const m = /^([A-Za-z_]\w*)/.exec(e);
+  return m ? m[1] : null;
+}
+
+function regexAnchorView(row: RegexOracleLanguage, src: string, oracleName: string): AnchorView | null {
+  const block = indentBlock(row, src, oracleName);
+  if (block === null) return null;
+  const domains = regexDomains(row, block).map((d): DomainRef => ({
+    text: d,
+    // the coverage root never unwrapped at this grade (only parity does) — old contract
+    root: (d.split(/[.([]/)[0] ?? "").trim() || null,
+    parityRoot: regexParityRoot(row, d),
+    selfLiteral: row.literalDomainPatterns.some((re) => re.test(d)),
+    isCall: /\(/.test(d),
+  }));
+  return {
+    domains,
+    scope: { imported: regexImports(row, src), localArrayConst: new Map(), localOther: new Set() },
+    hasFloor: row.floorPattern.test(block),
+    mentions: (name: string) => new RegExp(`\\b${escRe(name)}\\b`).test(block),
   };
-  const verdicts = domains.map((d) => ({ d, v: classify(d) }));
-  const live = verdicts.find((x) => x.v === "live");
-  // floor: a len(...) lower-bound assertion anywhere in the block
-  const hasFloor = /len\([^)]*\)\s*>=?\s*\d|assert\s+[^\n]*len\(/.test(block);
-  if (live) {
-    const detail = hasFloor ? `for-in/parametrize over ${live.d}` : `for-in/parametrize over ${live.d} — no domain floor (vacuous if the domain empties)`;
-    return { verdict: "live", detail, hasFloor };
+}
+
+// ── the verdict lattices: written once, language-blind ───────────────────────────────
+
+/** Classify a single iterated domain against the file scope. The rule order IS the
+ *  contract — in particular the conservative unknown-identifier rule: a name that is
+ *  not provably a same-file hand-list (param, closure var, the anchor symbol passed in)
+ *  reads LIVE, because it cannot be the sampling-oracle smell — never a false fail. */
+function classifyDomain(d: DomainRef, scope: Scope): { verdict: "live" | "literal"; reason: OracleDetailReason; ref: DomainRef } {
+  if (d.selfLiteral) return { verdict: "literal", reason: "inline-literal", ref: d };
+  // a bare call expression (verifyTotality(), state.storage.sql.exec(...)) → LIVE
+  if (d.isCall && !d.root) return { verdict: "live", reason: "call", ref: d };
+  if (d.root) {
+    if (scope.imported.has(d.root)) return { verdict: "live", reason: "imported", ref: d };
+    if (scope.localOther.has(d.root)) return { verdict: "live", reason: "live-local", ref: d };
+    if (scope.localArrayConst.get(d.root)) return { verdict: "literal", reason: "const-array", ref: d };
+    if (d.isCall) return { verdict: "live", reason: "call-root", ref: d };
+    return { verdict: "live", reason: "opaque-root", ref: d };
   }
-  return { verdict: "literal", detail: `inline ${verdicts[0].d.slice(0, 40)} literal` };
+  // anything else we couldn't resolve: be conservative, call it LIVE (avoid false fails)
+  return { verdict: "live", reason: "unresolved", ref: d };
+}
+
+/** Render a row's template for one classified domain. */
+function renderDetail(template: string, ref: DomainRef): string {
+  return template
+    .replaceAll("{expr40}", ref.text.slice(0, 40))
+    .replaceAll("{expr50}", ref.text.slice(0, 50))
+    .replaceAll("{expr}", ref.text)
+    .replaceAll("{root}", ref.root ?? "");
+}
+
+/** A LIVE oracle without a floor passes vacuously the moment its domain empties — the
+ *  false-green class the meta-oracle can't see from liveness alone. Same words in every
+ *  language: the vacuity is language-blind. */
+const NO_FLOOR_SUFFIX = " — no domain floor (vacuous if the domain empties)";
+
+/**
+ * Analyze one oracle by name. Scans the project's test files for the oracle's anchor
+ * (a `describe("<name>")` block, a `def <name>(`, …, per the language row), then
+ * classifies the iteration domain of its assertion loops.
+ *
+ * The block-level verdict: LIVE if ANY loop ranges over a live-derived collection (the
+ * oracle's *primary* totality loop is enough — a block may also contain a source-grep
+ * `it()`); LITERAL if it has loops but ALL of them iterate literals/local arrays;
+ * NO-ITERATION if it has no domain-iteration construct at all.
+ */
+export async function analyzeOracle(cfg: Config, oracleName: string): Promise<OracleAnalysis> {
+  const files = await findTestFiles(cfg);
+  for (const rel of files) {
+    let src: string;
+    try { src = await readFile(join(cfg.root, rel), "utf8"); } catch { continue; }
+    if (!src.includes(oracleName)) continue; // cheap pre-filter
+    const row = rowFor(rel);
+    const view = await anchorView(row, src, oracleName);
+    if (!view) continue;
+    if (view.emptyAnchor) return { verdict: "no-iteration", detail: row.emptyAnchorDetail ?? row.noIterationDetail, file: rel };
+    if (view.domains.length === 0) return { verdict: "no-iteration", detail: row.noIterationDetail, file: rel };
+    const classed = view.domains.map((d) => classifyDomain(d, view.scope));
+    const live = classed.find((c) => c.verdict === "live");
+    if (live) {
+      const base = renderDetail(row.detailTemplates[live.reason], live.ref);
+      return { verdict: "live", detail: view.hasFloor ? base : base + NO_FLOOR_SUFFIX, file: rel, hasFloor: view.hasFloor };
+    }
+    // every loop is literal
+    const lit = classed[0];
+    const more = row.multiLiteralSuffix && classed.length > 1
+      ? row.multiLiteralSuffix.replaceAll("{n}", String(classed.length - 1))
+      : "";
+    return { verdict: "literal", detail: renderDetail(row.detailTemplates[lit.reason], lit.ref) + more, file: rel };
+  }
+  return { verdict: "not-found", detail: `no describe("${oracleName}") found in any test file`, file: undefined };
 }
 
 // ── the PARITY meta-oracle ────────────────────────────────────────────────────────────
@@ -495,7 +776,9 @@ function analyzePythonOracle(src: string, oracleName: string): Omit<OracleAnalys
 // sample list, not some other collection), and (b) it exercises BOTH projections. The
 // motivating false oracle was exactly one-sided: it compared two runs of the SAME
 // projector (settled vs history-reload) and never touched the live projection — so the
-// live/settled divergence class sailed through green.
+// live/settled divergence class sailed through green. Verdict semantics are identical at
+// every grade: an inline literal roots at nothing, so a hand-copied sample reads
+// NO-ENUMERATION, never ok; a vanished oracle ends at NOT-FOUND, which is never a pass.
 
 export type ParityVerdict = "ok" | "not-found" | "no-enumeration" | "one-sided";
 
@@ -506,56 +789,6 @@ export interface ParityAnalysis {
   file?: string;
 }
 
-/** The root NAME a python domain expression hangs off of — the leftmost identifier, after
- *  unwrapping the order/materialize helpers (`sorted(X)`, `list(X)`, …), mirroring what
- *  iterTargetOf does for `Object.keys(X)` / property chains on the TS side. `registry.X`
- *  roots at `registry`, exactly as a TS property chain roots at its leftmost identifier. */
-function pyDomainRoot(d: string): string | null {
-  let e = d.trim();
-  const WRAP = /^(?:sorted|list|set|tuple|frozenset|enumerate|reversed|iter)\s*\(\s*(.*?)\s*\)$/;
-  for (let guard = 0; guard < 6; guard++) {
-    const m = WRAP.exec(e);
-    if (!m) break;
-    e = m[1].split(",")[0].trim(); // sorted(X, key=…) → X
-  }
-  const m = /^([A-Za-z_]\w*)/.exec(e);
-  return m ? m[1] : null;
-}
-
-/**
- * Python arm of the PARITY meta-oracle — regex/indent grade like analyzePythonOracle, with
- * the TS branch's verdict semantics preserved exactly: (a) some for-in/parametrize domain
- * must ROOT at the declared domain symbol (an inline literal list roots at nothing, so a
- * hand-copied sample reads NO-ENUMERATION, never ok), and (b) both projection names must
- * appear in the oracle's block, else ONE-SIDED. Returns null when the anchor is absent from
- * this file — the caller keeps scanning, and a vanished oracle ends at NOT-FOUND, which is
- * never a pass.
- */
-function analyzePythonParity(
-  src: string, oracleName: string, domain: string, f: string, g: string,
-): Omit<ParityAnalysis, "file"> | null {
-  const block = pyAnchorBlock(src, oracleName);
-  if (block === null) return null;
-  const domains = pyDomains(block);
-  const enumerates = domains.some((d) => pyDomainRoot(d) === domain);
-  if (!enumerates) {
-    const roots = [...new Set(domains)].slice(0, 3);
-    return {
-      verdict: "no-enumeration",
-      detail: domains.length
-        ? `iterates ${roots.map((r) => `\`${r.slice(0, 40)}\``).join(", ")} — never the declared domain \`${domain}\``
-        : `no domain iteration at all — hand-enumerated cases cannot be a parity totality over \`${domain}\``,
-    };
-  }
-  const missing = [f, g].filter((s) => !new RegExp(`\\b${escRe(s)}\\b`).test(block));
-  if (missing.length)
-    return {
-      verdict: "one-sided",
-      detail: `enumerates \`${domain}\` but never exercises ${missing.map((s) => `\`${s}\``).join(" or ")} — a parity oracle must drive BOTH projections`,
-    };
-  return { verdict: "ok", detail: `enumerates \`${domain}\` and drives both \`${f}\` and \`${g}\`` };
-}
-
 export async function analyzeParityOracle(
   cfg: Config, oracleName: string, domain: string, f: string, g: string,
 ): Promise<ParityAnalysis> {
@@ -564,38 +797,27 @@ export async function analyzeParityOracle(
     let src: string;
     try { src = await readFile(join(cfg.root, rel), "utf8"); } catch { continue; }
     if (!src.includes(oracleName)) continue; // cheap pre-filter
-    if (rel.endsWith(".py")) {
-      const py = analyzePythonParity(src, oracleName, domain, f, g);
-      if (py) return { ...py, file: rel };
-      continue;
-    }
-    const rootNode = await parseTs(src);
-    if (!rootNode) continue;
-    const desc = findDescribe(rootNode, oracleName);
-    if (!desc) continue;
-    const body = callArgs(desc)[1];
-    if (!body) return { verdict: "no-enumeration", detail: "describe has no body", file: rel };
+    const row = rowFor(rel);
+    const view = await anchorView(row, src, oracleName);
+    if (!view) continue;
+    if (view.emptyAnchor) return { verdict: "no-enumeration", detail: row.emptyAnchorDetail ?? row.noIterationDetail, file: rel };
     // (a) some iteration construct must range over the DECLARED domain symbol — helper
-    // unwraps (Object.keys/values, Array.from, chained .map/.filter, it/test.each) are
-    // handled by the same iterTargetOf the coverage meta-oracle uses.
-    const loops = findLoops(body);
-    const enumerates = loops.some((l) => iterTargetOf(l.domain).root?.text === domain);
+    // unwraps (the row's unwrapCalls, chained receivers) are resolved by the same
+    // strategy the coverage meta-oracle uses.
+    const enumerates = view.domains.some((d) => d.parityRoot === domain);
     if (!enumerates) {
-      const roots = [...new Set(loops.map((l) => iterTargetOf(l.domain).text))].slice(0, 3);
+      const roots = [...new Set(view.domains.map((d) => d.text))].slice(0, 3);
       return {
         verdict: "no-enumeration",
-        detail: loops.length
+        detail: view.domains.length
           ? `iterates ${roots.map((r) => `\`${r.slice(0, 40)}\``).join(", ")} — never the declared domain \`${domain}\``
           : `no domain iteration at all — hand-enumerated cases cannot be a parity totality over \`${domain}\``,
         file: rel,
       };
     }
     // (b) both projections must appear in the body — a one-sided oracle proves nothing
-    // about agreement. The compiler counted every Identifier node, property names
-    // included; the grammar splits those kinds, so every *identifier node type counts.
-    const ids = new Set<string>();
-    walk(body, (n) => { if (n.type.endsWith("identifier")) ids.add(n.text); });
-    const missing = [f, g].filter((s) => !ids.has(s));
+    // about agreement.
+    const missing = [f, g].filter((s) => !view.mentions(s));
     if (missing.length)
       return {
         verdict: "one-sided",
@@ -605,38 +827,4 @@ export async function analyzeParityOracle(
     return { verdict: "ok", detail: `enumerates \`${domain}\` and drives both \`${f}\` and \`${g}\``, file: rel };
   }
   return { verdict: "not-found", detail: `no describe("${oracleName}") found in any test file` };
-}
-
-export async function analyzeOracle(cfg: Config, oracleName: string): Promise<OracleAnalysis> {
-  const files = await findTestFiles(cfg);
-  for (const rel of files) {
-    let src: string;
-    try { src = await readFile(join(cfg.root, rel), "utf8"); } catch { continue; }
-    if (!src.includes(oracleName)) continue; // cheap pre-filter
-    if (rel.endsWith(".py")) {
-      const py = analyzePythonOracle(src, oracleName);
-      if (py) return { ...py, file: rel };
-      continue;
-    }
-    const rootNode = await parseTs(src);
-    if (!rootNode) continue;
-    const desc = findDescribe(rootNode, oracleName);
-    if (!desc) continue;
-    const scope = buildScope(rootNode);
-    const body = callArgs(desc)[1];
-    if (!body) return { verdict: "no-iteration", detail: "describe has no body", file: rel };
-    const loops = findLoops(body);
-    if (loops.length === 0) return { verdict: "no-iteration", detail: "no for-of / .forEach / .map / spread over a domain", file: rel };
-    const classed = loops.map((l) => classifyDomain(l.domain, scope));
-    const live = classed.find((c) => c.verdict === "live");
-    if (live) {
-      const hasFloor = hasFloorAssertion(body);
-      const detail = hasFloor ? live.detail : `${live.detail} — no domain floor (vacuous if the domain empties)`;
-      return { verdict: "live", detail, file: rel, hasFloor };
-    }
-    // every loop is literal
-    const lit = classed[0];
-    return { verdict: "literal", detail: lit.detail + (classed.length > 1 ? ` (+${classed.length - 1} more, all literal)` : ""), file: rel };
-  }
-  return { verdict: "not-found", detail: `no describe("${oracleName}") found in any test file`, file: undefined };
 }
