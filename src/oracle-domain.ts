@@ -20,12 +20,18 @@
 // `via test` claim → the boundary fails until the domain is derived from the live SSOT
 // (or, for a legitimate source-property guard, re-declared with `via guard` — see verify).
 //
-// We reuse the `typescript` compiler API (a devDep, available at runtime) rather than the
-// regex adapter: classifying iteration roots needs real scope/symbol resolution.
+// The TS/JS arm reads oracle sources through the shared tree-sitter grammar handle
+// (phase 2b, arm 4 — the `typescript` compiler-API dependency is gone): the same
+// scope/iteration-root resolution the compiler walk performed, re-expressed as node
+// walks over the grammar tree. The walks mirror the retired compiler visitors 1:1;
+// classification here is scope-dependent (an identifier's verdict depends on how the
+// FILE binds it), which is walk-shaped work — the grammar contributes the parse, not
+// a capture table.
 import { readFile } from "node:fs/promises";
 import { readdir } from "node:fs/promises";
-import { join, relative, basename } from "node:path";
-import ts from "typescript";
+import { join, relative } from "node:path";
+import type { Node } from "web-tree-sitter";
+import { grammarHandle } from "./adapters/tree-sitter.ts";
 import type { Config } from "./types.ts";
 
 export type OracleVerdict = "live" | "literal" | "no-iteration" | "not-found";
@@ -81,38 +87,70 @@ async function findTestFiles(cfg: Config): Promise<string[]> {
   return out;
 }
 
-/** parse a source string into a TS SourceFile (JS/TS both parse fine for our purposes). */
-function parse(src: string, fileName: string): ts.SourceFile {
-  return ts.createSourceFile(fileName, src, ts.ScriptTarget.Latest, /*setParentNodes*/ true, ts.ScriptKind.TSX);
+/** parse a source string through the shared typescript grammar (JS/TS both parse fine
+ *  for our purposes; a null tree — allocation failure — reads as "no describe here"). */
+async function parseTs(src: string): Promise<Node | null> {
+  const { parser } = await grammarHandle("typescript");
+  const tree = parser.parse(src);
+  return tree ? tree.rootNode : null;
 }
 
-/** Is this CallExpression a `describe("<name>", …)` (or it.describe / Deno.test-style)? */
-function describeName(node: ts.Node): string | null {
-  if (!ts.isCallExpression(node)) return null;
-  const callee = node.expression;
+/** Pre-order walk over named nodes — the same visit order the compiler visitors used. */
+function walk(n: Node, fn: (n: Node) => void): void {
+  fn(n);
+  for (const c of n.namedChildren) if (c) walk(c, fn);
+}
+
+/** The named arguments of a call/new expression, comments (grammar "extras") excluded —
+ *  the compiler's `node.arguments` never contained trivia, so neither may this. */
+function callArgs(call: Node): Node[] {
+  const args = call.childForFieldName("arguments");
+  if (!args) return [];
+  return args.namedChildren.filter((c): c is Node => !!c && c.type !== "comment");
+}
+
+const UNESCAPE: Record<string, string> = { n: "\n", t: "\t", r: "\r", b: "\b", f: "\f", v: "\v", "0": "\0" };
+
+/** The cooked text of a string literal or substitution-free template — the compiler's
+ *  `.text` decoded escapes, so the fragments+escapes must be reassembled the same way. */
+function stringText(node: Node): string | null {
+  if (node.type !== "string" && node.type !== "template_string") return null;
+  if (node.type === "template_string" && node.namedChildren.some((c) => c?.type === "template_substitution")) return null;
+  let out = "";
+  for (const c of node.namedChildren) {
+    if (!c) continue;
+    if (c.type === "string_fragment") out += c.text;
+    else if (c.type === "escape_sequence") { const e = c.text.slice(1); out += UNESCAPE[e] ?? e; }
+  }
+  return out;
+}
+
+/** Is this call_expression a `describe("<name>", …)` (or it.describe / Deno.test-style)? */
+function describeName(node: Node): string | null {
+  if (node.type !== "call_expression") return null;
+  const callee = node.childForFieldName("function");
   const name =
-    ts.isIdentifier(callee) ? callee.text :
-    ts.isPropertyAccessExpression(callee) ? callee.name.text :
+    callee?.type === "identifier" ? callee.text :
+    callee?.type === "member_expression" ? (callee.childForFieldName("property")?.text ?? null) :
     null;
   if (name !== "describe") return null;
-  const arg0 = node.arguments[0];
-  if (arg0 && (ts.isStringLiteral(arg0) || ts.isNoSubstitutionTemplateLiteral(arg0))) return arg0.text;
-  return null;
+  const arg0 = callArgs(node)[0];
+  return arg0 ? stringText(arg0) : null;
 }
 
 /** Find the describe(...) call node whose title === oracleName. First match wins. */
-function findDescribe(sf: ts.SourceFile, oracleName: string): ts.CallExpression | null {
-  let found: ts.CallExpression | null = null;
-  const visit = (n: ts.Node) => {
+function findDescribe(rootNode: Node, oracleName: string): Node | null {
+  let found: Node | null = null;
+  const visit = (n: Node) => {
     if (found) return;
-    if (describeName(n) === oracleName) { found = n as ts.CallExpression; return; }
-    ts.forEachChild(n, visit);
+    if (describeName(n) === oracleName) { found = n; return; }
+    for (const c of n.namedChildren) if (c) visit(c);
   };
-  visit(sf);
+  visit(rootNode);
   return found;
 }
 
-/** Collect import/require bindings and local declarations in a SourceFile, so we can
+/** Collect import/require bindings and local declarations in a source file, so we can
  *  resolve whether an iterated identifier is LIVE (imported) or LITERAL (local array). */
 interface Scope {
   imported: Set<string>;                 // names bound by an import (live SSOT)
@@ -120,136 +158,194 @@ interface Scope {
   localOther: Set<string>;               // local names bound to something NON-literal (call result, etc.) = live
 }
 
-function buildScope(sf: ts.SourceFile): Scope {
+/** unwrap `as const`, `satisfies`, parens down to the wrapped expression. */
+function unwrapCasts(e: Node, withSatisfies = true): Node {
+  for (let guard = 0; guard < 12; guard++) {
+    if (e.type === "parenthesized_expression" || e.type === "as_expression" ||
+        (withSatisfies && e.type === "satisfies_expression")) {
+      const inner = e.namedChildren.find((c) => !!c && c.type !== "comment");
+      if (!inner) break;
+      e = inner;
+      continue;
+    }
+    break;
+  }
+  return e;
+}
+
+function buildScope(rootNode: Node): Scope {
   const imported = new Set<string>();
   const localArrayConst = new Map<string, boolean>();
   const localOther = new Set<string>();
 
-  const recordImportClause = (clause: ts.ImportClause) => {
-    if (clause.name) imported.add(clause.name.text); // default import
-    const nb = clause.namedBindings;
-    if (nb) {
-      if (ts.isNamespaceImport(nb)) imported.add(nb.name.text);
-      else for (const el of nb.elements) imported.add(el.name.text);
+  const recordImportClause = (clause: Node) => {
+    for (const c of clause.namedChildren) {
+      if (!c) continue;
+      if (c.type === "identifier") imported.add(c.text); // default import
+      else if (c.type === "namespace_import") {
+        const id = c.namedChildren.find((x) => x?.type === "identifier");
+        if (id) imported.add(id.text);
+      } else if (c.type === "named_imports") {
+        for (const spec of c.namedChildren) {
+          if (spec?.type !== "import_specifier") continue;
+          // the LOCAL binding: the alias when present, else the imported name
+          const local = spec.childForFieldName("alias") ?? spec.childForFieldName("name");
+          if (local) imported.add(local.text);
+        }
+      }
     }
   };
 
-  const isLiteralDomain = (init: ts.Expression | undefined): boolean => {
+  const isLiteralDomain = (init: Node | null): boolean => {
     if (!init) return false;
-    // unwrap `as const`, `satisfies`, parens
-    let e: ts.Expression = init;
-    while (ts.isAsExpression(e) || ts.isSatisfiesExpression(e) || ts.isParenthesizedExpression(e)) e = e.expression;
-    if (ts.isArrayLiteralExpression(e)) return true;
-    if (ts.isRegularExpressionLiteral(e)) return true;
+    const e = unwrapCasts(init);
+    if (e.type === "array") return true;
+    if (e.type === "regex") return true;
     // `new Set([...])` / `new Map([...])` over a literal is still a hand-list
-    if (ts.isNewExpression(e) && e.arguments?.length === 1) {
-      let a: ts.Expression = e.arguments[0];
-      while (ts.isAsExpression(a) || ts.isParenthesizedExpression(a)) a = a.expression;
-      if (ts.isArrayLiteralExpression(a)) return true;
+    if (e.type === "new_expression") {
+      const args = callArgs(e);
+      if (args.length === 1 && unwrapCasts(args[0], /*withSatisfies*/ false).type === "array") return true;
     }
     return false;
   };
 
-  const visit = (n: ts.Node) => {
-    if (ts.isImportDeclaration(n) && n.importClause) recordImportClause(n.importClause);
-    // `const X = require("…")` and `import X = require("…")`
-    if (ts.isImportEqualsDeclaration(n)) imported.add(n.name.text);
-    if (ts.isVariableStatement(n)) {
-      for (const d of n.declarationList.declarations) {
-        if (!ts.isIdentifier(d.name)) continue;
-        const init = d.initializer;
-        // require("…") destructure/binding → treat as imported (live)
-        const isRequire = init && ts.isCallExpression(init) && ts.isIdentifier(init.expression) && init.expression.text === "require";
-        if (isRequire) { imported.add(d.name.text); continue; }
-        if (isLiteralDomain(init)) localArrayConst.set(d.name.text, true);
-        else localOther.add(d.name.text); // bound to a call result, member access, etc. → live-ish
+  walk(rootNode, (n) => {
+    if (n.type === "import_statement") {
+      for (const c of n.namedChildren) {
+        if (!c) continue;
+        if (c.type === "import_clause") recordImportClause(c);
+        // `import X = require("…")`
+        if (c.type === "import_require_clause") {
+          const id = c.namedChildren.find((x) => x?.type === "identifier");
+          if (id) imported.add(id.text);
+        }
       }
     }
-    ts.forEachChild(n, visit);
-  };
-  visit(sf);
+    if (n.type === "lexical_declaration" || n.type === "variable_declaration") {
+      for (const d of n.namedChildren) {
+        if (d?.type !== "variable_declarator") continue;
+        const name = d.childForFieldName("name");
+        if (name?.type !== "identifier") continue;
+        const init = d.childForFieldName("value");
+        // require("…") destructure/binding → treat as imported (live)
+        const callee = init?.type === "call_expression" ? init.childForFieldName("function") : null;
+        if (callee?.type === "identifier" && callee.text === "require") { imported.add(name.text); continue; }
+        if (isLiteralDomain(init)) localArrayConst.set(name.text, true);
+        else localOther.add(name.text); // bound to a call result, member access, etc. → live-ish
+      }
+    }
+  });
   return { imported, localArrayConst, localOther };
 }
 
 /** The root identifier an iterated expression hangs off of, plus whether the iterated
  *  expression ITSELF is a literal (array/regex) regardless of any identifier. */
-interface IterTarget { root: ts.Identifier | null; selfLiteral: boolean; text: string; isCall: boolean; }
+interface IterTarget { root: Node | null; selfLiteral: boolean; text: string; isCall: boolean; }
 
-function iterTargetOf(expr: ts.Expression, sf: ts.SourceFile): IterTarget {
-  let e: ts.Expression = expr;
+function iterTargetOf(expr: Node): IterTarget {
+  let e: Node = expr;
   // unwrap Object.keys(X) / Object.values(X) / Object.entries(X) / Array.from(X) to X
-  const unwrapHelper = (c: ts.CallExpression): ts.Expression | null => {
-    const callee = c.expression;
-    if (ts.isPropertyAccessExpression(callee) && ts.isIdentifier(callee.expression)) {
-      const obj = callee.expression.text, meth = callee.name.text;
-      if (obj === "Object" && (meth === "keys" || meth === "values" || meth === "entries") && c.arguments[0]) return c.arguments[0];
-      if (obj === "Array" && meth === "from" && c.arguments[0]) return c.arguments[0];
+  const unwrapHelper = (c: Node): Node | null => {
+    const callee = c.childForFieldName("function");
+    if (callee?.type === "member_expression") {
+      const objNode = callee.childForFieldName("object");
+      if (objNode?.type === "identifier") {
+        const obj = objNode.text, meth = callee.childForFieldName("property")?.text ?? "";
+        const arg0 = callArgs(c)[0];
+        if (obj === "Object" && (meth === "keys" || meth === "values" || meth === "entries") && arg0) return arg0;
+        if (obj === "Array" && meth === "from" && arg0) return arg0;
+      }
     }
     return null;
   };
   // peel chained .map/.filter/etc and Object.keys/Array.from wrappers down to the source collection
   for (let guard = 0; guard < 12; guard++) {
-    if (ts.isParenthesizedExpression(e) || ts.isAsExpression(e) || ts.isSatisfiesExpression(e)) { e = e.expression; continue; }
-    if (ts.isCallExpression(e)) {
+    if (e.type === "parenthesized_expression" || e.type === "as_expression" || e.type === "satisfies_expression") {
+      const inner = e.namedChildren.find((c) => !!c && c.type !== "comment");
+      if (!inner) break;
+      e = inner; continue;
+    }
+    if (e.type === "call_expression") {
       const helper = unwrapHelper(e);
       if (helper) { e = helper; continue; }
       // X.map(...)/X.filter(...) → recurse into X (the receiver is the domain)
-      const callee = e.expression;
-      if (ts.isPropertyAccessExpression(callee) && CHAIN_METHODS.has(callee.name.text)) { e = callee.expression; continue; }
+      const callee = e.childForFieldName("function");
+      if (callee?.type === "member_expression" && CHAIN_METHODS.has(callee.childForFieldName("property")?.text ?? "")) {
+        const obj = callee.childForFieldName("object");
+        if (obj) { e = obj; continue; }
+      }
       // a bare call like verifyTotality() or query() — the call result IS the domain (live)
       break;
     }
     break;
   }
-  const text = e.getText(sf);
-  const selfLiteral = ts.isArrayLiteralExpression(e) || ts.isRegularExpressionLiteral(e) ||
-    (ts.isNewExpression(e) && !!e.arguments && e.arguments.length === 1 && ts.isArrayLiteralExpression(e.arguments[0]));
-  const isCall = ts.isCallExpression(e);
-  // find the root identifier: bare Identifier, or the leftmost of a property-access chain
-  let root: ts.Identifier | null = null;
-  if (ts.isIdentifier(e)) root = e;
-  else if (ts.isPropertyAccessExpression(e)) { let p: ts.Expression = e; while (ts.isPropertyAccessExpression(p)) p = p.expression; if (ts.isIdentifier(p)) root = p; }
-  else if (ts.isCallExpression(e)) { let c: ts.Expression = e.expression; while (ts.isPropertyAccessExpression(c)) c = c.expression; if (ts.isIdentifier(c)) root = c; }
-  else if (ts.isElementAccessExpression(e)) { let p: ts.Expression = e; while (ts.isElementAccessExpression(p) || ts.isPropertyAccessExpression(p)) p = ts.isElementAccessExpression(p) ? p.expression : p.expression; if (ts.isIdentifier(p)) root = p; }
+  const text = e.text;
+  const args = e.type === "new_expression" ? callArgs(e) : [];
+  const selfLiteral = e.type === "array" || e.type === "regex" ||
+    (e.type === "new_expression" && args.length === 1 && args[0].type === "array");
+  const isCall = e.type === "call_expression";
+  // find the root identifier: bare identifier, or the leftmost of a member-access chain
+  let root: Node | null = null;
+  if (e.type === "identifier") root = e;
+  else if (e.type === "member_expression") {
+    let p: Node | null = e;
+    while (p && p.type === "member_expression") p = p.childForFieldName("object");
+    if (p?.type === "identifier") root = p;
+  } else if (e.type === "call_expression") {
+    let c: Node | null = e.childForFieldName("function");
+    while (c && c.type === "member_expression") c = c.childForFieldName("object");
+    if (c?.type === "identifier") root = c;
+  } else if (e.type === "subscript_expression") {
+    let p: Node | null = e;
+    while (p && (p.type === "subscript_expression" || p.type === "member_expression")) p = p.childForFieldName("object");
+    if (p?.type === "identifier") root = p;
+  }
   return { root, selfLiteral, text, isCall };
 }
 
 const CHAIN_METHODS = new Set(["map", "forEach", "flatMap", "filter", "every", "some", "reduce", "reduceRight", "find", "findIndex", "sort"]);
 const ITER_METHODS = new Set(["forEach", "map", "flatMap", "filter", "every", "some", "reduce", "reduceRight"]);
 
-interface Loop { domain: ts.Expression; }
+interface Loop { domain: Node; }
 
 /** Find every domain-iteration construct anywhere inside `block`. */
-function findLoops(block: ts.Node): Loop[] {
+function findLoops(block: Node): Loop[] {
   const loops: Loop[] = [];
-  const visit = (n: ts.Node) => {
-    // for…of / for…in over a collection
-    if ((ts.isForOfStatement(n) || ts.isForInStatement(n)) && n.expression) loops.push({ domain: n.expression });
-    // X.forEach(...) / X.map(...) etc — the RECEIVER is the iterated domain
-    if (ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression) && ITER_METHODS.has(n.expression.name.text)) {
-      loops.push({ domain: n.expression.expression });
+  walk(block, (n) => {
+    // for…of / for…in over a collection (one grammar node covers both forms)
+    if (n.type === "for_in_statement") {
+      const right = n.childForFieldName("right");
+      if (right) loops.push({ domain: right });
     }
-    // it.each(X)(...) / test.each(X)(...) / describe.each(X)(...) — the vitest/jest
-    // parameterization idiom. The each ARGUMENT is the iterated domain; missing this
-    // form misclassifies the most idiomatic totality oracles as NO-ITERATION.
-    if (
-      ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression) &&
-      n.expression.name.text === "each" && ts.isIdentifier(n.expression.expression) &&
-      ["it", "test", "describe"].includes(n.expression.expression.text) && n.arguments[0]
-    ) {
-      loops.push({ domain: n.arguments[0] });
+    if (n.type === "call_expression") {
+      const callee = n.childForFieldName("function");
+      if (callee?.type === "member_expression") {
+        const meth = callee.childForFieldName("property")?.text ?? "";
+        const obj = callee.childForFieldName("object");
+        // X.forEach(...) / X.map(...) etc — the RECEIVER is the iterated domain
+        if (obj && ITER_METHODS.has(meth)) loops.push({ domain: obj });
+        // it.each(X)(...) / test.each(X)(...) / describe.each(X)(...) — the vitest/jest
+        // parameterization idiom. The each ARGUMENT is the iterated domain; missing this
+        // form misclassifies the most idiomatic totality oracles as NO-ITERATION.
+        if (meth === "each" && obj?.type === "identifier" && ["it", "test", "describe"].includes(obj.text)) {
+          const arg0 = callArgs(n)[0];
+          if (arg0) loops.push({ domain: arg0 });
+        }
+      }
     }
-    // spread of a collection: [...X] (only when X is a collection, not a literal already)
-    if (ts.isSpreadElement(n) && !ts.isArrayLiteralExpression(n.expression)) loops.push({ domain: n.expression });
-    ts.forEachChild(n, visit);
-  };
-  visit(block);
+    // spread of a collection: [...X] (only when X is a collection, not a literal already;
+    // object spread `{...X}` was a different compiler node — never a loop, so still not one)
+    if (n.type === "spread_element" && n.parent?.type !== "object") {
+      const inner = n.namedChildren.find((c) => !!c && c.type !== "comment");
+      if (inner && inner.type !== "array") loops.push({ domain: inner });
+    }
+  });
   return loops;
 }
 
 /** Classify a single iterated domain expression against the file scope. */
-function classifyDomain(d: ts.Expression, scope: Scope, sf: ts.SourceFile): { verdict: "live" | "literal"; detail: string } {
-  const t = iterTargetOf(d, sf);
+function classifyDomain(d: Node, scope: Scope): { verdict: "live" | "literal"; detail: string } {
+  const t = iterTargetOf(d);
   // an inline array/regex literal as the domain → LITERAL
   if (t.selfLiteral) return { verdict: "literal", detail: `inline ${t.text.slice(0, 40)} literal` };
   // a bare call expression (verifyTotality(), liveTables(), state.storage.sql.exec(...)) → LIVE
@@ -285,26 +381,28 @@ const FLOOR_MATCHERS = new Set(["toBeGreaterThan", "toBeGreaterThanOrEqual"]);
  *  the vitest/jest floor matchers and a bare `.length`/`.size`/`.count` `>=`/`>`
  *  comparison. A LIVE oracle without one passes vacuously the moment its domain
  *  empties — the false-green class the meta-oracle can't see from liveness alone. */
-function hasFloorAssertion(body: ts.Node): boolean {
+function hasFloorAssertion(body: Node): boolean {
   const sizeRe = /\.(length|size|count)\b/;
   let found = false;
-  const visit = (n: ts.Node): void => {
+  walk(body, (n) => {
     if (found) return;
     // A floor matcher whose ASSERTED expression references a domain size, i.e.
     // `expect(domain.length).toBeGreaterThanOrEqual(n)` — not `expect(v).toBeGreaterThan(0)`
     // on some scalar value (which is not a domain-size floor).
-    if (ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression) &&
-        FLOOR_MATCHERS.has(n.expression.name.text) && sizeRe.test(n.expression.expression.getText())) {
-      found = true; return;
+    if (n.type === "call_expression") {
+      const callee = n.childForFieldName("function");
+      if (callee?.type === "member_expression" &&
+          FLOOR_MATCHERS.has(callee.childForFieldName("property")?.text ?? "") &&
+          sizeRe.test(callee.childForFieldName("object")?.text ?? "")) {
+        found = true; return;
+      }
     }
     // A bare `.length`/`.size`/`.count` `>=`/`>` comparison.
-    if (ts.isBinaryExpression(n) &&
-        (n.operatorToken.kind === ts.SyntaxKind.GreaterThanEqualsToken ||
-         n.operatorToken.kind === ts.SyntaxKind.GreaterThanToken) &&
-        sizeRe.test(n.getText())) { found = true; return; }
-    ts.forEachChild(n, visit);
-  };
-  visit(body);
+    if (n.type === "binary_expression") {
+      const op = n.childForFieldName("operator")?.text;
+      if ((op === ">=" || op === ">") && sizeRe.test(n.text)) { found = true; return; }
+    }
+  });
   return found;
 }
 
@@ -471,18 +569,19 @@ export async function analyzeParityOracle(
       if (py) return { ...py, file: rel };
       continue;
     }
-    const sf = parse(src, basename(rel));
-    const desc = findDescribe(sf, oracleName);
+    const rootNode = await parseTs(src);
+    if (!rootNode) continue;
+    const desc = findDescribe(rootNode, oracleName);
     if (!desc) continue;
-    const body = desc.arguments[1];
+    const body = callArgs(desc)[1];
     if (!body) return { verdict: "no-enumeration", detail: "describe has no body", file: rel };
     // (a) some iteration construct must range over the DECLARED domain symbol — helper
     // unwraps (Object.keys/values, Array.from, chained .map/.filter, it/test.each) are
     // handled by the same iterTargetOf the coverage meta-oracle uses.
     const loops = findLoops(body);
-    const enumerates = loops.some((l) => iterTargetOf(l.domain, sf).root?.text === domain);
+    const enumerates = loops.some((l) => iterTargetOf(l.domain).root?.text === domain);
     if (!enumerates) {
-      const roots = [...new Set(loops.map((l) => iterTargetOf(l.domain, sf).text))].slice(0, 3);
+      const roots = [...new Set(loops.map((l) => iterTargetOf(l.domain).text))].slice(0, 3);
       return {
         verdict: "no-enumeration",
         detail: loops.length
@@ -492,10 +591,10 @@ export async function analyzeParityOracle(
       };
     }
     // (b) both projections must appear in the body — a one-sided oracle proves nothing
-    // about agreement.
+    // about agreement. The compiler counted every Identifier node, property names
+    // included; the grammar splits those kinds, so every *identifier node type counts.
     const ids = new Set<string>();
-    const visit = (n: ts.Node): void => { if (ts.isIdentifier(n)) ids.add(n.text); ts.forEachChild(n, visit); };
-    visit(body);
+    walk(body, (n) => { if (n.type.endsWith("identifier")) ids.add(n.text); });
     const missing = [f, g].filter((s) => !ids.has(s));
     if (missing.length)
       return {
@@ -519,15 +618,16 @@ export async function analyzeOracle(cfg: Config, oracleName: string): Promise<Or
       if (py) return { ...py, file: rel };
       continue;
     }
-    const sf = parse(src, basename(rel));
-    const desc = findDescribe(sf, oracleName);
+    const rootNode = await parseTs(src);
+    if (!rootNode) continue;
+    const desc = findDescribe(rootNode, oracleName);
     if (!desc) continue;
-    const scope = buildScope(sf);
-    const body = desc.arguments[1];
+    const scope = buildScope(rootNode);
+    const body = callArgs(desc)[1];
     if (!body) return { verdict: "no-iteration", detail: "describe has no body", file: rel };
     const loops = findLoops(body);
     if (loops.length === 0) return { verdict: "no-iteration", detail: "no for-of / .forEach / .map / spread over a domain", file: rel };
-    const classed = loops.map((l) => classifyDomain(l.domain, scope, sf));
+    const classed = loops.map((l) => classifyDomain(l.domain, scope));
     const live = classed.find((c) => c.verdict === "live");
     if (live) {
       const hasFloor = hasFloorAssertion(body);

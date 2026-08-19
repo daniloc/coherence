@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-19 14:57Z",
+  "generatedAt": "2026-08-19 15:25Z",
   "root": "coherence",
   "absRoot": "/Users/daniloc/Documents/Dev/coherence",
   "nodes": [
@@ -50,11 +50,11 @@
         "boundary \"supported lifecycle hosts share one control contract without sharing host syntax\" at setLifecycleHookForHost via guard \"Codex control — install is exact, idempotent, preserving, and runnable across nested paths\"",
         "boundary \"current-session activation requires exact installed-bundle evidence\" at currentObservation via guard \"hook status — exact current bundle activates; stale, direct, replayed, and damaged evidence does not\"",
         "boundary \"customized hook text composes declared overrides and appends, degrading to canon on damage\" at composeHookText via guard \"hook text — override replaces, append follows, and damage degrades to the canonical emission\"",
-        "boundary \"python sources feed the same instruments as typescript at their declared regex grade\" at surfaceOfSource via guard \"python surface — module defs, enum variants, and dict keys count; underscore and nested names do not\"",
-        "boundary \"python sources feed the same instruments as typescript at their declared regex grade\" at analyzeParityOracle via guard \"python parity — a .py oracle that iterates the live domain passes; a literal list fails; a vanished oracle cannot pass\"",
-        "boundary \"python sources feed the same instruments as typescript at their declared regex grade\" at sitesOfPython via guard \"python redundancy — two spellings of one domain in .py rank as a candidate; declared parity and idiom do not\"",
-        "boundary \"python sources feed the same instruments as typescript at their declared regex grade\" at resolveFromBatch via guard \"pytest batch — nodeid names resolve per claim, zero matches is the vanished oracle, and a torn report falls back loudly\"",
-        "boundary \"python sources feed the same instruments as typescript at their declared regex grade\" at lintSinks via guard \"python sinks — an f-string into a SQL context is a site, a safe-pattern expression is not, and the ratchet reds the new site\"",
+        "boundary \"python sources feed the same instruments as typescript at their declared grade\" at surfaceOfSource via guard \"python surface — module defs, enum variants, and dict keys count; underscore and nested names do not\"",
+        "boundary \"python sources feed the same instruments as typescript at their declared grade\" at analyzeParityOracle via guard \"python parity — a .py oracle that iterates the live domain passes; a literal list fails; a vanished oracle cannot pass\"",
+        "boundary \"python sources feed the same instruments as typescript at their declared grade\" at sitesOfPython via guard \"python redundancy — two spellings of one domain in .py rank as a candidate; declared parity and idiom do not\"",
+        "boundary \"python sources feed the same instruments as typescript at their declared grade\" at resolveFromBatch via guard \"pytest batch — nodeid names resolve per claim, zero matches is the vanished oracle, and a torn report falls back loudly\"",
+        "boundary \"python sources feed the same instruments as typescript at their declared grade\" at lintSinks via guard \"python sinks — an f-string into a SQL context is a site, a safe-pattern expression is not, and the ratchet reds the new site\"",
         "boundary \"a declared language resolves to a real adapter or refuses, never a silent fallback\" at resolveLanguageAdapter via guard \"language adapter — a project path loads and shapes the graph; unknown names refuse, never fall back\"",
         "boundary \"a grammar-backed adapter derives the graph through the same language seam\" at makeTreeSitterAdapter via guard \"tree-sitter — a grammar-backed adapter derives ruby symbols, imports, and prose through the same seam\"",
         "boundary \"instrument arms read languages through shared grammar queries, never a parallel scanner\" at lintSinks via guard \"ruby sinks — an interpolation into a SQL context is a site and the safe pattern exempts\"",
@@ -64,7 +64,7 @@
         "boundary \"a streamed journal entry renders exactly once across appends and compaction\" at tailJournal via guard \"tail — an appended record arrives exactly once, a compaction fold re-emits nothing and drops nothing, and a half-written line waits for its bytes\""
       ],
       "prose": "The CLI is deliberately a thin composition root. Parsing, derivation, verification,\nrendering, and journaling remain independently addressable modules beneath this boundary.",
-      "why": "**agent lifecycle preserves decisions and exposes the current change signal.** Decisions\nand risk are cheapest to surface while the agent still holds the context that produced\nthem; waiting for a later reviewer externalizes both reconstruction costs. The two stop\nsurfaces are not interchangeable: a subagent restates its report because its caller may\nsee nothing else, while the main agent has already shown its report to the user and is\nnever interrupted by shared-worktree state that may belong to another agent. Main Stop\nkeeps the calibration observation and emits no bytes; only SubagentStop carries the\njournal and patch signal forward.\n\n**significant behavioral growth acquires an anchor or patch-specific decision.** The cost\nof adding an invariant is immediate while the cost of omitting it appears later, so the\ncurrent patch must carry either enforcement or an addressable reason that it needs none.\n\n**a weaker regulation obligation never masks a stronger one.** Regulation compares live\nobligations by a lexicographic potential, with missing observations failing closed instead\nof becoming zero, and returns the single strongest action owed. V1 evaluates only rules\ndeclared in the live doctrine registry; even a no-action result makes no claim of overall\nsafety.\n\n**regulation evaluates and repairs the selected agent host.** A canonical Claude control\ncannot create a field around a Codex session, even though both hosts implement the same\nlifecycle domain. The sensor therefore names the explicit or current host in its reading,\nthe decision identity retains it, and a lifecycle redirect installs that same host. A\nforeign host value refuses before it can release or author a shell command.\n\n**task context is bounded and names its approximations.** A focused context packet is\nuseful only when its one-hop and heuristic limits stay visible; otherwise convenience is\nmisread as completeness and recreates the omission gradient this project exists to oppose.\n\n**cached decisions expose structurally expired premises.** A decision saves inference only\nwhile the repository addresses supporting it remain live. Broken explicit referents must\nbe louder than readable but stale rationale.\n\n**predicted context closure is calibrated against observed reads and outcomes.** Economy's\none-hop closure is a hypothesis about necessary reading, not cognition. Observed reads and\nlater defect labels give that model a path to correction instead of turning it into dogma.\n\n**calibration preserves the weakest host attribution of its trace.** A Codex parent\nsession file can contain parent and descendant tool use because PostToolUse supplies no\nchild id. Calibration may still compare that aggregate against a patch, but it must name\nthe aggregate rather than relabeling those writes as one agent's work. Legacy rows remain\nunscoped, shared-worktree fallback remains separate, and any unreadable row prevents a\nnew sample instead of disappearing from its denominator.\n\n**reviewed risk sites survive relocation but never duplication.** A ratchet baseline is a\ncached review, and a cached fact that expires on a rename rots the same way a decision's\npremises do — a refactor then spends a reviewer's attention on sites nobody touched, and\nattention spent on false alarms is how a real one gets waved through. Relocation changes\nwhere a reviewed site lives; duplication changes how much unreviewed surface exists, and\nonly the second is news.\n\n**pinned mass follows a value-conserving rename but never absorbs growth.** A mass\ndimension's key embeds a name someone chose — a spec H1, a measure's config key — so a\nrename re-addresses the pin, and a ratchet that reads its own re-addressing as \"gained\nparts nobody named\" prints a lie beside the unchanged total that refutes it (measured:\none H1 edit, 35 lines relabeled, zero gained, gate red). The repair must stay\ncount-conserving: only a vanished pin with the same family, unit and exact value can\nabsorb a new name, or growth and novelty would ride in under renames.\n\n**a claim goes green only on positive evidence its oracle ran.** The verifier's whole\nauthority rests on this one property, and until now no claim cited it: an audit deleted\nthe rule and the tree stayed \"✓ coherent\" while the unit test failed unseen. An exit\ncode is the runner's statement about itself, not about the named test — a filter that\nmatched nothing exits clean on every runner class this repo has measured — so green\nmust require output that names the run, the one reading absence cannot produce.\n\n**a vanished oracle reds its claim, never green-by-absence.** A renamed or deleted test\nleaves a claim citing a name nothing owns, and that claim then guards nothing while\nwearing green. Absence has to be its own observable verdict, distinct from ran-and-failed,\nbecause the two demand different repairs: a red test needs the code fixed, a vanished\noracle needs the contract re-tied to something that exists.\n\n**a declared invariant unanchored by any boundary fails coverage.** A spec may not\nassert a property that nothing enforces: that is the ratchet the whole harness turns on,\nand if it silently loosened, specs would drift back into aspiration prose. The gap has to\ncost a red at the run that opened it, while the person who opened it still holds the\ncontext to close it.\n\n**a via-test oracle that iterates no live domain fails its claim.** A totality label on a\nsampling test is worse than no label: it retires the reader's suspicion without retiring\nthe risk. Deriving the checked set from the live registry the chokepoint actually serves\nis what makes \"covers every case\" a fact about the system rather than about the fixture\nlist the author remembered.\n\n**a skipped run never clobbers an oracle's recorded verdict.** The record is the last\nknown truth, honestly dated. A fast tier that skips the executable claims every commit\nwould otherwise erase last week's real pass — or, worse, a real fail — with \"did not\nlook\", and history that can be overwritten by not looking is not history.\n\n**a named oracle that no test runs cannot pass.** The serial runner is the component the\nexecutable tier leans its trust on, and it was outside the evidence perimeter — unclaimed,\nuntested, and (measured) willing to exit clean when the cited title survived only as a\nstring in a file. The runner itself must refuse a name it cannot show ran, because every\ngreen above it inherits that refusal.\n\n**an empty derivation against a remembered surface refuses, never passes.** Every verdict\nin this file rests on the graph deriving non-empty, and nothing checked that premise:\ngutting `buildGraph` left the gate printing \"claims: 0\" and \"✓ coherent\", exit 0 —\ndeeper than a vanished oracle, because it empties every check at once while announcing\nthey all passed. The record remembers how many claims the last run graded, so a run that\nsuddenly sees zero must refuse rather than report success over nothing; the only\nlegitimate zero (a project adopting from nothing) is exactly the one with no memory, and\nit gets the adoption ladder instead. The floor deliberately stops at zero: a partial\ncollapse where every component keeps a claim is observationally identical to deliberate\npruning, and deletion has to stay free or people stop deleting. What the complement\nunderneath it actually reaches is narrower than it first appears — a component stripped of\nits claims is still a node someone can red, while a component the walk never discovered\nleaves nothing behind to notice, so an N→1 slide reads as N ordinary prunings. Pinning the\npopulation as a mass dimension is the honest answer there, because the question it settles\nis not whether anything survived but whether as much survived as last time.\n\n**lifecycle hook presence is one canonical runnable bit.** The control surface cannot\ncreate a field if every repository is free to carry a merely similar—or silently dead—\nhook. Printing, installation, and inspection therefore share one five-event value and\none stable launcher per host. Presence means exactly one shared project copy, no competing\nlocal, inline, or legacy path, an aligned host/launcher root, a correct declared root\nmapping, an enabled project-hook layer, and a runnable target. Unrelated hooks may coexist.\nHistorical journal activity is reported beside this bit but can neither redeem current\nabsence nor erase current presence.\n\n**supported lifecycle hosts share one control contract without sharing host syntax.**\nClaude and Codex expose the same five lifecycle meanings through different settings files,\nmatchers, launch commands, and response envelopes. Host parity therefore means deriving\neach complete bundle from one host-selected domain while retaining a distinct fingerprint;\ncopying Claude bytes into Codex would be resemblance, not parity.\n\n**current-session activation requires exact installed-bundle evidence.** Structural\npresence proves that the project control is runnable, not that this session loaded it. A\nsession becomes observed only when its activity names the selected host, launcher\ntransport, and current bundle fingerprint. Direct probes, stale bundles, other sessions,\nand a guessed newest session cannot establish activation; parent-session fallback stays a\nnamed attribution ceiling rather than being promoted to child evidence.\n\n**customized hook text composes declared overrides and appends, degrading to canon on\ndamage.** The canonical hook text is the harness's voice — identical across adopting\nprojects, and byte-testable because of it — but a project knows things the harness cannot:\nits own commands, its conventions, the one warning its history taught it. So a project\ngets a declared voice per event rather than a fork of the hook body, under one composition\nrule with no conflict state: the override answers what the base is, the append answers\nwhat follows it, and both may coexist; an empty override is a deliberate, visible silence,\nnot an error. Damage must degrade to the canonical emission at hook time, because the hook\nbody runs inside every agent session of every adopting project — a torn customization\nfile that broke sessions would make the journal's carrier the thing that kills the work it\nrecords — so a tear costs exactly the customization, never the session, and the loud\nsurface for it is `hooks review`, where a reader is actually looking. Events with no\ncanonical emission — main Stop, PostToolUse — speak only with a declared project voice;\nmain Stop's canonical byte-silence and the attribution reasoning behind it stand unchanged\nas the default.\n\n**python sources feed the same instruments as typescript at their declared regex grade.**\nThe adapter seam always promised language-agnosticism, but three analyzers and two\nscanners parsed TypeScript directly, so a python project's surface grew invisibly — the\nzero-anchor alarm never fired, parity claims skipped `.py` oracles, duplicated domains\nwent unranked, batch oracles knew one report format, and f-string interpolations were not\nsites. Each instrument now reads python at the same grade the adapters set deliberately:\nregex and indentation, in-harness, no subprocess and no new parser dependency, following\nthe precedent `analyzePythonOracle` established. The grade is declared, not hidden —\nprecision is preferred over recall everywhere, because an advisory that cries wolf\nretires the reader's attention without retiring risk, and with no compiler behind `.py`\na false positive can never be rescued downstream. What the regex grade deliberately does\nnot count is journaled beside each instrument, so the next reader inherits the boundary\nof the instrument instead of rediscovering it.\n\n**a declared language resolves to a real adapter or refuses, never a silent fallback.**\nThe graph is the one derivation everything downstream consumes, and the adapter decides\nwhat that derivation can see. The old `?? typescript` fallback meant a typo'd language\nname walked the wrong grammar and reported on the garbage with full confidence — the\nsame walking-a-different-tree failure the config loader refuses for, one seam later. So\nan unknown bare name now refuses with the live built-in list, and the same seam is where\na project brings its own language: a `./`-relative module exporting the LanguageAdapter\nshape, validated field-by-field so the refusal names the line that needs fixing.\nImporting project code is not new trust — the atlas already declares at the loadConfig\ncrossing that running the harness in a tree executes that tree's config. What a custom\nadapter buys is the graph tier: symbols, import edges, prose, claims over them. The\nper-language instrument arms (surface counting, oracle analysis, redundancy, sinks,\nbatch formats) remain harness contributions, and the documentation says so, because an\nadapter author who is not told the boundary believes they have the full field when they\nhave half.\n\n**a grammar-backed adapter derives the graph through the same language seam.** The\nregex adapters scale in expert code — the python push measured ~900 hand-built lines\nacross five instrument arms — while a grammar plus capture queries scales in data:\nmodern tree-sitter grammar packages ship a prebuilt wasm, `web-tree-sitter` runs it\nwithout a native toolchain, and the language-specific knowledge shrinks to patterns a\ncontributor can write without touching verdict logic. The factory is async once (wasm\nload) and the adapter it returns is synchronous, so the seam is unchanged and a project\nmodule reaches it with one top-level await. The corpus diff that justified the phase\nalso bounded it: on this repository's own sixty-three TypeScript files the regex grade\nmissed zero symbols a real parse found, so the graph tier was not where parse fidelity\nwas owed. The built-ins then CONVERGED onto the grammar path anyway — not for fidelity\nbut because two implementations of one outcome are two spellings of a domain, the\nredundancy class this harness ranks in other people's code. The regex adapters were\ncorpus-diffed to parity (every delta an enumerated regex mistake), their prose logic\nported verbatim, and then deleted; their grammars ship vendored with provenance. The\ninstrument arms remain hand-built until a later phase ports them to query packs.\n\n**instrument arms read languages through shared grammar queries, never a parallel\nscanner.** Phase 2b's contract, proven first on the injection ratchet: a language\ncontributes captures and signals — which node is an interpolation, how its SQL context\nannounces itself — and the mechanism owns classification, safe-pattern grading, site\nidentity, and the ratchet, once. The regex scanners this replaced matched line TEXT, so\nthey counted `${}` inside plain strings, comments, and test fixtures as sites, bounded\nvisibility at one brace of nesting, and one of them matched its own source. The query\nscan re-pinned the baseline with every delta enumerated: nineteen real nested-brace\nsites gained, one self-match artifact gone. A new language now gains the whole\ninstrument from a table row — ruby's took three lines and no scanner — which is the\ntwo-tier boundary dissolving arm by arm.\n\n**experiment outcomes require criterion-total evidence.** A\nplan is frozen before work with its predicted context, actions, criteria, and evidence\ncursors. Closure answers every action and criterion exactly once, preserves the assessor,\nand derives success, failure, or inconclusive from criterion statuses rather than accepting\nan outcome label. Otherwise the ledger would turn an incomplete story into a measured loop.\n\n**experiment telemetry preserves its weakest provable attribution.** Trace and activity\nwindows may be empty, prove an exact owner session, or only prove a parent-session aggregate\nthat can include descendants; older trace may carry no observation metadata at all. Those\nfour scopes remain distinct in the immutable close record. Damaged prefixes, unreadable\nrows, and unknown or inconsistent scope refuse. That keeps compatible history without\nturning absence or uncertainty into false precision.\n\n**activity evidence is accepted only when identity, scope, time, and command agree.** A\nrow is useful precisely because later status and experiment readers stop re-deriving the\nhost event. That cached inference is safe only while its relational fields still agree:\nagent attribution names the row session, parent fallback names its parent domain, event\nidentity recomputes, time is canonical, and command kind/result agrees with name and exit\ncode. One strict reader grades that whole relation; malformed rows become counted damage,\nnever partially trusted evidence.\n\n**a streamed journal entry renders exactly once across appends and compaction.** The live\nstream exists for the one reader the settled render cannot serve — an orchestrator watching\nfive subagents mid-flight — and that reader has no way to audit the feed against the files.\nA dropped entry is a decision the orchestrator never saw, indistinguishable from one never\nmade; a duplicate teaches the opposite lie, that a question was decided twice. Both are\ncheap to produce, because the journal's files do not strictly grow: compaction moves lines\nbetween files and unlinks the originals, which a position-addressed reader replays in full.\nSo a record's identity in the stream comes from its content — the same triple the merged\ntimeline sorts by — and a moved line is one the feed already carried.\n\n(The import claims above separately prove that the composition root still reaches the\nconfiguration loader, graph derivation, verifier, spec walker, and journal.)",
+      "why": "**agent lifecycle preserves decisions and exposes the current change signal.** Decisions\nand risk are cheapest to surface while the agent still holds the context that produced\nthem; waiting for a later reviewer externalizes both reconstruction costs. The two stop\nsurfaces are not interchangeable: a subagent restates its report because its caller may\nsee nothing else, while the main agent has already shown its report to the user and is\nnever interrupted by shared-worktree state that may belong to another agent. Main Stop\nkeeps the calibration observation and emits no bytes; only SubagentStop carries the\njournal and patch signal forward.\n\n**significant behavioral growth acquires an anchor or patch-specific decision.** The cost\nof adding an invariant is immediate while the cost of omitting it appears later, so the\ncurrent patch must carry either enforcement or an addressable reason that it needs none.\n\n**a weaker regulation obligation never masks a stronger one.** Regulation compares live\nobligations by a lexicographic potential, with missing observations failing closed instead\nof becoming zero, and returns the single strongest action owed. V1 evaluates only rules\ndeclared in the live doctrine registry; even a no-action result makes no claim of overall\nsafety.\n\n**regulation evaluates and repairs the selected agent host.** A canonical Claude control\ncannot create a field around a Codex session, even though both hosts implement the same\nlifecycle domain. The sensor therefore names the explicit or current host in its reading,\nthe decision identity retains it, and a lifecycle redirect installs that same host. A\nforeign host value refuses before it can release or author a shell command.\n\n**task context is bounded and names its approximations.** A focused context packet is\nuseful only when its one-hop and heuristic limits stay visible; otherwise convenience is\nmisread as completeness and recreates the omission gradient this project exists to oppose.\n\n**cached decisions expose structurally expired premises.** A decision saves inference only\nwhile the repository addresses supporting it remain live. Broken explicit referents must\nbe louder than readable but stale rationale.\n\n**predicted context closure is calibrated against observed reads and outcomes.** Economy's\none-hop closure is a hypothesis about necessary reading, not cognition. Observed reads and\nlater defect labels give that model a path to correction instead of turning it into dogma.\n\n**calibration preserves the weakest host attribution of its trace.** A Codex parent\nsession file can contain parent and descendant tool use because PostToolUse supplies no\nchild id. Calibration may still compare that aggregate against a patch, but it must name\nthe aggregate rather than relabeling those writes as one agent's work. Legacy rows remain\nunscoped, shared-worktree fallback remains separate, and any unreadable row prevents a\nnew sample instead of disappearing from its denominator.\n\n**reviewed risk sites survive relocation but never duplication.** A ratchet baseline is a\ncached review, and a cached fact that expires on a rename rots the same way a decision's\npremises do — a refactor then spends a reviewer's attention on sites nobody touched, and\nattention spent on false alarms is how a real one gets waved through. Relocation changes\nwhere a reviewed site lives; duplication changes how much unreviewed surface exists, and\nonly the second is news.\n\n**pinned mass follows a value-conserving rename but never absorbs growth.** A mass\ndimension's key embeds a name someone chose — a spec H1, a measure's config key — so a\nrename re-addresses the pin, and a ratchet that reads its own re-addressing as \"gained\nparts nobody named\" prints a lie beside the unchanged total that refutes it (measured:\none H1 edit, 35 lines relabeled, zero gained, gate red). The repair must stay\ncount-conserving: only a vanished pin with the same family, unit and exact value can\nabsorb a new name, or growth and novelty would ride in under renames.\n\n**a claim goes green only on positive evidence its oracle ran.** The verifier's whole\nauthority rests on this one property, and until now no claim cited it: an audit deleted\nthe rule and the tree stayed \"✓ coherent\" while the unit test failed unseen. An exit\ncode is the runner's statement about itself, not about the named test — a filter that\nmatched nothing exits clean on every runner class this repo has measured — so green\nmust require output that names the run, the one reading absence cannot produce.\n\n**a vanished oracle reds its claim, never green-by-absence.** A renamed or deleted test\nleaves a claim citing a name nothing owns, and that claim then guards nothing while\nwearing green. Absence has to be its own observable verdict, distinct from ran-and-failed,\nbecause the two demand different repairs: a red test needs the code fixed, a vanished\noracle needs the contract re-tied to something that exists.\n\n**a declared invariant unanchored by any boundary fails coverage.** A spec may not\nassert a property that nothing enforces: that is the ratchet the whole harness turns on,\nand if it silently loosened, specs would drift back into aspiration prose. The gap has to\ncost a red at the run that opened it, while the person who opened it still holds the\ncontext to close it.\n\n**a via-test oracle that iterates no live domain fails its claim.** A totality label on a\nsampling test is worse than no label: it retires the reader's suspicion without retiring\nthe risk. Deriving the checked set from the live registry the chokepoint actually serves\nis what makes \"covers every case\" a fact about the system rather than about the fixture\nlist the author remembered.\n\n**a skipped run never clobbers an oracle's recorded verdict.** The record is the last\nknown truth, honestly dated. A fast tier that skips the executable claims every commit\nwould otherwise erase last week's real pass — or, worse, a real fail — with \"did not\nlook\", and history that can be overwritten by not looking is not history.\n\n**a named oracle that no test runs cannot pass.** The serial runner is the component the\nexecutable tier leans its trust on, and it was outside the evidence perimeter — unclaimed,\nuntested, and (measured) willing to exit clean when the cited title survived only as a\nstring in a file. The runner itself must refuse a name it cannot show ran, because every\ngreen above it inherits that refusal.\n\n**an empty derivation against a remembered surface refuses, never passes.** Every verdict\nin this file rests on the graph deriving non-empty, and nothing checked that premise:\ngutting `buildGraph` left the gate printing \"claims: 0\" and \"✓ coherent\", exit 0 —\ndeeper than a vanished oracle, because it empties every check at once while announcing\nthey all passed. The record remembers how many claims the last run graded, so a run that\nsuddenly sees zero must refuse rather than report success over nothing; the only\nlegitimate zero (a project adopting from nothing) is exactly the one with no memory, and\nit gets the adoption ladder instead. The floor deliberately stops at zero: a partial\ncollapse where every component keeps a claim is observationally identical to deliberate\npruning, and deletion has to stay free or people stop deleting. What the complement\nunderneath it actually reaches is narrower than it first appears — a component stripped of\nits claims is still a node someone can red, while a component the walk never discovered\nleaves nothing behind to notice, so an N→1 slide reads as N ordinary prunings. Pinning the\npopulation as a mass dimension is the honest answer there, because the question it settles\nis not whether anything survived but whether as much survived as last time.\n\n**lifecycle hook presence is one canonical runnable bit.** The control surface cannot\ncreate a field if every repository is free to carry a merely similar—or silently dead—\nhook. Printing, installation, and inspection therefore share one five-event value and\none stable launcher per host. Presence means exactly one shared project copy, no competing\nlocal, inline, or legacy path, an aligned host/launcher root, a correct declared root\nmapping, an enabled project-hook layer, and a runnable target. Unrelated hooks may coexist.\nHistorical journal activity is reported beside this bit but can neither redeem current\nabsence nor erase current presence.\n\n**supported lifecycle hosts share one control contract without sharing host syntax.**\nClaude and Codex expose the same five lifecycle meanings through different settings files,\nmatchers, launch commands, and response envelopes. Host parity therefore means deriving\neach complete bundle from one host-selected domain while retaining a distinct fingerprint;\ncopying Claude bytes into Codex would be resemblance, not parity.\n\n**current-session activation requires exact installed-bundle evidence.** Structural\npresence proves that the project control is runnable, not that this session loaded it. A\nsession becomes observed only when its activity names the selected host, launcher\ntransport, and current bundle fingerprint. Direct probes, stale bundles, other sessions,\nand a guessed newest session cannot establish activation; parent-session fallback stays a\nnamed attribution ceiling rather than being promoted to child evidence.\n\n**customized hook text composes declared overrides and appends, degrading to canon on\ndamage.** The canonical hook text is the harness's voice — identical across adopting\nprojects, and byte-testable because of it — but a project knows things the harness cannot:\nits own commands, its conventions, the one warning its history taught it. So a project\ngets a declared voice per event rather than a fork of the hook body, under one composition\nrule with no conflict state: the override answers what the base is, the append answers\nwhat follows it, and both may coexist; an empty override is a deliberate, visible silence,\nnot an error. Damage must degrade to the canonical emission at hook time, because the hook\nbody runs inside every agent session of every adopting project — a torn customization\nfile that broke sessions would make the journal's carrier the thing that kills the work it\nrecords — so a tear costs exactly the customization, never the session, and the loud\nsurface for it is `hooks review`, where a reader is actually looking. Events with no\ncanonical emission — main Stop, PostToolUse — speak only with a declared project voice;\nmain Stop's canonical byte-silence and the attribution reasoning behind it stand unchanged\nas the default.\n\n**python sources feed the same instruments as typescript at their declared grade.**\nThe adapter seam always promised language-agnosticism, but three analyzers and two\nscanners parsed TypeScript directly, so a python project's surface grew invisibly — the\nzero-anchor alarm never fired, parity claims skipped `.py` oracles, duplicated domains\nwent unranked, batch oracles knew one report format, and f-string interpolations were not\nsites. Each instrument now reads python at a DECLARED grade: most through the shared\ngrammar queries of phase 2b (surface, sites, sinks), the oracle arms at the pinned\nindent-block grade their guards froze — in-harness, no subprocess, and since the arms\nported, no compiler dependency at all. The grade is declared, not hidden —\nprecision is preferred over recall everywhere, because an advisory that cries wolf\nretires the reader's attention without retiring risk, and with no compiler behind `.py`\na false positive can never be rescued downstream. What the regex grade deliberately does\nnot count is journaled beside each instrument, so the next reader inherits the boundary\nof the instrument instead of rediscovering it.\n\n**a declared language resolves to a real adapter or refuses, never a silent fallback.**\nThe graph is the one derivation everything downstream consumes, and the adapter decides\nwhat that derivation can see. The old `?? typescript` fallback meant a typo'd language\nname walked the wrong grammar and reported on the garbage with full confidence — the\nsame walking-a-different-tree failure the config loader refuses for, one seam later. So\nan unknown bare name now refuses with the live built-in list, and the same seam is where\na project brings its own language: a `./`-relative module exporting the LanguageAdapter\nshape, validated field-by-field so the refusal names the line that needs fixing.\nImporting project code is not new trust — the atlas already declares at the loadConfig\ncrossing that running the harness in a tree executes that tree's config. What a custom\nadapter buys is the graph tier: symbols, import edges, prose, claims over them. The\nper-language instrument arms (surface counting, oracle analysis, redundancy, sinks,\nbatch formats) remain harness contributions, and the documentation says so, because an\nadapter author who is not told the boundary believes they have the full field when they\nhave half.\n\n**a grammar-backed adapter derives the graph through the same language seam.** The\nregex adapters scale in expert code — the python push measured ~900 hand-built lines\nacross five instrument arms — while a grammar plus capture queries scales in data:\nmodern tree-sitter grammar packages ship a prebuilt wasm, `web-tree-sitter` runs it\nwithout a native toolchain, and the language-specific knowledge shrinks to patterns a\ncontributor can write without touching verdict logic. The factory is async once (wasm\nload) and the adapter it returns is synchronous, so the seam is unchanged and a project\nmodule reaches it with one top-level await. The corpus diff that justified the phase\nalso bounded it: on this repository's own sixty-three TypeScript files the regex grade\nmissed zero symbols a real parse found, so the graph tier was not where parse fidelity\nwas owed. The built-ins then CONVERGED onto the grammar path anyway — not for fidelity\nbut because two implementations of one outcome are two spellings of a domain, the\nredundancy class this harness ranks in other people's code. The regex adapters were\ncorpus-diffed to parity (every delta an enumerated regex mistake), their prose logic\nported verbatim, and then deleted; their grammars ship vendored with provenance. The\ninstrument arms remain hand-built until a later phase ports them to query packs.\n\n**instrument arms read languages through shared grammar queries, never a parallel\nscanner.** Phase 2b's contract, proven first on the injection ratchet: a language\ncontributes captures and signals — which node is an interpolation, how its SQL context\nannounces itself — and the mechanism owns classification, safe-pattern grading, site\nidentity, and the ratchet, once. The regex scanners this replaced matched line TEXT, so\nthey counted `${}` inside plain strings, comments, and test fixtures as sites, bounded\nvisibility at one brace of nesting, and one of them matched its own source. The query\nscan re-pinned the baseline with every delta enumerated: nineteen real nested-brace\nsites gained, one self-match artifact gone. A new language now gains the whole\ninstrument from a table row — ruby's took three lines and no scanner — which is the\ntwo-tier boundary dissolving arm by arm.\n\n**experiment outcomes require criterion-total evidence.** A\nplan is frozen before work with its predicted context, actions, criteria, and evidence\ncursors. Closure answers every action and criterion exactly once, preserves the assessor,\nand derives success, failure, or inconclusive from criterion statuses rather than accepting\nan outcome label. Otherwise the ledger would turn an incomplete story into a measured loop.\n\n**experiment telemetry preserves its weakest provable attribution.** Trace and activity\nwindows may be empty, prove an exact owner session, or only prove a parent-session aggregate\nthat can include descendants; older trace may carry no observation metadata at all. Those\nfour scopes remain distinct in the immutable close record. Damaged prefixes, unreadable\nrows, and unknown or inconsistent scope refuse. That keeps compatible history without\nturning absence or uncertainty into false precision.\n\n**activity evidence is accepted only when identity, scope, time, and command agree.** A\nrow is useful precisely because later status and experiment readers stop re-deriving the\nhost event. That cached inference is safe only while its relational fields still agree:\nagent attribution names the row session, parent fallback names its parent domain, event\nidentity recomputes, time is canonical, and command kind/result agrees with name and exit\ncode. One strict reader grades that whole relation; malformed rows become counted damage,\nnever partially trusted evidence.\n\n**a streamed journal entry renders exactly once across appends and compaction.** The live\nstream exists for the one reader the settled render cannot serve — an orchestrator watching\nfive subagents mid-flight — and that reader has no way to audit the feed against the files.\nA dropped entry is a decision the orchestrator never saw, indistinguishable from one never\nmade; a duplicate teaches the opposite lie, that a question was decided twice. Both are\ncheap to produce, because the journal's files do not strictly grow: compaction moves lines\nbetween files and unlinks the originals, which a position-addressed reader replays in full.\nSo a record's identity in the stream comes from its content — the same triple the merged\ntimeline sorts by — and a moved line is one the feed already carried.\n\n(The import claims above separately prove that the composition root still reaches the\nconfiguration loader, graph derivation, verifier, spec walker, and journal.)",
       "invariants": [
         "agent lifecycle preserves decisions and exposes the current change signal",
         "significant behavioral growth acquires an anchor or patch-specific decision",
@@ -87,7 +87,7 @@
         "supported lifecycle hosts share one control contract without sharing host syntax",
         "current-session activation requires exact installed-bundle evidence",
         "customized hook text composes declared overrides and appends, degrading to canon on damage",
-        "python sources feed the same instruments as typescript at their declared regex grade",
+        "python sources feed the same instruments as typescript at their declared grade",
         "a declared language resolves to a real adapter or refuses, never a silent fallback",
         "a grammar-backed adapter derives the graph through the same language seam",
         "instrument arms read languages through shared grammar queries, never a parallel scanner",
@@ -2783,7 +2783,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 128,
+      "line": 124,
       "prose": "A Stop feedback turn stops again. Hosts mark that second pass so a non-blocking nudge\ncan be emitted exactly once instead of accidentally becoming an eight-turn gate."
     },
     {
@@ -2793,7 +2793,7 @@
       "kind": "symbol",
       "sub": "type",
       "path": "src/hooks.ts",
-      "line": 133
+      "line": 129
     },
     {
       "id": "s:src/hooks.ts#composeStopFeedback",
@@ -2802,7 +2802,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 143,
+      "line": 139,
       "prose": "Host semantics make this distinction consequential: any `additionalContext` continues\nthe conversation. A subagent's parent may genuinely need the final report restated;\nthe main user just read it. Main Stop therefore emits nothing. Shared-worktree state\ncannot be promoted into a task-local obligation merely because this agent stopped."
     },
     {
@@ -2812,7 +2812,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 165,
+      "line": 161,
       "prose": "`coherence hook <event>` — the hook body itself, so nothing has to be written to\n disk or kept in sync with a script file. Reads the event payload on stdin (unused\n today, but hooks are fed JSON and ignoring it silently would be rude to the next\n person who needs a field from it) and prints the documented output shape."
     },
     {
@@ -2822,7 +2822,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 311,
+      "line": 307,
       "prose": "What a subagent is told as it finishes. Split out of `runHook` so it is reachable\n without a stdin pipe — the hook body drains stdin, and a report you can only observe\n by feeding a process is a report nobody tests."
     },
     {
@@ -2832,7 +2832,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/hooks.ts",
-      "line": 386
+      "line": 382
     },
     {
       "id": "s:src/hooks.ts#CurrentHookObservation",
@@ -2841,7 +2841,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/hooks.ts",
-      "line": 398
+      "line": 394
     },
     {
       "id": "s:src/hooks.ts#activeHookHost",
@@ -2850,7 +2850,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 423,
+      "line": 419,
       "prose": "Which host owns the current shell. Explicit selection always wins."
     },
     {
@@ -2860,7 +2860,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 429,
+      "line": 425,
       "prose": "Never pick the newest session: concurrency makes \"latest\" an attribution bug."
     },
     {
@@ -2870,7 +2870,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 457
+      "line": 453
     },
     {
       "id": "s:src/hooks.ts#hookStatus",
@@ -2879,7 +2879,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 533,
+      "line": 529,
       "prose": "Structural configuration, historical memory, and this exact session stay separate."
     },
     {
@@ -2889,7 +2889,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 614,
+      "line": 610,
       "prose": "`coherence hooks status` — report the switch and the observation beside it."
     },
     {
@@ -2899,7 +2899,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 621,
+      "line": 617,
       "prose": "`coherence hooks --check` — the binary current-control gate. Observation never redeems absence."
     },
     {
@@ -2909,7 +2909,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 631
+      "line": 627
     },
     {
       "id": "s:src/hooks.ts#uninstallHooks",
@@ -2918,7 +2918,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 648
+      "line": 644
     },
     {
       "id": "s:src/hooks.ts#reviewHooks",
@@ -2927,7 +2927,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 665,
+      "line": 661,
       "prose": "`coherence hooks review` — every event's EFFECTIVE emission, with its provenance.\n The hook body degrades an unreadable customization to canon silently, because a torn\n file must not break a session; THIS is the loud surface where that damage lands, and\n the exit code carries it."
     },
     {
@@ -2937,7 +2937,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 713,
+      "line": 709,
       "prose": "`coherence hooks` — print one host's canonical block, plus the\n instruction text so a reader can see what agents will actually be told."
     },
     {
@@ -3900,7 +3900,7 @@
       "kind": "file",
       "sub": "src/oracle-domain.ts",
       "path": "src/oracle-domain.ts",
-      "prose": "oracle-domain.ts — the META-ORACLE. A `boundary \"<inv>\" at <sym> via test \"<oracle>\"`\nclaim already checks (a) the chokepoint symbol exists and (b) the named oracle test\npasses. Those two say NOTHING about whether the oracle is a REAL totality check: a test\nthat loops a hand-written array (or a name-regex, or no domain at all) passes, looks\ntotal, and proves NOTHING about completeness. This module is the third assertion — it\nreads the oracle's OWN source and classifies HOW it iterates its domain:\n\n  LIVE         — its primary assertion loop ranges over a LIVE-derived collection: an\n                 imported binding (a registry/SSOT), a call result (verifyXTotality(),\n                 a DB/PRAGMA query), member access on an import, or the anchor symbol\n                 itself. Completeness is pinned to the live domain → a real totality.\n  LITERAL      — it loops an ArrayExpression / RegExp literal, or a SAME-FILE const\n                 array (`const PATTERNS = [...]`). A sampling oracle wearing the\n                 totality label: the hand-list drifts from the domain silently.\n  NO-ITERATION — it never loops a domain at all (a pure source-grep like\n                 `src.not.toMatch(...)`, or a fixed list of hand-enumerated `it()`\n                 blocks). Asserts a SOURCE PROPERTY, not domain coverage.\n\nLIVE passes the meta-oracle. LITERAL and NO-ITERATION are FALSE oracles for a\n`via test` claim → the boundary fails until the domain is derived from the live SSOT\n(or, for a legitimate source-property guard, re-declared with `via guard` — see verify).\n\nWe reuse the `typescript` compiler API (a devDep, available at runtime) rather than the\nregex adapter: classifying iteration roots needs real scope/symbol resolution."
+      "prose": "oracle-domain.ts — the META-ORACLE. A `boundary \"<inv>\" at <sym> via test \"<oracle>\"`\nclaim already checks (a) the chokepoint symbol exists and (b) the named oracle test\npasses. Those two say NOTHING about whether the oracle is a REAL totality check: a test\nthat loops a hand-written array (or a name-regex, or no domain at all) passes, looks\ntotal, and proves NOTHING about completeness. This module is the third assertion — it\nreads the oracle's OWN source and classifies HOW it iterates its domain:\n\n  LIVE         — its primary assertion loop ranges over a LIVE-derived collection: an\n                 imported binding (a registry/SSOT), a call result (verifyXTotality(),\n                 a DB/PRAGMA query), member access on an import, or the anchor symbol\n                 itself. Completeness is pinned to the live domain → a real totality.\n  LITERAL      — it loops an ArrayExpression / RegExp literal, or a SAME-FILE const\n                 array (`const PATTERNS = [...]`). A sampling oracle wearing the\n                 totality label: the hand-list drifts from the domain silently.\n  NO-ITERATION — it never loops a domain at all (a pure source-grep like\n                 `src.not.toMatch(...)`, or a fixed list of hand-enumerated `it()`\n                 blocks). Asserts a SOURCE PROPERTY, not domain coverage.\n\nLIVE passes the meta-oracle. LITERAL and NO-ITERATION are FALSE oracles for a\n`via test` claim → the boundary fails until the domain is derived from the live SSOT\n(or, for a legitimate source-property guard, re-declared with `via guard` — see verify).\n\nThe TS/JS arm reads oracle sources through the shared tree-sitter grammar handle\n(phase 2b, arm 4 — the `typescript` compiler-API dependency is gone): the same\nscope/iteration-root resolution the compiler walk performed, re-expressed as node\nwalks over the grammar tree. The walks mirror the retired compiler visitors 1:1;\nclassification here is scope-dependent (an identifier's verdict depends on how the\nFILE binds it), which is walk-shaped work — the grammar contributes the parse, not\na capture table."
     },
     {
       "id": "s:src/oracle-domain.ts#OracleVerdict",
@@ -3909,7 +3909,7 @@
       "kind": "symbol",
       "sub": "type",
       "path": "src/oracle-domain.ts",
-      "line": 31
+      "line": 37
     },
     {
       "id": "s:src/oracle-domain.ts#OracleAnalysis",
@@ -3918,7 +3918,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/oracle-domain.ts",
-      "line": 33
+      "line": 39
     },
     {
       "id": "s:src/oracle-domain.ts#isPyTestPath",
@@ -3927,7 +3927,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/oracle-domain.ts",
-      "line": 54,
+      "line": 60,
       "prose": "Python test files, by name or path. Exported so redundancy.ts can exclude exactly the\n set of files the oracle analyzers read — a second spelling of this convention over there\n is the duplicated-domain finding that module exists to report."
     },
     {
@@ -3937,7 +3937,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/oracle-domain.ts",
-      "line": 66,
+      "line": 72,
       "prose": "Dirs that are never source, regardless of the project's graph-`ignore`. We deliberately\ndo NOT reuse cfg.ignore: a project commonly excludes its test dir (e.g. \"__tests__\") from\nthe spec GRAPH while that is exactly where the oracle tests we must read live. Reusing the\ngraph-ignore here would make every oracle resolve NOT-FOUND and the meta-oracle inert.\nExported because redundancy.ts needs the SAME list and a second copy of it is exactly the\nduplicated-domain finding that module exists to report (it flagged the copy, so the copy died)."
     },
     {
@@ -3947,7 +3947,7 @@
       "kind": "symbol",
       "sub": "type",
       "path": "src/oracle-domain.ts",
-      "line": 402
+      "line": 500
     },
     {
       "id": "s:src/oracle-domain.ts#ParityAnalysis",
@@ -3956,7 +3956,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/oracle-domain.ts",
-      "line": 404
+      "line": 502
     },
     {
       "id": "s:src/oracle-domain.ts#analyzeParityOracle",
@@ -3965,7 +3965,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/oracle-domain.ts",
-      "line": 461
+      "line": 559
     },
     {
       "id": "s:src/oracle-domain.ts#analyzeOracle",
@@ -3974,13 +3974,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/oracle-domain.ts",
-      "line": 511
-    },
-    {
-      "id": "x:typescript",
-      "label": "typescript",
-      "kind": "external",
-      "sub": "module"
+      "line": 610
     },
     {
       "id": "f:src/panel.ts",
@@ -5132,7 +5126,7 @@
       "kind": "file",
       "sub": "src/redundancy.ts",
       "path": "src/redundancy.ts",
-      "prose": "redundancy.ts — the UNDECLARED-parity detector.\n\n`parity \"<inv>\" over <domain> between <f> and <g> via test \"<oracle>\"` is the declared\nform: someone already SUSPECTED two projections should agree and wrote it down. The\ndefect class that actually costs time is the complement — nobody declared anything and\ntwo things that should have agreed quietly didn't. Two decoders for one byte encoding\nreading 56,317 and 158 violations of the same property is not caught by any claim,\nbecause no claim existed; the DISAGREEMENT was the whole signal, and it took a human\nnoticing that a number looked absurd.\n\nRedundancy is the only detector that reaches unknown-unknowns, because a divergence\nbetween two independent computations is informative WITHOUT any prior claim about the\nvalue. So this module hunts, from source alone, for places where the project spells out\nthe SAME ENUMERATED DOMAIN more than once, and reports them as candidate parity pairs.\n\nWHY DOMAINS AND NOT SHAPES OR CLONES. Three strategies were available:\n  · signature twins — two functions with the same parameter/return types. Rejected:\n    `(s: string) => string` is not evidence of anything in a TypeScript codebase.\n  · token-stream clone detection — finds copy-paste. Rejected: copy-paste is a\n    maintenance smell; it is not a divergence RISK, and the ranking would be dominated\n    by boilerplate.\n  · duplicated enumerated domains — a set of string tokens written out twice. Chosen:\n    it is exactly the undeclared shape of a parity claim, and it carries a free second\n    signal — if the two sets are UNEQUAL the transcription has already drifted, which\n    is a finding with no declaration and no oracle behind it.\n\nA \"site\" is anywhere the source spells a set of tokens out loud: a string-literal union,\nan enum, an interface's members, an object/Record literal's keys, a switch's case labels,\nan if-chain of `x === \"lit\"` comparisons, an array/Set of string literals, the first\ncolumn of a markdown table, or a bracketed `a|b|c` alternation inside a string or regex.\nMarkdown counts on purpose: a hand-kept doc table transcribing a code table is the one\nduplication NO compiler will ever see, and this repo's own README says so in prose.\n\nPython sites are extracted at REGEX grade — no interpreter, no AST, same discipline as\nthe python arm of oracle-domain.ts: module-level dict literals, Enum class bodies,\nlist/tuple/set constants of plain string literals, and match-case / if-elif chains over\nstring literals. The grade is chosen for precision: a form the regex cannot read\nUNAMBIGUOUSLY (a comprehension, a computed key, a dict()/frozenset() constructor call)\nyields NO site rather than a wrong one, because python has no compiler behind it — the\ntypeLink suppression that quietly absorbs the TS false positives can never fire on a .py\npair, so every python site the ranker sees must have earned its precision upstream.\n\nTHE DISCRIMINATOR — what keeps this from being a wall of noise — is that two sites the\nTYPE SYSTEM already ties together are not findings. `const T: Record<OracleVerdict, X>`\nis checked by tsc: the keys must be exactly the union, so the union and the table cannot\ndrift. That pair is tier-1 (enshrined) and coherence has nothing to add. Only sites with\nNO type link between them are reported. Test files are excluded for the same reason from\nthe other direction: a hand-copied domain inside an oracle is already the boundary\nmeta-oracle's job (oracle-domain.ts), not a second detector's.\n\nOutput is ADVISORY and RANKED. It gates nothing and always exits 0. A wall of low-value\npairs is worse than nothing, so the default report is capped and every suppression is\ncounted out loud — `--all` shows the unfiltered tail so the precision can be judged\nrather than trusted."
+      "prose": "redundancy.ts — the UNDECLARED-parity detector.\n\n`parity \"<inv>\" over <domain> between <f> and <g> via test \"<oracle>\"` is the declared\nform: someone already SUSPECTED two projections should agree and wrote it down. The\ndefect class that actually costs time is the complement — nobody declared anything and\ntwo things that should have agreed quietly didn't. Two decoders for one byte encoding\nreading 56,317 and 158 violations of the same property is not caught by any claim,\nbecause no claim existed; the DISAGREEMENT was the whole signal, and it took a human\nnoticing that a number looked absurd.\n\nRedundancy is the only detector that reaches unknown-unknowns, because a divergence\nbetween two independent computations is informative WITHOUT any prior claim about the\nvalue. So this module hunts, from source alone, for places where the project spells out\nthe SAME ENUMERATED DOMAIN more than once, and reports them as candidate parity pairs.\n\nWHY DOMAINS AND NOT SHAPES OR CLONES. Three strategies were available:\n  · signature twins — two functions with the same parameter/return types. Rejected:\n    `(s: string) => string` is not evidence of anything in a TypeScript codebase.\n  · token-stream clone detection — finds copy-paste. Rejected: copy-paste is a\n    maintenance smell; it is not a divergence RISK, and the ranking would be dominated\n    by boilerplate.\n  · duplicated enumerated domains — a set of string tokens written out twice. Chosen:\n    it is exactly the undeclared shape of a parity claim, and it carries a free second\n    signal — if the two sets are UNEQUAL the transcription has already drifted, which\n    is a finding with no declaration and no oracle behind it.\n\nA \"site\" is anywhere the source spells a set of tokens out loud: a string-literal union,\nan enum, an interface's members, an object/Record literal's keys, a switch's case labels,\nan if-chain of `x === \"lit\"` comparisons, an array/Set of string literals, the first\ncolumn of a markdown table, or a bracketed `a|b|c` alternation inside a string or regex.\nMarkdown counts on purpose: a hand-kept doc table transcribing a code table is the one\nduplication NO compiler will ever see, and this repo's own README says so in prose.\n\nEvery site is read through the file's GRAMMAR (phase 2b, arm 3): a per-language query\nnames the forms that count — module-level dict literals, Enum class bodies, list/tuple/\nset constants of plain string literals, match-case / if-elif chains on the python side;\nunions, enums, shapes, tables, switches and comparison chains on the TS side — and one\nmechanism per language turns captured nodes into sites. The TS side previously walked\nthe compiler API (syntax only — it never consulted a type checker, so `typeLink` reads\nidentically off the grammar's annotation nodes); the python side was a line scan. The\nprecision discipline survives the port: a form the query does not name (a comprehension,\na computed key, a dict()/frozenset() constructor call) yields NO site rather than a\nwrong one, because python has no compiler behind it — the typeLink suppression that\nquietly absorbs the TS false positives can never fire on a .py pair, so every python\nsite the ranker sees must have earned its precision upstream.\n\nTHE DISCRIMINATOR — what keeps this from being a wall of noise — is that two sites the\nTYPE SYSTEM already ties together are not findings. `const T: Record<OracleVerdict, X>`\nis checked by tsc: the keys must be exactly the union, so the union and the table cannot\ndrift. That pair is tier-1 (enshrined) and coherence has nothing to add. Only sites with\nNO type link between them are reported. Test files are excluded for the same reason from\nthe other direction: a hand-copied domain inside an oracle is already the boundary\nmeta-oracle's job (oracle-domain.ts), not a second detector's.\n\nOutput is ADVISORY and RANKED. It gates nothing and always exits 0. A wall of low-value\npairs is worse than nothing, so the default report is capped and every suppression is\ncounted out loud — `--all` shows the unfiltered tail so the precision can be judged\nrather than trusted."
     },
     {
       "id": "s:src/redundancy.ts#SiteKind",
@@ -5141,7 +5135,7 @@
       "kind": "symbol",
       "sub": "type",
       "path": "src/redundancy.ts",
-      "line": 70,
+      "line": 75,
       "prose": "How a domain was spelled out at one site."
     },
     {
@@ -5151,7 +5145,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/redundancy.ts",
-      "line": 82,
+      "line": 87,
       "prose": "One place the source enumerates a set of tokens."
     },
     {
@@ -5161,8 +5155,8 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/redundancy.ts",
-      "line": 110,
-      "prose": "The named type an annotation ties a site to, or null."
+      "line": 174,
+      "prose": "The named type an annotation ties a site to, or null. Mirrors the retired compiler\n walk exactly, including its one oddity: `as const` reads as a TypeReference named\n `const`, so two as-const twins carry the same link and suppress as they always did."
     },
     {
       "id": "s:src/redundancy.ts#alternationsIn",
@@ -5171,7 +5165,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/redundancy.ts",
-      "line": 123,
+      "line": 191,
       "prose": "Bracketed `(a|b|c)` / `<a|b|c>` alternations — an enumerated domain written as text.\n The brackets are load-bearing: without them every prose sentence containing a pipe\n would qualify. Parts must be short, word-shaped tokens."
     },
     {
@@ -5181,8 +5175,8 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/redundancy.ts",
-      "line": 135,
-      "prose": "Pure (AST only) — every domain site in one TypeScript/JavaScript source."
+      "line": 203,
+      "prose": "Pure (grammar only) — every domain site in one TypeScript/JavaScript source."
     },
     {
       "id": "s:src/redundancy.ts#sitesOfMarkdown",
@@ -5191,7 +5185,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/redundancy.ts",
-      "line": 237,
+      "line": 365,
       "prose": "Pure — domain sites in one markdown document: table first columns, plus bracketed\n alternations in inline code. A hand-kept doc table is exactly the transcription no\n compilation can see."
     },
     {
@@ -5201,8 +5195,8 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/redundancy.ts",
-      "line": 272,
-      "prose": "Pure (regex grade) — domain sites in one python source. Only forms a line scan can read\n unambiguously become sites; everything else is deliberately silence (see header)."
+      "line": 400,
+      "prose": "Pure (grammar grade) — domain sites in one python source. Only the forms the query\n names become sites; everything else is deliberately silence (see header)."
     },
     {
       "id": "s:src/redundancy.ts#collectSites",
@@ -5211,7 +5205,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/redundancy.ts",
-      "line": 389
+      "line": 522
     },
     {
       "id": "s:src/redundancy.ts#RedundancyPair",
@@ -5220,7 +5214,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/redundancy.ts",
-      "line": 415
+      "line": 548
     },
     {
       "id": "s:src/redundancy.ts#Suppressed",
@@ -5229,7 +5223,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/redundancy.ts",
-      "line": 424
+      "line": 557
     },
     {
       "id": "s:src/redundancy.ts#RedundancyOpts",
@@ -5238,7 +5232,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/redundancy.ts",
-      "line": 426
+      "line": 559
     },
     {
       "id": "s:src/redundancy.ts#REDUNDANCY_DEFAULTS",
@@ -5247,7 +5241,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/redundancy.ts",
-      "line": 436,
+      "line": 569,
       "prose": "`Required<RedundancyOpts>`, not a bare object literal: the first dogfood run flagged this\ntable against the interface above it (5 shared keys, tied by nothing). The annotation makes\ntsc the oracle, which is the tier-1 fix — and the pair now suppresses as compiler-enforced."
     },
     {
@@ -5257,7 +5251,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/redundancy.ts",
-      "line": 457,
+      "line": 590,
       "prose": "The site's name with any POSITIONAL suffix replaced by a digest of its own tokens.\n\n Alternation sites are named `alternation@<line>` — the line is INSIDE the name, so\n dropping the `@line` from the id is not enough. Two ways to fix it and only one works:\n stripping the suffix outright fuses every alternation in a file into one key (two real\n findings collapse, and the second is swallowed), while digesting the token set keeps\n them apart and does not move when the file does. A changed token set IS a different\n enumeration, so re-keying on it is the honest behaviour rather than a leak."
     },
     {
@@ -5267,7 +5261,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/redundancy.ts",
-      "line": 465,
+      "line": 598,
       "prose": "A site, as a thing a reader can go and find: file, how it was spelled, what it is\n called. No line, no token count, no score."
     },
     {
@@ -5277,7 +5271,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/redundancy.ts",
-      "line": 473,
+      "line": 606,
       "prose": "THE PAIR'S IDENTITY IS THE PAIR OF SITES, sorted so A|B and B|A are one question.\n\n Everything else the report prints about a pair is excluded on purpose, and the score is\n the one that matters: `df` is computed over the WHOLE TREE, so a token appearing in one\n more unrelated file re-ranks every pair in the repo. A key holding the score would open\n a fresh question on an edit that touched neither site."
     },
     {
@@ -5287,7 +5281,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/redundancy.ts",
-      "line": 489,
+      "line": 622,
       "prose": "Pure — pair the sites and rank them. `declared` is the set of symbol names any parity\nclaim already names (domain / fnA / fnB): a declared agreement is not a finding, which\nis the point of the whole command.\n\nThe score is deliberately small and explainable:\n  |shared| × (0.35 + 0.65·distinctness) × mediumW × fileW × divergenceW\nwhere distinctness is the fraction of shared tokens that appear at NO third site (two\nsites owning a private vocabulary is the strong case; tokens scattered everywhere are\nproject idiom), mediumW favours code↔prose (no compiler can ever check it), fileW\ndiscounts same-file pairs, and divergenceW rewards sets that ALREADY disagree — a\ntranscription that has drifted is a finding on its own evidence."
     },
     {
@@ -5297,7 +5291,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/redundancy.ts",
-      "line": 578,
+      "line": 711,
       "prose": "The symbol names any parity claim already names — those pairs are declared, not found."
     },
     {
@@ -5307,7 +5301,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/redundancy.ts",
-      "line": 595,
+      "line": 728,
       "prose": "THE REPORTING FLOOR, in one place. The render shows these and — separately — these are\n the only pairs allowed to become journal entries. Sharing the function rather than\n restating the filter is the point: \"raise only what the advisory already reports\" has\n to be enforced by construction, or the two copies drift and raising quietly widens."
     },
     {
@@ -5317,7 +5311,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/redundancy.ts",
-      "line": 600
+      "line": 733
     },
     {
       "id": "s:src/redundancy.ts#pairFindings",
@@ -5326,7 +5320,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/redundancy.ts",
-      "line": 650,
+      "line": 783,
       "prose": "A pair, as a QUESTION. The render already forms this suspicion and then throws it away\n by printing it — \"either the difference is intended (say so), or one side drifted\" is a\n conjecture with two candidates, verbatim, scrolled past once per run forever.\n\n The observation carries line numbers and a score because it is a SNAPSHOT of what was\n seen; identity comes from `pairSubject`, which carries neither. Separating the two is\n what lets the sentence be useful and the key be stable at the same time."
     },
     {
@@ -5336,7 +5330,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/redundancy.ts",
-      "line": 694
+      "line": 827
     },
     {
       "id": "s:src/redundancy.ts#redundancy",
@@ -5345,7 +5339,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/redundancy.ts",
-      "line": 697,
+      "line": 830,
       "prose": "The `coherence redundancy` command. Advisory: always returns 0."
     },
     {
@@ -6913,6 +6907,12 @@
       "sub": "test/commands.test.ts",
       "path": "test/commands.test.ts",
       "prose": "commands.test.ts — THE TOTALITY ORACLE for the command registry.\n\nThe command list used to be spelled in three places and enforced in none: the usage\nbanner, the `cmd === \"…\"` dispatch chain, and README.md's `## Commands`. In two days it\ndrifted three times (a merge conflict on the banner literal, banner 29 vs dispatch 30,\nREADME 20 vs dispatch 32). `coherence redundancy` reported the banner/dispatch pair every\nsingle run — \"identical today, tied together by nothing\" — and was right every time.\n\nTwo of the three spellings are now DERIVED from src/commands.ts, so they cannot drift.\nThe dispatch is still hand-written, which is what this file is for. It ENUMERATES THE\nLIVE DISPATCH — every `cmd === \"<literal>\"` in src/cli.ts, read out of the TypeScript\nAST, not out of a list maintained here — and asserts set equality with the registry. A\nhand-written expected list would be a FOURTH spelling of the domain and would drift like\nthe other three; the point of a totality oracle is that it reads the world.\n\nThe AST is used rather than a regex on purpose: a regex would also match `cmd === \"x\"`\ninside a comment or a string, and an oracle that can be fooled by a code comment is not\none. Comments are not in the AST at all."
+    },
+    {
+      "id": "x:typescript",
+      "label": "typescript",
+      "kind": "external",
+      "sub": "module"
     },
     {
       "id": "f:test/conjecture.test.ts",
@@ -8666,9 +8666,15 @@
       "kind": "imports"
     },
     {
-      "id": "f:src/oracle-domain.ts->x:typescript:imports",
+      "id": "f:src/oracle-domain.ts->x:web-tree-sitter:imports",
       "source": "f:src/oracle-domain.ts",
-      "target": "x:typescript",
+      "target": "x:web-tree-sitter",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/oracle-domain.ts->f:src/adapters/tree-sitter.ts:imports",
+      "source": "f:src/oracle-domain.ts",
+      "target": "f:src/adapters/tree-sitter.ts",
       "kind": "imports"
     },
     {
@@ -8966,9 +8972,15 @@
       "kind": "imports"
     },
     {
-      "id": "f:src/redundancy.ts->x:typescript:imports",
+      "id": "f:src/redundancy.ts->x:web-tree-sitter:imports",
       "source": "f:src/redundancy.ts",
-      "target": "x:typescript",
+      "target": "x:web-tree-sitter",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/redundancy.ts->f:src/adapters/tree-sitter.ts:imports",
+      "source": "f:src/redundancy.ts",
+      "target": "f:src/adapters/tree-sitter.ts",
       "kind": "imports"
     },
     {

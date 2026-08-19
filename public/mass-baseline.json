@@ -1,12 +1,12 @@
 [
   {
     "key": "deps|dev",
-    "value": 4,
+    "value": 5,
     "unit": "deps"
   },
   {
     "key": "deps|direct",
-    "value": 2,
+    "value": 1,
     "unit": "deps"
   },
   {
@@ -26,7 +26,7 @@
   },
   {
     "key": "lines|Harness core",
-    "value": 21190,
+    "value": 21419,
     "unit": "lines"
   },
   {
@@ -36,7 +36,7 @@
   },
   {
     "key": "lines|total",
-    "value": 37416,
+    "value": 37645,
     "unit": "lines"
   },
   {

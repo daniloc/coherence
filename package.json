@@ -44,10 +44,10 @@
     "@types/node": "^22.0.0",
     "tree-sitter-python": "^0.25.0",
     "tree-sitter-ruby": "^0.23.1",
-    "tree-sitter-typescript": "^0.23.2"
+    "tree-sitter-typescript": "^0.23.2",
+    "typescript": "^5.7.0"
   },
   "dependencies": {
-    "typescript": "^5.7.0",
     "web-tree-sitter": "^0.26.12"
   }
 }
