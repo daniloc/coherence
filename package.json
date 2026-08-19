@@ -28,7 +28,8 @@
   },
   "files": [
     "dist",
-    "README.md"
+    "README.md",
+    "grammars"
   ],
   "engines": {
     "node": ">=22"
@@ -41,6 +42,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
+    "tree-sitter-python": "^0.25.0",
     "tree-sitter-ruby": "^0.23.1",
     "tree-sitter-typescript": "^0.23.2"
   },

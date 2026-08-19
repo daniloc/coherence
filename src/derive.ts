@@ -7,11 +7,9 @@ import { pathToFileURL } from "node:url";
 import type { Config, Graph, GraphNode, GraphEdge, LanguageAdapter, PlatformAdapter } from "./types.ts";
 import { parseSpec, splitWhy, findSpec, nodeDirs, codeFiles, ownerOf } from "./walk.ts";
 import { Unrunnable } from "./floor.ts";
-import { typescript } from "./adapters/typescript.ts";
-import { python } from "./adapters/python.ts";
+import { BUILTIN_LANGUAGES } from "./adapters/tree-sitter.ts";
 import { cloudflare } from "./adapters/cloudflare.ts";
 
-const LANGUAGES: Record<string, LanguageAdapter> = { typescript, python };
 const PLATFORMS: Record<string, PlatformAdapter> = { cloudflare };
 
 /** Which field of a would-be adapter is wrong, or null when the shape is complete.
@@ -42,8 +40,11 @@ function adapterShapeProblem(a: unknown): string | null {
  */
 export async function resolveLanguageAdapter(cfg: Config): Promise<LanguageAdapter> {
   const name = cfg.language;
-  const builtin = LANGUAGES[name];
-  if (builtin) return builtin;
+  // Built-ins are grammar-backed (memoized wasm load; grammars/ ships with the package).
+  // The regex adapters they replaced were corpus-diffed to parity first and live in git
+  // history — one spelling of "how coherence reads a language", not two.
+  const builtin = BUILTIN_LANGUAGES[name];
+  if (builtin) return builtin();
   if (name.startsWith("./") || name.startsWith("../")) {
     const path = resolve(cfg.root, name);
     let mod: Record<string, unknown>;
@@ -69,7 +70,7 @@ export async function resolveLanguageAdapter(cfg: Config): Promise<LanguageAdapt
   }
   throw new Unrunnable([
     `✗ [config] "language": ${JSON.stringify(name)} is not a language coherence knows`,
-    `  built-ins: ${Object.keys(LANGUAGES).join(" · ")}`,
+    `  built-ins: ${Object.keys(BUILTIN_LANGUAGES).join(" · ")}`,
     `  or a project adapter: "./.coherence/adapters/<lang>.mjs" — a module exporting a LanguageAdapter`,
     `  Refusing rather than falling back: walking ${JSON.stringify(name)} files with the`,
     "  typescript grammar would grade a DIFFERENT tree than you configured, with full confidence.",

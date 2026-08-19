@@ -78,7 +78,7 @@ test("language adapter — a project path loads and shapes the graph; unknown na
     } finally { await cleanup(root); }
   });
 
-  await t.test("built-in names still resolve without touching disk", async () => {
+  await t.test("built-in names resolve through the memoized grammar registry", async () => {
     const root = await tmpProject();
     try {
       // Underscore avoids the unused-variable lint while proving both names resolve.

@@ -1,7 +1,7 @@
 [
   {
     "key": "deps|dev",
-    "value": 3,
+    "value": 4,
     "unit": "deps"
   },
   {
@@ -11,12 +11,12 @@
   },
   {
     "key": "deps|transitive",
-    "value": 9,
+    "value": 10,
     "unit": "deps"
   },
   {
     "key": "files|total",
-    "value": 123,
+    "value": 121,
     "unit": "files"
   },
   {
@@ -26,17 +26,17 @@
   },
   {
     "key": "lines|Harness core",
-    "value": 21166,
+    "value": 21167,
     "unit": "lines"
   },
   {
     "key": "lines|Source adapters",
-    "value": 345,
+    "value": 365,
     "unit": "lines"
   },
   {
     "key": "lines|total",
-    "value": 37286,
+    "value": 37307,
     "unit": "lines"
   },
   {
@@ -51,12 +51,12 @@
   },
   {
     "key": "symbols|total",
-    "value": 634,
+    "value": 633,
     "unit": "symbols"
   },
   {
     "key": "undocumented|symbols",
-    "value": 280,
+    "value": 277,
     "unit": "symbols"
   }
 ]

@@ -21,6 +21,7 @@
 // they produce (@method @class @const …); `method` captures get the same `name()`
 // spelling the typescript and python adapters use, so boundary claims address symbols
 // identically whichever grade derived them.
+import { fileURLToPath } from "node:url";
 import { Parser, Language, Query } from "web-tree-sitter";
 import type { LanguageAdapter } from "../types.ts";
 
@@ -30,8 +31,14 @@ export interface TreeSitterLanguageSpec {
   symbolQuery: string;
   /** Query whose `@spec` captures are import specifier text (string content). */
   importQuery: string;
-  /** Line-comment prefix for the doc scanners (block-comment forms are declared out of grade). */
+  /** Line-comment prefix for the generic doc scanners (block forms need `docs`). */
   lineComment: string;
+  /** Captured names to drop (e.g. `constructor` — a member the grammar names but the graph never should). */
+  excludeSymbolNames?: RegExp;
+  /** Prose extraction overrides for languages whose doc conventions outgrow a line
+   *  prefix — TS block comments, python docstrings. Built-in specs carry the logic
+   *  the regex adapters proved; a contributed spec may rely on the generic scanners. */
+  docs?: { docAbove(lines: string[], line: number): string; fileDoc(lines: string[]): string };
 }
 
 /** Ruby at query grade: methods, singleton methods, classes, modules, constants;
@@ -52,6 +59,145 @@ export const ruby: TreeSitterLanguageSpec = {
       (#match? @_require "^require(_relative)?$"))
   `,
   lineComment: "#",
+};
+
+// ── prose extraction the regex adapters proved, ported verbatim ──────────────────────
+// The symbol/import PARSING below is grammar-backed; prose extraction is line-oriented
+// text work where byte-stable behavior across the migration matters more than a parse.
+
+function cleanTsComment(raw: string[]): string {
+  const c = raw
+    .map((l) => l.replace(/^\s*\/\*\*?/, "").replace(/\*\/\s*$/, "").replace(/^\s*\*\s?/, "").replace(/^\s*\/\/\s?/, ""))
+    .join("\n").replace(/\n{3,}/g, "\n\n").trim();
+  return /^[\s\-─=*]+$/.test(c) ? "" : c;
+}
+
+const typescriptDocs = {
+  docAbove(lines: string[], lineNo: number): string {
+    const i = lineNo - 2;
+    if (i < 0) return "";
+    const t = lines[i].trim();
+    if (t.endsWith("*/")) { const b: string[] = []; let j = i; while (j >= 0 && !lines[j].includes("/*")) { b.unshift(lines[j]); j--; } if (j >= 0) b.unshift(lines[j]); return cleanTsComment(b); }
+    if (t.startsWith("//")) { const b: string[] = []; let j = i; while (j >= 0 && lines[j].trim().startsWith("//")) { b.unshift(lines[j]); j--; } return cleanTsComment(b); }
+    return "";
+  },
+  fileDoc(lines: string[]): string {
+    let i = 0;
+    if (lines[0]?.startsWith("#!")) i = 1;
+    while (i < lines.length && !lines[i].trim()) i++;
+    const t = lines[i]?.trim() || "";
+    if (t.startsWith("/*")) { const b: string[] = []; let j = i; while (j < lines.length && !lines[j].includes("*/")) { b.push(lines[j]); j++; } if (j < lines.length) b.push(lines[j]); return cleanTsComment(b); }
+    if (t.startsWith("//")) { const b: string[] = []; let j = i; while (j < lines.length && lines[j].trim().startsWith("//")) { b.push(lines[j]); j++; } return cleanTsComment(b); }
+    return "";
+  },
+};
+
+function cleanHash(raw: string[]): string {
+  const c = raw.map((l) => l.replace(/^\s*#\s?/, "")).join("\n").replace(/\n{3,}/g, "\n\n").trim();
+  return /^[\s\-─=*]+$/.test(c) ? "" : c;
+}
+
+/** Python prose lives in TWO places: `#` blocks above a symbol, and the docstring
+ *  on the line(s) BELOW a def/class. Prefer the docstring when present. */
+const pythonDocs = {
+  docAbove(lines: string[], lineNo: number): string {
+    let j = lineNo; // lineNo is 1-based; lines[lineNo] is the line AFTER the symbol
+    while (j < lines.length && !lines[j].trim()) j++;
+    const t = lines[j]?.trim() ?? "";
+    const q = t.startsWith('"""') ? '"""' : t.startsWith("'''") ? "'''" : null;
+    if (q) {
+      const body: string[] = [];
+      const s = t.slice(3);
+      if (s.endsWith(q) && s.length >= 3) return s.slice(0, -3).trim();
+      body.push(s);
+      for (let k = j + 1; k < lines.length; k++) {
+        const idx = lines[k].indexOf(q);
+        if (idx >= 0) { body.push(lines[k].slice(0, idx)); return body.join("\n").trim(); }
+        body.push(lines[k]);
+      }
+    }
+    const i = lineNo - 2;
+    if (i < 0) return "";
+    if (lines[i].trim().startsWith("#")) {
+      const b: string[] = []; let k = i;
+      while (k >= 0 && lines[k].trim().startsWith("#")) { b.unshift(lines[k]); k--; }
+      return cleanHash(b);
+    }
+    return "";
+  },
+  fileDoc(lines: string[]): string {
+    let i = 0;
+    if (lines[0]?.startsWith("#!")) i = 1;
+    while (i < lines.length && (!lines[i].trim() || /^#.*coding[:=]/.test(lines[i]))) i++;
+    const t = lines[i]?.trim() ?? "";
+    const q = t.startsWith('"""') ? '"""' : t.startsWith("'''") ? "'''" : null;
+    if (q) {
+      const s = t.slice(3);
+      if (s.endsWith(q) && s.length >= 3) return s.slice(0, -3).trim();
+      const body = [s];
+      for (let k = i + 1; k < lines.length; k++) {
+        const idx = lines[k].indexOf(q);
+        if (idx >= 0) { body.push(lines[k].slice(0, idx)); return body.join("\n").trim(); }
+        body.push(lines[k]);
+      }
+    }
+    if (t.startsWith("#")) {
+      const b: string[] = []; let k = i;
+      while (k < lines.length && lines[k].trim().startsWith("#")) { b.push(lines[k]); k++; }
+      return cleanHash(b);
+    }
+    return "";
+  },
+};
+
+/** TypeScript at query grade: exported top-level declarations + class methods. Mirrors
+ *  the retired regex adapter's declared intent; corpus-diffed against it before the
+ *  swap (63 files, 625 symbols, zero missed — the 2 deltas are regex over-reports). */
+export const typescript: TreeSitterLanguageSpec = {
+  exts: ["ts"],
+  symbolQuery: `
+    (export_statement declaration: (function_declaration name: (identifier) @function))
+    (export_statement declaration: (generator_function_declaration name: (identifier) @function))
+    (export_statement declaration: (lexical_declaration "const" (variable_declarator name: (identifier) @const)))
+    (export_statement declaration: (lexical_declaration "let" (variable_declarator name: (identifier) @let)))
+    (export_statement declaration: (class_declaration name: (type_identifier) @class))
+    (export_statement declaration: (abstract_class_declaration name: (type_identifier) @class))
+    (export_statement declaration: (interface_declaration name: (type_identifier) @interface))
+    (export_statement declaration: (type_alias_declaration name: (type_identifier) @type))
+    (export_statement declaration: (enum_declaration name: (identifier) @enum))
+    (class_body (method_definition name: (property_identifier) @method))
+  `,
+  importQuery: `
+    (import_statement source: (string (string_fragment) @spec))
+    (export_statement source: (string (string_fragment) @spec))
+  `,
+  lineComment: "//",
+  excludeSymbolNames: /^constructor$/,
+  docs: typescriptDocs,
+};
+
+/** Python at query grade: module-level defs/classes/assignments + class methods,
+ *  decorated forms included. Corpus-diffed against the retired regex adapter over
+ *  flask/src (24 files, 430 symbols; the 8 deltas were regex nesting mistakes). */
+export const python: TreeSitterLanguageSpec = {
+  exts: ["py"],
+  symbolQuery: `
+    (module (function_definition name: (identifier) @function))
+    (module (decorated_definition (function_definition name: (identifier) @function)))
+    (module (class_definition name: (identifier) @class))
+    (module (decorated_definition (class_definition name: (identifier) @class)))
+    (class_definition body: (block (function_definition name: (identifier) @method)))
+    (class_definition body: (block (decorated_definition (function_definition name: (identifier) @method))))
+    (module (expression_statement (assignment left: (identifier) @const)))
+  `,
+  importQuery: `
+    (import_statement name: (dotted_name) @spec)
+    (import_statement name: (aliased_import name: (dotted_name) @spec))
+    (import_from_statement module_name: (dotted_name) @spec)
+    (import_from_statement module_name: (relative_import) @spec)
+  `,
+  lineComment: "#",
+  docs: pythonDocs,
 };
 
 function cleanLineComments(raw: string[], prefix: string): string {
@@ -82,6 +228,7 @@ export async function makeTreeSitterAdapter(
       for (const match of symbolQuery.matches(tree.rootNode)) {
         for (const capture of match.captures) {
           if (capture.name.startsWith("_")) continue; // predicate-only capture
+          if (spec.excludeSymbolNames?.test(capture.node.text)) continue;
           const kind = capture.name;
           const name = kind === "method" ? `${capture.node.text}()` : capture.node.text;
           const line = capture.node.startPosition.row + 1;
@@ -102,19 +249,42 @@ export async function makeTreeSitterAdapter(
       }
       return specs;
     },
-    docAbove(lines: string[], lineNo: number) {
+    docAbove: spec.docs?.docAbove ?? ((lines: string[], lineNo: number) => {
       let j = lineNo - 2; // lineNo is 1-based; start at the line above the symbol
       const block: string[] = [];
       while (j >= 0 && lines[j].trim().startsWith(commentPrefix)) { block.unshift(lines[j]); j--; }
       return cleanLineComments(block, commentPrefix);
-    },
-    fileDoc(lines: string[]) {
+    }),
+    fileDoc: spec.docs?.fileDoc ?? ((lines: string[]) => {
       let i = 0;
       if (lines[0]?.startsWith("#!")) i = 1;
       while (i < lines.length && !lines[i].trim()) i++;
       const block: string[] = [];
       while (i < lines.length && lines[i].trim().startsWith(commentPrefix)) { block.push(lines[i]); i++; }
       return cleanLineComments(block, commentPrefix);
-    },
+    }),
   };
 }
+
+// ── the built-in registry ────────────────────────────────────────────────────────────
+// One memoized async factory per shipped language. The wasm lives in grammars/ at the
+// package root (vendored, provenance in grammars/PROVENANCE.md, refreshed by
+// scripts/refresh-grammars.mjs), so the path resolves identically from src/ during
+// dogfood and from dist/ in the shipped package.
+const grammarPath = (wasm: string): string =>
+  fileURLToPath(new URL(`../../grammars/${wasm}`, import.meta.url));
+
+const builtinCache = new Map<string, Promise<LanguageAdapter>>();
+function memo(name: string, wasm: string, spec: TreeSitterLanguageSpec): () => Promise<LanguageAdapter> {
+  return () => {
+    let cached = builtinCache.get(name);
+    if (!cached) { cached = makeTreeSitterAdapter(spec, grammarPath(wasm)); builtinCache.set(name, cached); }
+    return cached;
+  };
+}
+
+export const BUILTIN_LANGUAGES: Record<string, () => Promise<LanguageAdapter>> = {
+  typescript: memo("typescript", "tree-sitter-typescript.wasm", typescript),
+  python: memo("python", "tree-sitter-python.wasm", python),
+  ruby: memo("ruby", "tree-sitter-ruby.wasm", ruby),
+};

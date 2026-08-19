@@ -287,9 +287,13 @@ contributor can write without touching verdict logic. The factory is async once 
 load) and the adapter it returns is synchronous, so the seam is unchanged and a project
 module reaches it with one top-level await. The corpus diff that justified the phase
 also bounded it: on this repository's own sixty-three TypeScript files the regex grade
-missed zero symbols a real parse found, so the graph tier is not where parse fidelity
-was owed — the grammar path exists to make the NEXT language cheap, and the instrument
-arms remain hand-built until a later phase ports them to query packs.
+missed zero symbols a real parse found, so the graph tier was not where parse fidelity
+was owed. The built-ins then CONVERGED onto the grammar path anyway — not for fidelity
+but because two implementations of one outcome are two spellings of a domain, the
+redundancy class this harness ranks in other people's code. The regex adapters were
+corpus-diffed to parity (every delta an enumerated regex mistake), their prose logic
+ported verbatim, and then deleted; their grammars ship vendored with provenance. The
+instrument arms remain hand-built until a later phase ports them to query packs.
 
 **experiment outcomes require criterion-total evidence.** A
 plan is frozen before work with its predicted context, actions, criteria, and evidence

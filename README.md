@@ -20,7 +20,7 @@ command below is an instrument in that economy.
 
 The **core is platform- and language-agnostic.** Project-specific knowledge lives
 behind two adapters:
-- **language adapter** (`src/adapters/typescript.ts`) — symbols, imports, docblocks.
+- **language adapter** (`src/adapters/tree-sitter.ts`) — symbols, imports, docblocks; grammar-backed built-ins for TypeScript, Python, and Ruby, project-extensible.
 - **platform adapter** (`src/adapters/cloudflare.ts`) — infra bindings (wrangler.jsonc + .toml). Optional.
 
 ## The economy of inference: what a codebase actually costs
@@ -294,10 +294,12 @@ Then add scripts that call the bin:
 }
 ```
 
-Requires **Node ≥22** in the consuming project (the build targets ES2022). One
-runtime dependency: `typescript`, which the default language adapter and the
-source-reading advisories parse with — npm dedupes it when the consuming project
-already has it.
+Requires **Node ≥22** in the consuming project (the build targets ES2022). Two
+runtime dependencies: `web-tree-sitter`, the wasm parser runtime behind the built-in
+language adapters (their grammar binaries ship with the package under `grammars/`),
+and `typescript`, which the source-reading advisories still parse with until they
+migrate to the same grammars — npm dedupes it when the consuming project already
+has it.
 
 ## Configure the target project
 
@@ -341,7 +343,8 @@ project can carry its own adapter in the tree:
 ```
 
 The module default-exports the `LanguageAdapter` shape — five members, implementable at
-regex grade in under a hundred lines (`src/adapters/python.ts` is the reference):
+regex grade in under a hundred lines (the built-in specs in `src/adapters/tree-sitter.ts`
+are the reference):
 
 ```js
 export default {
