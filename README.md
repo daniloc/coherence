@@ -358,6 +358,25 @@ refuses with the built-in list rather than falling back (a wrong grammar would g
 different tree than you configured). Importing the module executes project code — the
 same declared trust as the config's `test`/`typecheck` argv.
 
+For most languages you don't even write the parsing: the harness ships a
+**tree-sitter-backed factory**, and modern grammar packages ship a prebuilt wasm — no
+native toolchain, `web-tree-sitter` runs it sandboxed. An adapter module shrinks to a
+grammar plus capture queries (the shipped `ruby` spec is the reference, ~30 lines):
+
+```js
+// .coherence/adapters/ruby.mjs — npm i -D tree-sitter-ruby for the grammar wasm
+import { makeTreeSitterAdapter, ruby } from "@danilocampos/coherence/dist/adapters/tree-sitter.js";
+export default await makeTreeSitterAdapter(
+  ruby, new URL("../../node_modules/tree-sitter-ruby/tree-sitter-ruby.wasm", import.meta.url).pathname);
+```
+
+For a language with no shipped spec, write your own `TreeSitterLanguageSpec` — a symbol
+query whose capture names are the symbol kinds, an import query, and the line-comment
+prefix — or implement the five members by hand at regex grade; both serve the same seam.
+(Measured before this shipped: on this repository's own 63 TypeScript files, the regex
+adapter missed zero symbols a real parse found — the grammar path exists to make the
+next language cheap, not because regex grade was failing.)
+
 Know what the seam buys: a custom adapter powers the **graph tier** — symbols, import
 edges, prose, `exists`/`boundary`/`lives in` claims, serial test oracles, and everything
 language-blind (hooks, journal, mass, drift, atlas). The per-language **instrument

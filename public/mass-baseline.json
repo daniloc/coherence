@@ -1,27 +1,27 @@
 [
   {
     "key": "deps|dev",
-    "value": 1,
-    "unit": "deps"
-  },
-  {
-    "key": "deps|direct",
-    "value": 1,
-    "unit": "deps"
-  },
-  {
-    "key": "deps|transitive",
     "value": 3,
     "unit": "deps"
   },
   {
+    "key": "deps|direct",
+    "value": 2,
+    "unit": "deps"
+  },
+  {
+    "key": "deps|transitive",
+    "value": 9,
+    "unit": "deps"
+  },
+  {
     "key": "files|total",
-    "value": 121,
+    "value": 123,
     "unit": "files"
   },
   {
     "key": "lines|Executable contracts",
-    "value": 15690,
+    "value": 15775,
     "unit": "lines"
   },
   {
@@ -31,17 +31,17 @@
   },
   {
     "key": "lines|Source adapters",
-    "value": 225,
+    "value": 345,
     "unit": "lines"
   },
   {
     "key": "lines|total",
-    "value": 37081,
+    "value": 37286,
     "unit": "lines"
   },
   {
     "key": "measure|graph-claims",
-    "value": 46,
+    "value": 47,
     "unit": "claims"
   },
   {
@@ -51,12 +51,12 @@
   },
   {
     "key": "symbols|total",
-    "value": 631,
+    "value": 634,
     "unit": "symbols"
   },
   {
     "key": "undocumented|symbols",
-    "value": 278,
+    "value": 280,
     "unit": "symbols"
   }
 ]

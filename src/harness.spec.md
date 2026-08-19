@@ -31,6 +31,7 @@ rendering, and journaling remain independently addressable modules beneath this 
 - customized hook text composes declared overrides and appends, degrading to canon on damage
 - python sources feed the same instruments as typescript at their declared regex grade
 - a declared language resolves to a real adapter or refuses, never a silent fallback
+- a grammar-backed adapter derives the graph through the same language seam
 - experiment outcomes require criterion-total evidence
 - experiment telemetry preserves its weakest provable attribution
 - activity evidence is accepted only when identity, scope, time, and command agree
@@ -90,6 +91,7 @@ rendering, and journaling remain independently addressable modules beneath this 
 - boundary "python sources feed the same instruments as typescript at their declared regex grade" at resolveFromBatch via guard "pytest batch — nodeid names resolve per claim, zero matches is the vanished oracle, and a torn report falls back loudly"
 - boundary "python sources feed the same instruments as typescript at their declared regex grade" at lintSinks via guard "python sinks — an f-string into a SQL context is a site, a safe-pattern expression is not, and the ratchet reds the new site"
 - boundary "a declared language resolves to a real adapter or refuses, never a silent fallback" at resolveLanguageAdapter via guard "language adapter — a project path loads and shapes the graph; unknown names refuse, never fall back"
+- boundary "a grammar-backed adapter derives the graph through the same language seam" at makeTreeSitterAdapter via guard "tree-sitter — a grammar-backed adapter derives ruby symbols, imports, and prose through the same seam"
 - boundary "experiment outcomes require criterion-total evidence" at closeExperiment via guard "close — total nonempty evidence is mandatory and outcome is derived, never supplied"
 - boundary "experiment telemetry preserves its weakest provable attribution" at closeExperiment via guard "Codex parent-only tool events close the loop as an aggregate, never exact owner evidence"
 - boundary "activity evidence is accepted only when identity, scope, time, and command agree" at isActivityRow via guard "activity — internally inconsistent scope, time, and command rows are damage, not evidence"
@@ -275,6 +277,19 @@ per-language instrument arms (surface counting, oracle analysis, redundancy, sin
 batch formats) remain harness contributions, and the documentation says so, because an
 adapter author who is not told the boundary believes they have the full field when they
 have half.
+
+**a grammar-backed adapter derives the graph through the same language seam.** The
+regex adapters scale in expert code — the python push measured ~900 hand-built lines
+across five instrument arms — while a grammar plus capture queries scales in data:
+modern tree-sitter grammar packages ship a prebuilt wasm, `web-tree-sitter` runs it
+without a native toolchain, and the language-specific knowledge shrinks to patterns a
+contributor can write without touching verdict logic. The factory is async once (wasm
+load) and the adapter it returns is synchronous, so the seam is unchanged and a project
+module reaches it with one top-level await. The corpus diff that justified the phase
+also bounded it: on this repository's own sixty-three TypeScript files the regex grade
+missed zero symbols a real parse found, so the graph tier is not where parse fidelity
+was owed — the grammar path exists to make the NEXT language cheap, and the instrument
+arms remain hand-built until a later phase ports them to query packs.
 
 **experiment outcomes require criterion-total evidence.** A
 plan is frozen before work with its predicted context, actions, criteria, and evidence

@@ -148,6 +148,12 @@
         "security": true,
         "translates": "The config's `language` value becomes the adapter whose grammar derives the entire graph — a built-in name, or a project module imported and EXECUTED from the tree under analysis (the same declared trust as loadConfig's argv). An unknown name refuses with the live built-in list rather than falling back to the typescript grammar, because a wrong adapter walks a different tree than the one configured and every downstream gate grades the garbage with full confidence."
       },
+      "makeTreeSitterAdapter": {
+        "from": "project-source",
+        "to": "derived-model",
+        "security": true,
+        "translates": "A grammar wasm — typically shipped by a tree-sitter grammar package, addressed by the project's adapter module — is loaded and EXECUTED to parse the tree under analysis into graph symbols, import edges, and prose. The wasm is sandboxed to parsing but it is still a project-supplied executable artifact, the same declared trust as the config's argv and adapter modules; a load or query failure refuses at adapter resolution rather than deriving a partial graph."
+      },
       "surfaceOfSource": {
         "from": "project-source",
         "to": "derived-model",
