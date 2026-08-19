@@ -6,6 +6,7 @@ outline and an agent map, and verifies that the docs/claims haven't rotted.
 
 ```sh
 npm install --save-dev @danilocampos/coherence
+printf '{}\n' > coherence.config.json       # declare the root — an empty config is complete, defaults do the rest
 npx coherence hooks install --host claude   # the lifecycle field: journal + instructions in every agent session
 npx coherence verify                        # derive the graph and grade the claims
 ```
@@ -301,7 +302,11 @@ alongside).
 
 ## Configure the target project
 
-Add `coherence.config.json` to the project root. Minimal:
+Add `coherence.config.json` to the project root. Its **presence is the declaration**
+that this directory is a coherence root: walking commands (`verify`, `graph`, the
+ratchets) refuse without one — a configless run started in the wrong directory would
+walk and grade everything under it — while journal, hook, and reference commands work
+anywhere. `{}` is a complete config (the defaults do the rest). A useful minimal one:
 
 ```json
 {

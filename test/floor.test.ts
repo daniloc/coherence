@@ -500,20 +500,27 @@ test("MEMORY — an unreadable coherence.config.json REFUSES, instead of degradi
   } finally { await cleanup(dir); }
 });
 
-test("MEMORY — ABSENT keeps meaning exactly what it always meant: adoption, defaults, a first pin", async () => {
-  // THE HALF THAT MUST NOT MOVE. The three readers exist to serve legitimately-empty
-  // states — a first run, a project mid-adoption, an unpinned ratchet — and a fix that
-  // refused those would be a worse instrument than the one it replaced. Asserted through
-  // the CLI, on a project carrying NONE of the three files.
+test("MEMORY — an ABSENT record stays free, and an ABSENT config now refuses the walk with the one-line on-ramp", async () => {
+  // THE HALF THAT MUST NOT MOVE, and the half that deliberately DID. An absent RECORD
+  // (status, baselines) is still a legitimately-empty state — first run, first pin,
+  // never a refusal. An absent CONFIG stopped being one: a configless walk grades
+  // whatever directory the shell was in (the incident was a home directory), so the
+  // walk refuses and prints the `{}` bootstrap — which is a complete declaration, and
+  // everything downstream of it keeps the old absent-record freedoms.
   const dir = await tmpProject({
     "a/a.spec.md": "# A\n\nThe A component.\n\n## why\n\nBecause the fixture needs one.\n",
     "a/x.ts": "/** what. why: r */\nexport const x = 1;\n",
   });
   try {
-    const v = await cli(["verify"], dir);          // no config, no record
+    const refused = await cli(["verify"], dir);    // no config: the walk refuses
+    assert.equal(refused.code, 2, refused.out);
+    assert.match(refused.out, /UNDECLARED tree/);
+    assert.match(refused.out, /coherence\.config\.json/, "the refusal is the on-ramp, not a dead end");
+
+    await writeFile(join(dir, "coherence.config.json"), "{}\n");
+    const v = await cli(["verify"], dir);          // declared root, no record
     assert.equal(v.code, 0, v.out);
-    assert.doesNotMatch(v.out, /\[floor\]/, "an absent config and an absent record are the on-ramp, never a refusal");
-    assert.match(v.out, /○ adoption — step 1/, "no coherence.config.json is rung 1, exactly as before");
+    assert.doesNotMatch(v.out, /\[floor\]/, "an absent RECORD is the on-ramp, never a refusal");
 
     const m = await cli(["mass", "--update-baseline"], dir);   // no baseline
     assert.equal(m.code, 0, m.out);

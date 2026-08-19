@@ -36,7 +36,7 @@ import { readFile } from "node:fs/promises";
 import { readdir } from "node:fs/promises";
 import { join, relative } from "node:path";
 import { Query, type Node, type Parser } from "web-tree-sitter";
-import { grammarHandle } from "./adapters/tree-sitter.ts";
+import { grammarHandle, withTree } from "./adapters/tree-sitter.ts";
 import type { Config } from "./types.ts";
 
 export type OracleVerdict = "live" | "literal" | "no-iteration" | "not-found";
@@ -578,32 +578,29 @@ function findLoops(row: QueryOracleLanguage, iteration: Query, block: Node): Nod
 
 async function queryAnchorView(row: QueryOracleLanguage, src: string, oracleName: string): Promise<AnchorView | null> {
   const h = await queryHandles(row);
-  // JS/TS both parse fine for our purposes; a null tree (allocation failure) reads as
-  // "no anchor here", exactly as the parse helper always has.
-  const tree = h.parser.parse(src);
-  if (!tree) return null;
-  const found = findAnchor(h.anchor, tree.rootNode, oracleName);
-  if (!found) return null;
-  const body = nonComment(found.args)[1];
-  if (!body) return { emptyAnchor: true, domains: [], scope: EMPTY_SCOPE, hasFloor: false, mentions: () => false };
-  const domains = findLoops(row, h.iteration, body).map((d): DomainRef => {
-    const t = iterTargetOf(d, row);
-    const root = t.root?.text ?? null;
-    return { text: t.text, root, parityRoot: root, selfLiteral: t.selfLiteral, isCall: t.isCall };
+  // A null tree (allocation failure) reads as "no anchor here", as it always has. All
+  // node access lives inside withTree: captures die with the tree they came from, so
+  // the identifier set `mentions` reads is collected EAGERLY — the old lazy walk would
+  // have touched a freed body node.
+  return withTree(h.parser, src, null as AnchorView | null, (tree) => {
+    const found = findAnchor(h.anchor, tree.rootNode, oracleName);
+    if (!found) return null;
+    const body = nonComment(found.args)[1];
+    if (!body) return { emptyAnchor: true, domains: [], scope: EMPTY_SCOPE, hasFloor: false, mentions: () => false };
+    const domains = findLoops(row, h.iteration, body).map((d): DomainRef => {
+      const t = iterTargetOf(d, row);
+      const root = t.root?.text ?? null;
+      return { text: t.text, root, parityRoot: root, selfLiteral: t.selfLiteral, isCall: t.isCall };
+    });
+    const scope = buildScope(h.scope, tree.rootNode);
+    const hasFloor = h.floor.matches(body).length > 0;
+    // The compiler counted every Identifier node, property names included; the grammar
+    // splits those kinds, so every *identifier node type counts.
+    const ids = new Set<string>();
+    walk(body, (n) => { if (n.type.endsWith("identifier")) ids.add(n.text); });
+    const mentions = (name: string): boolean => ids.has(name);
+    return { domains, scope, hasFloor, mentions };
   });
-  const scope = buildScope(h.scope, tree.rootNode);
-  const hasFloor = h.floor.matches(body).length > 0;
-  // The compiler counted every Identifier node, property names included; the grammar
-  // splits those kinds, so every *identifier node type counts.
-  let ids: Set<string> | null = null;
-  const mentions = (name: string): boolean => {
-    if (!ids) {
-      ids = new Set<string>();
-      walk(body, (n) => { if (n.type.endsWith("identifier")) ids!.add(n.text); });
-    }
-    return ids.has(name);
-  };
-  return { domains, scope, hasFloor, mentions };
 }
 
 // ── the "indent-regex" strategy ──────────────────────────────────────────────────────

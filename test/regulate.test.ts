@@ -274,7 +274,7 @@ test("regulate — formatter emits one action and live commands never redirect t
 });
 
 test("regulate — selected Codex host cannot be redeemed by Claude control", async () => {
-  const root = await tmpProject({ "src/a.ts": "export const a = 1;\n" });
+  const root = await tmpProject({ "src/a.ts": "export const a = 1;\n", "coherence.config.json": "{}\n" });
   try {
     const hook = join(root, "node_modules", ".bin", "coherence-hook");
     await mkdir(dirname(hook), { recursive: true });

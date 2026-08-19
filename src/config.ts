@@ -34,12 +34,12 @@ export async function loadConfig(root: string): Promise<Config> {
   const file = await readJsonOrRefuse<Partial<Config>>(join(root, "coherence.config.json"), {
     label: "coherence.config.json",
     what: "this project's configuration — which tree the harness walks and what it grades",
-    absentMeans: "a project with no config runs on the defaults — adoption step 1",
+    absentMeans: "journal, hook, and reference commands run without one; WALKING commands refuse until `{}` declares the root (see requireDeclaredRoot)",
     consequence: [
       `walking a DIFFERENT TREE than you configured: \`ignore\`, \`codeExt\`, \`sources\``,
       `and \`name\` all revert to defaults. Every floor in this harness would then be`,
       `graded over that wrong population, and report on it with full confidence.`,
     ],
   });
-  return { ...DEFAULTS, ...(file ?? {}), root };
+  return { ...DEFAULTS, ...(file ?? {}), root, declared: file != null };
 }

@@ -274,10 +274,17 @@
         "to": "verdict",
         "security": true,
         "translates": "The selected host's project hook surface is read to produce ONE structural control bit: Claude's shared and local settings, or Codex's hooks.json plus the relevant project config.toml controls, together with that host's aligned launcher root, root mapping, and runnable target. Host-specific syntax cannot weaken singularity: a checker that accepts two firing paths, an inline competitor, a disabled feature, or managed-only exclusion is not a binary control, only a substring detector with a nicer report."
+      },
+      "requireDeclaredRoot": {
+        "from": "project-source",
+        "to": "verdict",
+        "security": true,
+        "translates": "The presence or absence of coherence.config.json becomes permission to walk. Absent refuses with the one-line bootstrap ({} declares the root) rather than walking whatever directory the shell was in and grading that population with full confidence — the measured incident was a home directory."
       }
     },
     "nonTransition": {
-      "builtinLanguagePacks": "Aggregates the five in-harness pack tables for inspection and the purity oracle. No crossing: harness constants in, harness constants out — it exists so the pack-purity guard has one perimeter to sweep and so conformance checking has a future home."
+      "builtinLanguagePacks": "Aggregates the five in-harness pack tables for inspection and the purity oracle. No crossing: harness constants in, harness constants out — it exists so the pack-purity guard has one perimeter to sweep and so conformance checking has a future home.",
+      "withTree": "Memory hygiene within the shell chart: owns a parse tree's whole wasm lifetime and frees it in a finally, so node captures cannot outlive their tree and a leak is unrepresentable. No fact crosses a chart here."
     }
   }
 }

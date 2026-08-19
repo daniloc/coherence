@@ -27,7 +27,7 @@
 import { join } from "node:path";
 import { Query } from "web-tree-sitter";
 import type { Config } from "./types.ts";
-import { grammarHandle } from "./adapters/tree-sitter.ts";
+import { grammarHandle, withTree } from "./adapters/tree-sitter.ts";
 import { scanSources, readBaseline, writeBaseline } from "./sidecar.ts";
 import { ratchetVacuityRefusal, type RatchetReading } from "./floor.ts";
 
@@ -175,9 +175,8 @@ export async function lintSinks(cfg: Config, mode: "report" | "check" | "update"
       handle = { parser, query: new Query(language, lang.query) };
       queries.set(lang.ext, handle);
     }
-    const tree = handle.parser.parse(text);
-    if (!tree) continue;
     const lines = text.split("\n");
+    withTree(handle.parser, text, null, (tree) => {
     for (const match of handle.query.matches(tree.rootNode)) {
       const str = match.captures.find((c) => c.name === "str")?.node;
       const interp = match.captures.find((c) => c.name === "expr")?.node;
@@ -195,6 +194,8 @@ export async function lintSinks(cfg: Config, mode: "report" | "check" | "update"
         findings.push({ context, file: rel, expr, line: row + 1 });
       }
     }
+    return null;
+    });
   }
 
   const current = new Map<string, Finding>();

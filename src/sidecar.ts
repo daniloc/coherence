@@ -6,7 +6,7 @@
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { join } from "node:path";
 import { codeFiles } from "./walk.ts";
-import { readJsonOrRefuse } from "./floor.ts";
+import { readJsonOrRefuse, requireDeclaredRoot } from "./floor.ts";
 import type { Config } from "./types.ts";
 
 export interface SrcFile { rel: string; text: string }
@@ -20,6 +20,7 @@ const ALWAYS_IGNORE = new Set(["node_modules", ".git", "dist", "build", ".turbo"
 /** Code files, scoped to `cfg.sources` (default: the whole tree under `entryDir`),
  *  split into source vs test by `cfg.testDir`. */
 export async function scanSources(cfg: Config): Promise<{ src: SrcFile[]; test: SrcFile[] }> {
+  requireDeclaredRoot(cfg); // ratchet scans are walks too
   const extRe = new RegExp(`\\.(${cfg.codeExt.join("|")})$`);
   const all = await codeFiles(cfg.root, ALWAYS_IGNORE, extRe, (n) => n.endsWith(".d.ts"));
   const sources = (cfg.sources?.length ? cfg.sources : [cfg.entryDir]).map((s) => s.replace(/\/+$/, ""));

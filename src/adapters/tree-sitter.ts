@@ -22,8 +22,23 @@
 // spelling the typescript and python adapters use, so boundary claims address symbols
 // identically whichever grade derived them.
 import { fileURLToPath } from "node:url";
-import { Parser, Language, Query } from "web-tree-sitter";
+import { Parser, Language, Query, type Tree } from "web-tree-sitter";
 import type { LanguageAdapter } from "../types.ts";
+
+/**
+ * THE ONLY SANCTIONED WAY TO PARSE. web-tree-sitter trees hold wasm heap that only an
+ * explicit `tree.delete()` returns, and the emscripten heap is fixed-size — parse
+ * without freeing and a large enough tree of files aborts the runtime mid-walk
+ * (measured: an adopter's `verify` died at parse ~638; the same loop with delete runs
+ * unbounded). A leak is a bug class an agent can hand-roll while everything works, so
+ * it is dissolved rather than policed: every call site takes this helper, the tree
+ * never escapes it, and forgetting to free is unrepresentable.
+ */
+export function withTree<T>(parser: Parser, src: string, empty: T, fn: (tree: Tree) => T): T {
+  const tree = parser.parse(src);
+  if (!tree) return empty;
+  try { return fn(tree); } finally { tree.delete(); }
+}
 
 export interface TreeSitterLanguageSpec {
   exts: string[];
@@ -232,8 +247,7 @@ export async function makeTreeSitterAdapter(
   return {
     exts: spec.exts,
     symbols(src: string) {
-      const tree = parser.parse(src);
-      if (!tree) return [];
+      return withTree(parser, src, [] as Array<{ name: string; kind: string; line: number }>, (tree) => {
       const out: Array<{ name: string; kind: string; line: number }> = [];
       const seen = new Set<string>();
       for (const match of symbolQuery.matches(tree.rootNode)) {
@@ -248,17 +262,18 @@ export async function makeTreeSitterAdapter(
         }
       }
       return out.sort((a, b) => a.line - b.line);
+      });
     },
     imports(src: string) {
-      const tree = parser.parse(src);
-      if (!tree) return [];
-      const specs: string[] = [];
-      for (const match of importQuery.matches(tree.rootNode)) {
-        for (const capture of match.captures) {
-          if (capture.name === "spec") specs.push(capture.node.text);
+      return withTree(parser, src, [] as string[], (tree) => {
+        const specs: string[] = [];
+        for (const match of importQuery.matches(tree.rootNode)) {
+          for (const capture of match.captures) {
+            if (capture.name === "spec") specs.push(capture.node.text);
+          }
         }
-      }
-      return specs;
+        return specs;
+      });
     },
     docAbove: spec.docs?.docAbove ?? DOC_STRATEGIES[spec.docStyle ?? "line"]?.docAbove ?? ((lines: string[], lineNo: number) => {
       let j = lineNo - 2; // lineNo is 1-based; start at the line above the symbol

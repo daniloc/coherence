@@ -60,7 +60,7 @@ import { readFile, readdir } from "node:fs/promises";
 import { join, relative } from "node:path";
 import { createHash } from "node:crypto";
 import { Query, type Node } from "web-tree-sitter";
-import { grammarHandle } from "./adapters/tree-sitter.ts";
+import { grammarHandle, withTree } from "./adapters/tree-sitter.ts";
 import type { Config, Graph } from "./types.ts";
 import { parseParity } from "./parity.ts";
 import { isTestPath } from "./novelty.ts";
@@ -325,8 +325,7 @@ const byStart = (a: Node, b: Node) => a.startIndex - b.startIndex;
 function grammarSites(langKey: keyof typeof SITE_LANGUAGES, src: string, file: string): DomainSite[] {
   const lang = SITE_LANGUAGES[langKey];
   const { parser, query } = SITE_HANDLES[langKey];
-  const tree = parser.parse(src);
-  if (!tree) return [];
+  return withTree(parser, src, [] as DomainSite[], (tree) => {
   const cookStr = lang.strings === "cooked" ? cook : rawCook;
   const matches = query.matches(tree.rootNode);
 
@@ -560,6 +559,7 @@ function grammarSites(langKey: keyof typeof SITE_LANGUAGES, src: string, file: s
   }
   for (const e of compares.values()) push(e.text, "compare", e.keys, e.line);
   return sites;
+  });
 }
 
 /** Pure (grammar only) — every domain site in one TypeScript/JavaScript source. */

@@ -6,7 +6,7 @@ import { join, basename, dirname, relative, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import type { Config, Graph, GraphNode, GraphEdge, LanguageAdapter, PlatformAdapter } from "./types.ts";
 import { parseSpec, splitWhy, findSpec, nodeDirs, codeFiles, ownerOf } from "./walk.ts";
-import { Unrunnable } from "./floor.ts";
+import { Unrunnable, requireDeclaredRoot } from "./floor.ts";
 import { BUILTIN_LANGUAGES } from "./adapters/tree-sitter.ts";
 import { cloudflare } from "./adapters/cloudflare.ts";
 
@@ -87,6 +87,7 @@ export async function resolveLanguageAdapter(cfg: Config): Promise<LanguageAdapt
 export const isDocumented = (n: GraphNode): boolean => !!(n.prose && String(n.prose).trim());
 
 export async function buildGraph(cfg: Config): Promise<Graph> {
+  requireDeclaredRoot(cfg); // the walk floor: an undeclared tree is refused, never wandered
   const root = cfg.root;
   const lang = await resolveLanguageAdapter(cfg);
   const platform = cfg.platform ? PLATFORMS[cfg.platform] ?? null : null;

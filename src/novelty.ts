@@ -40,7 +40,7 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { Query, type Node } from "web-tree-sitter";
-import { grammarHandle } from "./adapters/tree-sitter.ts";
+import { grammarHandle, withTree } from "./adapters/tree-sitter.ts";
 import type { Config } from "./types.ts";
 
 /** What one source file contributes to the behavioral surface: its exported symbol
@@ -165,8 +165,6 @@ export async function surfaceOfSource(src: string, fileName = "x.ts"): Promise<F
   const lang = SURFACE_LANGUAGES.find((l) => l.ext.test(fileName));
   if (!lang) return { exports, domains };
   const { parser, query } = await surfaceHandle(lang);
-  const tree = parser.parse(src);
-  if (!tree) return { exports, domains };
   // Aggregation state: members per (class, name) across matches; captured body spans;
   // members whose match carried no name (the grammar split them off — TS union levels).
   const collected = new Map<string, Map<string, Set<string>>>();
@@ -179,6 +177,7 @@ export async function surfaceOfSource(src: string, fileName = "x.ts"): Promise<F
     if (!set) per.set(name, (set = new Set()));
     return set;
   };
+  withTree(parser, src, null, (tree) => {
   for (const match of query.matches(tree.rootNode)) {
     let name: { cls: string; text: string } | undefined;
     let body: { cls: string; node: Node } | undefined;
@@ -200,6 +199,8 @@ export async function surfaceOfSource(src: string, fileName = "x.ts"): Promise<F
       for (const m of members) strays.push({ cls: m.cls, start: m.node.startIndex, text: unquote(m.node.text) });
     }
   }
+  return null;
+  });
   // A stray belongs to the same-class body whose byte range contains it; one no body
   // claims was never domain surface (a function-signature union, a non-exported alias).
   for (const s of strays) {

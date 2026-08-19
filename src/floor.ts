@@ -213,6 +213,24 @@ export function ratchetVacuityRefusal(r: RatchetReading, seam: "check" | "update
  * keeps the requirement stated ONCE, at the seam that discovers it, and the renderer is
  * total over every command by construction rather than by review.
  */
+/** The walk floor: a configless directory is an UNDECLARED tree, and walking it grades
+ *  whatever population the shell happened to be in — a home directory, a monorepo root —
+ *  with full confidence (measured: an adopter's `npx coherence verify` from `~` walked
+ *  every .ts file under it until the parser heap gave out). The file's PRESENCE is the
+ *  declaration; `{}` is a complete one. Journal, hook, and reference commands never call
+ *  this — only walks do. Programmatic configs (tests, embedders) omit `declared` and pass. */
+export function requireDeclaredRoot(cfg: { root: string; declared?: boolean }): void {
+  if (cfg.declared !== false) return;
+  throw new Unrunnable([
+    `✗ [config] no coherence.config.json at ${cfg.root} — refusing to walk an UNDECLARED tree`,
+    "  A configless run walks whatever directory it was started in and grades that",
+    "  population with full confidence. Declare the root (an empty config is complete;",
+    "  its presence is the declaration, and the defaults do the rest):",
+    "    printf '{}\n' > coherence.config.json",
+    "  Journal, hooks, and reference commands work without one.",
+  ]);
+}
+
 export class Unrunnable extends Error {
   /** The whole report, line by line, exactly as the operator should read it. A field and
    *  not a constructor parameter property: this tree runs under node's type-STRIPPING

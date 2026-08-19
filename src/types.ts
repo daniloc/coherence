@@ -57,6 +57,13 @@ export interface Config {
   // to the harness itself: the basename fallback stays, for a project that has not
   // adopted the field, and it is the ONLY non-hermetic path left.
   name?: string;
+  // TRUE when coherence.config.json exists at root — the file's PRESENCE is the
+  // declaration that this directory is a coherence root. Walking commands refuse when
+  // it is absent (loadConfig sets false), because a configless `verify` started in a
+  // home directory would walk and grade everything under it with full confidence —
+  // measured: an adopter did exactly that. Programmatic Config objects (tests, embedders)
+  // may omit the field; only an explicit false refuses.
+  declared?: boolean;
   outputDir: string;        // where generated html/json artifacts go (e.g. "public")
   entryDir: string;         // the entrypoint component's dir, "." = root
   tooling: string[];        // path prefixes demoted to a "tooling" group

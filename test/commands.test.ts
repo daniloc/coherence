@@ -195,6 +195,7 @@ test("`docs --check` FAILS on a stale command block, and names README.md", async
     "README.md": `# fixture\n\nauthored above.\n\n${COMMANDS_BEGIN}\nstale — nothing like the real block\n${COMMANDS_END}\n\nauthored below.\n`,
     "app/app.spec.md": "# app\n\nThe fixture component.\n\n## works when\n\n- app.ts exists at this node\n",
     "app/app.ts": "export const x = 1;\n",
+    "coherence.config.json": "{}\n",
   });
   try {
     // 1. regenerate everything, so graph/overview/README are all current
@@ -231,6 +232,7 @@ test("`docs --check` does NOT fail a project that never opted in (absent markers
     "README.md": "# fixture\n\nNo coherence markers anywhere in this file.\n",
     "app/app.spec.md": "# app\n\nThe fixture component.\n\n## works when\n\n- app.ts exists at this node\n",
     "app/app.ts": "export const x = 1;\n",
+    "coherence.config.json": "{}\n",
   });
   try {
     const w = await run(process.execPath, [CLI_PATH, "docs"], { cwd: dir });
@@ -303,6 +305,7 @@ test("`docs --check` FAILS on a stale phrasebook block, and names README.md", as
     "README.md": `# fixture\n\n${PHRASEBOOK_BEGIN}\nstale — nothing like the real block\n${PHRASEBOOK_END}\n`,
     "app/app.spec.md": "# app\n\nThe fixture component.\n\n## works when\n\n- app.ts exists at this node\n",
     "app/app.ts": "export const x = 1;\n",
+    "coherence.config.json": "{}\n",
   });
   try {
     await run(process.execPath, [CLI_PATH, "docs"], { cwd: dir });

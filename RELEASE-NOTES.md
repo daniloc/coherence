@@ -14,6 +14,30 @@ evidence inside that record.
 
 ---
 
+## v0.35.0 — the crash report, answered twice
+
+An adopter ran `npx coherence verify` from their home directory and the wasm runtime
+aborted mid-walk. One stack trace, two defects, both fixed at the ladder's top rung.
+
+The crash itself: web-tree-sitter parse trees hold wasm heap that only an explicit
+delete returns, and no call site freed one — invisible on a small repository, fatal on
+a large one, reproduced at exactly parse #638 of an 80KB file. Every parse now routes
+through `withTree`, which owns the tree's whole lifetime and frees in a finally, so the
+leak is unrepresentable rather than discouraged; the one lazy node consumer was made
+eager rather than allowed to touch a freed tree. The guard is calibrated just past the
+measured cliff, and the incident is recorded as the invariant's refutation — a negative
+control observed in the field rather than planted.
+
+What let the crash happen: a configless run walked whatever directory the shell was in
+and graded that population with full confidence. The config file's PRESENCE is now the
+declaration — walking commands refuse without one and print the one-line bootstrap
+(`printf '{}' > coherence.config.json`; an empty config is complete, the defaults do
+the rest), while journal, hook, and reference commands still work anywhere. Adoption
+changed by one line, and the failure mode where curiosity grades a home directory is
+gone.
+
+779 tests. `verify` green. All gates held before release.
+
 ## v0.34.0 — one parser, and every language is data
 
 Every instrument now reads every language through the vendored tree-sitter grammars —

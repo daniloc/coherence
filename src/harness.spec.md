@@ -34,12 +34,16 @@ rendering, and journaling remain independently addressable modules beneath this 
 - a grammar-backed adapter derives the graph through the same language seam
 - instrument arms read languages through shared grammar queries, never a parallel scanner
 - a built-in language pack is data: queries, patterns, and named strategies, never code
+- a parse's heap is returned before the next file
+- an undeclared root refuses the walk, never wanders
 - experiment outcomes require criterion-total evidence
 - experiment telemetry preserves its weakest provable attribution
 - activity evidence is accepted only when identity, scope, time, and command agree
 - a streamed journal entry renders exactly once across appends and compaction
 
 ## refutations
+
+- a parse's heap is returned before the next file: shipped 0.34.0 with no `tree.delete()` at any parse site — an adopter's configless `verify` from a home directory aborted the wasm runtime mid-walk (`RuntimeError: Aborted()` in Parser.parse). Reproduced at exactly parse #638 of an 80KB file; the identical loop with delete runs unbounded. The oracle-gate agent had already observed the failure mode in its harness and it was read as gate plumbing rather than a shipped hazard. Fixed by dissolution: every parse routes through `withTree`, which frees in a finally, so the leak is unrepresentable — and the guard is calibrated just past the measured cliff.
 
 - a weaker regulation obligation never masks a stronger one: swapped `candidateCompare` from potential-first to doctrine-rule-first (2026-08-04), so the earlier lifecycle-control redirect masked the stronger current-patch decision when both were owed — full verify red by name, alongside the independent Stop mutation, at `claims: 32 · 30 green · 2 red`; the guard observed `redirect` where `require-decision` was required. Restored. This is the dangerous direction: a stable ordering that is stable on the wrong axis still makes the controller converge on lower-value work.
 - agent lifecycle preserves decisions and exposes the current change signal: inserted an `emit` immediately after main Stop's calibration snapshot (2026-08-04), recreating the conclusion-echo failure and the deeper attribution error — shared-worktree state bought whichever main agent happened to stop another model turn. Full verify red this claim by name at `claims: 32 · 31 green · 1 red`; the runtime guard observed nonempty stdout even for the quiet main Stop. Restored. SubagentStop still restates because its parent may see only the final reply; main Stop now snapshots calibration with byte-empty stdout.
@@ -96,6 +100,8 @@ rendering, and journaling remain independently addressable modules beneath this 
 - boundary "a grammar-backed adapter derives the graph through the same language seam" at makeTreeSitterAdapter via guard "tree-sitter — a grammar-backed adapter derives ruby symbols, imports, and prose through the same seam"
 - boundary "instrument arms read languages through shared grammar queries, never a parallel scanner" at lintSinks via guard "ruby sinks — an interpolation into a SQL context is a site and the safe pattern exempts"
 - boundary "a built-in language pack is data: queries, patterns, and named strategies, never code" at builtinLanguagePacks via guard "language packs — every built-in pack is function-free data across all five instrument tables"
+- boundary "a parse's heap is returned before the next file" at withTree via guard "wasm heap — parses past the measured abort cliff survive because every tree is freed"
+- boundary "an undeclared root refuses the walk, never wanders" at requireDeclaredRoot via guard "declared root — a configless directory refuses the walk and an empty config declares it"
 - boundary "experiment outcomes require criterion-total evidence" at closeExperiment via guard "close — total nonempty evidence is mandatory and outcome is derived, never supplied"
 - boundary "experiment telemetry preserves its weakest provable attribution" at closeExperiment via guard "Codex parent-only tool events close the loop as an aggregate, never exact owner evidence"
 - boundary "activity evidence is accepted only when identity, scope, time, and command agree" at isActivityRow via guard "activity — internally inconsistent scope, time, and command rows are damage, not evidence"
@@ -323,6 +329,23 @@ is honest about what a pack may name — strategies from a closed, mechanism-own
 procedural; naming it keeps the procedure written once where every language can reach
 it. Project adapter modules remain code territory by definition: purity governs what
 ships built in, where a single spelling is the entire point.
+
+**a parse's heap is returned before the next file.** web-tree-sitter trees hold wasm
+heap only an explicit delete returns, and the emscripten heap is fixed — so a leak is
+invisible on a small repository and fatal on a large one, the worst observability
+profile a defect can have. The measured incident is the refutation above. The repair is
+the ladder's top rung, not discipline: `withTree` owns the tree's whole lifetime, every
+call site takes it, node captures die inside it (the one lazy consumer was made eager
+rather than allowed to touch a freed node), and forgetting to free is unrepresentable.
+
+**an undeclared root refuses the walk, never wanders.** A configless run walks whatever
+directory the shell happened to be in and grades that population with full confidence —
+the incident run was `npx coherence verify` from a home directory, which is not exotic;
+it is the first thing a curious adopter types. The config file's PRESENCE is the
+declaration, so `{}` is a complete first rung of the adoption ladder, and the refusal
+prints exactly that one-line bootstrap. Journal, hook, and reference commands never
+walk, so they stay available in an undeclared directory — the field does not require a
+config to remember decisions.
 
 **experiment outcomes require criterion-total evidence.** A
 plan is frozen before work with its predicted context, actions, criteria, and evidence

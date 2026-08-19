@@ -39,6 +39,7 @@ export async function runCaptured(fn: () => Promise<number>): Promise<{ code: nu
 export function cfg(root: string, over: Partial<Config> = {}): Config {
   return {
     root,
+    declared: true, // programmatic config — the caller vouches for the root
     outputDir: "public",
     entryDir: ".",
     tooling: [],
