@@ -14,6 +14,39 @@ evidence inside that record.
 
 ---
 
+## v0.34.0 — one parser, and every language is data
+
+Every instrument now reads every language through the vendored tree-sitter grammars —
+one parsing foundation, no second spelling. The regex-era scanners and the TypeScript
+compiler dependency are gone: `typescript` left the runtime dependencies entirely
+(dev-only for builds), so adopters install one runtime dependency, `web-tree-sitter`,
+plus ~4MB of grammar binaries whose provenance is a committed file and a refresh script.
+Ruby joined the built-in names.
+
+The migration was held to one discipline throughout, and it earned its keep every
+single time: build the new reader beside the old witness, gate them against real
+corpora, and delete the old one only at zero unenumerated deltas. Five gates ran —
+sinks, surface, sites, oracle verdicts (1,757 comparisons), and the graph adapters
+themselves — and every one caught at least one first-draft mistranslation before it
+could ship. Two gates also convicted the old arms: the injection scanner had been
+counting interpolations in strings, comments, and its own source while missing every
+nested-brace site, and the site extractor had invented an enum member out of a django
+docstring. Both baselines were re-pinned as measurement corrections with every delta
+enumerated.
+
+The end state is a declared, enforced shape: a built-in language pack is DATA — query
+text, regex and string fields, and named strategies from closed mechanism-owned sets —
+never functions, and never grammar vocabulary hiding in shared mechanism. A guard
+sweeps every pack table for function-valued fields by path and can prove it reds. Rung
+2 of the README's language ladder gives any project the graph tier from a grammar wasm
+plus ~30 lines of capture queries; rung 3 makes an instrument a table row. The
+harness's own instruments and the languages they read are now verified by the same
+machinery they provide.
+
+777 tests. `verify` green. Typecheck, build, generated reading surfaces, both lifecycle
+controls, premise leases, conventions, injection sites, mass, atlas, and the
+significant-change gate all held before release.
+
 ## v0.33.0 — python is first-class, and the language seam opens
 
 Every instrument now reads Python at the same deliberate regex grade the adapters set:
