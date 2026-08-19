@@ -25,7 +25,9 @@
 // safe-pattern regexes would have no expression to grade. Precision over recall: a
 // wall of unmatched-placeholder candidates is worse than silence.
 import { join } from "node:path";
+import { Query } from "web-tree-sitter";
 import type { Config } from "./types.ts";
+import { grammarHandle } from "./adapters/tree-sitter.ts";
 import { scanSources, readBaseline, writeBaseline } from "./sidecar.ts";
 import { ratchetVacuityRefusal, type RatchetReading } from "./floor.ts";
 
@@ -33,38 +35,50 @@ import { ratchetVacuityRefusal, type RatchetReading } from "./floor.ts";
 // escapeXml/escapeAttr/.toFixed/a numeric/styling constant (HTML), is inert.
 const DEFAULT_SAFE_SQL = "^(quoteIdent\\(|[A-Z][A-Z0-9_]*$)";
 const DEFAULT_SAFE_HTML = "(^|[^.\\w])(escapeXml|escapeAttr)\\(|\\.toFixed\\(|^[A-Z][A-Z0-9_]*$|^-?\\d";
-const INTERP = /\$\{([^{}]+)\}/g;          // non-nested ${...}
-const SQL_INTERP = /"\$\{([^{}]+)\}"/g;     // "${expr}" — SQLite double-quoted identifier
 const HTML_TAG = /<\/?[a-zA-Z!]/;            // a markup tag on the line → HTML context
+// A SQL statement shape in the literal's own text — the stand-in for the JS `"${expr}"`
+// quoting signal in languages whose delimiters consume it. Verb pairs, not lone keywords.
+const SQL_TEXT = /\b(?:select\s.*\bfrom\b|insert\s+into\b|update\s+\S+\s+set\b|delete\s+from\b|create\s+(?:table|index|view)\b|drop\s+(?:table|index|view)\b|alter\s+table\b)/i;
 const BASELINE = "sinks-baseline.json";
 
-// ── python f-strings (header: PYTHON GRADE) ──────────────────────────────────────────────
-// A single-line f-string literal, any prefix casing, rf/fr raw variants included. Triple
-// quotes first so f"""…""" is not read as an empty f"" plus trailing text.
-const PY_FSTRING = /(?<![\w"'])(?:rf|fr|f)(?:"""(.*?)"""|'''(.*?)'''|"((?:\\.|[^"\\])*)"|'((?:\\.|[^'\\])*)')/gi;
-// A SQL statement shape in the literal's own text — the python stand-in for the JS
-// `"${expr}"` quoting signal (see header). Verb pairs, not lone keywords, on purpose.
-const PY_SQL_TEXT = /\b(?:select\s.*\bfrom\b|insert\s+into\b|update\s+\S+\s+set\b|delete\s+from\b|create\s+(?:table|index|view)\b|drop\s+(?:table|index|view)\b|alter\s+table\b)/i;
-const PY_INTERP = /\{([^{}]+)\}/g;           // one interpolation, `{{`/`}}` neutralized first
+// ── the per-language sink data (phase 2b: queries, not scanners) ─────────────────────
+// Each language contributes CAPTURES and signals, never verdict logic: @str is the
+// string-ish container, @expr one interpolation node inside it. The grammar decides
+// what is a real interpolation, so `${}` inside a plain string, a comment, or a test
+// fixture's code-as-string is no longer a site — the regex scanners this replaced
+// matched line TEXT and over-reported exactly those (every baseline delta at the swap
+// was enumerated as that class). SQL context is either `quote-wrap` (the interpolation
+// is immediately double-quote-wrapped — the SQLite-identifier signal quoting can carry)
+// or `text-shape` (the literal's own text carries a statement shape, for languages
+// whose string delimiters consume the quotes). HTML stays a line signal in every
+// language. The safe-pattern config grades the bare expression identically throughout.
+interface SinkLanguage {
+  ext: string;
+  grammar: string;
+  query: string;
+  sql: "quote-wrap" | "text-shape";
+  /** e.g. python: only f-prefixed strings interpolate meaningfully for this ratchet. */
+  accept?: (strText: string) => boolean;
+}
+const SINK_LANGUAGES: SinkLanguage[] = [
+  { ext: ".ts", grammar: "typescript", sql: "quote-wrap",
+    query: "(template_string (template_substitution) @expr) @str" },
+  { ext: ".py", grammar: "python", sql: "text-shape",
+    query: "(string (interpolation) @expr) @str",
+    accept: (s) => /^[rbu]*f/i.test(s) },
+  { ext: ".rb", grammar: "ruby", sql: "text-shape",
+    query: "(string (interpolation) @expr) @str" },
+];
 
-/** The EXPRESSION of a python interpolation: `m[1]` minus the `!r`-style conversion, the
- *  `:>10`-style format spec, and the 3.8 `x=` debug suffix — cut at top nesting only, so
- *  `d['a:b']`, `a[1:2]` and `a != b` keep their full text. */
-function pyExpr(raw: string): string {
-  let depth = 0, quote: string | null = null;
-  for (let i = 0; i < raw.length; i++) {
-    const ch = raw[i];
-    if (quote) { if (ch === quote) quote = null; continue; }
-    if (ch === "'" || ch === '"') quote = ch;
-    else if (ch === "(" || ch === "[") depth++;
-    else if (ch === ")" || ch === "]") depth--;
-    else if (depth === 0) {
-      if (ch === ":") return raw.slice(0, i).trim();
-      if (ch === "!" && raw[i + 1] !== "=") return raw.slice(0, i).trim();
-      if (ch === "=" && raw[i + 1] !== "=" && !"=!<>+-*/%".includes(raw[i - 1] ?? "")) return raw.slice(0, i).trim();
-    }
-  }
-  return raw.trim();
+/** The bare expression of one interpolation node: the grammar's expression field where
+ *  the language has one (python — this is what drops `!r` conversions, `:>10` format
+ *  specs, and the 3.8 `=` debug suffix), else the node text minus its delimiters. */
+function interpolationExpr(node: import("web-tree-sitter").Node): string {
+  const field = node.childForFieldName("expression");
+  if (field) return field.text.trim();
+  const text = node.text;
+  const lead = text.startsWith("${") || text.startsWith("#{") ? 2 : 1;
+  return text.slice(lead, text.endsWith("}") ? -1 : undefined).trim();
 }
 
 export interface Finding { context: string; file: string; expr: string; line: number }
@@ -150,39 +164,34 @@ export async function lintSinks(cfg: Config, mode: "report" | "check" | "update"
   const { src } = await scanSources(cfg);
 
   const findings: Finding[] = [];
+  const queries = new Map<string, { parser: import("web-tree-sitter").Parser; query: Query }>();
   for (const { rel, text } of src) {
-    const isPy = rel.endsWith(".py");
+    const lang = SINK_LANGUAGES.find((l) => rel.endsWith(l.ext));
+    if (!lang) continue;
+    let handle = queries.get(lang.ext);
+    if (!handle) {
+      const { language, parser } = await grammarHandle(lang.grammar);
+      handle = { parser, query: new Query(language, lang.query) };
+      queries.set(lang.ext, handle);
+    }
+    const tree = handle.parser.parse(text);
+    if (!tree) continue;
     const lines = text.split("\n");
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      const t = line.trimStart();
-      if (t.startsWith("//") || t.startsWith("*")) continue;
-      if (isPy && t.startsWith("#")) continue;
-      for (const m of line.matchAll(SQL_INTERP)) {
-        const expr = m[1].trim();
-        if (!safeSql.test(expr)) findings.push({ context: "sql-ident", file: rel, expr, line: i + 1 });
-      }
-      if (HTML_TAG.test(line)) {
-        for (const m of line.matchAll(INTERP)) {
-          const expr = m[1].trim();
-          if (line.includes(`"\${${m[1]}}"`)) continue; // the SQL-ident form, already handled
-          if (!safeHtml.test(expr)) findings.push({ context: "html-value", file: rel, expr, line: i + 1 });
-        }
-      }
-      if (!isPy) continue;
-      // Python path (header: PYTHON GRADE). Same two contexts, same safe regexes, same
-      // Finding shape — a .py site flows into keyOf/reconcile like any other.
-      for (const f of line.matchAll(PY_FSTRING)) {
-        const body = f[1] ?? f[2] ?? f[3] ?? f[4] ?? "";
-        const isSql = PY_SQL_TEXT.test(body);
-        if (!isSql && !HTML_TAG.test(line)) continue;
-        const context = isSql ? "sql-ident" : "html-value";
-        const safe = isSql ? safeSql : safeHtml;
-        const neutral = body.replace(/\{\{|\}\}/g, "\0\0"); // `{{` is a literal brace, never a site
-        for (const m of neutral.matchAll(PY_INTERP)) {
-          const expr = pyExpr(m[1]);
-          if (expr && !safe.test(expr)) findings.push({ context, file: rel, expr, line: i + 1 });
-        }
+    for (const match of handle.query.matches(tree.rootNode)) {
+      const str = match.captures.find((c) => c.name === "str")?.node;
+      const interp = match.captures.find((c) => c.name === "expr")?.node;
+      if (!str || !interp) continue;
+      if (lang.accept && !lang.accept(str.text)) continue;
+      const isSql = lang.sql === "quote-wrap"
+        ? text[interp.startIndex - 1] === '"' && text[interp.endIndex] === '"'
+        : SQL_TEXT.test(str.text);
+      const row = interp.startPosition.row;
+      if (!isSql && !HTML_TAG.test(lines[row] ?? "")) continue;
+      const expr = interpolationExpr(interp);
+      if (!expr) continue;
+      const context = isSql ? "sql-ident" : "html-value";
+      if (!(isSql ? safeSql : safeHtml).test(expr)) {
+        findings.push({ context, file: rel, expr, line: row + 1 });
       }
     }
   }

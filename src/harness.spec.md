@@ -32,6 +32,7 @@ rendering, and journaling remain independently addressable modules beneath this 
 - python sources feed the same instruments as typescript at their declared regex grade
 - a declared language resolves to a real adapter or refuses, never a silent fallback
 - a grammar-backed adapter derives the graph through the same language seam
+- instrument arms read languages through shared grammar queries, never a parallel scanner
 - experiment outcomes require criterion-total evidence
 - experiment telemetry preserves its weakest provable attribution
 - activity evidence is accepted only when identity, scope, time, and command agree
@@ -92,6 +93,7 @@ rendering, and journaling remain independently addressable modules beneath this 
 - boundary "python sources feed the same instruments as typescript at their declared regex grade" at lintSinks via guard "python sinks — an f-string into a SQL context is a site, a safe-pattern expression is not, and the ratchet reds the new site"
 - boundary "a declared language resolves to a real adapter or refuses, never a silent fallback" at resolveLanguageAdapter via guard "language adapter — a project path loads and shapes the graph; unknown names refuse, never fall back"
 - boundary "a grammar-backed adapter derives the graph through the same language seam" at makeTreeSitterAdapter via guard "tree-sitter — a grammar-backed adapter derives ruby symbols, imports, and prose through the same seam"
+- boundary "instrument arms read languages through shared grammar queries, never a parallel scanner" at lintSinks via guard "ruby sinks — an interpolation into a SQL context is a site and the safe pattern exempts"
 - boundary "experiment outcomes require criterion-total evidence" at closeExperiment via guard "close — total nonempty evidence is mandatory and outcome is derived, never supplied"
 - boundary "experiment telemetry preserves its weakest provable attribution" at closeExperiment via guard "Codex parent-only tool events close the loop as an aggregate, never exact owner evidence"
 - boundary "activity evidence is accepted only when identity, scope, time, and command agree" at isActivityRow via guard "activity — internally inconsistent scope, time, and command rows are damage, not evidence"
@@ -294,6 +296,18 @@ redundancy class this harness ranks in other people's code. The regex adapters w
 corpus-diffed to parity (every delta an enumerated regex mistake), their prose logic
 ported verbatim, and then deleted; their grammars ship vendored with provenance. The
 instrument arms remain hand-built until a later phase ports them to query packs.
+
+**instrument arms read languages through shared grammar queries, never a parallel
+scanner.** Phase 2b's contract, proven first on the injection ratchet: a language
+contributes captures and signals — which node is an interpolation, how its SQL context
+announces itself — and the mechanism owns classification, safe-pattern grading, site
+identity, and the ratchet, once. The regex scanners this replaced matched line TEXT, so
+they counted `${}` inside plain strings, comments, and test fixtures as sites, bounded
+visibility at one brace of nesting, and one of them matched its own source. The query
+scan re-pinned the baseline with every delta enumerated: nineteen real nested-brace
+sites gained, one self-match artifact gone. A new language now gains the whole
+instrument from a table row — ruby's took three lines and no scanner — which is the
+two-tier boundary dissolving arm by arm.
 
 **experiment outcomes require criterion-total evidence.** A
 plan is frozen before work with its predicted context, actions, criteria, and evidence

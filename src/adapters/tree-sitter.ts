@@ -274,6 +274,33 @@ export async function makeTreeSitterAdapter(
 const grammarPath = (wasm: string): string =>
   fileURLToPath(new URL(`../../grammars/${wasm}`, import.meta.url));
 
+const BUILTIN_WASM: Record<string, string> = {
+  typescript: "tree-sitter-typescript.wasm",
+  python: "tree-sitter-python.wasm",
+  ruby: "tree-sitter-ruby.wasm",
+};
+
+/** One memoized {language, parser} per built-in grammar — the graph adapter AND the
+ *  instrument arms (phase 2b) query the same loaded grammar instead of re-reading wasm. */
+export interface GrammarHandle { language: Language; parser: Parser }
+const handleCache = new Map<string, Promise<GrammarHandle>>();
+export function grammarHandle(name: keyof typeof BUILTIN_WASM | string): Promise<GrammarHandle> {
+  let cached = handleCache.get(name);
+  if (!cached) {
+    const wasm = BUILTIN_WASM[name];
+    if (!wasm) return Promise.reject(new Error(`no built-in grammar named ${JSON.stringify(name)}`));
+    cached = (async () => {
+      await Parser.init();
+      const language = await Language.load(grammarPath(wasm));
+      const parser = new Parser();
+      parser.setLanguage(language);
+      return { language, parser };
+    })();
+    handleCache.set(name, cached);
+  }
+  return cached;
+}
+
 const builtinCache = new Map<string, Promise<LanguageAdapter>>();
 function memo(name: string, wasm: string, spec: TreeSitterLanguageSpec): () => Promise<LanguageAdapter> {
   return () => {
