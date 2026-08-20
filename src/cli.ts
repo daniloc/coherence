@@ -33,7 +33,10 @@ import { renderContract } from "./render-contract.ts";
 import { readStatus } from "./status.ts";
 import { readSurface, vacuityRefusal, Unrunnable } from "./floor.ts";
 import { CLAIM_FORMS, loadDictionary } from "./phrasebook.ts";
-import { appendDecision, renderJournal, readJournal, resolvableConjecture, compactJournal } from "./decisions.ts";
+import {
+  appendDecision, renderJournal, readJournal, resolvableConjecture, compactJournal,
+  type DecisionAuthority, type DecisionScope,
+} from "./decisions.ts";
 import { runJournal } from "./journal.ts";
 import { DefectLedgerError, readDefects, recordDefect, renderDefects } from "./defects.ts";
 import {
@@ -55,6 +58,15 @@ import { premise } from "./premise.ts";
 import { calibrate, type CalibrationOutcome } from "./calibration.ts";
 import { buildIndexModel, INDEX_HTML, INDEX_JSON } from "./index-model.ts";
 import { renderIndex, formatIndexSummary } from "./render-index.ts";
+import {
+  closeWork, createWork, handoffWork, renderWork, transitionWork, WorkLedgerError,
+  type WorkAuthorityKind, type WorkRisk, type WorkState,
+} from "./work.ts";
+import {
+  ConsequenceLedgerError, CONSEQUENCE_RELATIONS, parseConsequenceRef,
+  recordConsequence, renderConsequences, type ConsequenceRelation,
+} from "./consequence.ts";
+import { observeOrientation, renderOrientation } from "./orient.ts";
 
 const cmd = process.argv[2];
 const argv = process.argv.slice(3);
@@ -73,10 +85,20 @@ const VALUED = new Set(["--since", "--apply", "--over", "--because", "--agent", 
   "--could-be", "--discriminated-by", "--as",
   "--evidence",
   "--value", "--baseline", "--threshold", "--unit", "--why", "--raise-cap", "--symbol", "--outcome", "--host",
-  "--context", "--action", "--success", "--hypothesis", "--action-result", "--result"]);
+  "--context", "--action", "--success", "--hypothesis", "--action-result", "--result",
+  "--work", "--subject", "--authority", "--scope-component", "--scope-file", "--scope-symbol", "--environment",
+  "--max-bytes", "--risk", "--granted-by", "--boundary", "--owner-session", "--owner-agent", "--parent", "--depends-on", "--read-scope", "--write-scope", "--constraint", "--non-goal", "--state", "--expected-previous", "--synthesized", "--id"]);
 const many = (flag: string): string[] => argv.reduce<string[]>((acc, a, i) => (a === flag && argv[i + 1] !== undefined ? [...acc, argv[i + 1]] : acc), []);
 const one = (flag: string): string | null => { const v = many(flag); return v.length ? v[v.length - 1] : null; };
 const positional = argv.filter((a, i) => !a.startsWith("--") && !VALUED.has(argv[i - 1] ?? ""));
+export function repeatedSingletonFlags(
+  args: string[],
+  allowed: Iterable<string>,
+  repeatable: ReadonlySet<string> = new Set(),
+): string[] {
+  return [...allowed].filter((flag) =>
+    !repeatable.has(flag) && args.filter((arg) => arg === flag).length > 1);
+}
 // `--raise` lets an ADVISORY open a conjecture instead of printing one. Opt-in, never a
 // default: raising WRITES to the journal, and an advisory that mutates the record as a
 // side effect of a read-only report is a surprise — and a surprising write is how a
@@ -252,7 +274,7 @@ async function doCommands(): Promise<string[]> {
 async function doPhrasebook(): Promise<string[]> {
   const path = join(cfg.root, "README.md");
   const existing = await read(path);
-  const block = renderPhrasebookBlock();
+  const block = renderPhrasebookBlock(CLAIM_FORMS);
   const current = extractBlock(existing, { begin: PHRASEBOOK_BEGIN, end: PHRASEBOOK_END });
   if (check) {
     if (!existing || current === null) return [];
@@ -379,17 +401,47 @@ if (cmd === "graph") {
   // up before it can log is a thing it will skip while it is busy.
   const chose = positional[0];
   const because = one("--because");
+  const structuredFlags = new Set(["--work", "--subject", "--authority", "--scope-component", "--scope-file", "--scope-symbol", "--environment"]);
+  const missingStructured = argv.filter((arg, index) => structuredFlags.has(arg)
+    && (argv[index + 1] === undefined || argv[index + 1]!.startsWith("--")));
+  if (missingStructured.length) {
+    console.error(`missing value for: ${[...new Set(missingStructured)].join(", ")}`);
+    await exit(2);
+  }
+  const decisionSingletons = ["--because", "--agent", "--job", "--session", "--work", "--subject", "--authority"];
+  const repeatedDecisionSingletons = repeatedSingletonFlags(argv, decisionSingletons);
+  if (repeatedDecisionSingletons.length) {
+    console.error(`repeated singleton flag(s): ${repeatedDecisionSingletons.join(", ")}`);
+    await exit(2);
+  }
+  const authority = one("--authority");
+  const authorities: DecisionAuthority[] = ["local-proposal", "orchestrator-accepted", "user-directed"];
+  if (authority !== null && !authorities.includes(authority as DecisionAuthority)) {
+    console.error(`--authority must be one of ${authorities.join(", ")}`);
+    await exit(2);
+  }
   if (!chose || !because) {
     console.error(cmd === "decide"
-      ? 'usage: coherence decide "<what you chose>" --over "<alternative>" [--over ...] --because "<why>" [--agent X] [--job Y] [--file p]'
+      ? 'usage: coherence decide "<what you chose>" [--over "<alternative>" ...] --because "<why>" [--work W] [--subject S] [--authority <local-proposal|orchestrator-accepted|user-directed>] [--scope-component C] [--scope-file p] [--scope-symbol S] [--environment E] [--session S] [--agent X] [--job Y] [--file p]'
       : 'usage: coherence blocked "<what you could not do>" --because "<why>" [--agent X] [--job Y]');
     await exit(2);
   }
+  const scopeParts: DecisionScope = {
+    ...(many("--scope-component").length ? { components: many("--scope-component") } : {}),
+    ...(many("--scope-file").length ? { files: many("--scope-file") } : {}),
+    ...(many("--scope-symbol").length ? { symbols: many("--scope-symbol") } : {}),
+    ...(many("--environment").length ? { environment: many("--environment") } : {}),
+  };
+  const hasScope = Object.keys(scopeParts).length > 0;
   const rec = appendDecision(cfg, {
     kind: cmd === "decide" ? "decision" : "blocked",
     chose: chose!, over: many("--over"), because: because!,
     agent: one("--agent") ?? undefined, job: one("--job") ?? undefined,
     session: one("--session") ?? undefined, files: many("--file"),
+    work: one("--work") ?? undefined,
+    subject: one("--subject") ?? undefined,
+    authority: authority === null ? undefined : authority as DecisionAuthority,
+    scope: hasScope ? scopeParts : undefined,
   });
   console.log(`${rec.id}  ${rec.kind}  [${rec.agent} · ${rec.commit ?? "no-commit"}${rec.dirty ? "+dirty" : ""}]`);
   await exit(0);
@@ -770,6 +822,199 @@ if (cmd === "graph") {
     if (!(error instanceof ExperimentLedgerError)) throw error;
     await fail(error.problems.join("; "));
   }
+} else if (cmd === "work") {
+  // Inert, append-only swarm coordination. Every write requires an exact writer session;
+  // the ledger owns state replay, graph validation, handoff, synthesis, and collision
+  // detection so the CLI cannot invent a second lifecycle.
+  const json = argv.includes("--json");
+  const rawAction = positional[0] ?? "inspect";
+  const action = rawAction === "status" ? "inspect" : rawAction;
+  const usage = [
+    'usage: coherence work create "<objective>" --success "<criterion>" --risk <low|medium|high|critical> --authority <user-directed|orchestrator-delegated|agent-local|external-approved> --granted-by <actor> --boundary "<authority boundary>" --session S [--write-scope p] [--json]',
+    '       coherence work transition <id> <open|active|blocked> --because "<reason>" --session S [--evidence E] [--json]',
+    '       coherence work handoff <id> --owner-session S --owner-agent A --because "<reason>" --session S [--json]',
+    '       coherence work close <id> <completed|cancelled> --because "<reason>" --session S [--evidence E] [--synthesized <child>] [--json]',
+    "       coherence work inspect [<id>] [--state <state>] [--json]",
+  ];
+  const fail = async (message: string): Promise<never> => {
+    if (json) console.log(JSON.stringify({ error: message, usage }, null, 2));
+    else { console.error(message); for (const line of usage) console.error(line); }
+    return await exit(2);
+  };
+  const allowed = new Map<string, Set<string>>([
+    ["create", new Set(["--success", "--constraint", "--non-goal", "--risk", "--authority", "--granted-by", "--boundary", "--session", "--agent", "--job", "--id", "--parent", "--owner-session", "--owner-agent", "--depends-on", "--read-scope", "--write-scope", "--json"])],
+    ["transition", new Set(["--because", "--evidence", "--expected-previous", "--session", "--agent", "--job", "--json"])],
+    ["handoff", new Set(["--owner-session", "--owner-agent", "--because", "--expected-previous", "--session", "--agent", "--job", "--json"])],
+    ["close", new Set(["--because", "--evidence", "--synthesized", "--expected-previous", "--session", "--agent", "--job", "--json"])],
+    ["inspect", new Set(["--state", "--json"])],
+  ]);
+  if (!allowed.has(action)) await fail(`invalid work action: ${rawAction}`);
+  const badFlags = argv.filter((arg) => arg.startsWith("--") && !allowed.get(action)!.has(arg));
+  if (badFlags.length) await fail(`unsupported flag(s) for work ${action}: ${badFlags.join(", ")}`);
+  const missingValues = argv.filter((arg, index) => allowed.get(action)!.has(arg) && arg !== "--json"
+    && (argv[index + 1] === undefined || argv[index + 1]!.startsWith("--")));
+  if (missingValues.length) await fail(`missing value for: ${[...new Set(missingValues)].join(", ")}`);
+  const repeatableByAction = new Map<string, Set<string>>([
+    ["create", new Set(["--success", "--constraint", "--non-goal", "--depends-on", "--read-scope", "--write-scope"])],
+    ["transition", new Set(["--evidence"])],
+    ["handoff", new Set()],
+    ["close", new Set(["--evidence", "--synthesized"])],
+    ["inspect", new Set()],
+  ]);
+  const repeatedSingletons = repeatedSingletonFlags(argv, allowed.get(action)!, repeatableByAction.get(action)!);
+  if (repeatedSingletons.length) await fail(`repeated singleton flag(s): ${repeatedSingletons.join(", ")}`);
+  const writerSession = one("--session") ?? process.env.COHERENCE_SESSION ?? process.env.CODEX_THREAD_ID ?? null;
+  const writer = {
+    session: writerSession as string,
+    agent: one("--agent") ?? undefined,
+    job: one("--job") ?? undefined,
+  };
+  try {
+    if (action === "inspect") {
+      if (positional.length > 2) await fail("work inspect accepts at most one work id");
+      const states: WorkState[] = ["open", "active", "blocked", "completed", "cancelled"];
+      const rawState = one("--state");
+      if (rawState !== null && !states.includes(rawState as WorkState)) await fail(`--state must be one of ${states.join(", ")}`);
+      const rendered = renderWork(cfg, { work: positional[1] ?? null, state: rawState as WorkState | null });
+      if (json) console.log(JSON.stringify({ work: rendered.works, stats: rendered.ledger.stats, validation: rendered.ledger.validation, scopeConflicts: rendered.ledger.scopeConflicts, unsynthesized: rendered.ledger.unsynthesized }, null, 2));
+      else console.log(rendered.text);
+      await exit(0);
+    }
+    if (!writerSession || writerSession === "unknown") await fail(`work ${action} requires an exact non-placeholder writer session`);
+
+    if (action === "create") {
+      if (positional.length !== 2) await fail("work create requires exactly one objective");
+      const risks: WorkRisk[] = ["low", "medium", "high", "critical"];
+      const authorities: WorkAuthorityKind[] = ["user-directed", "orchestrator-delegated", "agent-local", "external-approved"];
+      const risk = one("--risk"), authority = one("--authority");
+      const grantedBy = one("--granted-by"), boundary = one("--boundary");
+      if (!risk || !risks.includes(risk as WorkRisk)) await fail(`--risk must be one of ${risks.join(", ")}`);
+      if (!authority || !authorities.includes(authority as WorkAuthorityKind)) await fail(`--authority must be one of ${authorities.join(", ")}`);
+      if (!grantedBy || !boundary) await fail("work create requires --granted-by and --boundary");
+      const exactGrantedBy = grantedBy as string, exactBoundary = boundary as string;
+      const ownerSession = one("--owner-session"), ownerAgent = one("--owner-agent");
+      if ((ownerSession === null) !== (ownerAgent === null)) await fail("--owner-session and --owner-agent must be supplied together");
+      const opened = createWork(cfg, {
+        ...writer,
+        work: one("--id") ?? undefined,
+        parent: one("--parent") ?? undefined,
+        objective: positional[1],
+        criteria: many("--success"),
+        constraints: many("--constraint"),
+        nonGoals: many("--non-goal"),
+        authority: { kind: authority as WorkAuthorityKind, grantedBy: exactGrantedBy, boundary: exactBoundary },
+        owner: ownerSession && ownerAgent ? { session: ownerSession, agent: ownerAgent } : undefined,
+        dependsOn: many("--depends-on"),
+        readScopes: many("--read-scope"),
+        writeScopes: many("--write-scope"),
+        risk: risk as WorkRisk,
+      });
+      if (json) console.log(JSON.stringify(opened, null, 2));
+      else console.log(`OPEN ${opened.work}  ${opened.id}`);
+      await exit(0);
+    }
+
+    const work = positional[1];
+    const reason = one("--because");
+    if (!work || !reason) await fail(`work ${action} requires one work id and --because`);
+    const exactWork = work as string, exactReason = reason as string;
+    if (action === "transition") {
+      const to = positional[2];
+      if (positional.length !== 3 || !["open", "active", "blocked"].includes(to)) await fail("work transition requires one open|active|blocked state");
+      const record = transitionWork(cfg, {
+        ...writer, work: exactWork, to: to as "open" | "active" | "blocked", reason: exactReason,
+        evidence: many("--evidence"), expectedPrevious: one("--expected-previous") ?? undefined,
+      });
+      if (json) console.log(JSON.stringify(record, null, 2)); else console.log(`${record.work} ${record.from} → ${record.to}  ${record.id}`);
+      await exit(0);
+    }
+    if (action === "handoff") {
+      if (positional.length !== 2) await fail("work handoff accepts exactly one work id");
+      const ownerSession = one("--owner-session"), ownerAgent = one("--owner-agent");
+      if (!ownerSession || !ownerAgent) await fail("work handoff requires --owner-session and --owner-agent");
+      const exactOwnerSession = ownerSession as string, exactOwnerAgent = ownerAgent as string;
+      const record = handoffWork(cfg, {
+        ...writer, work: exactWork, reason: exactReason, toOwner: { session: exactOwnerSession, agent: exactOwnerAgent },
+        expectedPrevious: one("--expected-previous") ?? undefined,
+      });
+      if (json) console.log(JSON.stringify(record, null, 2)); else console.log(`${record.work} → ${record.toOwner.session}/${record.toOwner.agent}  ${record.id}`);
+      await exit(0);
+    }
+    const to = positional[2];
+    if (positional.length !== 3 || !["completed", "cancelled"].includes(to)) await fail("work close requires one completed|cancelled state");
+    const record = closeWork(cfg, {
+      ...writer, work: exactWork, to: to as "completed" | "cancelled", reason: exactReason,
+      resultEvidence: many("--evidence"), synthesizedChildren: many("--synthesized"),
+      expectedPrevious: one("--expected-previous") ?? undefined,
+    });
+    if (json) console.log(JSON.stringify(record, null, 2)); else console.log(`${record.work} → ${record.to}  ${record.id}`);
+    await exit(0);
+  } catch (error) {
+    if (!(error instanceof WorkLedgerError)) throw error;
+    await fail(error.problems.join("; "));
+  }
+} else if (cmd === "consequence") {
+  const json = argv.includes("--json");
+  const action = positional[0] ?? "inspect";
+  const usage = [
+    'usage: coherence consequence add <kind:id> <relation> <kind:id> --evidence "<why this edge is warranted>" --session S [--json]',
+    "       coherence consequence inspect [<kind:id>] [--json]",
+  ];
+  const fail = async (message: string): Promise<never> => {
+    if (json) console.log(JSON.stringify({ error: message, usage }, null, 2));
+    else { console.error(message); for (const line of usage) console.error(line); }
+    return await exit(2);
+  };
+  const allowed = action === "add"
+    ? new Set(["--evidence", "--session", "--agent", "--job", "--json"])
+    : action === "inspect" ? new Set(["--json"]) : null;
+  if (!allowed) await fail(`invalid consequence action: ${action}`);
+  const exactAllowed = allowed as Set<string>;
+  const badFlags = argv.filter((arg) => arg.startsWith("--") && !exactAllowed.has(arg));
+  if (badFlags.length) await fail(`unsupported flag(s) for consequence ${action}: ${badFlags.join(", ")}`);
+  const missingValues = argv.filter((arg, index) => exactAllowed.has(arg) && arg !== "--json"
+    && (argv[index + 1] === undefined || argv[index + 1]!.startsWith("--")));
+  if (missingValues.length) await fail(`missing value for: ${[...new Set(missingValues)].join(", ")}`);
+  const repeatedSingletons = repeatedSingletonFlags(argv, exactAllowed);
+  if (repeatedSingletons.length) await fail(`repeated singleton flag(s): ${repeatedSingletons.join(", ")}`);
+  try {
+    if (action === "inspect") {
+      if (positional.length > 2) await fail("consequence inspect accepts at most one reference");
+      const focus = positional[1] ? parseConsequenceRef(positional[1]) : null;
+      const rendered = renderConsequences(cfg, focus);
+      if (json) console.log(JSON.stringify(rendered.trace, null, 2)); else console.log(rendered.text);
+      await exit(0);
+    }
+    if (positional.length !== 4) await fail("consequence add requires from, relation, and to");
+    const relation = positional[2] as ConsequenceRelation;
+    if (!CONSEQUENCE_RELATIONS.includes(relation)) await fail(`relation must be one of ${CONSEQUENCE_RELATIONS.join(", ")}`);
+    const session = one("--session") ?? process.env.COHERENCE_SESSION ?? process.env.CODEX_THREAD_ID ?? null;
+    const evidence = one("--evidence");
+    if (!session || session === "unknown" || !evidence) await fail("consequence add requires exact --session and non-empty --evidence");
+    const exactSession = session as string, exactEvidence = evidence as string;
+    const record = recordConsequence(cfg, {
+      session: exactSession, from: parseConsequenceRef(positional[1] as string), relation,
+      to: parseConsequenceRef(positional[3] as string), evidence: exactEvidence,
+      agent: one("--agent") ?? undefined, job: one("--job") ?? undefined,
+    });
+    if (json) console.log(JSON.stringify(record, null, 2)); else console.log(`${record.id}  ${record.from.kind}:${record.from.id} --${record.relation}--> ${record.to.kind}:${record.to.id}`);
+    await exit(0);
+  } catch (error) {
+    if (!(error instanceof ConsequenceLedgerError)) throw error;
+    await fail(error.problems.join("; "));
+  }
+} else if (cmd === "orient") {
+  const json = argv.includes("--json");
+  const badFlags = argv.filter((arg) => arg.startsWith("--") && arg !== "--json");
+  if (positional.length || badFlags.length) {
+    const usage = "usage: coherence orient [--json]";
+    const message = positional.length ? "orient accepts no positional arguments" : `unsupported flag(s) for orient: ${badFlags.join(", ")}`;
+    if (json) console.log(JSON.stringify({ error: message, usage }, null, 2)); else { console.error(message); console.error(usage); }
+    await exit(2);
+  }
+  const reading = await observeOrientation(cfg);
+  if (json) console.log(JSON.stringify(reading, null, 2)); else console.log(renderOrientation(reading));
+  await exit(reading.action === "refuse" ? 2 : 0);
 } else if (cmd === "hooks") {
   // The first control interface. `--check` remains the terse gate spelling; status keeps
   // the installation bit and runtime observation visible without conflating them. A bare
@@ -895,12 +1140,37 @@ if (cmd === "graph") {
   // A task packet, not a repo dump. Explicit selectors compose with a Git-derived scope.
   const scope = argv.includes("--staged") ? "staged" : argv.includes("--changed") ? "changed" : undefined;
   const symbols = many("--symbol");
+  const all = argv.includes("--all");
+  const rawMaxBytes = one("--max-bytes");
+  const badFlags = argv.filter((arg) => arg.startsWith("--")
+    && !["--symbol", "--changed", "--staged", "--max-bytes", "--all"].includes(arg));
+  const invalidBudget = rawMaxBytes !== null
+    && (!/^\d+$/.test(rawMaxBytes) || Number(rawMaxBytes) <= 0 || !Number.isSafeInteger(Number(rawMaxBytes)));
+  const missingValues = argv.filter((arg, index) => ["--symbol", "--max-bytes"].includes(arg)
+    && (argv[index + 1] === undefined || argv[index + 1]!.startsWith("--")));
+  if (badFlags.length || missingValues.length || (argv.includes("--staged") && argv.includes("--changed")) || (all && rawMaxBytes !== null) || invalidBudget) {
+    console.error("usage: coherence context [<file>...] [--symbol <name>] [--changed|--staged] [--max-bytes N | --all]");
+    if (badFlags.length) console.error(`unsupported flag(s): ${badFlags.join(", ")}`);
+    else if (missingValues.length) console.error(`missing value for: ${[...new Set(missingValues)].join(", ")}`);
+    else if (all && rawMaxBytes !== null) console.error("--all and --max-bytes are mutually exclusive");
+    else if (invalidBudget) console.error("--max-bytes must be a positive safe integer");
+    else console.error("--changed and --staged are mutually exclusive");
+    await exit(2);
+  }
   if (!positional.length && !symbols.length && !scope) {
-    console.error("usage: coherence context [<file>...] [--symbol <name>] [--changed|--staged]");
+    console.error("usage: coherence context [<file>...] [--symbol <name>] [--changed|--staged] [--max-bytes N | --all]");
     await exit(2);
   }
   const packet = contextFromProject(cfg, await buildGraph(cfg), { files: positional, symbols, scope });
-  console.log(renderContext(packet));
+  // 12 KiB is the CLI attention budget. Library callers retain the legacy unbounded
+  // default; terminal callers opt out explicitly with --all.
+  try {
+    console.log(renderContext(packet, all ? { expand: true } : { maxBytes: rawMaxBytes === null ? 12_000 : Number(rawMaxBytes) }));
+  } catch (error) {
+    if (!(error instanceof RangeError)) throw error;
+    console.error(error.message);
+    await exit(2);
+  }
   await exit(0);
 } else if (cmd === "contracts") {
   // Producer/consumer contracts across deploy artifacts + the uncovered cross-artifact

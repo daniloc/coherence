@@ -2,7 +2,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { tmpProject, cleanup } from "./_helpers.ts";
@@ -11,6 +11,7 @@ import { recordHookReads } from "../src/read-trace.ts";
 import { readCalibrationSamples } from "../src/calibration.ts";
 import { appendDecision, readJournal } from "../src/decisions.ts";
 import { hookStatus, reportHooks } from "../src/hooks.ts";
+import { createWork } from "../src/work.ts";
 
 const HOOK_CLI = join(dirname(fileURLToPath(import.meta.url)), "..", "src", "hook-cli.ts");
 
@@ -211,5 +212,59 @@ test("hooks — Codex gets its own subagent continuation shape and session refre
     }, "codex");
     assert.equal(repeated.status, 0);
     assert.equal(repeated.stdout, "", "the continued child gets only one final turn");
+  } finally { await cleanup(root); }
+});
+
+test("SessionStart injects only the exact session's current work order", async () => {
+  const root = await repo();
+  try {
+    const config = await loadConfig(root);
+    const assigned = createWork(config, {
+      session: "orchestrator",
+      owner: { session: "codex-thread", agent: "worker" },
+      objective: "repair the lifecycle import closure",
+      criteria: ["PostToolUse runs without parser packages"],
+      authority: { kind: "user-directed", grantedBy: "user", boundary: "build the complete gyroscope" },
+      risk: "high",
+      writeScopes: ["src/hooks.ts"],
+      now: "2026-01-01T00:00:00.000Z",
+    });
+    createWork(config, {
+      session: "orchestrator",
+      owner: { session: "other-thread", agent: "worker" },
+      objective: "unrelated assignment",
+      criteria: ["done"],
+      authority: { kind: "orchestrator-delegated", grantedBy: "main", boundary: "other task" },
+      risk: "low",
+      writeScopes: ["elsewhere.ts"],
+      now: "2026-01-01T00:00:01.000Z",
+    });
+
+    const started = hook(root, "SessionStart", { session_id: "codex-thread", source: "startup" }, "codex");
+    assert.equal(started.status, 0, started.stderr);
+    const text = JSON.parse(started.stdout).hookSpecificOutput.additionalContext as string;
+    assert.match(text, /CURRENT WORK — exact assignments for this session/);
+    assert.match(text, /repair the lifecycle import closure/);
+    assert.match(text, /PostToolUse runs without parser packages/);
+    assert.doesNotMatch(text, /unrelated assignment/);
+    assert.match(text, new RegExp(`work inspect "${assigned.work}"`));
+    assert.doesNotMatch(text, /work inspect --session/,
+      "the injected re-read command must be accepted by the fleet-wide inspect CLI");
+  } finally { await cleanup(root); }
+});
+
+test("SessionStart degrades around a damaged journal path without killing the session", async () => {
+  const root = await repo();
+  try {
+    await mkdir(join(root, ".coherence"), { recursive: true });
+    const hostileJournal = join(root, ".coherence", "decisions");
+    await writeFile(hostileJournal, "this regular file blocks the journal directory\n");
+    const started = hook(root, "SessionStart", { session_id: "codex-damaged", source: "startup" }, "codex");
+    assert.equal(started.status, 0, started.stderr);
+    assert.equal(started.stderr, "");
+    const text = JSON.parse(started.stdout).hookSpecificOutput.additionalContext as string;
+    assert.match(text, /YOUR SESSION ID IS codex-damaged/);
+    assert.match(text, /JOURNAL CONTROL unavailable:/);
+    assert.match(await readFile(hostileJournal, "utf8"), /regular file blocks/);
   } finally { await cleanup(root); }
 });

@@ -34,6 +34,14 @@ import { parseBoundary } from "./boundary.ts";
  *  0 lines; the hash is still taken from the raw bytes so a body edit to a binary would
  *  register. `lines` counts NEWLINES (join(cfg.root, path)). */
 export interface FileStat { lines: number; hash: string }
+
+/** A source containing NUL is binary to the repository's own instruments and to common
+ * navigation tools such as rg. Keep this predicate shared by measurement and its live
+ * source-population guard so the definition of searchable text has one home. */
+export function sourceTextIsNavigable(bytes: Uint8Array): boolean {
+  return !bytes.includes(0);
+}
+
 export async function fileStats(cfg: Config, files: GraphNode[]): Promise<Map<string, FileStat>> {
   const out = new Map<string, FileStat>();
   await Promise.all(files.map(async (f) => {
@@ -41,7 +49,7 @@ export async function fileStats(cfg: Config, files: GraphNode[]): Promise<Map<st
     try {
       const buf = await readFile(join(cfg.root, path));
       const hash = createHash("sha1").update(buf).digest("hex");
-      const binary = buf.includes(0);
+      const binary = !sourceTextIsNavigable(buf);
       let lines = 0;
       if (!binary) for (const b of buf) if (b === 0x0a) lines++;   // count '\n'
       out.set(path, { lines, hash });
@@ -85,4 +93,3 @@ export function claimedFilePaths(claims: string[], files: GraphNode[]): Set<stri
   }
   return blessed;
 }
-

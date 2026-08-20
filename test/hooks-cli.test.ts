@@ -1,9 +1,9 @@
 // hooks-cli.test.ts — the host selector is a public control boundary, not an internal API.
 import test from "node:test";
 import assert from "node:assert/strict";
-import { execFile } from "node:child_process";
+import { execFile, spawnSync } from "node:child_process";
 import { promisify } from "node:util";
-import { chmod, mkdir, readFile, writeFile } from "node:fs/promises";
+import { chmod, cp, mkdir, readFile, writeFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -11,6 +11,7 @@ import { cleanup, tmpProject } from "./_helpers.ts";
 
 const exec = promisify(execFile);
 const CLI = join(dirname(fileURLToPath(import.meta.url)), "..", "src", "cli.ts");
+const SOURCE_ROOT = join(dirname(CLI));
 
 function hostEnv(codexThread?: string): NodeJS.ProcessEnv {
   const env = { ...process.env };
@@ -114,6 +115,43 @@ test("hooks CLI — malformed host and session selectors refuse before mutation"
     }
     assert.equal(existsSync(join(root, ".claude")), false);
     assert.equal(existsSync(join(root, ".codex")), false);
+  } finally {
+    await cleanup(root);
+  }
+});
+
+test("PostToolUse starts from the source bundle with no dependency installation", async () => {
+  const root = await tmpProject({ "coherence.config.json": "{}\n" });
+  try {
+    // Copy the complete source tree into an isolated project but deliberately omit
+    // node_modules. This is a runtime import-closure canary: a static allow-list could
+    // miss a new eager edge, while the exact failure this guards happens before the hook
+    // can read its event. High-frequency lifecycle events must remain on built-ins plus
+    // local source; parser packages belong behind the main CLI composition root.
+    const isolated = join(root, "isolated");
+    await cp(SOURCE_ROOT, join(isolated, "src"), { recursive: true });
+    const observed = join(root, "observed.txt");
+    await writeFile(observed, "read me\n");
+    await mkdir(join(root, ".coherence"), { recursive: true });
+    const hostileTrace = join(root, ".coherence", "read-traces");
+    await writeFile(hostileTrace, "this regular file prevents trace directory creation\n");
+    const result = spawnSync(process.execPath, [join(isolated, "src", "hook-cli.ts"), "PostToolUse"], {
+      cwd: root,
+      encoding: "utf8",
+      input: JSON.stringify({
+        session_id: "canary-session", tool_name: "Read", tool_input: { file_path: observed },
+      }) + "\n",
+      env: {
+        ...hostEnv(),
+        COHERENCE_PROJECT_ROOT: root,
+        COHERENCE_HOOK_HOST: "codex",
+      },
+    });
+
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(result.stdout, "", "lost telemetry keeps PostToolUse byte-silent");
+    assert.equal(result.stderr, "");
+    assert.match(await readFile(hostileTrace, "utf8"), /regular file prevents/);
   } finally {
     await cleanup(root);
   }

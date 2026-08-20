@@ -16,6 +16,7 @@
 // confidence, which is the exact failure this command exists to resist.
 import { basename, isAbsolute, relative, resolve as resolvePath } from "node:path";
 import { spawnSync } from "node:child_process";
+import { lstatSync } from "node:fs";
 import type { Config, Graph, GraphNode } from "./types.ts";
 import { parseBoundary } from "./boundary.ts";
 import { parseParity } from "./parity.ts";
@@ -40,6 +41,9 @@ export interface ProjectContextRequest extends ContextRequest {
 export interface ContextOptions {
   /** Override only the heuristic; useful to projects whose test naming is non-standard. */
   isTestPath?: (path: string) => boolean;
+  /** Root-relative files known to exist in the repository even when the source graph does
+   * not model them. `contextFromProject` supplies this; pure callers may inject a snapshot. */
+  repositoryFiles?: readonly string[];
 }
 
 export interface ContextSymbol {
@@ -87,11 +91,20 @@ export interface ContextJournalEntry {
   matchedBy: string[];
 }
 
+export interface ContextSurface {
+  path: string;
+  /** `repository` means the path resolved as a repository surface but has no file node. */
+  source: "graph" | "repository";
+  /** Null is deliberate: directory proximity is not evidence of graph ownership. */
+  graphOwner: string | null;
+}
+
 export interface ContextResult {
   selection: {
     files: string[];
     requestedSymbols: ContextSymbol[];
     declaredSymbols: ContextSymbol[];
+    surfaces: ContextSurface[];
     unresolvedFiles: string[];
     unresolvedSymbols: string[];
   };
@@ -100,8 +113,35 @@ export interface ContextResult {
   imports: ContextImport[];
   importers: ContextImport[];
   tests: ContextTest[];
-  journal: { decisions: ContextJournalEntry[]; openConjectures: ContextJournalEntry[] };
+  journal: {
+    decisions: ContextJournalEntry[];
+    blocked: ContextJournalEntry[];
+    openConjectures: ContextJournalEntry[];
+  };
   limitations: string[];
+}
+
+export interface ContextRenderOptions {
+  /** UTF-8 byte ceiling for the route-first projection. Omit for the legacy full render. */
+  maxBytes?: number;
+  /** Force the unbounded legacy render, even when a caller carries a default byte limit. */
+  expand?: boolean;
+}
+
+export interface ContextWithholding {
+  reason: "byte budget" | "same-component test cap" | "bounded entry excerpt";
+  items: number;
+  bytes: number;
+}
+
+export interface ContextRenderProjection {
+  text: string;
+  mode: "unbounded" | "bounded";
+  maxBytes: number | null;
+  renderedBytes: number;
+  withheldItems: number;
+  withheldBytes: number;
+  withholding: ContextWithholding[];
 }
 
 const cmp = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
@@ -212,26 +252,32 @@ export function contextFor(
   const fileNodes = graph.nodes.filter((n) => n.kind === "file" && nodePath(n));
   const filesByPath = new Map(fileNodes.map((n) => [normalizeContextPath(graph, nodePath(n)), n]));
   const symbolNodes = graph.nodes.filter((n) => n.kind === "symbol");
+  const repositoryFiles = new Set((options.repositoryFiles ?? [])
+    .map((p) => normalizeContextPath(graph, p)).filter(Boolean));
 
   const rawFiles = unique([...(request.files ?? []), ...(request.changedFiles ?? [])].map((p) => normalizeContextPath(graph, p)).filter(Boolean));
-  const selectedFiles = new Set(rawFiles.filter((p) => filesByPath.has(p)));
-  const unresolvedFiles = rawFiles.filter((p) => !filesByPath.has(p));
+  const selectedGraphFiles = new Set(rawFiles.filter((p) => filesByPath.has(p)));
+  const selectedFiles = new Set(rawFiles.filter((p) => filesByPath.has(p) || repositoryFiles.has(p)));
+  const unresolvedFiles = rawFiles.filter((p) => !selectedFiles.has(p));
 
   const wantedSymbols = unique((request.symbols ?? []).map((s) => s.trim()).filter(Boolean));
   const requestedSymbolNodes = symbolNodes.filter((n) => wantedSymbols.includes(n.label));
   for (const n of requestedSymbolNodes) if (n.path) {
     const p = normalizeContextPath(graph, n.path);
-    if (filesByPath.has(p)) selectedFiles.add(p);
+    if (filesByPath.has(p)) {
+      selectedGraphFiles.add(p);
+      selectedFiles.add(p);
+    }
   }
   const unresolvedSymbols = wantedSymbols.filter((name) => !requestedSymbolNodes.some((n) => n.label === name));
   const selected = unique(selectedFiles);
 
-  const declaredSymbolNodes = symbolNodes.filter((n) => n.path && selectedFiles.has(normalizeContextPath(graph, n.path)));
+  const declaredSymbolNodes = symbolNodes.filter((n) => n.path && selectedGraphFiles.has(normalizeContextPath(graph, n.path)));
   const requestedSymbols = requestedSymbolNodes.map(symbolView).sort(symbolCmp);
   const declaredSymbols = declaredSymbolNodes.map(symbolView).sort(symbolCmp);
 
   const ownerNodes = new Map<string, GraphNode>();
-  for (const path of selected) {
+  for (const path of selectedGraphFiles) {
     const owner = componentOfFile(filesByPath.get(path)!, nodes);
     if (owner) ownerNodes.set(owner.id, owner);
   }
@@ -239,12 +285,18 @@ export function contextFor(
     name: n.label, dir: n.id.slice(2), intent: n.sub ?? null, why: n.why ?? null,
     invariants: unique(n.invariants ?? []),
   })).sort((a, b) => cmp(a.name, b.name) || cmp(a.dir, b.dir));
+  const surfaces = selected.map((path): ContextSurface => {
+    const file = filesByPath.get(path);
+    const owner = file ? componentOfFile(file, nodes) : undefined;
+    return { path, source: file ? "graph" : "repository", graphOwner: owner?.label ?? null };
+  });
 
   // Claims owned by selected files' components are relevant by ownership. Claims elsewhere
   // are included only when they explicitly name a selected file/symbol structural referent.
   const structuralSymbols = new Set([...wantedSymbols, ...declaredSymbolNodes.map((n) => n.label)]);
   const uniqueBasenames = new Map<string, number>();
-  for (const p of filesByPath.keys()) uniqueBasenames.set(basename(p), (uniqueBasenames.get(basename(p)) ?? 0) + 1);
+  for (const p of new Set([...filesByPath.keys(), ...repositoryFiles]))
+    uniqueBasenames.set(basename(p), (uniqueBasenames.get(basename(p)) ?? 0) + 1);
   const pathTerms = unique([...selected, ...selected.map((p) => basename(p)).filter((b) => uniqueBasenames.get(b) === 1)]);
   const obligations: ContextObligation[] = [];
   for (const n of graph.nodes) {
@@ -262,7 +314,7 @@ export function contextFor(
     const source = nodes.get(edge.source), target = nodes.get(edge.target);
     if (!source || source.kind !== "file") continue;
     const from = normalizeContextPath(graph, nodePath(source));
-    if (selectedFiles.has(from) && target) {
+    if (selectedGraphFiles.has(from) && target) {
       const external = target.kind !== "file";
       const to = external ? target.label : normalizeContextPath(graph, nodePath(target));
       imports.push({ from, to, external });
@@ -270,7 +322,7 @@ export function contextFor(
     }
     if (target?.kind === "file") {
       const to = normalizeContextPath(graph, nodePath(target));
-      if (selectedFiles.has(to)) {
+      if (selectedGraphFiles.has(to)) {
         importers.push({ from, to, external: false });
         directImporters.add(from);
       }
@@ -313,23 +365,27 @@ export function contextFor(
   const resolved = resolveJournal(canonicalRecords);
   const match = (r: DecisionRecord) => journalEntry(r, selectedFiles, journalTerms, graph);
   const decisions = resolved.standing.filter((r) => r.kind === "decision").map(match).filter((x): x is ContextJournalEntry => x !== null).sort(journalCmp);
+  const blocked = resolved.blocked.map(match).filter((x): x is ContextJournalEntry => x !== null).sort(journalCmp);
   const openConjectures = resolved.open.map(match).filter((x): x is ContextJournalEntry => x !== null).sort(journalCmp);
 
   const limitations = [
-    `Graph snapshot only (${graph.generatedAt || "timestamp unavailable"}); files outside the graph cannot contribute ownership, symbols, or import edges.`,
+    `Graph snapshot only (${graph.generatedAt || "timestamp unavailable"}); repository surfaces outside it resolve as selections but cannot contribute graph ownership, symbols, or import edges.`,
     "Imports/importers are static graph edges one hop from the selected files; dynamic and transitive dependencies are not inferred.",
     "Test relevance is inferred from test-like paths plus selection, direct import edges, and component ownership; custom runners may disagree.",
     "Journal file matches are exact and prose matches are lexical structural-reference matches, not semantic relevance judgments.",
-    "Only standing decisions and unresolved conjectures are shown; retracted, resolved, and dismissed records are intentionally omitted.",
+    "Only standing decisions, addressable blocked entries, and unresolved conjectures are shown; retracted, resolved, and dismissed records are intentionally omitted.",
+    ...(surfaces.some((s) => s.source === "repository")
+      ? [`${surfaces.filter((s) => s.source === "repository").length} selected repository surface(s) have no source-graph file node; graph ownership is explicitly unavailable.`]
+      : []),
     ...(unresolvedFiles.length || unresolvedSymbols.length
       ? [`${unresolvedFiles.length + unresolvedSymbols.length} selector(s) did not resolve in this graph and are listed explicitly above.`]
       : []),
   ];
 
   return {
-    selection: { files: selected, requestedSymbols, declaredSymbols, unresolvedFiles, unresolvedSymbols },
+    selection: { files: selected, requestedSymbols, declaredSymbols, surfaces, unresolvedFiles, unresolvedSymbols },
     components, obligations, imports, importers, tests,
-    journal: { decisions, openConjectures }, limitations,
+    journal: { decisions, blocked, openConjectures }, limitations,
   };
 }
 
@@ -346,6 +402,46 @@ export function gitContextPaths(cfg: Config, scope: ContextPathScope): string[] 
   return unique((result.stdout || "").split("\n").map((s) => s.trim()).filter(Boolean));
 }
 
+function pathInsideRoot(root: string, path: string): boolean {
+  if (!path || isAbsolute(path)) return false;
+  const rel = relative(resolvePath(root), resolvePath(root, path));
+  return rel !== ".." && !rel.startsWith(`..${process.platform === "win32" ? "\\" : "/"}`) && !isAbsolute(rel);
+}
+
+/** Establish the repository-wide selection domain at the I/O edge. Git contributes tracked
+ * and ordinary untracked files (including tracked deletions); explicit ignored/generated
+ * artifacts are admitted when their standing path is a file or symlink. The pure projector
+ * receives only these names and never turns a plausible path into evidence of existence. */
+export function repositoryContextPaths(
+  cfg: Config,
+  graph: Graph,
+  candidates: readonly string[] = [],
+): string[] {
+  const env = { ...process.env };
+  for (const key of ["GIT_INDEX_FILE", "GIT_DIR", "GIT_WORK_TREE", "GIT_OBJECT_DIRECTORY", "GIT_COMMON_DIR", "GIT_PREFIX"])
+    delete env[key];
+  const listed = spawnSync("git", ["ls-files", "-z", "--cached", "--others", "--exclude-standard"], {
+    cwd: cfg.root, encoding: "utf8", env,
+  });
+  const paths = new Set<string>();
+  if (listed.status === 0) for (const raw of (listed.stdout || "").split("\0")) {
+    const path = normalizeContextPath(graph, raw);
+    if (path && pathInsideRoot(cfg.root, path)) paths.add(path);
+  }
+  for (const raw of candidates) {
+    const path = normalizeContextPath(graph, raw);
+    if (!pathInsideRoot(cfg.root, path)) continue;
+    try {
+      const stat = lstatSync(resolvePath(cfg.root, path));
+      if (stat.isFile() || stat.isSymbolicLink()) paths.add(path);
+    } catch {
+      // A missing explicit path still resolves when Git listed it as tracked; otherwise the
+      // projector will keep it in `unresolvedFiles`, which is the loud and honest state.
+    }
+  }
+  return unique(paths);
+}
+
 /** Thin project edge for a CLI or per-change hook. Explicit selectors and Git-derived paths
  * compose: asking for `--staged --symbol seal` does not silently discard either domain. */
 export function contextFromProject(
@@ -355,18 +451,24 @@ export function contextFromProject(
   options: ContextOptions = {},
 ): ContextResult {
   const scoped = request.scope ? gitContextPaths(cfg, request.scope) : [];
+  const changed = [...(request.changedFiles ?? []), ...scoped];
+  const candidates = [...(request.files ?? []), ...changed];
+  const repositoryFiles = repositoryContextPaths(cfg, graph, candidates);
   return contextFor(graph, {
     files: request.files,
     symbols: request.symbols,
-    changedFiles: [...(request.changedFiles ?? []), ...scoped],
-  }, readJournal(cfg).records, options);
+    changedFiles: changed,
+  }, readJournal(cfg).records, {
+    ...options,
+    repositoryFiles: unique([...repositoryFiles, ...(options.repositoryFiles ?? [])]),
+  });
 }
 
 const show = (xs: string[]) => xs.length ? xs.map((x) => `\`${x}\``).join(", ") : "(none)";
 
-/** Stable human rendering over the structured result. The structured form remains the API
- * for hooks/agents; this compact text is for a terminal and deliberately names absence. */
-export function renderContext(result: ContextResult): string {
+/** The original complete render remains the expansion path. It intentionally does not cap
+ * component prose or same-owner tests: callers which omit a budget asked for full history. */
+function renderContextUnbounded(result: ContextResult): string {
   const L: string[] = [
     "CONTEXT — task-addressed graph packet",
     "",
@@ -376,6 +478,12 @@ export function renderContext(result: ContextResult): string {
     L.push(`Requested symbols: ${show(result.selection.requestedSymbols.map((s) => `${s.name} (${s.path}${s.line ? `:${s.line}` : ""})`))}`);
   if (result.selection.unresolvedFiles.length) L.push(`Unresolved files: ${show(result.selection.unresolvedFiles)}`);
   if (result.selection.unresolvedSymbols.length) L.push(`Unresolved symbols: ${show(result.selection.unresolvedSymbols)}`);
+  const ownershipAbsent = result.selection.surfaces.filter((s) => s.source === "repository" || s.graphOwner === null);
+  if (ownershipAbsent.length) {
+    L.push("", "Repository surfaces without graph ownership");
+    for (const surface of ownershipAbsent)
+      L.push(`  ${surface.path} — ${surface.source === "repository" ? "outside source graph; " : "source-graph file; "}graph ownership unavailable`);
+  }
 
   L.push("", "Owning components");
   if (!result.components.length) L.push("  (none resolved)");
@@ -409,6 +517,12 @@ export function renderContext(result: ContextResult): string {
     L.push(`  ${d.id} · ${d.agent} — ${d.chose}`);
     L.push(`    because: ${d.because}`);
   }
+  L.push("", "Blocked");
+  if (!result.journal.blocked.length) L.push("  (none matched)");
+  for (const d of result.journal.blocked) {
+    L.push(`  ${d.id} · ${d.agent} — ${d.chose}`);
+    L.push(`    because: ${d.because}`);
+  }
   L.push("", "Open conjectures");
   if (!result.journal.openConjectures.length) L.push("  (none matched)");
   for (const d of result.journal.openConjectures) {
@@ -419,4 +533,230 @@ export function renderContext(result: ContextResult): string {
   L.push("", "Limitations");
   for (const limitation of result.limitations) L.push(`  - ${limitation}`);
   return L.join("\n") + "\n";
+}
+
+type WithholdingReason = ContextWithholding["reason"];
+interface ContextRenderUnit { text: string; excerptBytes: number }
+interface ContextRenderBody { text: string; excerptBytes?: number }
+
+const BOUNDED_JOURNAL_LANE = 4;
+const BOUNDED_OBLIGATIONS = 4;
+const BOUNDED_SAME_COMPONENT_TESTS = 4;
+const BOUNDED_ENTRY_BYTES = 320;
+const BOUNDED_TITLE = "CONTEXT — task-addressed repository packet\n";
+const byteLength = (text: string) => Buffer.byteLength(text, "utf8");
+
+function addWithholding(
+  target: Map<WithholdingReason, ContextWithholding>,
+  reason: WithholdingReason,
+  items: number,
+  bytes: number,
+): void {
+  if (!items && !bytes) return;
+  const before = target.get(reason);
+  target.set(reason, {
+    reason,
+    items: (before?.items ?? 0) + items,
+    bytes: (before?.bytes ?? 0) + bytes,
+  });
+}
+
+function boundedExcerpt(raw: string): { text: string; withheldBytes: number } {
+  const text = raw.replace(/\s+/g, " ").trim();
+  if (byteLength(text) <= BOUNDED_ENTRY_BYTES) return { text, withheldBytes: 0 };
+  const room = BOUNDED_ENTRY_BYTES - byteLength("…");
+  let prefix = "";
+  for (const char of text) {
+    if (byteLength(prefix + char) > room) break;
+    prefix += char;
+  }
+  return { text: prefix + "…", withheldBytes: byteLength(text) - byteLength(prefix) };
+}
+
+function excerptBody(prefix: string, raw: string): ContextRenderBody {
+  const excerpt = boundedExcerpt(raw);
+  return { text: prefix + excerpt.text, excerptBytes: excerpt.withheldBytes };
+}
+
+function groupedUnits(title: string, bodies: Array<string | ContextRenderBody>): ContextRenderUnit[] {
+  const entries: ContextRenderBody[] = bodies.length
+    ? bodies.map((body) => typeof body === "string" ? { text: body } : body)
+    : [{ text: "  (none)" }];
+  return entries.map((body, i) => ({
+    text: `${i === 0 ? `\n${title}\n` : ""}${body.text}\n`, excerptBytes: body.excerptBytes ?? 0,
+  }));
+}
+
+function boundedUnits(
+  result: ContextResult,
+  preWithheld: Map<WithholdingReason, ContextWithholding>,
+): ContextRenderUnit[] {
+  const units: ContextRenderUnit[] = [];
+  const selection = result.selection.surfaces.map((surface) => surface.source === "repository"
+    ? `  ${surface.path} — repository surface · graph ownership unavailable`
+    : `  ${surface.path} — graph file · owner ${surface.graphOwner ?? "unavailable"}`);
+  for (const symbol of result.selection.requestedSymbols)
+    selection.push(`  symbol ${symbol.name} — ${symbol.path}${symbol.line ? `:${symbol.line}` : ""}`);
+  for (const path of result.selection.unresolvedFiles) selection.push(`  unresolved file — ${path}`);
+  for (const symbol of result.selection.unresolvedSymbols) selection.push(`  unresolved symbol — ${symbol}`);
+  units.push(...groupedUnits("Selection / repository surfaces", selection));
+
+  units.push(...groupedUnits("Owner / intent", result.components.map((component) =>
+    `  ${component.name} [${component.dir}] — ${component.intent ?? "intent undeclared"}`)));
+
+  const obligations = result.obligations.map((entry) => {
+    const detail = [
+      entry.chokepoints.length ? `chokepoint ${entry.chokepoints.join(" + ")}` : "",
+      entry.oracles.length ? `oracle ${entry.oracles.join(" + ")}` : "",
+    ].filter(Boolean).join(" · ");
+    return `  [${entry.component} · ${entry.kind}] ${entry.claim}${detail ? ` — ${detail}` : ""}`;
+  });
+  units.push(...groupedUnits("Governing obligations", obligations.slice(0, BOUNDED_OBLIGATIONS)));
+
+  const newest = (entries: ContextJournalEntry[]) => [...entries].reverse();
+  const decisionEntries = newest(result.journal.decisions);
+  const blockedEntries = newest(result.journal.blocked);
+  const conjectureEntries = newest(result.journal.openConjectures);
+  units.push(...groupedUnits("Standing decisions", decisionEntries.slice(0, BOUNDED_JOURNAL_LANE)
+    .map((entry) => excerptBody(`  ${entry.id} · ${entry.agent} — `, entry.chose))));
+  units.push(...groupedUnits("Blocked", blockedEntries.slice(0, BOUNDED_JOURNAL_LANE)
+    .map((entry) => excerptBody(`  ${entry.id} · ${entry.agent} — `, entry.chose))));
+  units.push(...groupedUnits("Open conjectures", conjectureEntries.slice(0, BOUNDED_JOURNAL_LANE)
+    .map((entry) => excerptBody(`  ${entry.id} · ${entry.agent} — `, entry.chose))));
+
+  units.push(...groupedUnits("Direct dependencies", result.imports.map((entry) =>
+    `  ${entry.from} → ${entry.to}${entry.external ? " (external)" : ""}`)));
+  units.push(...groupedUnits("Direct importers", result.importers.map((entry) =>
+    `  ${entry.from} → ${entry.to}`)));
+
+  const testPriority: Record<ContextTest["reason"], number> = {
+    selected: 0, "direct importer": 1, "direct import": 2, "same owning component": 3,
+  };
+  const orderedTests = [...result.tests].sort((a, b) =>
+    testPriority[a.reason] - testPriority[b.reason] || cmp(a.path, b.path));
+  let sameOwnerTests = 0;
+  const visibleTests: ContextTest[] = [];
+  for (const entry of orderedTests) {
+    if (entry.reason !== "same owning component" || sameOwnerTests++ < BOUNDED_SAME_COMPONENT_TESTS) {
+      visibleTests.push(entry);
+      continue;
+    }
+    addWithholding(preWithheld, "same-component test cap", 1,
+      byteLength(`  ${entry.path} — ${entry.reason}\n`));
+  }
+  units.push(...groupedUnits("Relevant tests", visibleTests.map((entry) =>
+    `  ${entry.path} — ${entry.reason}`)));
+
+  const deferred: Array<string | ContextRenderBody> = [];
+  for (const body of obligations.slice(BOUNDED_OBLIGATIONS)) deferred.push(`  obligation — ${body.trimStart()}`);
+  for (const entry of decisionEntries.slice(BOUNDED_JOURNAL_LANE))
+    deferred.push(excerptBody(`  decision ${entry.id} — `, entry.chose));
+  for (const entry of blockedEntries.slice(BOUNDED_JOURNAL_LANE))
+    deferred.push(excerptBody(`  blocked ${entry.id} — `, entry.chose));
+  for (const entry of conjectureEntries.slice(BOUNDED_JOURNAL_LANE))
+    deferred.push(excerptBody(`  conjecture ${entry.id} — `, entry.chose));
+  units.push(...groupedUnits("Additional obligations / journal history", deferred));
+
+  const rationale: ContextRenderBody[] = [];
+  for (const component of result.components) if (component.why)
+    rationale.push(excerptBody(`  ${component.name} why — `, component.why));
+  for (const [label, entries] of [
+    ["decision", decisionEntries], ["blocked", blockedEntries], ["conjecture", conjectureEntries],
+  ] as const) for (const entry of entries)
+    rationale.push(excerptBody(`  ${label} ${entry.id} because — `, entry.because));
+  units.push(...groupedUnits("Rationale / history", rationale));
+  return units;
+}
+
+const WITHHOLDING_ORDER: WithholdingReason[] = [
+  "byte budget", "same-component test cap", "bounded entry excerpt",
+];
+
+function orderedWithholding(source: Map<WithholdingReason, ContextWithholding>): ContextWithholding[] {
+  return WITHHOLDING_ORDER.map((reason) => source.get(reason)).filter((x): x is ContextWithholding => !!x);
+}
+
+function boundedSuffix(
+  result: ContextResult,
+  maxBytes: number,
+  units: ContextRenderUnit[],
+  included: number,
+  preWithheld: Map<WithholdingReason, ContextWithholding>,
+): { text: string; withholding: ContextWithholding[] } {
+  const withheld = new Map(preWithheld);
+  for (const unit of units.slice(0, included)) if (unit.excerptBytes)
+    addWithholding(withheld, "bounded entry excerpt", 1, unit.excerptBytes);
+  const omitted = units.slice(included);
+  addWithholding(withheld, "byte budget", omitted.length,
+    omitted.reduce((sum, unit) => sum + byteLength(unit.text) + unit.excerptBytes
+      - (unit.excerptBytes ? byteLength("…") : 0), 0));
+  const withholding = orderedWithholding(withheld);
+  const items = withholding.reduce((sum, entry) => sum + entry.items, 0);
+  const bytes = withholding.reduce((sum, entry) => sum + entry.bytes, 0);
+  const L = ["", "Limitations", ...result.limitations.map((limitation) => `  - ${limitation}`), "", "Budget",
+    `  Limit: ${maxBytes} UTF-8 bytes.`,
+    `  Withheld: ${items} item(s), ${bytes} byte(s).`,
+  ];
+  for (const entry of withholding)
+    L.push(`  - ${entry.reason}: ${entry.items} item(s), ${entry.bytes} byte(s)`);
+  if (items) L.push("  Expand by rendering without a byte limit (or with expand=true).");
+  return { text: L.join("\n") + "\n", withholding };
+}
+
+function minimumBoundedBytes(
+  result: ContextResult,
+  units: ContextRenderUnit[],
+  preWithheld: Map<WithholdingReason, ContextWithholding>,
+): number {
+  // The footer prints the limit, so decimal-width growth can change the required size.
+  // Iterating from one byte reaches the least self-consistent value in a few steps.
+  let candidate = 1;
+  for (;;) {
+    const required = byteLength(BOUNDED_TITLE + boundedSuffix(result, candidate, units, 0, preWithheld).text);
+    if (required <= candidate) return candidate;
+    candidate = required;
+  }
+}
+
+/** Produce the structured accounting behind both render modes. In bounded mode entries are
+ * atomic and priority ordered; if even the title, named limitations, and omission report do
+ * not fit, the function refuses rather than returning an apparently complete fragment. */
+export function renderContextProjection(
+  result: ContextResult,
+  options: ContextRenderOptions = {},
+): ContextRenderProjection {
+  if (options.maxBytes === undefined || options.expand) {
+    const text = renderContextUnbounded(result);
+    return {
+      text, mode: "unbounded", maxBytes: null, renderedBytes: byteLength(text),
+      withheldItems: 0, withheldBytes: 0, withholding: [],
+    };
+  }
+  const maxBytes = options.maxBytes;
+  if (!Number.isSafeInteger(maxBytes) || maxBytes <= 0)
+    throw new RangeError("context maxBytes must be a positive safe integer");
+  const preWithheld = new Map<WithholdingReason, ContextWithholding>();
+  const units = boundedUnits(result, preWithheld);
+  let winner: { text: string; withholding: ContextWithholding[] } | null = null;
+  for (let included = 0; included <= units.length; included++) {
+    const suffix = boundedSuffix(result, maxBytes, units, included, preWithheld);
+    const text = BOUNDED_TITLE + units.slice(0, included).map((unit) => unit.text).join("") + suffix.text;
+    if (byteLength(text) <= maxBytes) winner = { text, withholding: suffix.withholding };
+  }
+  if (!winner) {
+    const minimum = minimumBoundedBytes(result, units, preWithheld);
+    throw new RangeError(`context maxBytes ${maxBytes} cannot hold mandatory framing; minimum is ${minimum}`);
+  }
+  const withheldItems = winner.withholding.reduce((sum, entry) => sum + entry.items, 0);
+  const withheldBytes = winner.withholding.reduce((sum, entry) => sum + entry.bytes, 0);
+  return {
+    text: winner.text, mode: "bounded", maxBytes, renderedBytes: byteLength(winner.text),
+    withheldItems, withheldBytes, withholding: winner.withholding,
+  };
+}
+
+/** Stable human rendering. No options preserves the historical unbounded API; a byte limit
+ * selects the route-first projection and `expand` explicitly returns to the full view. */
+export function renderContext(result: ContextResult, options: ContextRenderOptions = {}): string {
+  return renderContextProjection(result, options).text;
 }

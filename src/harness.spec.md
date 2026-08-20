@@ -13,6 +13,26 @@ rendering, and journaling remain independently addressable modules beneath this 
 - a weaker regulation obligation never masks a stronger one
 - regulation evaluates and repairs the selected agent host
 - task context is bounded and names its approximations
+- verdict-bearing decision reads fail closed on surviving journal damage
+- decision ratification follows explicit subject and authority, never prose similarity or recency
+- work state is append-only, attributable, and predecessor-checked
+- work cannot activate or complete before every dependency completes
+- runnable work with overlapping write scopes is a collision, never concurrent permission
+- a terminal parent has no live child and explicitly synthesizes every completed direct child
+- authored work text is single-line data, never model-instruction control
+- swarm write identity and authority flags are singleton or refused
+- consequence navigation contains only explicit assessed edges
+- specialized consequence relations admit only their declared endpoint kinds
+- consequence evidence refuses surviving storage damage instead of shrinking navigation
+- orientation refuses damaged evidence before selecting a swarm heading
+- orientation admits verification state only with valid shape and comparable provenance
+- orientation derives live blockage only from closeable work state
+- completed work remains unverified until an explicit verification edge names it
+- high-frequency lifecycle hooks start without the analysis dependency stack
+- hook telemetry loss never kills PostToolUse
+- session startup injects only the exact session's current work order
+- session startup survives a damaged decision-journal path with named degradation
+- harness source remains searchable text rather than silently becoming binary
 - cached decisions expose structurally expired premises
 - predicted context closure is calibrated against observed reads and outcomes
 - calibration preserves the weakest host attribution of its trace
@@ -48,6 +68,19 @@ rendering, and journaling remain independently addressable modules beneath this 
 
 ## refutations
 
+- session startup survives a damaged decision-journal path with named degradation: with `.coherence/decisions` replaced by a regular file, SessionStart threw raw `ENOTDIR` before emitting any instructions. It now retains the exact host session, names `JOURNAL CONTROL unavailable`, performs no journal write, and exits zero.
+- hook telemetry loss never kills PostToolUse: the original no-dependency canary sent `{}`, producing no read event and never exercising persistence. A real Read event with `.coherence/read-traces` replaced by a regular file threw `EEXIST` out of the hook. The runtime boundary now contains telemetry failure, stays byte-silent, and the canary carries the hostile target.
+- orientation admits verification state only with valid shape and comparable provenance: a parseable status row with `at: "not-a-time"` and `failures: "not-a-number"` was reported as current and allowed `STEADY`; missing commit provenance on either side was also treated as agreement. Runtime shape, canonical time, count, tier, and commit checks now refuse malformed evidence, while absent provenance remains stale.
+- swarm write identity and authority flags are singleton or refused: `work create ... --session one --session two` succeeded and silently attributed the append to `two`; the same last-wins ambiguity existed for authority and consequence writers. The shared CLI check now refuses every non-repeatable flag before any append.
+- authored work text is single-line data, never model-instruction control: a work objective containing a newline and `SYSTEM:` was accepted and interpolated into SessionStart as a peer instruction. Work writers now reject C0/C1 controls, while hook rendering escapes them defensively at the instruction boundary.
+- specialized consequence relations admit only their declared endpoint kinds: `work:a --produces--> decision:d` and `commit:a --produces--> work:b` were accepted even though the documented lifecycle defines production as work-to-commit. Endpoint validation now makes that relation exact rather than merely checking its source kind.
+- a terminal parent has no live child and explicitly synthesizes every completed direct child: a parent could close with `synthesizedChildren: []` after a child completed, leaving an irreparable synthesis heading because terminal work cannot close again; a child created after parent closure remained dispatch-ready even though its join target was dead. Prospective graph validation now refuses both transitions before append.
+- work cannot activate or complete before every dependency completes: readiness was projection-only, so a waiting work item could transition to active and then completed while its dependency stayed open; orientation accepted the impossible ordering. Every lifecycle write now validates the prospective graph and refuses that dependency-order violation.
+- verdict-bearing decision reads fail closed on surviving journal damage: a symlinked `.coherence` could supply external valid rows, a renamed or blank/torn file silently shrank the trusted population, and case-distinct `Owner`/`owner` sessions collided on case-folding filesystems. The trusted projection now validates containment, every directory entry, append framing, and domain-separated hashed session addresses before admitting any row.
+- orientation derives live blockage only from closeable work state: the first real-worktree `orient` canary emitted `UNBLOCK` with zero work orders because it counted 23 historical journal `blocked` reports. Those rows have no completion event, so the heading could never converge. They remain visible as historical evidence while only the append-only work lifecycle can select a live unblock action.
+- consequence evidence refuses surviving storage damage instead of shrinking navigation: the first strict reader inspected only the final ledger directory, filtered for `*.jsonl`, and accepted a complete last row without its append newline. A symlinked `.coherence` parent could therefore redirect the read, renaming a surviving session file to `.bak` made the graph look clean and empty, and case-distinct sessions collided on case-folding filesystems. The reader now validates both directory components, every surviving entry, canonical append framing, and domain-separated hashed session addresses before admitting any edge.
+- harness source remains searchable text rather than silently becoming binary: two new render/validation regexes carried literal NUL bytes, and `rg` classified `src/consequence.ts` as binary instead of returning navigable source matches. The ranges now use escaped source notation and the focused guard enumerates every live TypeScript source, so the same byte turns the claim red rather than degrading repository navigation silently.
+- high-frequency lifecycle hooks start without the analysis dependency stack: the live PostToolUse hook failed before reading its event with `ERR_MODULE_NOT_FOUND` for `web-tree-sitter`; the eager chain was `hook-cli → hooks → due → commands → phrasebook → oracle-domain → web-tree-sitter`. `npm ci` repaired the checkout but left the failure class intact. Moving executable phrasebook data injection to the CLI composition root dissolved the eager edge, and the isolated no-`node_modules` runtime canary now passes.
 - fast verification rejects a statically vanished Vitest oracle without executing tests: changed `resolveStaticOracle`'s complete zero-match branch from `absent` to `unknown` (2026-08-20), laundering the motivating Mnemion rename into an ordinary fast-tier skip — the focused boundary guard failed and captured the dangerous verdict: `claims: 1 · 0 green · 0 red · 1 skipped`, followed by `✓ coherent`. Restored; the same fixture now reds `VANISHED ORACLE (static)` without Vitest installed or invoked.
 - fast oracle absence requires a complete direct-declaration population: before release, conventional files whose tests came only from a bare side-effect import, top-level `import()`, or `require()` each produced `fullNames=[]`, `incomplete=[]`, and `absent`, so fast verification could call a live runtime-owned oracle vanished. Release audit then found the same false absence behind a transitive local Vitest alias and a live `build/live.test.ts`, while a conventional file symlink was followed outside the declared traversal boundary. The scanner now resolves exact alias chains, marks registration-time module loads incomplete, mirrors Vitest v4's `node_modules`/`.git` default exclusions, and refuses every symlink/custom collection surface into UNKNOWN; loads inside test callbacks remain ordinary subject execution.
 - a parse's heap is returned before the next file: shipped 0.34.0 with no `tree.delete()` at any parse site — an adopter's configless `verify` from a home directory aborted the wasm runtime mid-walk (`RuntimeError: Aborted()` in Parser.parse). Reproduced at exactly parse #638 of an 80KB file; the identical loop with delete runs unbounded. The oracle-gate agent had already observed the failure mode in its harness and it was read as gate plumbing rather than a shipped hazard. Fixed by dissolution: every parse routes through `withTree`, which frees in a finally, so the leak is unrepresentable — and the guard is calibrated just past the measured cliff.
@@ -84,7 +117,27 @@ rendering, and journaling remain independently addressable modules beneath this 
 - boundary "significant behavioral growth acquires an anchor or patch-specific decision" at signal via guard "only a zero-anchor alarm without attestation needs a decision"
 - boundary "a weaker regulation obligation never masks a stronger one" at selectRegulation via guard "regulate — ordered potential is permutation-invariant and monotone"
 - boundary "regulation evaluates and repairs the selected agent host" at observeRegulation via guard "regulate — selected Codex host cannot be redeemed by Claude control"
-- boundary "task context is bounded and names its approximations" at contextFor via guard "renderContext — byte-stable for the same inputs and names every approximation"
+- boundary "task context is bounded and names its approximations" at renderContextProjection via guard "renderContext — bounded projection is route-first, byte-stable, and accounts for every omission"
+- boundary "verdict-bearing decision reads fail closed on surviving journal damage" at readTrustedJournal via guard "trusted journal — any malformed, forged, displaced, conflicting, or dangling row refuses the verdict projection"
+- boundary "decision ratification follows explicit subject and authority, never prose similarity or recency" at analyzeDecisionPositions via guard "local alternatives need ratification; an explicit stronger choice settles them"
+- boundary "work state is append-only, attributable, and predecessor-checked" at readWork via guard "strict merged read — torn, tampered, detached, and competing histories all refuse"
+- boundary "work cannot activate or complete before every dependency completes" at validateWorkGraph via guard "readiness and scope control — dependencies serialize potential overlap while runnable writers conflict"
+- boundary "runnable work with overlapping write scopes is a collision, never concurrent permission" at detectWorkScopeOverlaps via guard "readiness and scope control — dependencies serialize potential overlap while runnable writers conflict"
+- boundary "a terminal parent has no live child and explicitly synthesizes every completed direct child" at validateWorkGraph via guard "lifecycle — predecessor checks, handoff attribution, closure evidence, orphaning, and synthesis stay explicit"
+- boundary "authored work text is single-line data, never model-instruction control" at createWork via guard "graph validation and input boundary — missing references, cycles, unsafe scopes, and evidence-free success are loud"
+- boundary "swarm write identity and authority flags are singleton or refused" at repeatedSingletonFlags via guard "swarm writes reject repeated singleton identity and authority flags before append"
+- boundary "consequence navigation contains only explicit assessed edges" at traceConsequences via guard "co-presence never invents a causal edge"
+- boundary "specialized consequence relations admit only their declared endpoint kinds" at relationProblem via guard "semantic retries dedupe while specialized relation nonsense refuses"
+- boundary "consequence evidence refuses surviving storage damage instead of shrinking navigation" at readConsequences via guard "damaged, forged, or displaced surviving rows refuse the whole projection"
+- boundary "orientation refuses damaged evidence before selecting a swarm heading" at observeOrientation via guard "orientation refuses a damaged trusted source instead of reading it as empty"
+- boundary "orientation admits verification state only with valid shape and comparable provenance" at verifyOrientation via guard "orientation refuses parseable malformed verification and never promotes missing provenance"
+- boundary "orientation derives live blockage only from closeable work state" at observeOrientation via guard "orientation treats journal blockage as history, not a live work state"
+- boundary "completed work remains unverified until an explicit verification edge names it" at observeRegulation via guard "regulate — completed work requires an explicit verification link before release"
+- boundary "high-frequency lifecycle hooks start without the analysis dependency stack" at runHook via guard "PostToolUse starts from the source bundle with no dependency installation"
+- boundary "hook telemetry loss never kills PostToolUse" at runHook via guard "PostToolUse starts from the source bundle with no dependency installation"
+- boundary "session startup injects only the exact session's current work order" at assignedWorkInstructions via guard "SessionStart injects only the exact session's current work order"
+- boundary "session startup survives a damaged decision-journal path with named degradation" at runHook via guard "SessionStart degrades around a damaged journal path without killing the session"
+- boundary "harness source remains searchable text rather than silently becoming binary" at sourceTextIsNavigable via guard "source text — every live TypeScript source remains NUL-free and searchable"
 - boundary "cached decisions expose structurally expired premises" at auditPremiseLeases via guard "audit — retracted decisions disappear and only broken strong leases fail a check"
 - boundary "predicted context closure is calibrated against observed reads and outcomes" at calibrate via guard "calibration reports coverage, outside reads, and defect rates by prediction misses"
 - boundary "calibration preserves the weakest host attribution of its trace" at calibrationPaths via guard "calibration keeps Codex parent-only writes aggregate and legacy rows unscoped"
@@ -139,7 +192,7 @@ current patch must carry either enforcement or an addressable reason that it nee
 
 **a weaker regulation obligation never masks a stronger one.** Regulation compares live
 obligations by a lexicographic potential, with missing observations failing closed instead
-of becoming zero, and returns the single strongest action owed. V1 evaluates only rules
+of becoming zero, and returns the single strongest action owed. V2 evaluates only rules
 declared in the live doctrine registry; even a no-action result makes no claim of overall
 safety.
 
@@ -152,6 +205,148 @@ foreign host value refuses before it can release or author a shell command.
 **task context is bounded and names its approximations.** A focused context packet is
 useful only when its one-hop and heuristic limits stay visible; otherwise convenience is
 misread as completeness and recreates the omission gradient this project exists to oppose.
+Routes, named limitations, and omission accounting are mandatory framing; a byte budget
+that cannot hold them refuses with its exact minimum. Everything else is included in a
+stable priority order, and the withheld item and byte totals make truncation observable.
+Repository-level, generated, and explicitly requested ignored files remain navigable even
+when the source graph owns no component for them; `graphOwner: null` is evidence, not a miss.
+
+**verdict-bearing decision reads fail closed on surviving journal damage.** The journal's
+tolerant reader is useful for a human salvaging old history, but a regulator or waiver
+cannot turn its skipped lines into a smaller trusted population. The strict projection
+validates wire version, canonical shape and time, content identity, session/file
+attribution, containment, append framing, duplicate agreement, and terminal references
+as one relation. Domain-separated session hashes retain case-sensitive identity on
+case-folding filesystems while an owned historical filename remains readable. Any damage
+makes the verdict-bearing population unavailable while the historical render stays
+backward-compatible.
+
+**decision ratification follows explicit subject and authority, never prose similarity or
+recency.** Independent agents can word the same question differently and can mention the
+same noun while answering different questions. Conflict detection therefore compares only
+standing decisions that share a machine-authored subject. Local alternatives remain
+proposals; one explicit orchestrator-accepted or user-directed choice can ratify them;
+incompatible choices tied at the highest authority stay contested.
+
+**work state is append-only, attributable, and predecessor-checked.** A shared task board
+that mutates in place loses the handoffs and rejected transitions a swarm most needs after
+context loss. Each work order and transition is content-addressed in its writer session,
+and the current state is a strict replay. Broken predecessors, competing successors,
+detached histories, damaged rows, and missing graph referents refuse instead of resolving
+by last-write-wins.
+
+**work cannot activate or complete before every dependency completes.** Readiness is not
+advice layered over the lifecycle; it is the lifecycle's ordering law. Every transition
+and closure validates its prospective graph before append, so a caller cannot bypass a
+waiting projection by naming `active` or `completed` directly. Cancellation remains a
+terminal non-success and therefore does not satisfy a dependency that requires completed
+output.
+
+**runnable work with overlapping write scopes is a collision, never concurrent
+permission.** Read and write scopes are repository-relative addresses. Dependency order
+can make an overlap merely potential, but two dependency-clear or active writers whose
+exact/tree scopes intersect are a live conflict. The projection blocks dispatch and names
+both work ids and both scopes; ownership is explicit rather than reverse-engineered from a
+shared diff.
+
+**a terminal parent has no live child and explicitly synthesizes every completed direct
+child.** A child returning is not evidence that its parent incorporated the result, and a
+live child whose join target is closed has nowhere truthful to report. Prospective graph
+validation therefore refuses parent closure until every direct child is terminal, requires
+every completed child in the synthesis set, and refuses a late live child beneath a
+terminal parent. Cancellation can settle a child but cannot masquerade as synthesized
+success.
+
+**authored work text is single-line data, never model-instruction control.** Work records
+are repository-authored evidence on read, even when they were valid on write. Their text
+crosses into SessionStart's model-instruction channel, so public writes reject C0/C1
+controls and the hook renderer escapes such bytes again. A newline can remain visible as
+data but cannot acquire the grammar of a peer instruction.
+
+**swarm write identity and authority flags are singleton or refused.** Repeated evidence,
+criteria, alternatives, and scopes represent honest plurality; repeated session, owner,
+authority, or predecessor selectors represent two incompatible attributions for one
+append. One shared parser predicate distinguishes those sets and refuses ambiguity before
+any ledger writer runs.
+
+**consequence navigation contains only explicit assessed edges.** Decisions, work,
+commits, experiments, verification, and defects already have addresses; temporal or path
+proximity does not make one cause another. The consequence ledger stores an assessor,
+evidence, typed endpoints, and a constrained relation per edge. Its graph traverses both
+directions for navigation while retaining the authored direction, and strict reads refuse
+forged, displaced, conflicting, or symlink-redirected evidence.
+
+**specialized consequence relations admit only their declared endpoint kinds.** A generic
+`relates-to` edge can connect any two supported addresses, but verbs such as `produces`,
+`verifies`, `reveals`, and `repairs` carry lifecycle meaning. Their source and target kinds
+are checked as a pair, keeping the typed graph from accepting grammatically valid nonsense
+that its render would otherwise state with unwarranted confidence.
+
+**consequence evidence refuses surviving storage damage instead of shrinking navigation.**
+Absence is a legitimate first-use state; a surviving but unreadable, displaced, renamed,
+or torn edge is not. If damaged bytes could disappear from the population, removing one
+file suffix or final newline could erase the only path from a defect to its repair while
+leaving an innocent empty graph. Storage framing and containment therefore belong to the
+evidence contract, not merely to filesystem hygiene.
+
+**orientation refuses damaged evidence before selecting a swarm heading.** The gyroscope
+is a projection over independent instruments, not a new source of truth. It reads each
+strictly, preserves source availability and denominators, and selects one deterministic
+heading: refuse, resolve a collision, repair navigation, unblock, synthesize, dispatch,
+continue, verify, or steady. A damaged source outranks every actionable-looking empty list.
+
+**orientation admits verification state only with valid shape and comparable provenance.**
+The status file is persisted JSON, not a TypeScript value at runtime. Orientation validates
+the fields it uses—canonical time, commit shape, dirty bit, tier, and nonnegative failure
+count—and refuses malformed evidence. A green report is current only when both repository
+and report commit addresses exist and agree; missing provenance is stale, never an
+implicit match.
+
+**orientation derives live blockage only from closeable work state.** A journaled impasse
+is historical testimony and has no event that later marks it complete. Treating such rows
+as the live scheduler makes the heading demand an action the record cannot ever discharge.
+The work lifecycle owns current blocked state; journal incidents remain visible context
+without acquiring scheduler semantics.
+
+**completed work remains unverified until an explicit verification edge names it.** A
+passing command nearby in time cannot establish which work it assessed. V2 regulation
+therefore treats a completed work order without a `verification --verifies--> work` edge
+as an obligation. This is deliberately stronger than command success and deliberately
+weaker than a proof of semantic correctness; append-only verification receipts remain a
+named future limit.
+
+**high-frequency lifecycle hooks start without the analysis dependency stack.**
+PostToolUse is the hottest and most fragile control boundary. Its eager import closure is
+built-ins plus local lifecycle modules; parser registries enter only through the main CLI
+composition root. The runtime canary copies the complete source tree into an isolated
+project with no dependency installation and executes PostToolUse, so a future eager edge
+to a parser package recreates the measured startup failure.
+
+**hook telemetry loss never kills PostToolUse.** Read traces calibrate the context model,
+but losing that observation is cheaper than breaking every tool call in an agent session.
+The hook contains both dynamic-load and persistence failures, emits no canonical bytes,
+and leaves the damaged target untouched. A real file-bearing hostile-target canary ensures
+this contract exercises the write path rather than vacuously recording zero events.
+
+**session startup injects only the exact session's current work order.** Assignment is
+useful only if the receiving agent can distinguish its authority, success criteria,
+dependencies, write scope, and collisions from another worker's. SessionStart reads the
+work graph dynamically and emits only records whose owner session exactly matches the
+host session; failure degrades to a named unavailable reading rather than breaking agent
+startup.
+
+**session startup survives a damaged decision-journal path with named degradation.** The
+journal carries decisions but cannot be allowed to prevent the agent that might repair it
+from starting. SessionStart keeps the exact host identity in memory, emits the canonical
+instructions plus a visible unavailable control, and skips the journal write when the
+standing path cannot be read or opened. This is degradation, not silent adoption of an
+empty history.
+
+**harness source remains searchable text rather than silently becoming binary.** Agent
+navigation depends on ordinary repository search seeing every source file. A single literal
+zero byte can make common tools classify an otherwise textual module as binary and omit its
+matches without a syntax or type error. Keeping control ranges escaped in source preserves
+runtime meaning while making disappearance from the reading surface a loud regression.
 
 **cached decisions expose structurally expired premises.** A decision saves inference only
 while the repository addresses supporting it remain live. Broken explicit referents must

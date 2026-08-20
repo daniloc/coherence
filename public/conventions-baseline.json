@@ -1,5 +1,13 @@
 [
   {
+    "name": "assertTransition",
+    "sites": 2
+  },
+  {
+    "name": "assertValidWorkGraph",
+    "sites": 7
+  },
+  {
     "name": "canonicalAction",
     "sites": 3
   },
@@ -12,8 +20,24 @@
     "sites": 2
   },
   {
+    "name": "canonicalSet",
+    "sites": 4
+  },
+  {
+    "name": "canonicalTime",
+    "sites": 3
+  },
+  {
+    "name": "hashedDecisionSessionFilename",
+    "sites": 2
+  },
+  {
     "name": "hasRunner",
     "sites": 3
+  },
+  {
+    "name": "hasStructuredDecisionFields",
+    "sites": 2
   },
   {
     "name": "isCalleeBuilder",
@@ -25,11 +49,11 @@
   },
   {
     "name": "iso",
-    "sites": 3
+    "sites": 7
   },
   {
     "name": "isObject",
-    "sites": 31
+    "sites": 36
   },
   {
     "name": "isOutsideBand",
@@ -44,12 +68,24 @@
     "sites": 3
   },
   {
+    "name": "scope",
+    "sites": 8
+  },
+  {
+    "name": "scopeList",
+    "sites": 4
+  },
+  {
+    "name": "scopeParts",
+    "sites": 2
+  },
+  {
     "name": "validateItems",
     "sites": 2
   },
   {
     "name": "validateRepo",
-    "sites": 2
+    "sites": 3
   },
   {
     "name": "validateResults",

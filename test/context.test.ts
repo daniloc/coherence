@@ -5,10 +5,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { writeFile } from "node:fs/promises";
+import { unlink, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import {
-  contextFor, gitContextPaths, looksLikeTestPath, normalizeContextPath, renderContext,
+  contextFor, contextFromProject, gitContextPaths, looksLikeTestPath, normalizeContextPath,
+  renderContext, renderContextProjection, repositoryContextPaths,
 } from "../src/context.ts";
 import type { DecisionRecord } from "../src/decisions.ts";
 import { cfg, cleanup, comp, fileNode, graph, imp, sym, tmpProject } from "./_helpers.ts";
@@ -48,6 +49,7 @@ const records: DecisionRecord[] = [
   rec({ id: "d-file", kind: "decision", chose: "keep core narrow", files: ["src/core.ts"], because: "measured import fan-in" }),
   rec({ id: "d-symbol", kind: "decision", chose: "seal is the only write choke point", because: "callers route through seal" }),
   rec({ id: "d-noise", kind: "decision", chose: "change the website color", files: ["src/user.ts"] }),
+  rec({ id: "b-core", kind: "blocked", chose: "cannot migrate seal callers", files: ["src/core.ts"], because: "one caller has no write authority" }),
   rec({ id: "q-open", kind: "conjecture", chose: "wire roundtrip may miss a member", because: "compare KINDS against the oracle", couldBe: ["the test is stale"] }),
   rec({ id: "q-closed", kind: "conjecture", chose: "seal may accept blank input", because: "probe seal", couldBe: ["guard bug"] }),
   rec({ id: "r-closed", kind: "resolution", chose: "guard is total", supersedes: "q-closed", because: "the probe rejected every blank" }),
@@ -109,11 +111,27 @@ test("contextFor — journal shows matching standing decisions + OPEN conjecture
   const result = contextFor(G, { files: ["src/core.ts"] }, records);
   assert.deepEqual(result.journal.decisions.map((d) => d.id), ["d-file", "d-symbol"]);
   assert.deepEqual(result.journal.openConjectures.map((d) => d.id), ["q-open"]);
+  assert.deepEqual(result.journal.blocked.map((d) => d.id), ["b-core"]);
   assert.ok(!JSON.stringify(result.journal).includes("q-closed"), "resolved questions are not open context");
   assert.ok(!JSON.stringify(result.journal).includes("d-old"), "retracted choices are not standing context");
   assert.ok(!JSON.stringify(result.journal).includes("d-noise"), "a neighboring file alone is not a journal intersection");
   assert.deepEqual(result.journal.decisions[0].matchedBy, ["file:src/core.ts", "text:Core"]);
   assert.ok(result.journal.decisions[1].matchedBy.includes("text:seal"));
+});
+
+test("contextFor — injected non-graph paths resolve as repository surfaces without invented ownership", () => {
+  const paths = [
+    "README.md", "package.json", "coherence.config.json", ".github/workflows/ci.yml",
+    "scripts/release.sh", ".codex/hooks.json", "generated/report.json",
+  ];
+  const result = contextFor(G, { files: [...paths, "absent.txt"] }, records, { repositoryFiles: paths });
+  assert.deepEqual(result.selection.files, [...paths].sort());
+  assert.deepEqual(result.selection.unresolvedFiles, ["absent.txt"]);
+  assert.ok(result.selection.surfaces.every((surface) =>
+    surface.source === "repository" && surface.graphOwner === null));
+  assert.deepEqual(result.components, [], "directory proximity must not manufacture graph ownership");
+  assert.match(renderContext(result), /README\.md — outside source graph; graph ownership unavailable/);
+  assert.match(result.limitations.join("\n"), /7 selected repository surface\(s\)/);
 });
 
 test("renderContext — byte-stable for the same inputs and names every approximation", () => {
@@ -133,6 +151,96 @@ test("normalizeContextPath — absolute editor paths under graph root become gra
   const rooted = { ...G, absRoot: "/work/project" };
   assert.equal(normalizeContextPath(rooted, "/work/project/src/core.ts"), "src/core.ts");
   assert.equal(normalizeContextPath(rooted, "src\\core.ts"), "src/core.ts");
+});
+
+test("contextFromProject — existing ignored artifacts and tracked deletions resolve at the repository edge", async (t) => {
+  const root = await tmpProject({
+    "README.md": "read me\n",
+    "dist/generated.json": "{}\n",
+    ".github/workflows/ci.yml": "name: ci\n",
+  });
+  t.after(() => cleanup(root));
+  const git = (...args: string[]) => spawnSync("git", args, { cwd: root, encoding: "utf8" });
+  git("init", "-q");
+  git("config", "user.email", "t@example.com");
+  git("config", "user.name", "T");
+  git("config", "commit.gpgsign", "false");
+  git("add", "README.md", ".github/workflows/ci.yml");
+  assert.equal(git("commit", "-q", "-m", "base").status, 0);
+  await unlink(join(root, "README.md"));
+
+  const rooted = { ...G, absRoot: root };
+  const projectCfg = cfg(root);
+  const known = repositoryContextPaths(projectCfg, rooted, ["dist/generated.json"]);
+  assert.ok(known.includes("README.md"), "Git keeps a deleted tracked surface addressable");
+  assert.ok(known.includes("dist/generated.json"), "an explicitly requested ignored artifact resolves by existence");
+
+  const result = contextFromProject(projectCfg, rooted, {
+    files: ["README.md", "dist/generated.json", ".github/workflows/ci.yml", "missing.md", "/etc/passwd"],
+  });
+  assert.deepEqual(result.selection.files, [".github/workflows/ci.yml", "README.md", "dist/generated.json"]);
+  assert.deepEqual(result.selection.unresolvedFiles, ["/etc/passwd", "missing.md"]);
+  assert.ok(result.selection.surfaces.every((surface) => surface.source === "repository"));
+});
+
+test("renderContext — bounded projection is route-first, byte-stable, and accounts for every omission", () => {
+  const why = `WHY_HEAD ${"rationale ".repeat(900)} WHY_SENTINEL_END`;
+  const extraTests = Array.from({ length: 9 }, (_, i) => fileNode(`test/same-${i}.test.ts`, "core"));
+  const budgetGraph = graph(G.nodes.map((node) => node.id === "c:core" ? { ...node, why } : node).concat(extraTests), G.edges);
+  const longDecision = rec({
+    id: "d-long", kind: "decision", files: ["src/core.ts"],
+    chose: `DECISION_HEAD ${"choice ".repeat(120)} DECISION_SENTINEL_END`,
+    because: `BECAUSE_HEAD ${"evidence ".repeat(120)} BECAUSE_SENTINEL_END`,
+    at: "2026-07-31T12:00:00.000Z",
+  });
+  const aResult = contextFor(budgetGraph, { files: ["src/core.ts"] }, [...records, longDecision]);
+  const bResult = contextFor(budgetGraph, { files: ["src/core.ts"] }, [longDecision, ...records].reverse());
+  const a = renderContextProjection(aResult, { maxBytes: 3_500 });
+  const b = renderContextProjection(bResult, { maxBytes: 3_500 });
+
+  assert.equal(a.text, b.text);
+  assert.equal(a.renderedBytes, Buffer.byteLength(a.text));
+  assert.ok(a.renderedBytes <= 3_500);
+  assert.equal(a.mode, "bounded");
+  const sections = [
+    "Selection / repository surfaces", "Owner / intent", "Governing obligations",
+    "Standing decisions", "Blocked", "Open conjectures", "Direct dependencies", "Relevant tests",
+  ];
+  for (let i = 1; i < sections.length; i++)
+    assert.ok(a.text.indexOf(sections[i - 1]) < a.text.indexOf(sections[i]), `${sections[i]} must follow ${sections[i - 1]}`);
+  assert.ok(!a.text.includes("DECISION_SENTINEL_END"), "bounded journal summaries are excerpts");
+  assert.ok(!a.text.includes("WHY_SENTINEL_END"), "bounded mode never dumps the whole component why");
+  assert.ok(a.withholding.some((entry) => entry.reason === "same-component test cap" && entry.items === 5));
+  assert.ok(a.withholding.some((entry) => entry.reason === "bounded entry excerpt"));
+  assert.match(a.text, new RegExp(`Withheld: ${a.withheldItems} item\\(s\\), ${a.withheldBytes} byte\\(s\\)`));
+  for (const entry of a.withholding)
+    assert.match(a.text, new RegExp(`${entry.reason}: ${entry.items} item\\(s\\), ${entry.bytes} byte\\(s\\)`));
+
+  const allBounded = renderContextProjection(aResult, { maxBytes: 100_000 });
+  const cappedTestBytes = Array.from({ length: 5 }, (_, i) =>
+    Buffer.byteLength(`  test/same-${i + 4}.test.ts — same owning component\n`))
+    .reduce((sum, bytes) => sum + bytes, 0);
+  const excerptBytes = [why, longDecision.chose, longDecision.because]
+    .map((text) => Buffer.byteLength(text.replace(/\s+/g, " ").trim()) - 317)
+    .reduce((sum, bytes) => sum + bytes, 0);
+  assert.deepEqual(allBounded.withholding, [
+    { reason: "same-component test cap", items: 5, bytes: cappedTestBytes },
+    { reason: "bounded entry excerpt", items: 3, bytes: excerptBytes },
+  ], "withholding is independently reproducible from the five capped tests and three 320-byte excerpts");
+  assert.equal(allBounded.withheldItems, 8);
+  assert.equal(allBounded.withheldBytes, cappedTestBytes + excerptBytes);
+
+  const expanded = renderContext(aResult, { maxBytes: 3_500, expand: true });
+  assert.equal(expanded, renderContext(aResult), "no budget remains the byte-compatible legacy expansion path");
+  assert.match(expanded, /WHY_SENTINEL_END/);
+  assert.match(expanded, /test\/same-8\.test\.ts/);
+  let refused: unknown;
+  try { renderContextProjection(aResult, { maxBytes: 100 }); } catch (error) { refused = error; }
+  assert.ok(refused instanceof RangeError);
+  const minimum = Number(refused.message.match(/minimum is (\d+)/)?.[1]);
+  assert.ok(Number.isSafeInteger(minimum));
+  assert.ok(renderContextProjection(aResult, { maxBytes: minimum }).renderedBytes <= minimum,
+    "the reported minimum must be sufficient, including the decimal width of its own Limit field");
 });
 
 test("gitContextPaths — staged reads only the index; changed includes unstaged + untracked", async (t) => {

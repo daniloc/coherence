@@ -16,6 +16,7 @@ import {
 import { inspectLifecycleHook, type HookHost } from "./control.ts";
 import { analyzeChange, signalState } from "./signal.ts";
 import { Unrunnable } from "./floor.ts";
+import { observeOrientation } from "./orient.ts";
 
 export type ObservationStatus = "satisfied" | "violated" | "unavailable";
 
@@ -256,7 +257,7 @@ export function formatRegulation(
   if (decision.action === "release") {
     return [
       `REGULATION release · ${decision.host} · ${decision.doctrine} · ${decision.id}`,
-      "  No intervention under the rules v1 actually evaluated; this is not a proof of correctness.",
+      `  No intervention under the rules ${decision.doctrine} actually evaluated; this is not a proof of correctness.`,
     ];
   }
   const selected = decision.selected!;
@@ -278,7 +279,7 @@ export interface RegulateOptions {
   host?: HookHost;
 }
 
-/** Read the two live v1 sensors. No writes. */
+/** Read every live doctrine sensor. No writes. */
 export async function observeRegulation(
   cfg: Config,
   graph?: Graph,
@@ -337,6 +338,49 @@ export async function observeRegulation(
       status: "unavailable",
       evidence: error.report.join(" "),
     });
+  }
+
+  try {
+    const orientation = await observeOrientation(cfg);
+    const coordinationSources = new Set(["decisions", "work", "consequences", "experiments", "defects"]);
+    const unavailable = orientation.sources.filter((reading) => coordinationSources.has(reading.name) && !reading.ok);
+    if (unavailable.length) {
+      const evidence = unavailable.map((reading) => `${reading.name}: ${reading.detail}`).join("; ");
+      observations.push(
+        { rule: "swarm-coordination-integrity", status: "unavailable", evidence },
+        { rule: "completed-work-needs-explicit-verification", status: "unavailable", evidence },
+      );
+    } else {
+      const coordinationProblems = [
+        ...((orientation.work?.stats.graphProblems ?? 0) ? [`${orientation.work!.stats.graphProblems} work-graph problem(s)`] : []),
+        ...((orientation.work?.conflicts.length ?? 0) ? [`${orientation.work!.conflicts.length} active write-scope conflict(s)`] : []),
+        ...((orientation.work?.unsynthesized.length ?? 0) ? [`${orientation.work!.unsynthesized.length} unsynthesized child result(s)`] : []),
+        ...((orientation.decisions?.contested.length ?? 0) ? [`${orientation.decisions!.contested.length} contested decision subject(s)`] : []),
+        ...((orientation.decisions?.needsRatification.length ?? 0) ? [`${orientation.decisions!.needsRatification.length} decision subject(s) need ratification`] : []),
+        ...((orientation.consequences?.dangling.length ?? 0) ? [`${orientation.consequences!.dangling.length} dangling consequence reference(s)`] : []),
+      ];
+      observations.push({
+        rule: "swarm-coordination-integrity",
+        status: coordinationProblems.length ? "violated" : "satisfied",
+        evidence: coordinationProblems.length
+          ? coordinationProblems.join("; ")
+          : "trusted decision, work, and consequence projections are structurally available with no live collision",
+      });
+      const unverified = orientation.consequences?.unverifiedCompletedWork ?? [];
+      observations.push({
+        rule: "completed-work-needs-explicit-verification",
+        status: unverified.length ? "violated" : "satisfied",
+        evidence: unverified.length
+          ? `${unverified.length} completed work order(s) lack an explicit verification link: ${unverified.join(", ")}`
+          : "every completed work order has explicit verification evidence, or no work is completed",
+      });
+    }
+  } catch (error) {
+    const evidence = `orientation sensor unavailable: ${error instanceof Error ? error.message : String(error)}`;
+    observations.push(
+      { rule: "swarm-coordination-integrity", status: "unavailable", evidence },
+      { rule: "completed-work-needs-explicit-verification", status: "unavailable", evidence },
+    );
   }
 
   return { doctrine: DOCTRINE_ID, scope: "shared-worktree", host, observations, limitations };

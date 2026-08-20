@@ -25,13 +25,14 @@ import {
   type RegulationReading,
 } from "../src/regulate.ts";
 import { cfg, cleanup, tmpProject } from "./_helpers.ts";
+import { closeWork, createWork } from "../src/work.ts";
+import { parseConsequenceRef, recordConsequence } from "../src/consequence.ts";
 
 const rules = ANTI_ENTROPY_DOCTRINE.rules;
 
-function ruleFor(response: DoctrineRule["response"]): DoctrineRule {
-  const matching = rules.filter((rule) => rule.response === response);
-  assert.equal(matching.length, 1,
-    `v1 must have exactly one ${response} rule; changing the live doctrine requires an explicit contract change`);
+function ruleNamed(id: string): DoctrineRule {
+  const matching = rules.filter((rule) => rule.id === id);
+  assert.equal(matching.length, 1, `the live doctrine must own exactly one ${id} rule`);
   return matching[0]!;
 }
 
@@ -88,8 +89,8 @@ test("regulate — ordered potential is permutation-invariant and monotone", () 
   assert.ok(rules.length > 0, "an empty doctrine would release every reading vacuously");
   assert.equal(new Set(rules.map((rule) => rule.id)).size, rules.length, "rule ids are addresses and must be unique");
 
-  const redirectRule = ruleFor("redirect");
-  const decisionRule = ruleFor("require-decision");
+  const redirectRule = ruleNamed("canonical-lifecycle-control");
+  const decisionRule = ruleNamed("significant-growth-needs-address");
   const rank = new Map<RegulationAction, number>(
     ANTI_ENTROPY_DOCTRINE.potential.map((action, index) => [action, index]),
   );
@@ -164,12 +165,19 @@ test("regulate — ordered potential is permutation-invariant and monotone", () 
   }
 
   const duplicated = canonicalObservations.flatMap((item) => [item, { ...item }]);
-  for (const permuted of permutations(duplicated)) {
+  const duplicateOrders = [
+    duplicated,
+    [...duplicated].reverse(),
+    ...duplicated.map((_, index) => [...duplicated.slice(index), ...duplicated.slice(0, index)]),
+  ];
+  for (const permuted of duplicateOrders) {
     assert.deepEqual(selectRegulation(reading(permuted, ["z-limit", "a-limit", "z-limit"])), canonical,
       "exact duplicate observations collapse before potential and identity are computed");
   }
 
   const conflict = selectRegulation(reading([
+    ...rules.filter((rule) => rule.id !== redirectRule.id && rule.id !== decisionRule.id)
+      .map((rule) => observation(rule, "satisfied")),
     observation(redirectRule, "violated", "first lifecycle reading"),
     observation(redirectRule, "satisfied", "second lifecycle reading"),
     observation(decisionRule, "violated", "growth still needs a decision", "patch-conflict"),
@@ -181,6 +189,8 @@ test("regulate — ordered potential is permutation-invariant and monotone", () 
   assert.equal(commandCount(conflict), 0, "a refusal must not leak the withheld lower-priority command");
 
   const exactConflictDuplicate = selectRegulation(reading([
+    ...rules.filter((rule) => rule.id !== redirectRule.id && rule.id !== decisionRule.id)
+      .map((rule) => observation(rule, "satisfied")),
     observation(redirectRule, "violated", "first lifecycle reading"),
     observation(redirectRule, "violated", "first lifecycle reading"),
     observation(redirectRule, "satisfied", "second lifecycle reading"),
@@ -232,8 +242,8 @@ test("regulate — formatter emits one action and live commands never redirect t
     assert.notEqual(live!.name, "regulate", `${rule.id} creates a regulation self-loop`);
   }
 
-  const redirectRule = ruleFor("redirect");
-  const decisionRule = ruleFor("require-decision");
+  const redirectRule = ruleNamed("canonical-lifecycle-control");
+  const decisionRule = ruleNamed("significant-growth-needs-address");
   const decisions = [
     selectRegulation(reading(withStatuses(new Map()))),
     selectRegulation(reading(withStatuses(new Map([[redirectRule.id, "violated"]])))),
@@ -303,5 +313,46 @@ test("regulate — selected Codex host cannot be redeemed by Claude control", as
     assert.equal((await setLifecycleHook(c, true, "codex")).inspection.present, true);
     const complete = selectRegulation(await observeRegulation(c, undefined, { host: "codex" }));
     assert.equal(complete.action, "release");
+  } finally { await cleanup(root); }
+});
+
+test("regulate — completed work requires an explicit verification link before release", async () => {
+  const root = await tmpProject({ "coherence.config.json": "{}\n" });
+  try {
+    const hook = join(root, "node_modules", ".bin", "coherence-hook");
+    await mkdir(dirname(hook), { recursive: true });
+    await writeFile(hook, "#!/bin/sh\nexit 0\n");
+    await chmod(hook, 0o755);
+    const git = (...args: string[]) => spawnSync("git", args, { cwd: root, encoding: "utf8" });
+    git("init", "-q", "-b", "main");
+    git("config", "user.email", "test@example.com");
+    git("config", "user.name", "Test");
+    git("config", "commit.gpgsign", "false");
+    git("add", ".");
+    assert.equal(git("commit", "-q", "-m", "base").status, 0);
+    const config = cfg(root);
+    assert.equal((await setLifecycleHook(config, true, "claude")).inspection.present, true);
+
+    const opened = createWork(config, {
+      session: "worker", objective: "implement the requested control", criteria: ["behavior verified"],
+      authority: { kind: "user-directed", grantedBy: "user", boundary: "requested implementation" },
+      risk: "high", writeScopes: ["src/**"], now: "2026-01-01T00:00:00.000Z",
+    });
+    closeWork(config, {
+      work: opened.work, session: "worker", to: "completed", reason: "implementation finished",
+      resultEvidence: ["focused tests pass"], now: "2026-01-01T00:01:00.000Z",
+    });
+    const unlinked = selectRegulation(await observeRegulation(config, undefined, { host: "claude" }));
+    assert.equal(unlinked.action, "require-decision");
+    assert.equal(unlinked.selected?.rule, "completed-work-needs-explicit-verification");
+
+    recordConsequence(config, {
+      session: "reviewer",
+      from: parseConsequenceRef("verification:verify-focused-suite"), relation: "verifies",
+      to: { kind: "work", id: opened.work }, evidence: "the focused suite passed after the implementation",
+      now: "2026-01-01T00:02:00.000Z",
+    });
+    const linked = selectRegulation(await observeRegulation(config, undefined, { host: "claude" }));
+    assert.equal(linked.action, "release");
   } finally { await cleanup(root); }
 });

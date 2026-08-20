@@ -310,8 +310,8 @@ test("verify — ATTRIBUTION IS PER CLAIM: three claims, three distinct verdicts
       cfg(root, { testBatch: ["node", join(root, "runner.js")] }), g, {}));
     assert.equal(r.code, 1);
     assert.match(r.out, /claims: 3 · 1 green · 2 red/);
-    // the PASSING claim is not dragged down by its neighbours sharing one report
-    assert.doesNotMatch(r.out, /outer inner nest deep/);
+    // A cost advisory may name this green claim; pin only that no RED verdict does.
+    assert.doesNotMatch(r.out, /^\s*✗ .*outer inner nest deep/m);
     // each red line carries its OWN oracle name and its OWN state
     const failLine = r.out.split("\n").find((l) => l.includes('"failing group this one fails"'))!;
     assert.match(failLine, /matching test FAILED in the batch report: "failing group this one fails"/);

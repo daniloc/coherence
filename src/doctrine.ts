@@ -1,11 +1,11 @@
 // doctrine.ts — the small, versioned law the regulator is allowed to apply.
 //
 // A regulator without an explicit doctrine is only a pile of heuristics with an exit
-// code.  This registry is deliberately smaller than the harness: v1 names the two facts
-// for which the project already has live observations and concrete remedies.  Adding a
+// code. This registry is deliberately smaller than the harness: each version names only
+// facts for which the project has live observations and concrete remedies. Adding a
 // rule is therefore a contract change, not another conditional hidden in a formatter.
 
-export const DOCTRINE_ID = "anti-entropy/v1" as const;
+export const DOCTRINE_ID = "anti-entropy/v2" as const;
 
 export const REGULATION_POTENTIAL = Object.freeze([
   "refuse",
@@ -42,7 +42,7 @@ export interface DoctrineRule {
  */
 export const ANTI_ENTROPY_DOCTRINE: {
   id: typeof DOCTRINE_ID;
-  version: 1;
+  version: 2;
   maxim: string;
   scope: string;
   potential: typeof REGULATION_POTENTIAL;
@@ -50,7 +50,7 @@ export const ANTI_ENTROPY_DOCTRINE: {
   limits: readonly string[];
 } = Object.freeze({
   id: DOCTRINE_ID,
-  version: 1,
+  version: 2,
   maxim: "dissolve > declare > infer",
   scope: "the shared working tree, evaluated only by the live rules below",
   potential: REGULATION_POTENTIAL,
@@ -64,6 +64,20 @@ export const ANTI_ENTROPY_DOCTRINE: {
       command: Object.freeze({ name: "hooks", args: Object.freeze(["install"]), hostScoped: true as const }),
     }),
     Object.freeze({
+      id: "swarm-coordination-integrity",
+      invariant: "swarm decisions and work are attributable, structurally readable, and collision-visible",
+      sensor: "observeOrientation",
+      response: "require-decision" as const,
+      remedy: "repair the damaged ledger or explicitly resolve decision, dependency, ownership, and write-scope conflicts",
+    }),
+    Object.freeze({
+      id: "completed-work-needs-explicit-verification",
+      invariant: "completed work names the verification evidence that assessed it",
+      sensor: "observeOrientation",
+      response: "require-decision" as const,
+      remedy: "run the relevant verification and record its explicit verification-to-work consequence link",
+    }),
+    Object.freeze({
       id: "significant-growth-needs-address",
       invariant: "significant behavioral growth acquires an anchor or patch-specific decision",
       sensor: "analyzeChange",
@@ -72,9 +86,10 @@ export const ANTI_ENTROPY_DOCTRINE: {
     }),
   ]),
   limits: Object.freeze([
-    "v1 does not prove that the change is correct or that its anchors are semantically adequate",
-    "v1 observes a shared worktree and cannot attribute mixed changes to one agent",
-    "v1 does not yet fold verification freshness, premise expiry, or maintenance cadence into its potential",
+    "v2 does not prove that the change is correct or that its anchors are semantically adequate",
+    "v2 attributes declared work and journal records but cannot attribute unrecorded shared-worktree changes",
+    "v2 requires an explicit verification link for completed work but does not yet retain verification receipts as an append-only identity registry",
+    "v2 does not yet fold premise expiry or maintenance cadence into its potential",
   ]),
 });
 
