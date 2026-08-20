@@ -65,7 +65,7 @@ export function renderOverview(graph: Graph, stamp: string, words: DictEntry[] =
     md.push(`- entry: \`${b.meta.entry}\`${b.meta.compat ? ` (compat \`${b.meta.compat}\`)` : ""}`);
     for (const e of b.entities) md.push(`- entity binding: \`${e.name}\` → class \`${e.className}\``);
     for (const s of b.stores) md.push(`- store: \`${s.binding}\` (${s.sub})`);
-    for (const [k, v] of Object.entries(b.vars)) md.push(`- var: \`${k}\` = \`${v}\``);
+    for (const k of Object.keys(b.vars)) md.push(`- var: \`${k}\``);
     md.push("");
   }
   if (words.length) {
@@ -92,7 +92,7 @@ export function renderOverview(graph: Graph, stamp: string, words: DictEntry[] =
     <tr><th>entry</th><td><code>${esc(b.meta.entry)}</code> ${esc(b.meta.compat)}</td></tr>
     ${b.entities.map((e) => `<tr><th>entity</th><td><code>${esc(e.name)}</code> → <code>${esc(e.className)}</code></td></tr>`).join("")}
     ${b.stores.map((s) => `<tr><th>store</th><td><code>${esc(s.binding)}</code> · ${esc(s.sub)}</td></tr>`).join("")}
-    ${Object.entries(b.vars).map(([k, v]) => `<tr><th>var</th><td><code>${esc(k)}</code> = <code>${esc(String(v))}</code></td></tr>`).join("")}
+    ${Object.keys(b.vars).map((k) => `<tr><th>var</th><td><code>${esc(k)}</code></td></tr>`).join("")}
   </table></section>` : "";
   const dictionaryHtml = words.length ? `<section class="card"><h2>Dictionary</h2>
     <p class="intent">Words are patterns with commitments; a component that <code>conforms to &lt;Word&gt;</code> inherits them.</p>

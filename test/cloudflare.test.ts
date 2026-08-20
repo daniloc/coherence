@@ -9,9 +9,13 @@
 // a clean clone silently lost them and failed the freshness gate. The generated
 // worker-configuration.d.ts reflects that same local toggle, so it must stay outside the
 // declared source population rather than becoming a second machine-local authority.
+// The 0.36.3 follow-up found one remaining value channel: bindings.vars copied
+// WORKER_HOST from the working Wrangler file into every generated artifact. Variable
+// names are architecture; per-machine deployment values are not.
 import test from "node:test";
 import assert from "node:assert/strict";
 import { buildGraph } from "../src/derive.ts";
+import { renderOverview } from "../src/render-overview.ts";
 import type { Graph } from "../src/types.ts";
 import { cfg, cleanup, tmpProject } from "./_helpers.ts";
 
@@ -29,6 +33,9 @@ export function fetchDocument(env: Env) {
 const WRANGLER_BASE = `
 main = "src/worker.ts"
 compatibility_date = "2026-08-20"
+
+[vars]
+WORKER_HOST = "your-worker.workers.dev"
 
 [[kv_namespaces]]
 binding = "OAUTH_KV"
@@ -89,10 +96,21 @@ test("Cloudflare bindings — committed Env capability is stable across optional
     "worker-configuration.d.ts": "interface Env { LOCAL_ONLY: D1Database }\n",
   };
   const disabled = await cloudflareGraph(WRANGLER_BASE, generatedLocalState);
-  const enabled = await cloudflareGraph(WRANGLER_BASE + R2_BLOCK, generatedLocalState);
+  const enabled = await cloudflareGraph(
+    (WRANGLER_BASE + R2_BLOCK).replace("your-worker.workers.dev", "mnemion.workers.dev"),
+    generatedLocalState,
+  );
 
   assert.deepEqual(platformProjection(disabled), platformProjection(enabled),
-    "the same committed Env capability must derive byte-stable bindings, nodes, and edges whether local R2 is enabled or commented");
+    "deployment values and optional R2 state cannot perturb the committed platform projection");
+  assert.deepEqual(disabled.bindings?.vars, { WORKER_HOST: "declared" },
+    "the variable name remains architectural while its deployment value is discarded");
+  const surfaces = renderOverview(enabled, "test");
+  for (const bytes of [JSON.stringify(enabled), surfaces.md, surfaces.html]) {
+    assert.match(bytes, /WORKER_HOST/, "the declared variable name disappeared with its value");
+    assert.doesNotMatch(bytes, /your-worker\.workers\.dev|mnemion\.workers\.dev/,
+      "a working-tree deployment value escaped into a committed reading surface");
+  }
   assert.deepEqual(disabled.bindings?.stores.map(({ binding, sub }) => [binding, sub]), [
     ["AI", "Workers AI"],
     ["DOCUMENTS", "R2"],

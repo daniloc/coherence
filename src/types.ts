@@ -18,7 +18,9 @@ export interface Bindings {
   entities: Array<{ name: string; className: string }>;
   /** infrastructure stores (db, kv, …) shown as their own nodes. */
   stores: Array<{ binding: string; label: string; sub: string }>;
-  vars: Record<string, string>;
+  /** Declared runtime-variable names. Deployment values are not architecture and must
+   *  be unrepresentable in the derived model or its committed reading surfaces. */
+  vars: Record<string, "declared">;
   meta: Record<string, string>;
 }
 export interface Graph {

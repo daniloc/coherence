@@ -87,7 +87,7 @@
         "from": "project-source",
         "to": "derived-model",
         "security": true,
-        "translates": "Direct module Env / Cloudflare.Env store types and wrangler configuration become one canonical infra-node domain. Source/config agreement deduplicates, disagreement refuses, deployment-only metadata cannot perturb node bytes, and source inference receives the graph's filtered file population so generated local declarations cannot become a hidden second walk."
+        "translates": "Direct module Env / Cloudflare.Env store types and wrangler configuration become one canonical platform domain. Source/config agreement deduplicates, disagreement refuses, deployment-only store metadata cannot perturb node bytes, runtime variables cross as names with a typed declared marker rather than values, and source inference receives the graph's filtered file population so generated local declarations cannot become a hidden second walk."
       },
       "loadConfig": {
         "from": "project-source",

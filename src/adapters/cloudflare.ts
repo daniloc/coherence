@@ -150,10 +150,13 @@ function fromConfig(cfg: any): Bindings {
   for (const v of cfg.vectorize ?? []) stores.push({ binding: v.binding, label: v.binding, sub: "Vectorize" });
   for (const r of cfg.r2_buckets ?? []) stores.push({ binding: r.binding, label: r.binding, sub: "R2" });
   if (cfg.ai?.binding) stores.push({ binding: cfg.ai.binding, label: cfg.ai.binding, sub: "Workers AI" });
+  const vars = Object.fromEntries(
+    Object.keys(cfg.vars ?? {}).sort().map((name) => [name, "declared" as const]),
+  );
   return {
     entities: (cfg.durable_objects?.bindings ?? []).map((b: any) => ({ name: b.name, className: b.class_name })),
     stores,
-    vars: cfg.vars ?? {},
+    vars,
     meta: { entry: cfg.main ?? "", compat: cfg.compatibility_date ?? "" },
   };
 }

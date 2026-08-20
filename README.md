@@ -31,7 +31,9 @@ augment and confirm it. This keeps an optional binding's graph node stable when 
 deployment toggle is enabled or commented out. Agreement deduplicates; a source/config
 type conflict refuses rather than picking whichever spelling was read last. Source
 inference consumes the same filtered code-file population as the graph, so put generated
-machine-local declarations such as `worker-configuration.d.ts` in `ignore`.
+machine-local declarations such as `worker-configuration.d.ts` in `ignore`. Wrangler
+runtime-variable names remain visible as declarations, but their deployment values are
+discarded at the adapter boundary and never enter `graph.json` or an overview.
 
 ## The economy of inference: what a codebase actually costs
 

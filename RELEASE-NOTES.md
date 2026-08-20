@@ -14,6 +14,23 @@ evidence inside that record.
 
 ---
 
+## v0.36.4 — deployment values are not architecture
+
+The 0.36.3 Cloudflare repair stabilized Mnemion's infra nodes and bind edges but left one
+working-tree channel open: `bindings.vars` copied Wrangler values into `graph.json` and
+both overview formats. `WORKER_HOST` therefore differed between the committed placeholder
+and the deploy machine's real hostname, keeping docs freshness red on exactly one line.
+
+Runtime-variable names now survive as declarations while values are discarded at the
+adapter boundary. The `Bindings` type permits only the literal marker `declared`, making a
+raw-value passthrough a compile error; renderers show the name without pretending the
+marker is a value. Against current Mnemion main, pristine and real-host Wrangler variants
+produce the same normalized graph hash while `WORKER_HOST` remains visible.
+
+Pre-tag qualification is 838/838 source tests, 56/56 spec claims, 38/38 anchored
+invariants, typecheck and build, every ratchet, and the packed artifact installed and
+exercised in an isolated Git consumer.
+
 ## v0.36.3 — damage is local; capability is committed
 
 The first static-oracle floor in 0.36.2 was conservative at the wrong scope. One dynamic
