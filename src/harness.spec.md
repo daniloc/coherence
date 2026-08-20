@@ -14,6 +14,7 @@ rendering, and journaling remain independently addressable modules beneath this 
 - regulation evaluates and repairs the selected agent host
 - task context is bounded and names its approximations
 - verdict-bearing decision reads fail closed on surviving journal damage
+- a committed decision population cannot disappear into adoption from zero
 - decision ratification follows explicit subject and authority, never prose similarity or recency
 - work state is append-only, attributable, and predecessor-checked
 - work cannot activate or complete before every dependency completes
@@ -26,6 +27,8 @@ rendering, and journaling remain independently addressable modules beneath this 
 - consequence evidence refuses surviving storage damage instead of shrinking navigation
 - orientation refuses damaged evidence before selecting a swarm heading
 - orientation admits verification state only with valid shape and comparable provenance
+- verification currency follows material repository state without invalidating its own receipt
+- orientation selects synthesis only when parent closure can execute it
 - orientation derives live blockage only from closeable work state
 - completed work remains unverified until an explicit verification edge names it
 - high-frequency lifecycle hooks start without the analysis dependency stack
@@ -72,13 +75,18 @@ rendering, and journaling remain independently addressable modules beneath this 
 - hook telemetry loss never kills PostToolUse: the original no-dependency canary sent `{}`, producing no read event and never exercising persistence. A real Read event with `.coherence/read-traces` replaced by a regular file threw `EEXIST` out of the hook. The runtime boundary now contains telemetry failure, stays byte-silent, and the canary carries the hostile target.
 - orientation admits verification state only with valid shape and comparable provenance: a parseable status row with `at: "not-a-time"` and `failures: "not-a-number"` was reported as current and allowed `STEADY`; missing commit provenance on either side was also treated as agreement. Runtime shape, canonical time, count, tier, and commit checks now refuse malformed evidence, while absent provenance remains stale.
 - swarm write identity and authority flags are singleton or refused: `work create ... --session one --session two` succeeded and silently attributed the append to `two`; the same last-wins ambiguity existed for authority and consequence writers. The shared CLI check now refuses every non-repeatable flag before any append.
+- work state is append-only, attributable, and predecessor-checked: the first live four-agent field run replayed correctly in its originating worktree, but `.coherence/work/` still matched the repository's blanket ignore, so a fresh clone would lose every order, handoff, and closure. The repository guard now writes through the public CLI, commits under the live ignore policy, clones, and strictly replays the work instead of accepting that locally-correct but non-durable state.
 - authored work text is single-line data, never model-instruction control: a work objective containing a newline and `SYSTEM:` was accepted and interpolated into SessionStart as a peer instruction. Work writers now reject C0/C1 controls, while hook rendering escapes them defensively at the instruction boundary.
 - specialized consequence relations admit only their declared endpoint kinds: `work:a --produces--> decision:d` and `commit:a --produces--> work:b` were accepted even though the documented lifecycle defines production as work-to-commit. Endpoint validation now makes that relation exact rather than merely checking its source kind.
 - a terminal parent has no live child and explicitly synthesizes every completed direct child: a parent could close with `synthesizedChildren: []` after a child completed, leaving an irreparable synthesis heading because terminal work cannot close again; a child created after parent closure remained dispatch-ready even though its join target was dead. Prospective graph validation now refuses both transitions before append.
 - work cannot activate or complete before every dependency completes: readiness was projection-only, so a waiting work item could transition to active and then completed while its dependency stayed open; orientation accepted the impossible ordering. Every lifecycle write now validates the prospective graph and refuses that dependency-order violation.
 - verdict-bearing decision reads fail closed on surviving journal damage: a symlinked `.coherence` could supply external valid rows, a renamed or blank/torn file silently shrank the trusted population, and case-distinct `Owner`/`owner` sessions collided on case-folding filesystems. The trusted projection now validates containment, every directory entry, append framing, and domain-separated hashed session addresses before admitting any row.
+- a committed decision population cannot disappear into adoption from zero: two valid conflicting decision files produced `RESOLVE-CONFLICT`; deleting the entire tracked directory then produced zero trusted rows and `STEADY`. The strict empty projection now asks current Git `HEAD` whether tracked decision files disappeared, while a repository that never owned a ledger remains valid first-use adoption.
+- verification currency follows material repository state without invalidating its own receipt: a clean full status at `HEAD` remained `CURRENT` and allowed `STEADY` after a tracked source changed because orientation compared only commits. Live Git dirtiness now invalidates currency while excluding exactly `.coherence/status.json`, the receipt written after provenance was sampled.
+- orientation selects synthesis only when parent closure can execute it: with parent work active, child A completed, and dependency-clear child B ready, orientation selected `SYNTHESIZE`; the only synthesis operation is parent closure, which correctly refused while B was live, so obeying the heading could not advance. Pending results now select synthesis only after that parent's children are terminal; otherwise the live sibling receives `DISPATCH`, `CONTINUE`, or `UNBLOCK`.
 - orientation derives live blockage only from closeable work state: the first real-worktree `orient` canary emitted `UNBLOCK` with zero work orders because it counted 23 historical journal `blocked` reports. Those rows have no completion event, so the heading could never converge. They remain visible as historical evidence while only the append-only work lifecycle can select a live unblock action.
 - consequence evidence refuses surviving storage damage instead of shrinking navigation: the first strict reader inspected only the final ledger directory, filtered for `*.jsonl`, and accepted a complete last row without its append newline. A symlinked `.coherence` parent could therefore redirect the read, renaming a surviving session file to `.bak` made the graph look clean and empty, and case-distinct sessions collided on case-folding filesystems. The reader now validates both directory components, every surviving entry, canonical append framing, and domain-separated hashed session addresses before admitting any edge.
+- consequence navigation contains only explicit assessed edges: the live blind-handoff trial reconstructed the mission from explicit edges, but `.coherence/consequences/` was ignored, making that successful navigation disappear on clone. The same repository guard now commits a typed edge to a real Git endpoint, clones it, and requires both strict replay and a dangling-free orientation.
 - harness source remains searchable text rather than silently becoming binary: two new render/validation regexes carried literal NUL bytes, and `rg` classified `src/consequence.ts` as binary instead of returning navigable source matches. The ranges now use escaped source notation and the focused guard enumerates every live TypeScript source, so the same byte turns the claim red rather than degrading repository navigation silently.
 - high-frequency lifecycle hooks start without the analysis dependency stack: the live PostToolUse hook failed before reading its event with `ERR_MODULE_NOT_FOUND` for `web-tree-sitter`; the eager chain was `hook-cli → hooks → due → commands → phrasebook → oracle-domain → web-tree-sitter`. `npm ci` repaired the checkout but left the failure class intact. Moving executable phrasebook data injection to the CLI composition root dissolved the eager edge, and the isolated no-`node_modules` runtime canary now passes.
 - fast verification rejects a statically vanished Vitest oracle without executing tests: changed `resolveStaticOracle`'s complete zero-match branch from `absent` to `unknown` (2026-08-20), laundering the motivating Mnemion rename into an ordinary fast-tier skip — the focused boundary guard failed and captured the dangerous verdict: `claims: 1 · 0 green · 0 red · 1 skipped`, followed by `✓ coherent`. Restored; the same fixture now reds `VANISHED ORACLE (static)` without Vitest installed or invoked.
@@ -119,6 +127,7 @@ rendering, and journaling remain independently addressable modules beneath this 
 - boundary "regulation evaluates and repairs the selected agent host" at observeRegulation via guard "regulate — selected Codex host cannot be redeemed by Claude control"
 - boundary "task context is bounded and names its approximations" at renderContextProjection via guard "renderContext — bounded projection is route-first, byte-stable, and accounts for every omission"
 - boundary "verdict-bearing decision reads fail closed on surviving journal damage" at readTrustedJournal via guard "trusted journal — any malformed, forged, displaced, conflicting, or dangling row refuses the verdict projection"
+- boundary "a committed decision population cannot disappear into adoption from zero" at readTrustedJournal via guard "trusted journal — any malformed, forged, displaced, conflicting, or dangling row refuses the verdict projection"
 - boundary "decision ratification follows explicit subject and authority, never prose similarity or recency" at analyzeDecisionPositions via guard "local alternatives need ratification; an explicit stronger choice settles them"
 - boundary "work state is append-only, attributable, and predecessor-checked" at readWork via guard "strict merged read — torn, tampered, detached, and competing histories all refuse"
 - boundary "work cannot activate or complete before every dependency completes" at validateWorkGraph via guard "readiness and scope control — dependencies serialize potential overlap while runnable writers conflict"
@@ -131,7 +140,11 @@ rendering, and journaling remain independently addressable modules beneath this 
 - boundary "consequence evidence refuses surviving storage damage instead of shrinking navigation" at readConsequences via guard "damaged, forged, or displaced surviving rows refuse the whole projection"
 - boundary "orientation refuses damaged evidence before selecting a swarm heading" at observeOrientation via guard "orientation refuses a damaged trusted source instead of reading it as empty"
 - boundary "orientation admits verification state only with valid shape and comparable provenance" at verifyOrientation via guard "orientation refuses parseable malformed verification and never promotes missing provenance"
+- boundary "verification currency follows material repository state without invalidating its own receipt" at verifyOrientation via guard "verification currency ignores its own receipt but rejects tracked source and index changes"
+- boundary "orientation selects synthesis only when parent closure can execute it" at observeOrientation via guard "orientation dispatches a ready sibling before asking for parent synthesis"
 - boundary "orientation derives live blockage only from closeable work state" at observeOrientation via guard "orientation treats journal blockage as history, not a live work state"
+- passes test "field journey — competing duties settle into reconstructable evidence and damage recovers"
+- passes test "repository control — work and consequence records survive a fresh clone"
 - boundary "completed work remains unverified until an explicit verification edge names it" at observeRegulation via guard "regulate — completed work requires an explicit verification link before release"
 - boundary "high-frequency lifecycle hooks start without the analysis dependency stack" at runHook via guard "PostToolUse starts from the source bundle with no dependency installation"
 - boundary "hook telemetry loss never kills PostToolUse" at runHook via guard "PostToolUse starts from the source bundle with no dependency installation"
@@ -221,6 +234,13 @@ case-folding filesystems while an owned historical filename remains readable. An
 makes the verdict-bearing population unavailable while the historical render stays
 backward-compatible.
 
+**a committed decision population cannot disappear into adoption from zero.** An absent
+ledger is legitimate before first use, so filesystem absence alone proves nothing. Once
+current Git `HEAD` owns decision files, however, their wholesale deletion is an external
+witness that zero rows means lost evidence rather than adoption. The witness is consulted
+only at zero: populated compaction remains legal, while non-Git and unborn repositories
+retain an honestly unproven empty state.
+
 **decision ratification follows explicit subject and authority, never prose similarity or
 recency.** Independent agents can word the same question differently and can mention the
 same noun while answering different questions. Conflict detection therefore compares only
@@ -233,7 +253,9 @@ that mutates in place loses the handoffs and rejected transitions a swarm most n
 context loss. Each work order and transition is content-addressed in its writer session,
 and the current state is a strict replay. Broken predecessors, competing successors,
 detached histories, damaged rows, and missing graph referents refuse instead of resolving
-by last-write-wins.
+by last-write-wins. The ledger is repository evidence rather than a machine-local queue;
+the repository control therefore writes one through the public boundary, commits it,
+clones the repository, and requires the strict reader to reconstruct it.
 
 **work cannot activate or complete before every dependency completes.** Readiness is not
 advice layered over the lifecycle; it is the lifecycle's ordering law. Every transition
@@ -274,7 +296,9 @@ commits, experiments, verification, and defects already have addresses; temporal
 proximity does not make one cause another. The consequence ledger stores an assessor,
 evidence, typed endpoints, and a constrained relation per edge. Its graph traverses both
 directions for navigation while retaining the authored direction, and strict reads refuse
-forged, displaced, conflicting, or symlink-redirected evidence.
+forged, displaced, conflicting, or symlink-redirected evidence. Those edges are durable
+only if they cross a clone boundary, so the repository control writes a typed edge to a
+real commit, transports it through Git, and requires a dangling-free cloned orientation.
 
 **specialized consequence relations admit only their declared endpoint kinds.** A generic
 `relates-to` edge can connect any two supported addresses, but verbs such as `produces`,
@@ -301,6 +325,20 @@ the fields it uses—canonical time, commit shape, dirty bit, tier, and nonnegat
 count—and refuses malformed evidence. A green report is current only when both repository
 and report commit addresses exist and agree; missing provenance is stale, never an
 implicit match.
+
+**verification currency follows material repository state without invalidating its own
+receipt.** Matching `HEAD` identifies a commit, not the live index and working tree layered
+over it. A source, staged, or untracked change therefore makes a clean report stale even
+when `HEAD` did not move. The status file itself is the one excluded path because recording
+the report happens after its Git sample; counting that receipt would make every successful
+verification invalidate itself immediately.
+
+**orientation selects synthesis only when parent closure can execute it.** Synthesis is
+represented by the parent's terminal close, not by a separate mutable checkbox. A completed
+child can therefore remain visibly unsynthesized while a ready, active, or blocked sibling
+still owes work; selecting synthesis then would demand an operation the lifecycle refuses.
+Only when that parent's children are terminal does synthesis become the executable highest
+heading.
 
 **orientation derives live blockage only from closeable work state.** A journaled impasse
 is historical testimony and has no event that later marks it complete. Treating such rows

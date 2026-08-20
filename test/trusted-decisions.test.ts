@@ -5,6 +5,7 @@
 // surviving row makes the entire admissible population unavailable.
 import test from "node:test";
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { mkdir, mkdtemp, readFile, readdir, rename, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -12,12 +13,24 @@ import { join } from "node:path";
 import {
   appendDecision, readJournal, readTrustedJournal, sessionPath,
 } from "../src/decisions.ts";
+import { observeOrientation } from "../src/orient.ts";
 import type { Config } from "../src/types.ts";
+import { createWork } from "../src/work.ts";
 
 const T = (n: number) => `2026-08-20T10:${String(n).padStart(2, "0")}:00.000Z`;
 
 async function makeRoot(): Promise<Config> {
   return { root: await mkdtemp(join(tmpdir(), "coh-trusted-decisions-")) } as Config;
+}
+
+function git(root: string, ...args: string[]): string {
+  return execFileSync("git", args, { cwd: root, encoding: "utf8" }).trim();
+}
+
+function initializeGit(root: string): void {
+  git(root, "init", "-q");
+  git(root, "config", "user.email", "trusted-reader@example.invalid");
+  git(root, "config", "user.name", "Trusted Reader Test");
 }
 
 async function rows(cfg: Config, session: string): Promise<Record<string, unknown>[]> {
@@ -262,6 +275,61 @@ test("trusted journal — any malformed, forged, displaced, conflicting, or dang
       const trusted = readTrustedJournal(cfg);
       assert.equal(trusted.ok, true, trusted.ok ? undefined : JSON.stringify(trusted.damage));
       if (trusted.ok) assert.equal(trusted.records.length, 2);
+    } finally { await rm(cfg.root, { recursive: true, force: true }); }
+  });
+
+  await t.test("committed nonempty history cannot disappear into adoption from zero", async () => {
+    const cfg = await makeRoot();
+    try {
+      initializeGit(cfg.root);
+      appendDecision(cfg, {
+        kind: "decision", chose: "retain committed evidence", because: "history is the external deletion witness",
+        session: "s-remembered", agent: "agent", now: T(1),
+      });
+      git(cfg.root, "add", ".coherence/decisions");
+      git(cfg.root, "commit", "-qm", "remember a nonempty decision population");
+      await rm(join(cfg.root, ".coherence"), { recursive: true, force: true });
+      git(cfg.root, "add", "-u"); // the HEAD comparison must also see a staged deletion
+
+      assertRefusal(readTrustedJournal(cfg), "storage", /HEAD owns 1 deleted decision file/);
+    } finally { await rm(cfg.root, { recursive: true, force: true }); }
+
+    const adoption = await makeRoot();
+    try {
+      initializeGit(adoption.root);
+      await writeFile(join(adoption.root, "README.md"), "# first adoption\n");
+      git(adoption.root, "add", "README.md");
+      git(adoption.root, "commit", "-qm", "repository before its first decision");
+
+      const trusted = readTrustedJournal(adoption);
+      assert.equal(trusted.ok, true, trusted.ok ? undefined : JSON.stringify(trusted.damage));
+      if (trusted.ok) assert.deepEqual(trusted.records, []);
+    } finally { await rm(adoption.root, { recursive: true, force: true }); }
+  });
+
+  await t.test("decision corruption dominates dispatch without hiding healthy work evidence", async () => {
+    const cfg = await makeRoot();
+    try {
+      const ready = createWork(cfg, {
+        session: "s-worker", agent: "worker", objective: "perform dependency-clear work",
+        criteria: ["result exists"],
+        authority: { kind: "orchestrator-delegated", grantedBy: "orchestrator", boundary: "one fixture" },
+        risk: "medium", writeScopes: ["src/ready.ts"], now: T(1),
+      });
+      appendDecision(cfg, {
+        kind: "decision", chose: "retain the ready heading", because: "corruption must outrank it",
+        session: "s-corrupt", agent: "agent", now: T(2),
+      });
+      const onDisk = await rows(cfg, "s-corrupt");
+      onDisk[0].chose = "edited without re-addressing";
+      await replaceRows(cfg, "s-corrupt", onDisk);
+
+      const reading = await observeOrientation(cfg);
+      assert.equal(reading.action, "refuse");
+      assert.deepEqual(reading.sources.filter((source) => !source.ok).map((source) => source.name), ["decisions"]);
+      assert.equal(reading.sources.find((source) => source.name === "work")?.ok, true);
+      assert.deepEqual(reading.work?.ready, [ready.work], "the healthy competing source remains observable");
+      assert.equal(reading.decisions, null, "no valid-looking subset escapes the damaged source");
     } finally { await rm(cfg.root, { recursive: true, force: true }); }
   });
 });

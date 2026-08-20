@@ -16,17 +16,17 @@
   },
   {
     "key": "files|total",
-    "value": 143,
+    "value": 145,
     "unit": "files"
   },
   {
     "key": "lines|Executable contracts",
-    "value": 18470,
+    "value": 19126,
     "unit": "lines"
   },
   {
     "key": "lines|Harness core",
-    "value": 27221,
+    "value": 27294,
     "unit": "lines"
   },
   {
@@ -36,12 +36,12 @@
   },
   {
     "key": "lines|total",
-    "value": 46109,
+    "value": 46838,
     "unit": "lines"
   },
   {
     "key": "measure|graph-claims",
-    "value": 75,
+    "value": 80,
     "unit": "claims"
   },
   {

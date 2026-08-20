@@ -105,7 +105,7 @@
         "from": "record",
         "to": "derived-model",
         "security": true,
-        "translates": "Surviving decision rows become verdict-bearing evidence only when repository containment, complete entry inventory, canonical append framing, version, exact shape, canonical time, content identity, terminal references, duplicate agreement, and portable session/file attribution all hold. A human may still use the tolerant historical render, but one damaged row makes the trusted projection unavailable rather than silently shrinking it."
+        "translates": "Surviving decision rows become verdict-bearing evidence only when repository containment, complete entry inventory, canonical append framing, version, exact shape, canonical time, content identity, terminal references, duplicate agreement, and portable session/file attribution all hold. At zero rows, current Git HEAD distinguishes deleted tracked evidence from genuine adoption. A human may still use the tolerant historical render, but damage makes the trusted projection unavailable rather than silently shrinking it."
       },
       "readWork": {
         "from": "record",
@@ -123,7 +123,7 @@
         "from": "record",
         "to": "derived-model",
         "security": true,
-        "translates": "Independent strict decision, work, consequence, experiment, defect, and runtime-validated verification readings become one deterministic swarm heading. Any unavailable source outranks an apparently empty action list; missing verification provenance stays stale, collisions and dangling addresses remain named, and the projection executes nothing."
+        "translates": "Independent strict decision, work, consequence, experiment, defect, and runtime-validated verification readings become one deterministic swarm heading. Any unavailable source outranks an apparently empty action list; missing verification provenance stays stale, collisions and dangling addresses remain named, and synthesis is selected only when the representing parent close can execute. The projection executes nothing."
       },
       "analyzeDecisionPositions": {
         "from": "record",
@@ -171,7 +171,7 @@
         "from": "record",
         "to": "derived-model",
         "security": true,
-        "translates": "Persisted verification JSON becomes never, stale, failing, or current only after canonical time, commit shape, dirty bit, tier, and nonnegative failure count validate. Current additionally requires both repository and report commit addresses to exist and agree; missing provenance is stale."
+        "translates": "Persisted verification JSON plus the live Git tree become never, stale, failing, or current only after canonical time, commit shape, dirty bit, tier, and nonnegative failure count validate. Current additionally requires matching commit addresses and no material live change; the status receipt itself is excluded so filing evidence does not self-invalidate."
       },
       "sourceTextIsNavigable": {
         "from": "project-source",

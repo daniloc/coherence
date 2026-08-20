@@ -735,6 +735,37 @@ export type TrustedJournalRead =
 
 interface LocatedDecision { record: DecisionRecord; file: string; line: number }
 
+/** Git is the deletion witness the append-only files cannot provide for themselves.
+ * This asks only about paths present at the current HEAD and deleted from the combined
+ * index/worktree view. `null` means Git cannot establish a comparison (non-repository,
+ * unborn branch, or command failure); it is not promoted into evidence of prior rows.
+ *
+ * The witness is consulted only when the live projection derives ZERO records. That
+ * keeps compaction legal: replacing tracked session files with a populated fold changes
+ * addresses but does not erase the population. It also leaves a genuinely never-created
+ * ledger at adoption-from-zero, because HEAD then owns no deleted decision paths. */
+function trackedDecisionDeletions(root: string): string[] | null {
+  const deleted = gitLines(root, [
+    "diff", "--no-renames", "--name-only", "--diff-filter=D", "HEAD", "--",
+    ".coherence/decisions",
+  ]);
+  return deleted?.filter((path) => path.endsWith(".jsonl")) ?? null;
+}
+
+function trustedEmptyOrCommittedLoss(cfg: Config): TrustedJournalRead {
+  const deleted = trackedDecisionDeletions(cfg.root);
+  if (deleted?.length) {
+    return {
+      ok: false, records: [], sessions: [],
+      damage: [{
+        code: "storage", file: ".coherence/decisions",
+        detail: `trusted projection derived zero rows, but HEAD owns ${deleted.length} deleted decision file(s): ${deleted.join(", ")}`,
+      }],
+    };
+  }
+  return { ok: true, records: [], sessions: [], damage: [] };
+}
+
 const DECISION_KINDS = new Set<DecisionKind>([
   "session", "decision", "blocked", "retraction", "conjecture", "resolution", "dismissal",
 ]);
@@ -908,7 +939,7 @@ export function readTrustedJournal(cfg: Config): TrustedJournalRead {
     try { standing = lstatSync(path); }
     catch (error) {
       if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-        return { ok: true, records: [], sessions: [], damage: [] };
+        return trustedEmptyOrCommittedLoss(cfg);
       }
       return {
         ok: false, records: [], sessions: [],
@@ -1078,6 +1109,11 @@ export function readTrustedJournal(cfg: Config): TrustedJournalRead {
       seen.add(cursor.id);
       cursor = byId.get(cursor.supersedes)?.first.record;
     }
+  }
+
+  if (!located.length && !damage.length) {
+    const empty = trustedEmptyOrCommittedLoss(cfg);
+    if (!empty.ok) damage.push(...empty.damage);
   }
 
   if (damage.length) {

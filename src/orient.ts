@@ -99,7 +99,11 @@ function canonicalTime(value: unknown): value is string {
   return Number.isFinite(ms) && new Date(ms).toISOString() === value;
 }
 
-export function verifyOrientation(section: unknown, head: string | null): VerificationOrientation {
+export function verifyOrientation(
+  section: unknown,
+  head: string | null,
+  workingTreeDirty: boolean | null,
+): VerificationOrientation {
   if (!section) return { state: "never", at: null, commit: null, failures: null, tier: null };
   if (typeof section !== "object" || Array.isArray(section)) throw new Error("verify section must be an object");
   const row = section as Record<string, unknown>;
@@ -114,15 +118,30 @@ export function verifyOrientation(section: unknown, head: string | null): Verifi
   }
   const commit = row.commit as string | null;
   // Missing repository or report provenance cannot prove currency. It stays stale until
-  // both addresses exist and agree; absence is not evidence of sameness.
+  // both addresses exist and agree and the live tree is known clean; absence is not
+  // evidence of sameness. The caller excludes the status receipt itself from the live
+  // dirty reading so recording a successful run does not immediately invalidate it.
   const sameCommit = !!head && !!commit && (head.startsWith(commit) || commit.startsWith(head));
   return {
-    state: row.failures > 0 ? "failing" : sameCommit && !row.dirty ? "current" : "stale",
+    state: row.failures > 0
+      ? "failing"
+      : sameCommit && !row.dirty && workingTreeDirty === false ? "current" : "stale",
     at: row.at as string,
     commit,
     failures: row.failures,
     tier: row.tier,
   };
+}
+
+/** The verification receipt is written after Git provenance is sampled, so its exact
+ * path is the one permitted difference between the recorded clean tree and the live
+ * tree. Every source, index, and untracked change outside it invalidates currency. */
+function verificationTreeDirty(root: string): boolean | null {
+  const status = spawnSync("git", [
+    "status", "--porcelain=v1", "-z", "--untracked-files=normal", "--", ".",
+    ":(exclude).coherence/status.json",
+  ], { cwd: root, encoding: "utf8" });
+  return status.status === 0 ? status.stdout.length > 0 : null;
 }
 
 function commitExists(root: string, id: string): boolean {
@@ -179,12 +198,28 @@ function workProjection(ledger: WorkLedger): NonNullable<Orientation["work"]> {
   };
 }
 
+/** Synthesis is represented only by closing its parent. That close is executable exactly
+ * when every direct child is terminal; pending results remain visible in `unsynthesized`
+ * while a ready, active, or blocked sibling receives the actionable heading instead. */
+function executableSynthesis(ledger: WorkLedger): Array<{ parent: string; child: string }> {
+  const parentsWithLiveChildren = new Set(ledger.works
+    .filter((item) => item.opened.parent !== null
+      && item.opened.parent !== undefined
+      && item.state !== "completed"
+      && item.state !== "cancelled")
+    .map((item) => item.opened.parent as string));
+  return ledger.unsynthesized
+    .filter((item) => !parentsWithLiveChildren.has(item.parent))
+    .map(({ parent, child }) => ({ parent, child }));
+}
+
 /** Read every ledger independently. A failed source is preserved as a source failure and
  * makes the heading REFUSE; it never turns into an empty population. */
 export async function observeOrientation(cfg: Config): Promise<Orientation> {
   const sources: OrientationSource[] = [];
   let decisions: Orientation["decisions"] = null;
   let work: Orientation["work"] = null;
+  let synthesizable: Array<{ parent: string; child: string }> = [];
   let consequences: Orientation["consequences"] = null;
   let verification: Orientation["verification"] = null;
   const known = new Map<ConsequenceRef["kind"], Set<string>>();
@@ -215,6 +250,7 @@ export async function observeOrientation(cfg: Config): Promise<Orientation> {
   try {
     workLedger = readWork(cfg);
     work = workProjection(workLedger);
+    synthesizable = executableSynthesis(workLedger);
     known.set("work", new Set(workLedger.works.map((item) => item.work)));
     source(sources, "work", true, `${workLedger.stats.total} work order(s); ${workLedger.stats.scopeConflicts} active write conflict(s)`);
   } catch (error) {
@@ -251,7 +287,7 @@ export async function observeOrientation(cfg: Config): Promise<Orientation> {
       throw new Error("status record must be a version 1 object");
     }
     const head = gitStamp(cfg.root).commit;
-    verification = verifyOrientation(status.verify, head);
+    verification = verifyOrientation(status.verify, head, verificationTreeDirty(cfg.root));
     source(sources, "verification", true, verification.state === "never"
       ? "no verification report has been filed"
       : `${verification.state} ${verification.tier} report at ${verification.at}`);
@@ -294,9 +330,9 @@ export async function observeOrientation(cfg: Config): Promise<Orientation> {
   } else if ((work?.blocked.length ?? 0) > 0) {
     action = "unblock";
     reasons = work?.blocked.map((id) => `work ${id} is blocked`) ?? [];
-  } else if ((work?.unsynthesized.length ?? 0) > 0) {
+  } else if (synthesizable.length > 0) {
     action = "synthesize";
-    reasons = work!.unsynthesized.map((item) => `${item.parent} has not synthesized ${item.child}`);
+    reasons = synthesizable.map((item) => `${item.parent} has not synthesized ${item.child}`);
   } else if ((work?.ready.length ?? 0) > 0) {
     action = "dispatch";
     reasons = work!.ready.map((id) => `${id} is ready and dependency-clear`);
@@ -324,6 +360,7 @@ export async function observeOrientation(cfg: Config): Promise<Orientation> {
     limitations: [
       "orientation selects one heading from recorded evidence; it neither executes work nor proves semantic correctness",
       "historical journal blocked reports remain visible evidence but only closeable work state selects a live unblock heading",
+      "pending child results select synthesis only after that parent's direct children are terminal",
       "verification references remain unchecked until verification receipts become append-only identities",
       "shared paths, commits, and timestamps never create consequence links",
     ],

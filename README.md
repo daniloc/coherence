@@ -136,6 +136,81 @@ That is the shortest operating loop:
 5. `consequence` for explicit provenance between durable records.
 6. `verify`, link the evidence, then run `orient` again.
 
+### Validate a swarm in the field
+
+A green harness proves mechanisms, not that a swarm delivered the right result. Keep two
+claims separate:
+
+- a **live canary** proves that attribution, conflict sensing, handoff, synthesis,
+  navigation, and fail-closed recovery work in the selected host;
+- a **matched efficacy trial** asks whether those mechanisms reduce inference, conflict,
+  rework, or defects without degrading the domain outcome.
+
+Predeclare the canary before dispatch. Use `experiment create` to freeze its representative
+task, actions, and observable criteria; choose the time/read budgets and sample counts now,
+not after seeing the result. At minimum name the native domain outcome, assignment delivery,
+actual-versus-declared write scope, one seeded collision and one dependency-serialized
+overlap, decision ratification, handoff and child synthesis, hook reliability, transcript-free
+navigation, damage recovery, and the final orientation:
+
+```sh
+npx coherence experiment create "the live swarm completes its domain task and leaves a recoverable field" \
+  --context src/changed-domain.ts \
+  --action "run the canary below with exact parent and child sessions" \
+  --success "the project-native acceptance criterion passes" \
+  --success "coordination, navigation, and recovery criteria all carry evidence" \
+  --session "$COHERENCE_SESSION"
+```
+
+Run the canary on a disposable branch with one parent, two real child sessions, a dependency,
+a shared integration seam, and a reviewer handoff:
+
+1. Capture the clean baseline: project-native acceptance, `coherence verify`, commit, elapsed
+   time, and the expected changed paths. Prove the selected lifecycle bundle and current
+   parent activation; have each child restate the exact work order its `SessionStart` emitted.
+2. Make one pair of runnable orders claim an overlapping write scope. Before either writes,
+   `orient` must say `RESOLVE-CONFLICT`. Block or serialize one. A second overlapping order
+   waiting on a declared dependency must remain potential overlap, never a live collision.
+   Compare the actual diff and explicit-path trace with every declared write scope; the work
+   ledger records authority but cannot prevent an out-of-scope write.
+3. Have two children record incompatible `local-proposal` choices on one explicit subject.
+   Require `RESOLVE-CONFLICT`, then record the accepted authority and confirm timestamps did
+   not choose it. Exercise early dependency refusal, handoff to the exact reviewer, and the
+   parent's refusal to close until every live child is terminal and every completed child is
+   named as synthesized.
+4. Run the project-native acceptance and full verification. Preserve the command, output,
+   and commit, then record the decision-to-work, work-to-commit, and verification-to-work
+   links. The verification address is still assessor-authored, so the retained evidence is
+   part of this criterion.
+5. Give a fresh agent **no transcript**. Its only starting surfaces are `orient`, bounded
+   `context`, `work inspect`, and `consequence inspect`. Within the predeclared time and read
+   budget it must recover the objective, authority, owners, dependencies, ratified choice,
+   evidence, and next action, invent no causal edge, and make no out-of-scope follow-up edit.
+6. In a disposable copy, damage one surviving ledger row and stale the verification. The
+   headings must move to `REFUSE`, then `VERIFY`, never `STEADY`. Restore the row, close every
+   experiment criterion with evidence, and require native acceptance, current verification,
+   `regulate --check` release, and `orient` steady.
+
+The canary passes only with all assigned sessions accounted for, zero out-of-scope writes,
+the seeded collision detected before the first conflicting write, no false collision for the
+serialized pair, no old-owner write after handoff, complete child synthesis, zero hook failures
+across the predeclared event count, correct fresh-reader answers with zero invented links, and
+successful refusal and recovery. A single canary establishes operability, not efficacy.
+
+For efficacy, pre-register a matched task set or historical comparator and one primary metric.
+Report sample size and attribution grade beside median time to the correct heading, context
+bytes and outside reads, duplicate/conflicting edits, reviewer reconstruction time, rework,
+and escaped defects. Pass only if domain correctness does not regress and the predeclared
+primary metric clears its chosen improvement band; the other measures remain evidence, not a
+post-hoc score. A few matched tasks are a pilot, not a population claim.
+
+Keep attribution at its weakest provable grade. Exact work owners and journal writers do not
+make Codex descendant `PostToolUse` rows exact: those remain a `parent-session-aggregate`.
+Explicit-path traces are a lower bound, shell/editor/remembered reads are absent, and current
+verification references are not receipt-checked. Score per-child behavior only from exact
+records, label aggregate measures as aggregate, and retain manual scope and verification
+evidence rather than upgrading either ceiling by inference.
+
 The rest of this README explains the trust model, adoption, claim language, instruments,
 and known ceilings behind that loop.
 
