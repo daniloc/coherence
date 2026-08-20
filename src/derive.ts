@@ -100,7 +100,10 @@ export async function buildGraph(cfg: Config): Promise<Graph> {
 
   const dirs = await nodeDirs(root, ignore);
   const files = await codeFiles(root, ignore, extRe, skip);
-  const bindings = platform ? await platform.bindings(root) : null;
+  // The platform adapter receives THIS walk's exact file population rather than
+  // walking independently. That keeps ignored generated files (notably Cloudflare's
+  // worker-configuration.d.ts) from becoming machine-local graph inputs.
+  const bindings = platform ? await platform.bindings(root, files) : null;
 
   const nodes: GraphNode[] = [];
   const edges: GraphEdge[] = [];

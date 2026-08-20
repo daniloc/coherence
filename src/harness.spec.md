@@ -22,6 +22,7 @@ rendering, and journaling remain independently addressable modules beneath this 
 - a vanished oracle reds its claim, never green-by-absence
 - fast verification rejects a statically vanished Vitest oracle without executing tests
 - fast oracle absence requires a complete direct-declaration population
+- committed platform capabilities survive optional deployment-config toggles
 - a declared invariant unanchored by any boundary fails coverage
 - a via-test oracle that iterates no live domain fails its claim
 - a skipped run never clobbers an oracle's recorded verdict
@@ -49,7 +50,9 @@ rendering, and journaling remain independently addressable modules beneath this 
 ## refutations
 
 - fast verification rejects a statically vanished Vitest oracle without executing tests: changed `resolveStaticOracle`'s complete zero-match branch from `absent` to `unknown` (2026-08-20), laundering the motivating Mnemion rename into an ordinary fast-tier skip — the focused boundary guard failed and captured the dangerous verdict: `claims: 1 · 0 green · 0 red · 1 skipped`, followed by `✓ coherent`. Restored; the same fixture now reds `VANISHED ORACLE (static)` without Vitest installed or invoked.
+- fast verification rejects a statically vanished Vitest oracle without executing tests: 0.36.2 made incompleteness project-wide, so Mnemion's finite data-driven titles made an unrelated renamed clipboard oracle UNKNOWN forever. Reproduced against current main: renaming the literal clipboard test left fast verify green. The scanner now retains concrete runner names and owner paths from Git `HEAD`; losing a name from a deleted or still-complete former owner reds before unrelated current uncertainty is consulted, while a former owner that itself became dynamic remains UNKNOWN. No prefix guess or partial JavaScript evaluator is allowed to manufacture global completeness.
 - fast oracle absence requires a complete direct-declaration population: before release, conventional files whose tests came only from a bare side-effect import, top-level `import()`, or `require()` each produced `fullNames=[]`, `incomplete=[]`, and `absent`, so fast verification could call a live runtime-owned oracle vanished. Release audit then found the same false absence behind a transitive local Vitest alias and a live `build/live.test.ts`, while a conventional file symlink was followed outside the declared traversal boundary. The scanner now resolves exact alias chains, marks registration-time module loads incomplete, mirrors Vitest v4's `node_modules`/`.git` default exclusions, and refuses every symlink/custom collection surface into UNKNOWN; loads inside test callbacks remain ordinary subject execution.
+- committed platform capabilities survive optional deployment-config toggles: Mnemion intentionally ships its `DOCUMENTS` R2 stanza commented so clean deploys need no R2 account, while three committed `Env` interfaces declare `DOCUMENTS?: R2Bucket`. A graph made with a locally enabled stanza gained `i:DOCUMENTS` and its bind edges; the same commit in a clean clone lost them and failed docs freshness. The Cloudflare adapter now unions direct typed `Env` capabilities from the already-filtered code population with wrangler declarations, deduplicates agreement, and refuses type conflicts; a generated local declaration cannot re-enter after the project ignores it.
 - a parse's heap is returned before the next file: shipped 0.34.0 with no `tree.delete()` at any parse site — an adopter's configless `verify` from a home directory aborted the wasm runtime mid-walk (`RuntimeError: Aborted()` in Parser.parse). Reproduced at exactly parse #638 of an 80KB file; the identical loop with delete runs unbounded. The oracle-gate agent had already observed the failure mode in its harness and it was read as gate plumbing rather than a shipped hazard. Fixed by dissolution: every parse routes through `withTree`, which frees in a finally, so the leak is unrepresentable — and the guard is calibrated just past the measured cliff.
 
 - surviving agent-assessed defect evidence is attributable and internally consistent: disabled the content-address recomputation in the strict reader (2026-08-20), so a summary, evidence string, or timestamp changed without its id remained readable — full verify red this claim by name at `claims: 51 · 50 green · 1 red`; the guard observed that the inconsistent row no longer refused. Restored. This detects accidental or partial damage, not an adversary who rewrites a valid row and recomputes its unkeyed id; committed Git history is that rewrite witness.
@@ -92,8 +95,9 @@ rendering, and journaling remain independently addressable modules beneath this 
 - boundary "pinned mass follows a value-conserving rename but never absorbs growth" at reconcileMass via guard "mass — a renamed component keeps its pin; growth and novelty are never absorbed"
 - boundary "a claim goes green only on positive evidence its oracle ran" at execNamedTest via guard "testMatch — a runner exiting 0 with no matching output FAILS (the renamed-test trap)"
 - boundary "a vanished oracle reds its claim, never green-by-absence" at resolveFromBatch via guard "match — ZERO matching tests is its OWN state: the vanished oracle, named as such"
-- boundary "fast verification rejects a statically vanished Vitest oracle without executing tests" at resolveStaticOracle via guard "static oracle floor — a renamed literal Vitest oracle reds --fast without running tests"
+- boundary "fast verification rejects a statically vanished Vitest oracle without executing tests" at resolveStaticOracle via guard "static oracle floor — a renamed tracked literal owner reds despite unrelated dynamic titles"
 - boundary "fast oracle absence requires a complete direct-declaration population" at resolveStaticOracle via guard "static names — a bare side-effect import may register tests and keeps absence UNKNOWN"
+- boundary "committed platform capabilities survive optional deployment-config toggles" at cloudflareBindings via guard "Cloudflare bindings — committed Env capability is stable across optional wrangler toggles"
 - boundary "a declared invariant unanchored by any boundary fails coverage" at runVerify via guard "RATCHET — a declared invariant with no anchoring boundary fails coverage"
 - boundary "a via-test oracle that iterates no live domain fails its claim" at analyzeOracle via guard "META-ORACLE — a `via test` boundary whose oracle loops a LITERAL fails"
 - boundary "a skipped run never clobbers an oracle's recorded verdict" at recordVerify via guard "merge — a skip never clobbers a real verdict; the old verdict rides through with its own stamp"
@@ -201,9 +205,12 @@ tests.** Name ownership is cheaper than test outcome: a literal Vitest declarati
 still supplies a runner-style full name or it does not. The edit loop should answer that
 structural question without buying remote credentials or a suite boot, while refusing to
 turn dynamic or damaged source into false certainty. Static presence therefore remains a
-skip, static absence reds, and incomplete source stays explicitly unknown; the executable
-tier alone can supply pass/fail evidence. This is a direct-declaration grade, not an
-evaluator for arbitrary runtime registration; projects beyond it disable
+skip. A complete current population can prove absence; independently, a concrete Git
+`HEAD` owner disappearing from a deleted or still-complete former path proves an ownership
+loss even when unrelated current source is incomplete. If that same path becomes dynamic
+or damaged, it stays explicitly unknown; everything else does too. The
+executable tier alone can supply pass/fail evidence. This is a direct-declaration grade,
+not an evaluator for arbitrary runtime registration; projects beyond it disable
 `staticOracleExistence` or resolve a fresh report.
 
 **fast oracle absence requires a complete direct-declaration population.** Absence is a
@@ -213,6 +220,15 @@ dynamic titles, fixture DSLs, registration-time module loads, custom includes, a
 source must poison absence into UNKNOWN while still allowing positive direct matches.
 Otherwise the cheap tier would turn its own inability to see a live oracle into evidence
 that the oracle vanished.
+
+**committed platform capabilities survive optional deployment-config toggles.** The graph
+describes the capability surface authored code can address, not only what one machine has
+enabled for its next deploy. For Cloudflare stores, a direct `Env` property with a known
+binding type and a wrangler stanza are two observations of the same binding domain: the
+adapter unions them, collapses agreement, and refuses disagreement. Source inference uses
+the graph's already-filtered file population, so a generated machine-local environment
+declaration cannot become a hidden second walk. An optional binding may therefore turn on
+or off without silently adding or deleting the node and edges that document its code path.
 
 **a declared invariant unanchored by any boundary fails coverage.** A spec may not
 assert a property that nothing enforces: that is the ratchet the whole harness turns on,

@@ -83,6 +83,12 @@
         "security": true,
         "translates": "The single ingress: arbitrary repository text becomes the model every downstream gate is computed over. Nothing after this re-reads the tree, so whatever the walk drops is not wrong here — it is absent everywhere, silently. floor.ts's non-vacuity refusal exists because of exactly this crossing, and grades the collapse rather than the crossing."
       },
+      "cloudflareBindings": {
+        "from": "project-source",
+        "to": "derived-model",
+        "security": true,
+        "translates": "Direct module Env / Cloudflare.Env store types and wrangler configuration become one canonical infra-node domain. Source/config agreement deduplicates, disagreement refuses, deployment-only metadata cannot perturb node bytes, and source inference receives the graph's filtered file population so generated local declarations cannot become a hidden second walk."
+      },
       "loadConfig": {
         "from": "project-source",
         "to": "shell",
@@ -129,7 +135,7 @@
         "from": "derived-model",
         "to": "verdict",
         "security": true,
-        "translates": "Current conventional Vitest source names become a tri-state existence verdict without executing test configuration or modules. A literal match proves existence only; a complete zero-match within the direct-declaration grade is VANISHED ORACLE (static); recognized dynamic, extended, runtime-registered, custom-included, unreadable, or otherwise incomplete source remains UNKNOWN. Projects assembled beyond that grade disable staticOracleExistence or use a fresh report."
+        "translates": "Current conventional Vitest source names plus concrete owners from modified or deleted test paths at Git HEAD become a tri-state existence verdict without executing test configuration or modules. A current literal match proves existence only; complete current absence or loss from a deleted/still-complete former owner is VANISHED ORACLE (static). A former owner that itself becomes dynamic or damaged remains UNKNOWN, as do recognized extended, runtime-registered, custom-included, unreadable, and otherwise incomplete sources. Projects assembled beyond that grade disable staticOracleExistence or use a fresh report."
       },
       "runVerify": {
         "from": "derived-model",

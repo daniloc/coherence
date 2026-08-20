@@ -40,7 +40,11 @@ export interface LanguageAdapter {
 
 /** How to read a platform's infra config (optional — null platform = none). */
 export interface PlatformAdapter {
-  bindings(root: string): Promise<Bindings | null>;
+  /** `files` is derive.ts's already-filtered code population. Platform source
+   *  inference must not perform a second walk: ignored/generated local files would
+   *  otherwise become an undeclared input to generated artifacts. Optional for
+   *  compatibility with callers that only need the configuration-backed grade. */
+  bindings(root: string, files?: readonly string[]): Promise<Bindings | null>;
 }
 
 export interface Config {

@@ -2,7 +2,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { readFile, symlink, writeFile } from "node:fs/promises";
+import { readFile, symlink, unlink, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { runVerify } from "../src/verify.ts";
 import {
@@ -16,6 +16,16 @@ const vitestCfg = (root: string) => cfg(root, { test: ["npx", "vitest", "-t"], o
 async function withProject(files: Record<string, string>, fn: (root: string) => Promise<void>): Promise<void> {
   const root = await tmpProject(files);
   try { await fn(root); } finally { await cleanup(root); }
+}
+
+function commitAll(root: string): void {
+  assert.equal(spawnSync("git", ["init", "-q"], { cwd: root }).status, 0);
+  assert.equal(spawnSync("git", ["add", "."], { cwd: root }).status, 0);
+  assert.equal(spawnSync("git", [
+    "-c", "user.name=Coherence Test", "-c", "user.email=coherence@example.invalid",
+    "-c", "commit.gpgsign=false",
+    "commit", "-q", "-m", "base",
+  ], { cwd: root }).status, 0);
 }
 
 test("static oracle floor — a renamed literal Vitest oracle reds --fast without running tests", async () => {
@@ -38,6 +48,110 @@ test("static oracle floor — a renamed literal Vitest oracle reds --fast withou
     assert.match(result.out, /No test was run/);
     await assert.rejects(() => readFile(marker));
   });
+});
+
+test("static oracle floor — a renamed tracked literal owner reds despite unrelated dynamic titles", async () => {
+  await withProject({
+    "clipboard.test.ts": `import { it } from "vitest";\nit("patch on a clipboard-bound pattern is rejected", () => {});\n`,
+    "dynamic.test.ts": `import { it } from "vitest";\nit(\`renders \${runtimeName}\`, () => {});\n`,
+  }, async (root) => {
+    commitAll(root);
+    await writeFile(
+      join(root, "clipboard.test.ts"),
+      `import { it } from "vitest";\nit("rejects patch on a clipboard-bound pattern", () => {});\n`,
+    );
+    const index = await indexStaticVitestOracles(vitestCfg(root));
+    assert.match(index.incomplete.join("\n"), /title is not a string literal/);
+    assert.deepEqual(index.priorOwners, [{
+      file: "clipboard.test.ts",
+      fullName: "patch on a clipboard-bound pattern is rejected",
+      current: "complete",
+    }]);
+    assert.equal(resolveStaticOracle(index, "patch on a clipboard-bound pattern is rejected").state, "absent");
+    assert.equal(resolveStaticOracle(index, "rejects patch on a clipboard-bound pattern").state, "found");
+    assert.equal(resolveStaticOracle(index, "a name never owned by HEAD").state, "unknown");
+
+    const marker = join(root, "runner-was-launched");
+    const c = cfg(root, {
+      test: ["node", "-e", `require('fs').writeFileSync(${JSON.stringify(marker)}, 'yes')`, "--", "vitest"],
+      oracleDomain: false,
+    });
+    const g = graph([comp(".", {
+      claims: ['passes test "patch on a clipboard-bound pattern is rejected"'], why: "r",
+    })]);
+    const result = await runCaptured(() => runVerify(c, g, { fast: true }));
+    assert.equal(result.code, 1, result.out);
+    assert.match(result.out, /tracked Git HEAD concretely owned this name/);
+    await assert.rejects(() => readFile(marker));
+  });
+});
+
+test("static names — a former owner rewritten dynamically in the same file remains UNKNOWN", async () => {
+  await withProject({
+    "clipboard.test.ts": `import { it } from "vitest";\nit("clipboard owner", () => {});\n`,
+  }, async (root) => {
+    commitAll(root);
+    await writeFile(
+      join(root, "clipboard.test.ts"),
+      `import { it } from "vitest";\nit(runtimeFlag ? "clipboard owner" : "other owner", () => {});\n`,
+    );
+    const index = await indexStaticVitestOracles(vitestCfg(root));
+    assert.deepEqual(index.priorOwners, [{
+      file: "clipboard.test.ts",
+      fullName: "clipboard owner",
+      current: "incomplete",
+    }]);
+    assert.equal(resolveStaticOracle(index, "clipboard owner").state, "unknown");
+  });
+});
+
+test("static names — deleting a tracked literal owner is a claim-local vanished transition", async () => {
+  await withProject({
+    "clipboard.test.ts": `import { it } from "vitest";\nit("clipboard owner", () => {});\n`,
+    "dynamic.test.ts": `import { it } from "vitest";\nit(dynamicTitle, () => {});\n`,
+  }, async (root) => {
+    commitAll(root);
+    await unlink(join(root, "clipboard.test.ts"));
+    const index = await indexStaticVitestOracles(vitestCfg(root));
+    assert.deepEqual(index.priorOwners, [{
+      file: "clipboard.test.ts",
+      fullName: "clipboard owner",
+      current: "deleted",
+    }]);
+    assert.equal(resolveStaticOracle(index, "clipboard owner").state, "absent");
+    assert.equal(resolveStaticOracle(index, "never owned").state, "unknown");
+  });
+});
+
+test("static names — a non-Git project has no historical owner evidence", async () => {
+  await withProject({
+    "clipboard.test.ts": `import { it } from "vitest";\nit("rejects patch on a clipboard-bound pattern", () => {});\n`,
+    "dynamic.test.ts": `import { it } from "vitest";\nit(dynamicTitle, () => {});\n`,
+  }, async (root) => {
+    const index = await indexStaticVitestOracles(vitestCfg(root));
+    assert.deepEqual(index.priorOwners, []);
+    assert.equal(resolveStaticOracle(index, "patch on a clipboard-bound pattern is rejected").state, "unknown");
+  });
+});
+
+test("static names — historical owners resolve when the configured root is a Git subdirectory", async () => {
+  const root = await tmpProject({
+    "packages/app/clipboard.test.ts": `import { it } from "vitest";\nit("old nested owner", () => {});\n`,
+    "packages/app/dynamic.test.ts": `import { it } from "vitest";\nit(dynamicTitle, () => {});\n`,
+  });
+  try {
+    commitAll(root);
+    const app = join(root, "packages", "app");
+    await writeFile(
+      join(app, "clipboard.test.ts"),
+      `import { it } from "vitest";\nit("new nested owner", () => {});\n`,
+    );
+    const index = await indexStaticVitestOracles(vitestCfg(app));
+    assert.equal(resolveStaticOracle(index, "old nested owner").state, "absent");
+    assert.equal(resolveStaticOracle(index, "new nested owner").state, "found");
+  } finally {
+    await cleanup(root);
+  }
 });
 
 test("static names — nested suites, aliases, namespaces, and conditional/modifier wrappers reconstruct Vitest fullName", async () => {

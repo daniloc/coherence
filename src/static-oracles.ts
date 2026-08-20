@@ -2,8 +2,11 @@
 //
 // A renamed test is a source-name failure, not a test-outcome failure. `verify --fast`
 // can therefore reject a name that no current conventional test declaration owns without
-// starting Vitest. This module deliberately proves only EXISTENCE: a found name remains skipped
-// in the fast tier, because source text is not evidence that the test passed.
+// starting Vitest. A complete current scan proves absolute absence; independently, a
+// concrete owner on a test path changed from Git HEAD proves that this edit removed the
+// owner even when unrelated dynamic registration keeps global absence unknown. This
+// module deliberately proves only EXISTENCE: a found name remains skipped in the fast
+// tier, because source text is not evidence that the test passed.
 //
 // The floor is conservative. Literal declarations produce Vitest-style full names;
 // dynamic titles, parameterized declarations, damaged parses, unreadable files, and
@@ -12,7 +15,8 @@
 // when another declaration in the project is dynamic. This is deliberately a
 // direct-declaration grade, not a claim to execute or solve arbitrary registration code;
 // projects whose runtime registry is assembled beyond that grade can disable the floor.
-import { readFile, readdir } from "node:fs/promises";
+import { lstat, readFile, readdir } from "node:fs/promises";
+import { spawnSync } from "node:child_process";
 import { join, relative } from "node:path";
 import { Query, type Node } from "web-tree-sitter";
 import { grammarHandle, withTree } from "./adapters/tree-sitter.ts";
@@ -23,6 +27,14 @@ import type { Config } from "./types.ts";
 export interface StaticOracleIndex {
   /** Literal runner-style names: `[...describeTitles, testTitle].join(" ")`. */
   fullNames: string[];
+  /** Concrete owners in tracked conventional test paths changed from Git HEAD, carrying
+   *  enough current-path state to distinguish deletion/complete loss from an uncertain
+   *  dynamic rewrite in the same file. */
+  priorOwners?: Array<{
+    file: string;
+    fullName: string;
+    current: "complete" | "incomplete" | "deleted";
+  }>;
   /** Reasons this scan cannot prove global absence. Empty means absence is decidable. */
   incomplete: string[];
   files: number;
@@ -30,7 +42,7 @@ export interface StaticOracleIndex {
 
 export type StaticOracleResolution =
   | { state: "found"; matches: string[] }
-  | { state: "absent" }
+  | { state: "absent"; priorMatches?: Array<{ file: string; fullName: string }> }
   | { state: "unknown"; detail: string };
 
 interface StaticQueryHandle {
@@ -53,11 +65,19 @@ function queryHandle(): Promise<StaticQueryHandle> {
   return staticQueryHandle;
 }
 
-/** Resolve one claim through the exact matcher batch reports use. Found wins over an
- *  incomplete scan; incompleteness only prevents a zero-match result becoming red. */
+/** Resolve one claim through the exact matcher batch reports use. Current ownership wins;
+ *  loss of a concrete tracked HEAD owner is claim-local absence; only a name with neither
+ *  form of evidence yields to the current scan's global incompleteness. */
 export function resolveStaticOracle(index: StaticOracleIndex, name: string): StaticOracleResolution {
   const matches = index.fullNames.filter((fullName) => matchesVitestOracleName(fullName, name));
   if (matches.length) return { state: "found", matches };
+  const priorMatches = (index.priorOwners ?? [])
+    .filter((owner) => owner.current !== "incomplete"
+      && matchesVitestOracleName(owner.fullName, name));
+  if (priorMatches.length) return {
+    state: "absent",
+    priorMatches: priorMatches.map(({ file, fullName }) => ({ file, fullName })),
+  };
   if (index.incomplete.length) {
     const shown = index.incomplete.slice(0, 3);
     const more = index.incomplete.length - shown.length;
@@ -457,6 +477,95 @@ function scanSource(
   return { fullNames, incomplete };
 }
 
+interface ScannedStaticSource {
+  fullNames: string[];
+  incomplete: string[];
+  parseError: boolean;
+}
+
+function scanSourceText(
+  parser: StaticQueryHandle["parser"],
+  query: Query,
+  file: string,
+  source: string,
+): ScannedStaticSource | null {
+  return withTree(parser, source, null as ScannedStaticSource | null, (tree) => {
+    const calls = new Map<string, { call: Node; fn: Node; args: Node }>();
+    const imports = new Map<string, { node: Node; source: Node }>();
+    const locals = new Map<string, { node: Node; name: Node }>();
+    const parameters = new Map<string, Node>();
+    for (const match of query.matches(tree.rootNode)) {
+      const capture = (name: string) => match.captures.find((c) => c.name === name)?.node;
+      const call = capture("static.call"), fn = capture("static.fn"), args = capture("static.args");
+      if (call && fn && args) calls.set(`${call.startIndex}:${call.endIndex}`, { call, fn, args });
+      const node = capture("static.import"), sourceNode = capture("static.import-source");
+      if (node && sourceNode) imports.set(`${node.startIndex}:${node.endIndex}`, { node, source: sourceNode });
+      const binding = capture("static.binding"), bindingName = capture("static.binding-name");
+      if (binding && bindingName) locals.set(`${binding.startIndex}:${binding.endIndex}`, { node: binding, name: bindingName });
+      const parameter = capture("static.parameter");
+      if (parameter) parameters.set(`${parameter.startIndex}:${parameter.endIndex}`, parameter);
+    }
+    const result = scanSource(file, [...calls.values()], [...imports.values()], [...locals.values()], [...parameters.values()]);
+    const parseError = tree.rootNode.hasError;
+    if (parseError) result.incomplete.push(`${file} contains a TypeScript/JavaScript parse error`);
+    return { ...result, parseError };
+  });
+}
+
+function gitText(cwd: string, args: string[]): string | null {
+  const result = spawnSync("git", args, {
+    cwd,
+    encoding: "utf8",
+    maxBuffer: 32 * 1024 * 1024,
+    stdio: ["ignore", "pipe", "ignore"],
+  });
+  return result.status === 0 && typeof result.stdout === "string" ? result.stdout : null;
+}
+
+/** Read concrete owners from tracked conventional test paths changed from HEAD.
+ *  No Git repository or no commit means no transition evidence, not an incomplete scan.
+ *  A config root may be a subdirectory of the worktree; the pathspec and returned names
+ *  are translated through the Git top level before source is parsed. */
+function headConcreteOwners(
+  cfg: Config,
+  parser: StaticQueryHandle["parser"],
+  query: Query,
+): Array<{ file: string; fullName: string }> {
+  const gitRoot = gitText(cfg.root, ["rev-parse", "--show-toplevel"])?.trim();
+  const shownPrefix = gitText(cfg.root, ["rev-parse", "--show-prefix"])?.trim();
+  if (!gitRoot || shownPrefix === undefined) return [];
+  const rootPrefix = shownPrefix.replace(/\/$/, "");
+  const scoped = rootPrefix ? ["--", rootPrefix] : [];
+  const changedText = gitText(gitRoot, ["diff", "--name-only", "--no-renames", "-z", "HEAD", ...scoped]);
+  if (changedText === null) return []; // unborn HEAD or unreadable repository
+  const changed = new Set(changedText.split("\0").filter(Boolean));
+  if (!changed.size) return [];
+  const tree = gitText(gitRoot, ["ls-tree", "-r", "-z", "HEAD", ...scoped]);
+  if (tree === null) return [];
+  const row = ORACLE_LANGUAGES.typescript;
+  const owners: Array<{ file: string; fullName: string }> = [];
+  for (const record of tree.split("\0")) {
+    if (!record) continue;
+    const tab = record.indexOf("\t");
+    if (tab < 0) continue;
+    const [mode, type] = record.slice(0, tab).split(" ");
+    const repoPath = record.slice(tab + 1);
+    if (!changed.has(repoPath) || type !== "blob" || !mode.startsWith("100")) continue;
+    const file = rootPrefix
+      ? repoPath.startsWith(`${rootPrefix}/`) ? repoPath.slice(rootPrefix.length + 1) : null
+      : repoPath;
+    if (!file || !row.testFilePattern.test(file)
+      || file.split("/").some((segment) => VITEST_DEFAULT_EXCLUDED_DIRS.has(segment))) continue;
+    const source = gitText(gitRoot, ["show", `HEAD:${repoPath}`]);
+    if (source === null) continue;
+    const scanned = scanSourceText(parser, query, file, source);
+    if (!scanned || scanned.parseError) continue;
+    owners.push(...scanned.fullNames.map((fullName) => ({ file, fullName })));
+  }
+  return [...new Map(owners.map((owner) => [`${owner.file}\0${owner.fullName}`, owner])).values()]
+    .sort((a, b) => a.file.localeCompare(b.file) || a.fullName.localeCompare(b.fullName));
+}
+
 async function filesystemTestPaths(cfg: Config): Promise<{ paths: string[]; incomplete: string[] }> {
   const paths: string[] = [];
   const incomplete: string[] = [];
@@ -544,43 +653,46 @@ export async function indexStaticVitestOracles(cfg: Config): Promise<StaticOracl
     }
   }
   let files = 0;
+  const currentFileState = new Map<string, "complete" | "incomplete">();
   for (const file of paths.sort()) {
     let source: string;
     try { source = await readFile(join(cfg.root, file), "utf8"); }
     catch (error) {
       if ((error as NodeJS.ErrnoException).code === "ENOENT") continue; // disappeared after enumeration
       incomplete.push(`${file} cannot be read: ${error instanceof Error ? error.message : String(error)}`);
+      currentFileState.set(file, "incomplete");
       continue;
     }
     files++;
-    const scanned = withTree(parser, source, null as { fullNames: string[]; incomplete: string[] } | null, (tree) => {
-      const calls = new Map<string, { call: Node; fn: Node; args: Node }>();
-      const imports = new Map<string, { node: Node; source: Node }>();
-      const locals = new Map<string, { node: Node; name: Node }>();
-      const parameters = new Map<string, Node>();
-      for (const match of query.matches(tree.rootNode)) {
-        const capture = (name: string) => match.captures.find((c) => c.name === name)?.node;
-        const call = capture("static.call"), fn = capture("static.fn"), args = capture("static.args");
-        if (call && fn && args) calls.set(`${call.startIndex}:${call.endIndex}`, { call, fn, args });
-        const node = capture("static.import"), sourceNode = capture("static.import-source");
-        if (node && sourceNode) imports.set(`${node.startIndex}:${node.endIndex}`, { node, source: sourceNode });
-        const binding = capture("static.binding"), bindingName = capture("static.binding-name");
-        if (binding && bindingName) locals.set(`${binding.startIndex}:${binding.endIndex}`, { node: binding, name: bindingName });
-        const parameter = capture("static.parameter");
-        if (parameter) parameters.set(`${parameter.startIndex}:${parameter.endIndex}`, parameter);
-      }
-      const result = scanSource(file, [...calls.values()], [...imports.values()], [...locals.values()], [...parameters.values()]);
-      if (tree.rootNode.hasError) result.incomplete.push(`${file} contains a TypeScript/JavaScript parse error`);
-      return result;
-    });
+    const scanned = scanSourceText(parser, query, file, source);
     if (!scanned) {
       incomplete.push(`${file} could not be parsed`);
+      currentFileState.set(file, "incomplete");
       continue;
     }
+    currentFileState.set(file, scanned.incomplete.length ? "incomplete" : "complete");
     fullNames.push(...scanned.fullNames);
     incomplete.push(...scanned.incomplete);
   }
-  return { fullNames: [...new Set(fullNames)].sort(), incomplete: [...new Set(incomplete)], files };
+  const priorOwners = await Promise.all(headConcreteOwners(cfg, parser, query).map(async (owner) => {
+    const scanned = currentFileState.get(owner.file);
+    if (scanned) return { ...owner, current: scanned } as const;
+    try {
+      await lstat(join(cfg.root, owner.file));
+      return { ...owner, current: "incomplete" } as const;
+    } catch (error) {
+      return {
+        ...owner,
+        current: (error as NodeJS.ErrnoException).code === "ENOENT" ? "deleted" : "incomplete",
+      } as const;
+    }
+  }));
+  return {
+    fullNames: [...new Set(fullNames)].sort(),
+    priorOwners,
+    incomplete: [...new Set(incomplete)],
+    files,
+  };
 }
 
 /** Convert a static existence reading into the fast-tier claim verdict. */
@@ -589,7 +701,11 @@ export function staticFastVerdict(index: StaticOracleIndex, name: string, skippe
   const resolution = resolveStaticOracle(index, name);
   if (resolution.state === "absent") return {
     kind: "fail",
-    detail: `test "${name}" — VANISHED ORACLE (static): no matching direct declaration was found within the conventional Vitest TS/JS grade. No test was run. If tests are assembled by an unsupported runtime registry, set config.staticOracleExistence to false or use verify --from-report with a fresh report; otherwise repair the stale oracle name.`,
+    detail: `test "${name}" — VANISHED ORACLE (static): `
+      + (resolution.priorMatches?.length
+        ? `tracked Git HEAD concretely owned this name at ${resolution.priorMatches[0].file} as ${JSON.stringify(resolution.priorMatches[0].fullName)}, but the current source no longer does. `
+        : "no matching direct declaration was found within the conventional Vitest TS/JS grade. ")
+      + `No test was run. If tests are assembled by an unsupported runtime registry, set config.staticOracleExistence to false or use verify --from-report with a fresh report; otherwise repair the stale oracle name.`,
   };
   if (resolution.state === "unknown") return {
     kind: "skip",

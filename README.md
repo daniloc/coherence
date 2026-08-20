@@ -22,7 +22,16 @@ command below is an instrument in that economy.
 The **core is platform- and language-agnostic.** Project-specific knowledge lives
 behind two adapters:
 - **language adapter** (`src/adapters/tree-sitter.ts`) — symbols, imports, docblocks; grammar-backed built-ins for TypeScript, Python, and Ruby, project-extensible.
-- **platform adapter** (`src/adapters/cloudflare.ts`) — infra bindings (wrangler.jsonc + .toml). Optional.
+- **platform adapter** (`src/adapters/cloudflare.ts`) — infra bindings from wrangler config plus direct typed `Env` capabilities. Optional.
+
+With `"platform": "cloudflare"`, direct module-level `Env` / `Cloudflare.Env`
+properties using the existing D1, KV, Vectorize, R2, and Workers AI types form the
+committed capability floor; `wrangler.jsonc` / `wrangler.toml`
+augment and confirm it. This keeps an optional binding's graph node stable when a local
+deployment toggle is enabled or commented out. Agreement deduplicates; a source/config
+type conflict refuses rather than picking whichever spelling was read last. Source
+inference consumes the same filtered code-file population as the graph, so put generated
+machine-local declarations such as `worker-configuration.d.ts` in `ignore`.
 
 ## The economy of inference: what a codebase actually costs
 
@@ -693,7 +702,7 @@ defaults come from `src/config.ts`):
 | `outputDir` | `"public"` | Where generated artifacts go (`graph.json`, `_graph.html`, `_overview.html`, ratchet baselines). |
 | `entryDir` | `"."` | The entrypoint component's dir (`.` = root). |
 | `tooling` | `[]` | Path prefixes demoted to a "tooling" group in the graph. |
-| `ignore` | `["node_modules",".git","dist",".turbo",".wrangler"]` | Dir names the spec/code walk never enters. NOTE: neither the meta-oracle nor the fast Vitest name floor reuses this graph list when hunting for oracle test files (see below). |
+| `ignore` | `["node_modules",".git","dist",".turbo",".wrangler"]` | File or directory names the spec/code walk never enters. Put machine-generated environment declarations here when platform capability inference should use authored types only. NOTE: neither the meta-oracle nor the fast Vitest name floor reuses this graph list when hunting for oracle test files (see below). |
 | `codeExt` | `["ts"]` | File extensions treated as code for the tree. |
 | `typecheck` | `["npm","run","typecheck"]` | Command the `typechecks` claim shells. |
 | `test` | `[]` | Base command for `passes test "<name>"` / boundary-oracle claims; `<name>` is appended as the final arg. Empty = those claims skip. |
@@ -2509,12 +2518,19 @@ name a whole suite or a substring spanning the suite/test boundary.
 
 This floor never upgrades a skipped executable claim to green. A source match proves only
 that the named oracle exists, so the claim remains skipped until a real run supplies its
-outcome. Zero matches after a complete scan is red — `VANISHED ORACLE (static)`. The
-red-capable population is conventional `*.test/spec` TypeScript/JavaScript source.
-Recognized dynamic titles, parameterized declarations, local or imported test DSLs,
-runtime registration helpers, unreadable or damaged source, unsupported Vitest wrappers,
-zero conventional candidates, and visible custom `include`/`includeSource` configuration
-make the scan explicitly **unknown**, never absent. This is a direct-declaration grade:
+outcome. Zero matches after a complete scan is red — `VANISHED ORACLE (static)`. There is
+also an edit-time proof that does not require global completeness: when a concrete test
+name in Git `HEAD` owned the live claim and disappears from a former owner path that is
+deleted or still statically complete, the lost owner reds before unrelated dynamic sites
+are considered. If that former owner file itself becomes dynamic, damaged, or unreadable,
+the claim remains **unknown**. Outside a Git checkout that signal is simply unavailable.
+The red-capable population is conventional
+`*.test/spec` TypeScript/JavaScript source.
+Dynamic titles, parameterized declarations, local or imported test DSLs, runtime
+registration helpers, unreadable or damaged source, unsupported Vitest wrappers, zero
+conventional candidates, and visible custom `include`/`includeSource` configuration make
+absolute current-tree absence explicitly **unknown**, never absent. A lost concrete HEAD
+owner remains independently observable. This is a direct-declaration grade:
 arbitrary side-effect imports, evaluation, or dynamically assembled configuration cannot
 be proven complete without executing the project. Set `staticOracleExistence: false` for
 such a registry; fast claims then remain UNKNOWN/skipped. The scanner executes no test

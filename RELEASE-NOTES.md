@@ -14,6 +14,31 @@ evidence inside that record.
 
 ---
 
+## v0.36.3 — damage is local; capability is committed
+
+The first static-oracle floor in 0.36.2 was conservative at the wrong scope. One dynamic
+title anywhere made every unmatched claim `UNKNOWN`, so Mnemion's fifteen legitimate
+data-driven registrations kept its renamed clipboard oracle green forever in the everyday
+fast path. Fast verification now retains concrete claim owners from modified or deleted
+conventional test files at Git `HEAD`. A current literal owner still wins; losing a name
+from a deleted or still-statically-complete former owner is `VANISHED ORACLE (static)` even
+when unrelated files are dynamic; and a former owner file that itself becomes dynamic,
+damaged, or unreadable remains `UNKNOWN`. The fix executes no project code, attempts no
+partial JavaScript evaluator, and simply has no historical signal outside a Git checkout.
+
+The Cloudflare adapter now derives store capabilities from committed direct `Env` and
+`Cloudflare.Env` property types as well as wrangler configuration. Agreement deduplicates,
+kind conflicts refuse, D1 display bytes no longer depend on deployment-only database
+metadata, and stores have one canonical order. Source inference receives the graph's
+already-filtered file population, so an ignored generated `worker-configuration.d.ts`
+cannot become a hidden machine-local authority. Mnemion's committed
+`DOCUMENTS?: R2Bucket` declaration therefore produces the same infra node and bind edges
+whether its optional R2 stanza is enabled locally or commented in a clean clone.
+
+Pre-tag qualification is 838/838 source tests, 56/56 spec claims, 38/38 anchored
+invariants, typecheck and build, every ratchet, and the packed artifact installed and
+exercised in an isolated Git consumer.
+
 ## v0.36.2 — damage leaves evidence; vanished evidence turns red
 
 `v0.36.0` was never published. Its first publish attempt exposed an E404-handling defect

@@ -310,12 +310,14 @@ test("verify — ATTRIBUTION IS PER CLAIM: three claims, three distinct verdicts
       cfg(root, { testBatch: ["node", join(root, "runner.js")] }), g, {}));
     assert.equal(r.code, 1);
     assert.match(r.out, /claims: 3 · 1 green · 2 red/);
-    // the PASSING claim is not dragged down by its neighbours sharing one report
-    assert.doesNotMatch(r.out, /outer inner nest deep/);
+    const redLines = r.out.split("\n").filter((line) => line.startsWith("  ✗ ["));
+    // The PASSING claim is not dragged down by its neighbours sharing one report.
+    // It may independently appear in the timing-based holding-cost advisory.
+    assert.doesNotMatch(redLines.join("\n"), /outer inner nest deep/);
     // each red line carries its OWN oracle name and its OWN state
-    const failLine = r.out.split("\n").find((l) => l.includes('"failing group this one fails"'))!;
+    const failLine = redLines.find((l) => l.includes('"failing group this one fails"'))!;
     assert.match(failLine, /matching test FAILED in the batch report: "failing group this one fails"/);
-    const goneLine = r.out.split("\n").find((l) => l.includes('"an oracle that was deleted"'))!;
+    const goneLine = redLines.find((l) => l.includes('"an oracle that was deleted"'))!;
     assert.match(goneLine, /VANISHED ORACLE/);
     assert.notEqual(failLine, goneLine);
     assert.equal((await readFile(join(root, "runs.log"), "utf8")).length, 1);
