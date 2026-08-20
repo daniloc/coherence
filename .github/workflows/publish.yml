@@ -67,7 +67,12 @@ jobs:
         run: |
           package="$(node -p "require('./package.json').name")"
           version="$(node -p "require('./package.json').version")"
-          existing="$(npm view "$package@$version" gitHead --json 2>/dev/null | tr -d '"[:space:]' || true)"
+          # NO --json here: under --json, npm prints an E404 for an unpublished version
+          # as JSON on STDOUT, which read as a nonempty `existing` and made the guard
+          # refuse the FIRST publish of every version (def-ebfedf53d47f, the v0.36.0
+          # tag's failed run). Plain output keeps errors on stderr; the || true then
+          # only converts "not published yet" into the empty string it was meant to be.
+          existing="$(npm view "$package@$version" gitHead 2>/dev/null | tr -d '[:space:]' || true)"
           if [ -n "$existing" ]; then
             [ "$existing" = "$GITHUB_SHA" ] || {
               echo "$package@$version already exists from $existing, not tagged commit $GITHUB_SHA" >&2
