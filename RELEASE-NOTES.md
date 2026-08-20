@@ -14,6 +14,106 @@ evidence inside that record.
 
 ---
 
+## v0.37.0 — a gyroscope, not an autopilot
+
+This release adds a correctness-and-navigation gyroscope for agent swarms. `orient`
+reduces six strict evidence sources to one deterministic heading without executing it;
+the append-only work ledger makes ownership, dependencies, write scopes, handoff, and
+parent synthesis addressable; explicit consequence edges provide navigation without
+inventing causality from timestamps or shared paths; and bounded context packets expose
+exactly what they withheld. Decision positions now use explicit subject and authority,
+not prose similarity or last-writer-wins. The regulator consumes the same strict
+orientation, so damaged coordination evidence refuses before a superficially healthy
+release decision.
+
+The failure boundary moved with the feature. Decision, work, consequence, experiment,
+defect, and verification inputs are runtime-validated; surviving damage refuses the
+whole verdict-bearing projection. Work cannot activate or close through incomplete
+dependencies, terminal parents cannot retain live children, runnable overlapping writers
+collide, and completed children are synthesized only when their parent can represent the
+join. Hook persistence failures degrade to byte-silent observation loss rather than
+breaking the agent lifecycle, and repository-authored work text is neutralized before it
+crosses into model instructions.
+
+The claim remains deliberately smaller than “swarms are now correct.” One black-box field
+journey and this repository's own multi-agent build prove mechanism, refusal, recovery,
+and transcript-free reconstruction. They do not prove efficacy across representative
+tasks. Write scopes remain declarations rather than capabilities, verification references
+are not yet receipt-authenticated, and Codex child tool use may retain only
+parent-session-aggregate attribution. v0.37.0 is therefore a supervised field release,
+not an unattended correctness controller.
+
+Local release-candidate qualification is 934/934 source tests, 81/81 spec claims,
+61/61 anchored invariants, typecheck and build, publication-state self-test, every
+ratchet, docs and atlas freshness, and the packed artifact installed and exercised in an
+isolated Git consumer. The immutable tag is created only after GitHub's Node 22 CI repeats
+those gates against the exact pushed release commit.
+
+### Rollback record — part of the release contract
+
+The immutable pre-gyroscope consumer baseline is `v0.36.4` at commit `7185a5e`. The
+gyroscope entered main through merge commit `0e3cf39`; the version and rollback choice is
+decision `d-7db43e4b`, and the rehearsed evidence-preserving procedure is decision
+`d-21fe357c`. Do not move or delete `v0.37.0`, erase its ledgers, or unpublish its npm
+artifact: those actions would destroy the evidence needed to understand why it failed.
+
+Stop the rollout immediately for any confirmed false `STEADY`, incorrect
+`DISPATCH`/`CONTINUE`, failure to `REFUSE` known surviving damage, or supported-host hook
+failure that interrupts an agent session. Also stop if a transcript-free reader cannot
+recover objective, authority, owners, dependencies, ratified choice, evidence, and next
+action inside the predeclared budget. For efficacy, a correctness regression on one
+matched task is sufficient to stop; efficiency claims require several matched tasks and
+must not trade away domain correctness.
+
+Consumer containment is immediate and does not rewrite history:
+
+```sh
+npm install --save-dev --save-exact @danilocampos/coherence@0.36.4
+npx -y @danilocampos/coherence@0.36.4 hooks install --host codex   # or: --host claude
+```
+
+If the default npm channel itself must be rolled back, a maintainer moves only the mutable
+channel and marks the bad version; the immutable artifact remains available for audit:
+
+```sh
+npm dist-tag add @danilocampos/coherence@0.36.4 latest
+npm deprecate '@danilocampos/coherence@0.37.0' \
+  'Gyroscope rollout withdrawn; pin 0.36.4 pending a qualified replacement.'
+```
+
+The source rollback was rehearsed in a disposable worktree. The raw merge revert is
+expected to stop on the live decision/experiment rows and status receipt; resolve that
+known conflict by retaining every append-only ledger from the release, while restoring
+the pre-feature status only as a seed for fresh verification:
+
+```sh
+git switch -c rollback/v0.37.0 v0.37.0
+git revert -m 1 --no-commit 0e3cf39
+
+# Continue only when `git status --short` shows the rehearsed ledger/status conflicts.
+git restore --source=v0.37.0 --staged --worktree -- \
+  .coherence/decisions .coherence/experiments .coherence/work \
+  .coherence/consequences .coherence/defects
+git restore --source=v0.36.4 --staged --worktree -- .coherence/status.json
+git add -A
+GIT_EDITOR=true git revert --continue
+
+# A rollback is a new release, never a moved tag.
+npm version 0.37.1 --no-git-tag-version
+node src/cli.ts docs
+node src/cli.ts atlas
+node src/cli.ts mass --update-baseline
+npm run typecheck
+npm test
+node src/cli.ts verify
+```
+
+Commit the regenerated surfaces and v0.37.1 metadata, push `main`, wait for exact-SHA CI,
+then create the immutable `v0.37.1` tag. The rehearsal preserved the current ledgers,
+returned `src/`, `test/`, package metadata, configuration, workflows, and scripts exactly
+to the pre-gyroscope main state, and passed docs freshness, typecheck, and the whole source
+suite.
+
 ## v0.36.4 — deployment values are not architecture
 
 The 0.36.3 Cloudflare repair stabilized Mnemion's infra nodes and bind edges but left one
