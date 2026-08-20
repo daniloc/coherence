@@ -31,18 +31,11 @@ export const LIFECYCLE_HOOK_LAUNCHER = '"$CLAUDE_PROJECT_DIR/.claude/coherence-h
 export const CODEX_LIFECYCLE_HOOK_LAUNCHER = 'codex_root=$(git rev-parse --show-toplevel 2>/dev/null || pwd -P); "$codex_root/.codex/coherence-hook"';
 
 const BUNDLE_FINGERPRINT_TOKEN = "__COHERENCE_HOOK_BUNDLE_FINGERPRINT__";
-/** Bump when a hook-body wire meaning changes without a package-version change. */
+/** Bump whenever a hook-body wire meaning changes. */
 export const HOOK_BODY_PROTOCOL_VERSION = 2 as const;
 
-function packageVersion(): string {
-  try {
-    const parsed: unknown = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
-    return isObject(parsed) && typeof parsed.version === "string" ? parsed.version : "unversioned";
-  } catch { return "unversioned"; }
-}
-
-/** Old activity cannot prove a newly installed body merely because settings stayed still. */
-export const HOOK_BODY_BUILD_ID = `${packageVersion()}/protocol-${HOOK_BODY_PROTOCOL_VERSION}`;
+/** Package-only releases do not change the wire; protocol changes deliberately do. */
+export const HOOK_BODY_BUILD_ID = `protocol-${HOOK_BODY_PROTOCOL_VERSION}`;
 
 const CLAUDE_LIFECYCLE_HOOK_SCRIPT_TEMPLATE = `#!/bin/sh
 set -eu

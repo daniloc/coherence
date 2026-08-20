@@ -8,7 +8,7 @@ cd "$coherence_root"
 export COHERENCE_PROJECT_ROOT="$coherence_root"
 export COHERENCE_HOOK_HOST="claude"
 export COHERENCE_HOOK_TRANSPORT="launcher"
-export COHERENCE_HOOK_BUNDLE_FINGERPRINT="c6b72f2d4452f66faddb4dc60d62dfc588f207adb3bc607259b283f6d5a6deed"
+export COHERENCE_HOOK_BUNDLE_FINGERPRINT="3fa84bf7b19e2aad8529a87276814146b9108bf9c730899804e38ebcc2afb570"
 
 if [ -x "$coherence_root/node_modules/.bin/coherence-hook" ]; then
   exec "$coherence_root/node_modules/.bin/coherence-hook" "$@"

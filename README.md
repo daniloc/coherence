@@ -269,9 +269,11 @@ Published on npm as [`@danilocampos/coherence`](https://www.npmjs.com/package/@d
 npm install --save-dev @danilocampos/coherence
 ```
 
-Releases are tag-driven with npm provenance: each published version is built by CI
-from the matching `v*` tag, so the registry artifact is traceable to its commit.
-Use `>=0.32.0` — the 0.31.0 artifact is deprecated (broken dependency declaration).
+Releases are tag-driven with npm provenance. A repository ruleset makes existing `v*`
+tags immutable; publication then requires that the exact tagged SHA passed `main` CI,
+that the tag agrees with `package.json`, and that any existing npm version names that
+same SHA. Use `>=0.32.0` — the 0.31.0 artifact is deprecated (broken dependency
+declaration).
 
 To qualify unreleased work, a git dependency still works — npm clones the repo and
 runs `prepare` (which builds `dist/`):
@@ -524,8 +526,8 @@ project-local dependency; no global installation is assumed.
 
    With `--session`, `--check` requires both the structural bit and an event delivered by
    the exact selected host, launcher transport, and installed bundle fingerprint. That
-   fingerprint includes the hook-body package/protocol build as well as settings and
-   launcher bytes, so a pre-upgrade event cannot prove the new body ran. A manual
+   fingerprint includes the hook-body protocol as well as settings and launcher bytes,
+   so an event from an older wire contract cannot prove the new body ran. A manual
    `coherence hook` probe is reported as direct evidence, not activation; an older bundle
    is reported as stale. There is deliberately no “newest session” fallback—concurrency
    makes newest an attribution bug. When neither `--session`, `COHERENCE_SESSION`, nor

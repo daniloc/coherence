@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-08-20 16:48Z",
+  "generatedAt": "2026-08-20 17:58Z",
   "root": "coherence",
-  "absRoot": "/Users/daniloc/Documents/Development/coherence-defect-recorder",
+  "absRoot": "/Users/daniloc/Documents/Development/coherence-release-simplify",
   "nodes": [
     {
       "id": "c:.",
@@ -1199,7 +1199,7 @@
       "sub": "const",
       "path": "src/control.ts",
       "line": 35,
-      "prose": "Bump when a hook-body wire meaning changes without a package-version change."
+      "prose": "Bump whenever a hook-body wire meaning changes."
     },
     {
       "id": "s:src/control.ts#HOOK_BODY_BUILD_ID",
@@ -1208,8 +1208,8 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/control.ts",
-      "line": 45,
-      "prose": "Old activity cannot prove a newly installed body merely because settings stayed still."
+      "line": 38,
+      "prose": "Package-only releases do not change the wire; protocol changes deliberately do."
     },
     {
       "id": "s:src/control.ts#HookFileInspection",
@@ -1218,7 +1218,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/control.ts",
-      "line": 93
+      "line": 86
     },
     {
       "id": "s:src/control.ts#HookLauncherInspection",
@@ -1227,7 +1227,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/control.ts",
-      "line": 107
+      "line": 100
     },
     {
       "id": "s:src/control.ts#CodexProjectConfigInspection",
@@ -1236,7 +1236,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/control.ts",
-      "line": 132
+      "line": 125
     },
     {
       "id": "s:src/control.ts#LifecycleHookInspection",
@@ -1245,7 +1245,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/control.ts",
-      "line": 145
+      "line": 138
     },
     {
       "id": "s:src/control.ts#LifecycleHookMutation",
@@ -1254,7 +1254,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/control.ts",
-      "line": 162
+      "line": 155
     },
     {
       "id": "s:src/control.ts#lifecycleHookCommand",
@@ -1263,7 +1263,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/control.ts",
-      "line": 199
+      "line": 192
     },
     {
       "id": "s:src/control.ts#canonicalLifecycleHookSettings",
@@ -1272,7 +1272,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/control.ts",
-      "line": 219,
+      "line": 212,
       "prose": "The sole authored settings value. Printing, inspection, and installation all call this."
     },
     {
@@ -1282,7 +1282,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/control.ts",
-      "line": 230,
+      "line": 223,
       "prose": "Version the authored hook bundle independently from any machine path. The mapping is\ninspected separately: including it here would make identical host wiring acquire a new\nruntime identity merely because the consumer keeps coherence in a nested package."
     },
     {
@@ -1292,7 +1292,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/control.ts",
-      "line": 241
+      "line": 234
     },
     {
       "id": "s:src/control.ts#CODEX_LIFECYCLE_HOOK_BUNDLE_FINGERPRINT",
@@ -1301,7 +1301,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/control.ts",
-      "line": 242
+      "line": 235
     },
     {
       "id": "s:src/control.ts#LIFECYCLE_HOOK_SCRIPT",
@@ -1310,7 +1310,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/control.ts",
-      "line": 243
+      "line": 236
     },
     {
       "id": "s:src/control.ts#CODEX_LIFECYCLE_HOOK_SCRIPT",
@@ -1319,7 +1319,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/control.ts",
-      "line": 247
+      "line": 240
     },
     {
       "id": "s:src/control.ts#resolveClaudeProjectRoot",
@@ -1328,7 +1328,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/control.ts",
-      "line": 253,
+      "line": 246,
       "prose": "The Claude host root is explicit because real consumers keep coherence in a sub-project."
     },
     {
@@ -1338,7 +1338,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/control.ts",
-      "line": 258,
+      "line": 251,
       "prose": "Codex ordinarily opens the same repo; retain that relationship only as a default."
     },
     {
@@ -1348,7 +1348,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/control.ts",
-      "line": 262
+      "line": 255
     },
     {
       "id": "s:src/control.ts#lifecycleRootMapping",
@@ -1357,7 +1357,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/control.ts",
-      "line": 289
+      "line": 282
     },
     {
       "id": "s:src/control.ts#managedLifecycleEvent",
@@ -1366,7 +1366,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/control.ts",
-      "line": 352,
+      "line": 345,
       "prose": "Recognize only lifecycle commands coherence has emitted or that are already present in\naudited consumers. The match is anchored: mentioning `coherence hook` is not enough."
     },
     {
@@ -1376,7 +1376,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/control.ts",
-      "line": 471
+      "line": 464
     },
     {
       "id": "s:src/control.ts#inspectCodexProjectConfig",
@@ -1385,7 +1385,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/control.ts",
-      "line": 559,
+      "line": 552,
       "prose": "This is deliberately a relevant-syntax scanner, not a pretend TOML parser. It proves\nonly the project-level facts the control needs: whether another inline hook surface\nexists, and whether this layer explicitly disables project hooks. Higher config/trust layers\nremain outside a repository inspection's authority."
     },
     {
@@ -1395,7 +1395,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/control.ts",
-      "line": 622,
+      "line": 615,
       "prose": "Inspect without mutating: the lifecycle control's read operation."
     },
     {
@@ -1405,7 +1405,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/control.ts",
-      "line": 665
+      "line": 658
     },
     {
       "id": "s:src/control.ts#setLifecycleHook",
@@ -1414,7 +1414,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/control.ts",
-      "line": 739,
+      "line": 732,
       "prose": "Set one host's lifecycle bit. ON converges project settings, removes competing\nhost-local/legacy paths, and repairs the two coherence-owned launcher files. OFF removes\nevery recognized lifecycle action from that host's settings, then removes only launcher\nfiles whose bytes are still canonical. Unrelated settings and hook actions survive."
     },
     {
@@ -1424,7 +1424,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/control.ts",
-      "line": 795
+      "line": 788
     },
     {
       "id": "x:node:util",
