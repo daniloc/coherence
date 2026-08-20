@@ -1,4 +1,42 @@
-# coherence
+# coherence: Spend less inference, build better projects
+
+Robots can write code faster than any human can interpret.
+
+That's the strange new problem of the agent age. An agent has inexhaustible stamina: it will generate, refactor, and patch for as long as you let it. But every choice it makes—every alternative it rejected, every argument it settled—evaporates when the session ends. The next reader arrives with the same questions we've always had: *Can I change this safely? What breaks if I do? Why is it this way?*
+
+Answering those questions by reading code and simulating it in your head is **inference**, and it's the most expensive operation in software. Worse, it's paid again by every reader, forever—nobody's inference makes the next reader's cheaper. In a world where the readers are mostly agents burning tokens, that invoice compounds fast.
+
+Coherence is a machine for spending less inference.
+
+It gives a project durable, *checkable* spine of truth and design intention. A decision journal records what was chosen, what was rejected, and why, so settled questions stay settled instead of getting re-litigated by every fresh session. Machine-checkable specs tie documentation to the code with oracles that re-grade it every build—when the docs rot, the build says so. An agent orients in seconds instead of spelunking. And a work ledger coordinates whole swarms: who owns what, within what boundary, and where two agents are about to collide.
+
+Think of an electrical panel. A tidy one—every breaker labeled, every label tested—can be acted on from its labels. A tangled one has to be carefully analyzed by tracing wires. Tracing wires is inference. Coherence keeps the panel labeled, and keeps proving the labels true.
+
+It's platform- and language-agnostic, runs anywhere Node ≥22 runs, and installs in three commands.
+
+## Quick start: paste this into your agent
+
+```text
+Install Coherence in this project and adopt its lifecycle control:
+
+1. Run: npm install --save-dev @danilocampos/coherence
+2. Create coherence.config.json in the project root. An empty object {} is a
+   complete config; add "typecheck", "test", and "testMatch" entries if the
+   project has those commands.
+3. Run: npx coherence hooks install --host claude   (use --host codex on Codex)
+4. Commit coherence.config.json and the generated host control files.
+5. Run: npx coherence verify, then npx coherence orient, and report what they say.
+
+Before recording decisions, creating claims, or coordinating other agents, read
+the full reference inside the <details> section of
+node_modules/@danilocampos/coherence/README.md.
+```
+
+---
+
+<details>
+<summary><strong>Full reference.</strong> Everything below this point is written for <em>agents</em> — context for learning this repository and for implementing Coherence in other projects. Humans are welcome, but it is deliberately exhaustive; the pitch above is the human-sized version.</summary>
+
 
 A standalone coherence harness for agent-developed projects. It derives a
 multi-resolution graph from a `*.spec.md` tree plus the code, renders a navigable
@@ -3258,3 +3296,5 @@ boundary/invariant is a loss `--strict` gates on), the **status record's merge r
 (`status.ts` — a skip must never clobber a real verdict; scoped runs replace only what
 they touched), and the **panel's pure core** (`panel.ts` — light derivation incl.
 staleness degradation, model assembly, and the frame renderer with colors off).
+
+</details>
