@@ -255,7 +255,7 @@ test("`docs --check` does NOT fail a project that never opted in (absent markers
 // index, same fix, same oracle discipline.
 
 test("the phrasebook block is TOTAL over CLAIM_FORMS: every form's name, grammar and example, in registry order", () => {
-  const block = renderPhrasebookBlock();
+  const block = renderPhrasebookBlock(CLAIM_FORMS);
   assert.ok(block.startsWith(PHRASEBOOK_BEGIN));
   assert.ok(block.trimEnd().endsWith(PHRASEBOOK_END));
   let cursor = -1;
@@ -279,7 +279,7 @@ test("the phrasebook block is TOTAL over CLAIM_FORMS: every form's name, grammar
 
 test("the phrasebook block round-trips through spliceBlock, and no other fence can see it", () => {
   const host = `intro\n\n${PHRASEBOOK_BEGIN}\nstale\n${PHRASEBOOK_END}\n\nauthored notes\n`;
-  const spliced = spliceBlock(host, renderPhrasebookBlock(), { begin: PHRASEBOOK_BEGIN, end: PHRASEBOOK_END });
+  const spliced = spliceBlock(host, renderPhrasebookBlock(CLAIM_FORMS), { begin: PHRASEBOOK_BEGIN, end: PHRASEBOOK_END });
   assert.ok(spliced !== null);
   assert.match(spliced!, /authored notes/);
   assert.doesNotMatch(spliced!, /^stale$/m);
@@ -296,7 +296,7 @@ test("this repo's own committed README phrasebook block is CURRENT", async () =>
   const readme = await readFile(README_PATH, "utf8");
   const current = extractBlock(readme, { begin: PHRASEBOOK_BEGIN, end: PHRASEBOOK_END });
   assert.ok(current !== null, `README.md is missing the phrasebook markers ${PHRASEBOOK_BEGIN} / ${PHRASEBOOK_END}`);
-  assert.equal(current, renderPhrasebookBlock(), "README.md's claim-form table is stale — run `node src/cli.ts docs`");
+  assert.equal(current, renderPhrasebookBlock(CLAIM_FORMS), "README.md's claim-form table is stale — run `node src/cli.ts docs`");
 });
 
 test("`docs --check` FAILS on a stale phrasebook block, and names README.md", async () => {
@@ -321,7 +321,7 @@ test("`docs --check` FAILS on a stale phrasebook block, and names README.md", as
     assert.match(stale.stdout, /stale: .*README\.md \(phrasebook\)/);
 
     await run(process.execPath, [CLI_PATH, "docs"], { cwd: dir });
-    assert.equal(extractBlock(await readFile(`${dir}/README.md`, "utf8"), P_FENCE), renderPhrasebookBlock());
+    assert.equal(extractBlock(await readFile(`${dir}/README.md`, "utf8"), P_FENCE), renderPhrasebookBlock(CLAIM_FORMS));
   } finally {
     await cleanup(dir);
   }

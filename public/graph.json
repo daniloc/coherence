@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-20 20:08Z",
+  "generatedAt": "2026-08-20 21:14Z",
   "root": "coherence",
   "absRoot": "/Users/daniloc/Documents/Development/coherence",
   "nodes": [
@@ -33,7 +33,32 @@
         "boundary \"significant behavioral growth acquires an anchor or patch-specific decision\" at signal via guard \"only a zero-anchor alarm without attestation needs a decision\"",
         "boundary \"a weaker regulation obligation never masks a stronger one\" at selectRegulation via guard \"regulate — ordered potential is permutation-invariant and monotone\"",
         "boundary \"regulation evaluates and repairs the selected agent host\" at observeRegulation via guard \"regulate — selected Codex host cannot be redeemed by Claude control\"",
-        "boundary \"task context is bounded and names its approximations\" at contextFor via guard \"renderContext — byte-stable for the same inputs and names every approximation\"",
+        "boundary \"task context is bounded and names its approximations\" at renderContextProjection via guard \"renderContext — bounded projection is route-first, byte-stable, and accounts for every omission\"",
+        "boundary \"verdict-bearing decision reads fail closed on surviving journal damage\" at readTrustedJournal via guard \"trusted journal — any malformed, forged, displaced, conflicting, or dangling row refuses the verdict projection\"",
+        "boundary \"a committed decision population cannot disappear into adoption from zero\" at readTrustedJournal via guard \"trusted journal — any malformed, forged, displaced, conflicting, or dangling row refuses the verdict projection\"",
+        "boundary \"decision ratification follows explicit subject and authority, never prose similarity or recency\" at analyzeDecisionPositions via guard \"local alternatives need ratification; an explicit stronger choice settles them\"",
+        "boundary \"work state is append-only, attributable, and predecessor-checked\" at readWork via guard \"strict merged read — torn, tampered, detached, and competing histories all refuse\"",
+        "boundary \"work cannot activate or complete before every dependency completes\" at validateWorkGraph via guard \"readiness and scope control — dependencies serialize potential overlap while runnable writers conflict\"",
+        "boundary \"runnable work with overlapping write scopes is a collision, never concurrent permission\" at detectWorkScopeOverlaps via guard \"readiness and scope control — dependencies serialize potential overlap while runnable writers conflict\"",
+        "boundary \"a terminal parent has no live child and explicitly synthesizes every completed direct child\" at validateWorkGraph via guard \"lifecycle — predecessor checks, handoff attribution, closure evidence, orphaning, and synthesis stay explicit\"",
+        "boundary \"authored work text is single-line data, never model-instruction control\" at createWork via guard \"graph validation and input boundary — missing references, cycles, unsafe scopes, and evidence-free success are loud\"",
+        "boundary \"swarm write identity and authority flags are singleton or refused\" at repeatedSingletonFlags via guard \"swarm writes reject repeated singleton identity and authority flags before append\"",
+        "boundary \"consequence navigation contains only explicit assessed edges\" at traceConsequences via guard \"co-presence never invents a causal edge\"",
+        "boundary \"specialized consequence relations admit only their declared endpoint kinds\" at relationProblem via guard \"semantic retries dedupe while specialized relation nonsense refuses\"",
+        "boundary \"consequence evidence refuses surviving storage damage instead of shrinking navigation\" at readConsequences via guard \"damaged, forged, or displaced surviving rows refuse the whole projection\"",
+        "boundary \"orientation refuses damaged evidence before selecting a swarm heading\" at observeOrientation via guard \"orientation refuses a damaged trusted source instead of reading it as empty\"",
+        "boundary \"orientation admits verification state only with valid shape and comparable provenance\" at verifyOrientation via guard \"orientation refuses parseable malformed verification and never promotes missing provenance\"",
+        "boundary \"verification currency follows material repository state without invalidating its own receipt\" at verifyOrientation via guard \"verification currency ignores its own receipt but rejects tracked source and index changes\"",
+        "boundary \"orientation selects synthesis only when parent closure can execute it\" at observeOrientation via guard \"orientation dispatches a ready sibling before asking for parent synthesis\"",
+        "boundary \"orientation derives live blockage only from closeable work state\" at observeOrientation via guard \"orientation treats journal blockage as history, not a live work state\"",
+        "passes test \"field journey — competing duties settle into reconstructable evidence and damage recovers\"",
+        "passes test \"repository control — work and consequence records survive a fresh clone\"",
+        "boundary \"completed work remains unverified until an explicit verification edge names it\" at observeRegulation via guard \"regulate — completed work requires an explicit verification link before release\"",
+        "boundary \"high-frequency lifecycle hooks start without the analysis dependency stack\" at runHook via guard \"PostToolUse starts from the source bundle with no dependency installation\"",
+        "boundary \"hook telemetry loss never kills PostToolUse\" at runHook via guard \"PostToolUse starts from the source bundle with no dependency installation\"",
+        "boundary \"session startup injects only the exact session's current work order\" at assignedWorkInstructions via guard \"SessionStart injects only the exact session's current work order\"",
+        "boundary \"session startup survives a damaged decision-journal path with named degradation\" at runHook via guard \"SessionStart degrades around a damaged journal path without killing the session\"",
+        "boundary \"harness source remains searchable text rather than silently becoming binary\" at sourceTextIsNavigable via guard \"source text — every live TypeScript source remains NUL-free and searchable\"",
         "boundary \"cached decisions expose structurally expired premises\" at auditPremiseLeases via guard \"audit — retracted decisions disappear and only broken strong leases fail a check\"",
         "boundary \"predicted context closure is calibrated against observed reads and outcomes\" at calibrate via guard \"calibration reports coverage, outside reads, and defect rates by prediction misses\"",
         "boundary \"calibration preserves the weakest host attribution of its trace\" at calibrationPaths via guard \"calibration keeps Codex parent-only writes aggregate and legacy rows unscoped\"",
@@ -73,13 +98,36 @@
         "boundary \"a streamed journal entry renders exactly once across appends and compaction\" at tailJournal via guard \"tail — an appended record arrives exactly once, a compaction fold re-emits nothing and drops nothing, and a half-written line waits for its bytes\""
       ],
       "prose": "The CLI is deliberately a thin composition root. Parsing, derivation, verification,\nrendering, and journaling remain independently addressable modules beneath this boundary.",
-      "why": "**agent lifecycle preserves decisions and exposes the current change signal.** Decisions\nand risk are cheapest to surface while the agent still holds the context that produced\nthem; waiting for a later reviewer externalizes both reconstruction costs. The two stop\nsurfaces are not interchangeable: a subagent restates its report because its caller may\nsee nothing else, while the main agent has already shown its report to the user and is\nnever interrupted by shared-worktree state that may belong to another agent. Main Stop\nkeeps the calibration observation and emits no bytes; only SubagentStop carries the\njournal and patch signal forward.\n\n**significant behavioral growth acquires an anchor or patch-specific decision.** The cost\nof adding an invariant is immediate while the cost of omitting it appears later, so the\ncurrent patch must carry either enforcement or an addressable reason that it needs none.\n\n**a weaker regulation obligation never masks a stronger one.** Regulation compares live\nobligations by a lexicographic potential, with missing observations failing closed instead\nof becoming zero, and returns the single strongest action owed. V1 evaluates only rules\ndeclared in the live doctrine registry; even a no-action result makes no claim of overall\nsafety.\n\n**regulation evaluates and repairs the selected agent host.** A canonical Claude control\ncannot create a field around a Codex session, even though both hosts implement the same\nlifecycle domain. The sensor therefore names the explicit or current host in its reading,\nthe decision identity retains it, and a lifecycle redirect installs that same host. A\nforeign host value refuses before it can release or author a shell command.\n\n**task context is bounded and names its approximations.** A focused context packet is\nuseful only when its one-hop and heuristic limits stay visible; otherwise convenience is\nmisread as completeness and recreates the omission gradient this project exists to oppose.\n\n**cached decisions expose structurally expired premises.** A decision saves inference only\nwhile the repository addresses supporting it remain live. Broken explicit referents must\nbe louder than readable but stale rationale.\n\n**predicted context closure is calibrated against observed reads and outcomes.** Economy's\none-hop closure is a hypothesis about necessary reading, not cognition. Observed reads and\nlater defect labels give that model a path to correction instead of turning it into dogma.\n\n**calibration preserves the weakest host attribution of its trace.** A Codex parent\nsession file can contain parent and descendant tool use because PostToolUse supplies no\nchild id. Calibration may still compare that aggregate against a patch, but it must name\nthe aggregate rather than relabeling those writes as one agent's work. Legacy rows remain\nunscoped, shared-worktree fallback remains separate, and any unreadable row prevents a\nnew sample instead of disappearing from its denominator.\n\n**reviewed risk sites survive relocation but never duplication.** A ratchet baseline is a\ncached review, and a cached fact that expires on a rename rots the same way a decision's\npremises do — a refactor then spends a reviewer's attention on sites nobody touched, and\nattention spent on false alarms is how a real one gets waved through. Relocation changes\nwhere a reviewed site lives; duplication changes how much unreviewed surface exists, and\nonly the second is news.\n\n**pinned mass follows a value-conserving rename but never absorbs growth.** A mass\ndimension's key embeds a name someone chose — a spec H1, a measure's config key — so a\nrename re-addresses the pin, and a ratchet that reads its own re-addressing as \"gained\nparts nobody named\" prints a lie beside the unchanged total that refutes it (measured:\none H1 edit, 35 lines relabeled, zero gained, gate red). The repair must stay\ncount-conserving: only a vanished pin with the same family, unit and exact value can\nabsorb a new name, or growth and novelty would ride in under renames.\n\n**a claim goes green only on positive evidence its oracle ran.** The verifier's whole\nauthority rests on this one property, and until now no claim cited it: an audit deleted\nthe rule and the tree stayed \"✓ coherent\" while the unit test failed unseen. An exit\ncode is the runner's statement about itself, not about the named test — a filter that\nmatched nothing exits clean on every runner class this repo has measured — so green\nmust require output that names the run, the one reading absence cannot produce.\n\n**a vanished oracle reds its claim, never green-by-absence.** A renamed or deleted test\nleaves a claim citing a name nothing owns, and that claim then guards nothing while\nwearing green. Absence has to be its own observable verdict, distinct from ran-and-failed,\nbecause the two demand different repairs: a red test needs the code fixed, a vanished\noracle needs the contract re-tied to something that exists.\n\n**fast verification rejects a statically vanished Vitest oracle without executing\ntests.** Name ownership is cheaper than test outcome: a literal Vitest declaration either\nstill supplies a runner-style full name or it does not. The edit loop should answer that\nstructural question without buying remote credentials or a suite boot, while refusing to\nturn dynamic or damaged source into false certainty. Static presence therefore remains a\nskip. A complete current population can prove absence; independently, a concrete Git\n`HEAD` owner disappearing from a deleted or still-complete former path proves an ownership\nloss even when unrelated current source is incomplete. If that same path becomes dynamic\nor damaged, it stays explicitly unknown; everything else does too. The\nexecutable tier alone can supply pass/fail evidence. This is a direct-declaration grade,\nnot an evaluator for arbitrary runtime registration; projects beyond it disable\n`staticOracleExistence` or resolve a fresh report.\n\n**fast oracle absence requires a complete direct-declaration population.** Absence is a\nstronger statement than failure: it says the registry owns no matching name. The static\nfloor may say that only when every registration mechanism it recognizes was enumerable;\ndynamic titles, fixture DSLs, registration-time module loads, custom includes, and damaged\nsource must poison absence into UNKNOWN while still allowing positive direct matches.\nOtherwise the cheap tier would turn its own inability to see a live oracle into evidence\nthat the oracle vanished.\n\n**committed platform capabilities survive optional deployment-config toggles.** The graph\ndescribes the capability surface authored code can address, not only what one machine has\nenabled for its next deploy. For Cloudflare stores, a direct `Env` property with a known\nbinding type and a wrangler stanza are two observations of the same binding domain: the\nadapter unions them, collapses agreement, and refuses disagreement. Source inference uses\nthe graph's already-filtered file population, so a generated machine-local environment\ndeclaration cannot become a hidden second walk. Runtime-variable names are retained as\ndeclarations, but their deployment values are unrepresentable in `Bindings` and never\nenter generated artifacts. An optional binding or machine-specific value may therefore\nchange without silently changing the architecture documented for the same source tree.\n\n**a declared invariant unanchored by any boundary fails coverage.** A spec may not\nassert a property that nothing enforces: that is the ratchet the whole harness turns on,\nand if it silently loosened, specs would drift back into aspiration prose. The gap has to\ncost a red at the run that opened it, while the person who opened it still holds the\ncontext to close it.\n\n**a via-test oracle that iterates no live domain fails its claim.** A totality label on a\nsampling test is worse than no label: it retires the reader's suspicion without retiring\nthe risk. Deriving the checked set from the live registry the chokepoint actually serves\nis what makes \"covers every case\" a fact about the system rather than about the fixture\nlist the author remembered.\n\n**a skipped run never clobbers an oracle's recorded verdict.** The record is the last\nknown truth, honestly dated. A fast tier that skips the executable claims every commit\nwould otherwise erase last week's real pass — or, worse, a real fail — with \"did not\nlook\", and history that can be overwritten by not looking is not history.\n\n**a named oracle that no test runs cannot pass.** The serial runner is the component the\nexecutable tier leans its trust on, and it was outside the evidence perimeter — unclaimed,\nuntested, and (measured) willing to exit clean when the cited title survived only as a\nstring in a file. The runner itself must refuse a name it cannot show ran, because every\ngreen above it inherits that refusal.\n\n**an empty derivation against a remembered surface refuses, never passes.** Every verdict\nin this file rests on the graph deriving non-empty, and nothing checked that premise:\ngutting `buildGraph` left the gate printing \"claims: 0\" and \"✓ coherent\", exit 0 —\ndeeper than a vanished oracle, because it empties every check at once while announcing\nthey all passed. The record remembers how many claims the last run graded, so a run that\nsuddenly sees zero must refuse rather than report success over nothing; the only\nlegitimate zero (a project adopting from nothing) is exactly the one with no memory, and\nit gets the adoption ladder instead. The floor deliberately stops at zero: a partial\ncollapse where every component keeps a claim is observationally identical to deliberate\npruning, and deletion has to stay free or people stop deleting. What the complement\nunderneath it actually reaches is narrower than it first appears — a component stripped of\nits claims is still a node someone can red, while a component the walk never discovered\nleaves nothing behind to notice, so an N→1 slide reads as N ordinary prunings. Pinning the\npopulation as a mass dimension is the honest answer there, because the question it settles\nis not whether anything survived but whether as much survived as last time.\n\n**lifecycle hook presence is one canonical runnable bit.** The control surface cannot\ncreate a field if every repository is free to carry a merely similar—or silently dead—\nhook. Printing, installation, and inspection therefore share one five-event value and\none stable launcher per host. Presence means exactly one shared project copy, no competing\nlocal, inline, or legacy path, an aligned host/launcher root, a correct declared root\nmapping, an enabled project-hook layer, and a runnable target. Unrelated hooks may coexist.\nHistorical journal activity is reported beside this bit but can neither redeem current\nabsence nor erase current presence.\n\n**supported lifecycle hosts share one control contract without sharing host syntax.**\nClaude and Codex expose the same five lifecycle meanings through different settings files,\nmatchers, launch commands, and response envelopes. Host parity therefore means deriving\neach complete bundle from one host-selected domain while retaining a distinct fingerprint;\ncopying Claude bytes into Codex would be resemblance, not parity.\n\n**current-session activation requires exact installed-bundle evidence.** Structural\npresence proves that the project control is runnable, not that this session loaded it. A\nsession becomes observed only when its activity names the selected host, launcher\ntransport, and current bundle fingerprint. Direct probes, stale bundles, other sessions,\nand a guessed newest session cannot establish activation; parent-session fallback stays a\nnamed attribution ceiling rather than being promoted to child evidence.\n\n**customized hook text composes declared overrides and appends, degrading to canon on\ndamage.** The canonical hook text is the harness's voice — identical across adopting\nprojects, and byte-testable because of it — but a project knows things the harness cannot:\nits own commands, its conventions, the one warning its history taught it. So a project\ngets a declared voice per event rather than a fork of the hook body, under one composition\nrule with no conflict state: the override answers what the base is, the append answers\nwhat follows it, and both may coexist; an empty override is a deliberate, visible silence,\nnot an error. Damage must degrade to the canonical emission at hook time, because the hook\nbody runs inside every agent session of every adopting project — a torn customization\nfile that broke sessions would make the journal's carrier the thing that kills the work it\nrecords — so a tear costs exactly the customization, never the session, and the loud\nsurface for it is `hooks review`, where a reader is actually looking. Events with no\ncanonical emission — main Stop, PostToolUse — speak only with a declared project voice;\nmain Stop's canonical byte-silence and the attribution reasoning behind it stand unchanged\nas the default.\n\n**python sources feed the same instruments as typescript at their declared grade.**\nThe adapter seam always promised language-agnosticism, but three analyzers and two\nscanners parsed TypeScript directly, so a python project's surface grew invisibly — the\nzero-anchor alarm never fired, parity claims skipped `.py` oracles, duplicated domains\nwent unranked, batch oracles knew one report format, and f-string interpolations were not\nsites. Each instrument now reads python at a DECLARED grade: most through the shared\ngrammar queries of phase 2b (surface, sites, sinks), the oracle arms at the pinned\nindent-block grade their guards froze — in-harness, no subprocess, and since the arms\nported, no compiler dependency at all. The grade is declared, not hidden —\nprecision is preferred over recall everywhere, because an advisory that cries wolf\nretires the reader's attention without retiring risk, and with no compiler behind `.py`\na false positive can never be rescued downstream. What the regex grade deliberately does\nnot count is journaled beside each instrument, so the next reader inherits the boundary\nof the instrument instead of rediscovering it.\n\n**a declared language resolves to a real adapter or refuses, never a silent fallback.**\nThe graph is the one derivation everything downstream consumes, and the adapter decides\nwhat that derivation can see. The old `?? typescript` fallback meant a typo'd language\nname walked the wrong grammar and reported on the garbage with full confidence — the\nsame walking-a-different-tree failure the config loader refuses for, one seam later. So\nan unknown bare name now refuses with the live built-in list, and the same seam is where\na project brings its own language: a `./`-relative module exporting the LanguageAdapter\nshape, validated field-by-field so the refusal names the line that needs fixing.\nImporting project code is not new trust — the atlas already declares at the loadConfig\ncrossing that running the harness in a tree executes that tree's config. What a custom\nadapter buys is the graph tier: symbols, import edges, prose, claims over them. The\nper-language instrument arms (surface counting, oracle analysis, redundancy, sinks,\nbatch formats) remain harness contributions, and the documentation says so, because an\nadapter author who is not told the boundary believes they have the full field when they\nhave half.\n\n**a grammar-backed adapter derives the graph through the same language seam.** The\nregex adapters scale in expert code — the python push measured ~900 hand-built lines\nacross five instrument arms — while a grammar plus capture queries scales in data:\nmodern tree-sitter grammar packages ship a prebuilt wasm, `web-tree-sitter` runs it\nwithout a native toolchain, and the language-specific knowledge shrinks to patterns a\ncontributor can write without touching verdict logic. The factory is async once (wasm\nload) and the adapter it returns is synchronous, so the seam is unchanged and a project\nmodule reaches it with one top-level await. The corpus diff that justified the phase\nalso bounded it: on this repository's own sixty-three TypeScript files the regex grade\nmissed zero symbols a real parse found, so the graph tier was not where parse fidelity\nwas owed. The built-ins then CONVERGED onto the grammar path anyway — not for fidelity\nbut because two implementations of one outcome are two spellings of a domain, the\nredundancy class this harness ranks in other people's code. The regex adapters were\ncorpus-diffed to parity (every delta an enumerated regex mistake), their prose logic\nported verbatim, and then deleted; their grammars ship vendored with provenance. The\ninstrument arms remain hand-built until a later phase ports them to query packs.\n\n**instrument arms read languages through shared grammar queries, never a parallel\nscanner.** Phase 2b's contract, proven first on the injection ratchet: a language\ncontributes captures and signals — which node is an interpolation, how its SQL context\nannounces itself — and the mechanism owns classification, safe-pattern grading, site\nidentity, and the ratchet, once. The regex scanners this replaced matched line TEXT, so\nthey counted `${}` inside plain strings, comments, and test fixtures as sites, bounded\nvisibility at one brace of nesting, and one of them matched its own source. The query\nscan re-pinned the baseline with every delta enumerated: nineteen real nested-brace\nsites gained, one self-match artifact gone. A new language now gains the whole\ninstrument from a table row — ruby's took three lines and no scanner — which is the\ntwo-tier boundary dissolving arm by arm.\n\n**a built-in language pack is data: queries, patterns, and named strategies, never\ncode.** The declarative baseline is what keeps \"add a language\" a table-row act instead\nof an expert contribution — and it is a rule that erodes one convenient function at a\ntime unless something refuses. So the packs are inspectable values aggregated in one\nplace, and a guard sweeps them for function-valued fields by path: the hand-rolled\nscanner class is unrepresentable at the seam, not merely discouraged. The rule's edge\nis honest about what a pack may name — strategies from a closed, mechanism-owned set\n(\"jsdoc\", \"docstring\", \"cooked-string\") — because some knowledge is genuinely\nprocedural; naming it keeps the procedure written once where every language can reach\nit. Project adapter modules remain code territory by definition: purity governs what\nships built in, where a single spelling is the entire point.\n\n**a parse's heap is returned before the next file.** web-tree-sitter trees hold wasm\nheap only an explicit delete returns, and the emscripten heap is fixed — so a leak is\ninvisible on a small repository and fatal on a large one, the worst observability\nprofile a defect can have. The measured incident is the refutation above. The repair is\nthe ladder's top rung, not discipline: `withTree` owns the tree's whole lifetime, every\ncall site takes it, node captures die inside it (the one lazy consumer was made eager\nrather than allowed to touch a freed node), and forgetting to free is unrepresentable.\n\n**an undeclared root refuses the walk, never wanders.** A configless run walks whatever\ndirectory the shell happened to be in and grades that population with full confidence —\nthe incident run was `npx coherence verify` from a home directory, which is not exotic;\nit is the first thing a curious adopter types. The config file's PRESENCE is the\ndeclaration, so `{}` is a complete first rung of the adoption ladder, and the refusal\nprints exactly that one-line bootstrap. Journal, hook, and reference commands never\nwalk, so they stay available in an undeclared directory — the field does not require a\nconfig to remember decisions.\n\n**experiment outcomes require criterion-total evidence.** A\nplan is frozen before work with its predicted context, actions, criteria, and evidence\ncursors. Closure answers every action and criterion exactly once, preserves the assessor,\nand derives success, failure, or inconclusive from criterion statuses rather than accepting\nan outcome label. Otherwise the ledger would turn an incomplete story into a measured loop.\n\n**experiment telemetry preserves its weakest provable attribution.** Trace and activity\nwindows may be empty, prove an exact owner session, or only prove a parent-session aggregate\nthat can include descendants; older trace may carry no observation metadata at all. Those\nfour scopes remain distinct in the immutable close record. Damaged prefixes, unreadable\nrows, and unknown or inconsistent scope refuse. That keeps compatible history without\nturning absence or uncertainty into false precision.\n\n**activity evidence is accepted only when identity, scope, time, and command agree.** A\nrow is useful precisely because later status and experiment readers stop re-deriving the\nhost event. That cached inference is safe only while its relational fields still agree:\nagent attribution names the row session, parent fallback names its parent domain, event\nidentity recomputes, time is canonical, and command kind/result agrees with name and exit\ncode. One strict reader grades that whole relation; malformed rows become counted damage,\nnever partially trusted evidence.\n\n**surviving agent-assessed defect evidence is attributable and internally consistent.** A\nconjecture keeps uncertainty alive; a defect record says an agent crossed that epistemic\nboundary and must therefore carry the evidence for doing so, the repository subject it\njudged, and the caller-attributed writer labels attached to the assessment. Records append per session and\ndedupe exact retries, while the merged reader recomputes the ordinary content address and\nrefuses malformed, inconsistent, or displaced surviving rows. That detects partial damage;\nit does not prove that a valid row was never rewritten with a recomputed id. Committed Git\nhistory is this first recorder's external rewrite and deletion witness, and an independently\nanchored head is future work.\n\n**defect writes refuse pre-existing symlink redirection.** A path beneath the repository\nis not containment when its stable components redirect through a symlink. The reader\ntherefore refuses linked ledger directories and entries, while the writer validates both\ndirectory components and opens the session target without following its final link, then\ncompares the opened descriptor with the standing path before appending. This prevents the\nmeasured stable-state redirects; it is not an `openat`-grade promise against a privileged\nprocess racing parent-directory renames during the append.\n\n**defect provenance is data, never terminal control.** Repository identity is captured by\nthe machine, but the committed row is still untrusted input on its next read. A commit is\ntherefore null or has lowercase SHA-1/SHA-256 object-name shape, never merely a nonempty string; the\nhuman renderer also neutralizes its bytes. Without both the semantic constraint and the\noutput encoding, an edited but re-addressed row could turn provenance into a terminal\ninstruction while remaining structurally valid.\n\n**a streamed journal entry renders exactly once across appends and compaction.** The live\nstream exists for the one reader the settled render cannot serve — an orchestrator watching\nfive subagents mid-flight — and that reader has no way to audit the feed against the files.\nA dropped entry is a decision the orchestrator never saw, indistinguishable from one never\nmade; a duplicate teaches the opposite lie, that a question was decided twice. Both are\ncheap to produce, because the journal's files do not strictly grow: compaction moves lines\nbetween files and unlinks the originals, which a position-addressed reader replays in full.\nSo a record's identity in the stream comes from its content — the same triple the merged\ntimeline sorts by — and a moved line is one the feed already carried.\n\n(The import claims above separately prove that the composition root still reaches the\nconfiguration loader, graph derivation, verifier, spec walker, and journal.)",
+      "why": "**agent lifecycle preserves decisions and exposes the current change signal.** Decisions\nand risk are cheapest to surface while the agent still holds the context that produced\nthem; waiting for a later reviewer externalizes both reconstruction costs. The two stop\nsurfaces are not interchangeable: a subagent restates its report because its caller may\nsee nothing else, while the main agent has already shown its report to the user and is\nnever interrupted by shared-worktree state that may belong to another agent. Main Stop\nkeeps the calibration observation and emits no bytes; only SubagentStop carries the\njournal and patch signal forward.\n\n**significant behavioral growth acquires an anchor or patch-specific decision.** The cost\nof adding an invariant is immediate while the cost of omitting it appears later, so the\ncurrent patch must carry either enforcement or an addressable reason that it needs none.\n\n**a weaker regulation obligation never masks a stronger one.** Regulation compares live\nobligations by a lexicographic potential, with missing observations failing closed instead\nof becoming zero, and returns the single strongest action owed. V2 evaluates only rules\ndeclared in the live doctrine registry; even a no-action result makes no claim of overall\nsafety.\n\n**regulation evaluates and repairs the selected agent host.** A canonical Claude control\ncannot create a field around a Codex session, even though both hosts implement the same\nlifecycle domain. The sensor therefore names the explicit or current host in its reading,\nthe decision identity retains it, and a lifecycle redirect installs that same host. A\nforeign host value refuses before it can release or author a shell command.\n\n**task context is bounded and names its approximations.** A focused context packet is\nuseful only when its one-hop and heuristic limits stay visible; otherwise convenience is\nmisread as completeness and recreates the omission gradient this project exists to oppose.\nRoutes, named limitations, and omission accounting are mandatory framing; a byte budget\nthat cannot hold them refuses with its exact minimum. Everything else is included in a\nstable priority order, and the withheld item and byte totals make truncation observable.\nRepository-level, generated, and explicitly requested ignored files remain navigable even\nwhen the source graph owns no component for them; `graphOwner: null` is evidence, not a miss.\n\n**verdict-bearing decision reads fail closed on surviving journal damage.** The journal's\ntolerant reader is useful for a human salvaging old history, but a regulator or waiver\ncannot turn its skipped lines into a smaller trusted population. The strict projection\nvalidates wire version, canonical shape and time, content identity, session/file\nattribution, containment, append framing, duplicate agreement, and terminal references\nas one relation. Domain-separated session hashes retain case-sensitive identity on\ncase-folding filesystems while an owned historical filename remains readable. Any damage\nmakes the verdict-bearing population unavailable while the historical render stays\nbackward-compatible.\n\n**a committed decision population cannot disappear into adoption from zero.** An absent\nledger is legitimate before first use, so filesystem absence alone proves nothing. Once\ncurrent Git `HEAD` owns decision files, however, their wholesale deletion is an external\nwitness that zero rows means lost evidence rather than adoption. The witness is consulted\nonly at zero: populated compaction remains legal, while non-Git and unborn repositories\nretain an honestly unproven empty state.\n\n**decision ratification follows explicit subject and authority, never prose similarity or\nrecency.** Independent agents can word the same question differently and can mention the\nsame noun while answering different questions. Conflict detection therefore compares only\nstanding decisions that share a machine-authored subject. Local alternatives remain\nproposals; one explicit orchestrator-accepted or user-directed choice can ratify them;\nincompatible choices tied at the highest authority stay contested.\n\n**work state is append-only, attributable, and predecessor-checked.** A shared task board\nthat mutates in place loses the handoffs and rejected transitions a swarm most needs after\ncontext loss. Each work order and transition is content-addressed in its writer session,\nand the current state is a strict replay. Broken predecessors, competing successors,\ndetached histories, damaged rows, and missing graph referents refuse instead of resolving\nby last-write-wins. The ledger is repository evidence rather than a machine-local queue;\nthe repository control therefore writes one through the public boundary, commits it,\nclones the repository, and requires the strict reader to reconstruct it.\n\n**work cannot activate or complete before every dependency completes.** Readiness is not\nadvice layered over the lifecycle; it is the lifecycle's ordering law. Every transition\nand closure validates its prospective graph before append, so a caller cannot bypass a\nwaiting projection by naming `active` or `completed` directly. Cancellation remains a\nterminal non-success and therefore does not satisfy a dependency that requires completed\noutput.\n\n**runnable work with overlapping write scopes is a collision, never concurrent\npermission.** Read and write scopes are repository-relative addresses. Dependency order\ncan make an overlap merely potential, but two dependency-clear or active writers whose\nexact/tree scopes intersect are a live conflict. The projection blocks dispatch and names\nboth work ids and both scopes; ownership is explicit rather than reverse-engineered from a\nshared diff.\n\n**a terminal parent has no live child and explicitly synthesizes every completed direct\nchild.** A child returning is not evidence that its parent incorporated the result, and a\nlive child whose join target is closed has nowhere truthful to report. Prospective graph\nvalidation therefore refuses parent closure until every direct child is terminal, requires\nevery completed child in the synthesis set, and refuses a late live child beneath a\nterminal parent. Cancellation can settle a child but cannot masquerade as synthesized\nsuccess.\n\n**authored work text is single-line data, never model-instruction control.** Work records\nare repository-authored evidence on read, even when they were valid on write. Their text\ncrosses into SessionStart's model-instruction channel, so public writes reject C0/C1\ncontrols and the hook renderer escapes such bytes again. A newline can remain visible as\ndata but cannot acquire the grammar of a peer instruction.\n\n**swarm write identity and authority flags are singleton or refused.** Repeated evidence,\ncriteria, alternatives, and scopes represent honest plurality; repeated session, owner,\nauthority, or predecessor selectors represent two incompatible attributions for one\nappend. One shared parser predicate distinguishes those sets and refuses ambiguity before\nany ledger writer runs.\n\n**consequence navigation contains only explicit assessed edges.** Decisions, work,\ncommits, experiments, verification, and defects already have addresses; temporal or path\nproximity does not make one cause another. The consequence ledger stores an assessor,\nevidence, typed endpoints, and a constrained relation per edge. Its graph traverses both\ndirections for navigation while retaining the authored direction, and strict reads refuse\nforged, displaced, conflicting, or symlink-redirected evidence. Those edges are durable\nonly if they cross a clone boundary, so the repository control writes a typed edge to a\nreal commit, transports it through Git, and requires a dangling-free cloned orientation.\n\n**specialized consequence relations admit only their declared endpoint kinds.** A generic\n`relates-to` edge can connect any two supported addresses, but verbs such as `produces`,\n`verifies`, `reveals`, and `repairs` carry lifecycle meaning. Their source and target kinds\nare checked as a pair, keeping the typed graph from accepting grammatically valid nonsense\nthat its render would otherwise state with unwarranted confidence.\n\n**consequence evidence refuses surviving storage damage instead of shrinking navigation.**\nAbsence is a legitimate first-use state; a surviving but unreadable, displaced, renamed,\nor torn edge is not. If damaged bytes could disappear from the population, removing one\nfile suffix or final newline could erase the only path from a defect to its repair while\nleaving an innocent empty graph. Storage framing and containment therefore belong to the\nevidence contract, not merely to filesystem hygiene.\n\n**orientation refuses damaged evidence before selecting a swarm heading.** The gyroscope\nis a projection over independent instruments, not a new source of truth. It reads each\nstrictly, preserves source availability and denominators, and selects one deterministic\nheading: refuse, resolve a collision, repair navigation, unblock, synthesize, dispatch,\ncontinue, verify, or steady. A damaged source outranks every actionable-looking empty list.\n\n**orientation admits verification state only with valid shape and comparable provenance.**\nThe status file is persisted JSON, not a TypeScript value at runtime. Orientation validates\nthe fields it uses—canonical time, commit shape, dirty bit, tier, and nonnegative failure\ncount—and refuses malformed evidence. A green report is current only when both repository\nand report commit addresses exist and agree; missing provenance is stale, never an\nimplicit match.\n\n**verification currency follows material repository state without invalidating its own\nreceipt.** Matching `HEAD` identifies a commit, not the live index and working tree layered\nover it. A source, staged, or untracked change therefore makes a clean report stale even\nwhen `HEAD` did not move. The status file itself is the one excluded path because recording\nthe report happens after its Git sample; counting that receipt would make every successful\nverification invalidate itself immediately.\n\n**orientation selects synthesis only when parent closure can execute it.** Synthesis is\nrepresented by the parent's terminal close, not by a separate mutable checkbox. A completed\nchild can therefore remain visibly unsynthesized while a ready, active, or blocked sibling\nstill owes work; selecting synthesis then would demand an operation the lifecycle refuses.\nOnly when that parent's children are terminal does synthesis become the executable highest\nheading.\n\n**orientation derives live blockage only from closeable work state.** A journaled impasse\nis historical testimony and has no event that later marks it complete. Treating such rows\nas the live scheduler makes the heading demand an action the record cannot ever discharge.\nThe work lifecycle owns current blocked state; journal incidents remain visible context\nwithout acquiring scheduler semantics.\n\n**completed work remains unverified until an explicit verification edge names it.** A\npassing command nearby in time cannot establish which work it assessed. V2 regulation\ntherefore treats a completed work order without a `verification --verifies--> work` edge\nas an obligation. This is deliberately stronger than command success and deliberately\nweaker than a proof of semantic correctness; append-only verification receipts remain a\nnamed future limit.\n\n**high-frequency lifecycle hooks start without the analysis dependency stack.**\nPostToolUse is the hottest and most fragile control boundary. Its eager import closure is\nbuilt-ins plus local lifecycle modules; parser registries enter only through the main CLI\ncomposition root. The runtime canary copies the complete source tree into an isolated\nproject with no dependency installation and executes PostToolUse, so a future eager edge\nto a parser package recreates the measured startup failure.\n\n**hook telemetry loss never kills PostToolUse.** Read traces calibrate the context model,\nbut losing that observation is cheaper than breaking every tool call in an agent session.\nThe hook contains both dynamic-load and persistence failures, emits no canonical bytes,\nand leaves the damaged target untouched. A real file-bearing hostile-target canary ensures\nthis contract exercises the write path rather than vacuously recording zero events.\n\n**session startup injects only the exact session's current work order.** Assignment is\nuseful only if the receiving agent can distinguish its authority, success criteria,\ndependencies, write scope, and collisions from another worker's. SessionStart reads the\nwork graph dynamically and emits only records whose owner session exactly matches the\nhost session; failure degrades to a named unavailable reading rather than breaking agent\nstartup.\n\n**session startup survives a damaged decision-journal path with named degradation.** The\njournal carries decisions but cannot be allowed to prevent the agent that might repair it\nfrom starting. SessionStart keeps the exact host identity in memory, emits the canonical\ninstructions plus a visible unavailable control, and skips the journal write when the\nstanding path cannot be read or opened. This is degradation, not silent adoption of an\nempty history.\n\n**harness source remains searchable text rather than silently becoming binary.** Agent\nnavigation depends on ordinary repository search seeing every source file. A single literal\nzero byte can make common tools classify an otherwise textual module as binary and omit its\nmatches without a syntax or type error. Keeping control ranges escaped in source preserves\nruntime meaning while making disappearance from the reading surface a loud regression.\n\n**cached decisions expose structurally expired premises.** A decision saves inference only\nwhile the repository addresses supporting it remain live. Broken explicit referents must\nbe louder than readable but stale rationale.\n\n**predicted context closure is calibrated against observed reads and outcomes.** Economy's\none-hop closure is a hypothesis about necessary reading, not cognition. Observed reads and\nlater defect labels give that model a path to correction instead of turning it into dogma.\n\n**calibration preserves the weakest host attribution of its trace.** A Codex parent\nsession file can contain parent and descendant tool use because PostToolUse supplies no\nchild id. Calibration may still compare that aggregate against a patch, but it must name\nthe aggregate rather than relabeling those writes as one agent's work. Legacy rows remain\nunscoped, shared-worktree fallback remains separate, and any unreadable row prevents a\nnew sample instead of disappearing from its denominator.\n\n**reviewed risk sites survive relocation but never duplication.** A ratchet baseline is a\ncached review, and a cached fact that expires on a rename rots the same way a decision's\npremises do — a refactor then spends a reviewer's attention on sites nobody touched, and\nattention spent on false alarms is how a real one gets waved through. Relocation changes\nwhere a reviewed site lives; duplication changes how much unreviewed surface exists, and\nonly the second is news.\n\n**pinned mass follows a value-conserving rename but never absorbs growth.** A mass\ndimension's key embeds a name someone chose — a spec H1, a measure's config key — so a\nrename re-addresses the pin, and a ratchet that reads its own re-addressing as \"gained\nparts nobody named\" prints a lie beside the unchanged total that refutes it (measured:\none H1 edit, 35 lines relabeled, zero gained, gate red). The repair must stay\ncount-conserving: only a vanished pin with the same family, unit and exact value can\nabsorb a new name, or growth and novelty would ride in under renames.\n\n**a claim goes green only on positive evidence its oracle ran.** The verifier's whole\nauthority rests on this one property, and until now no claim cited it: an audit deleted\nthe rule and the tree stayed \"✓ coherent\" while the unit test failed unseen. An exit\ncode is the runner's statement about itself, not about the named test — a filter that\nmatched nothing exits clean on every runner class this repo has measured — so green\nmust require output that names the run, the one reading absence cannot produce.\n\n**a vanished oracle reds its claim, never green-by-absence.** A renamed or deleted test\nleaves a claim citing a name nothing owns, and that claim then guards nothing while\nwearing green. Absence has to be its own observable verdict, distinct from ran-and-failed,\nbecause the two demand different repairs: a red test needs the code fixed, a vanished\noracle needs the contract re-tied to something that exists.\n\n**fast verification rejects a statically vanished Vitest oracle without executing\ntests.** Name ownership is cheaper than test outcome: a literal Vitest declaration either\nstill supplies a runner-style full name or it does not. The edit loop should answer that\nstructural question without buying remote credentials or a suite boot, while refusing to\nturn dynamic or damaged source into false certainty. Static presence therefore remains a\nskip. A complete current population can prove absence; independently, a concrete Git\n`HEAD` owner disappearing from a deleted or still-complete former path proves an ownership\nloss even when unrelated current source is incomplete. If that same path becomes dynamic\nor damaged, it stays explicitly unknown; everything else does too. The\nexecutable tier alone can supply pass/fail evidence. This is a direct-declaration grade,\nnot an evaluator for arbitrary runtime registration; projects beyond it disable\n`staticOracleExistence` or resolve a fresh report.\n\n**fast oracle absence requires a complete direct-declaration population.** Absence is a\nstronger statement than failure: it says the registry owns no matching name. The static\nfloor may say that only when every registration mechanism it recognizes was enumerable;\ndynamic titles, fixture DSLs, registration-time module loads, custom includes, and damaged\nsource must poison absence into UNKNOWN while still allowing positive direct matches.\nOtherwise the cheap tier would turn its own inability to see a live oracle into evidence\nthat the oracle vanished.\n\n**committed platform capabilities survive optional deployment-config toggles.** The graph\ndescribes the capability surface authored code can address, not only what one machine has\nenabled for its next deploy. For Cloudflare stores, a direct `Env` property with a known\nbinding type and a wrangler stanza are two observations of the same binding domain: the\nadapter unions them, collapses agreement, and refuses disagreement. Source inference uses\nthe graph's already-filtered file population, so a generated machine-local environment\ndeclaration cannot become a hidden second walk. Runtime-variable names are retained as\ndeclarations, but their deployment values are unrepresentable in `Bindings` and never\nenter generated artifacts. An optional binding or machine-specific value may therefore\nchange without silently changing the architecture documented for the same source tree.\n\n**a declared invariant unanchored by any boundary fails coverage.** A spec may not\nassert a property that nothing enforces: that is the ratchet the whole harness turns on,\nand if it silently loosened, specs would drift back into aspiration prose. The gap has to\ncost a red at the run that opened it, while the person who opened it still holds the\ncontext to close it.\n\n**a via-test oracle that iterates no live domain fails its claim.** A totality label on a\nsampling test is worse than no label: it retires the reader's suspicion without retiring\nthe risk. Deriving the checked set from the live registry the chokepoint actually serves\nis what makes \"covers every case\" a fact about the system rather than about the fixture\nlist the author remembered.\n\n**a skipped run never clobbers an oracle's recorded verdict.** The record is the last\nknown truth, honestly dated. A fast tier that skips the executable claims every commit\nwould otherwise erase last week's real pass — or, worse, a real fail — with \"did not\nlook\", and history that can be overwritten by not looking is not history.\n\n**a named oracle that no test runs cannot pass.** The serial runner is the component the\nexecutable tier leans its trust on, and it was outside the evidence perimeter — unclaimed,\nuntested, and (measured) willing to exit clean when the cited title survived only as a\nstring in a file. The runner itself must refuse a name it cannot show ran, because every\ngreen above it inherits that refusal.\n\n**an empty derivation against a remembered surface refuses, never passes.** Every verdict\nin this file rests on the graph deriving non-empty, and nothing checked that premise:\ngutting `buildGraph` left the gate printing \"claims: 0\" and \"✓ coherent\", exit 0 —\ndeeper than a vanished oracle, because it empties every check at once while announcing\nthey all passed. The record remembers how many claims the last run graded, so a run that\nsuddenly sees zero must refuse rather than report success over nothing; the only\nlegitimate zero (a project adopting from nothing) is exactly the one with no memory, and\nit gets the adoption ladder instead. The floor deliberately stops at zero: a partial\ncollapse where every component keeps a claim is observationally identical to deliberate\npruning, and deletion has to stay free or people stop deleting. What the complement\nunderneath it actually reaches is narrower than it first appears — a component stripped of\nits claims is still a node someone can red, while a component the walk never discovered\nleaves nothing behind to notice, so an N→1 slide reads as N ordinary prunings. Pinning the\npopulation as a mass dimension is the honest answer there, because the question it settles\nis not whether anything survived but whether as much survived as last time.\n\n**lifecycle hook presence is one canonical runnable bit.** The control surface cannot\ncreate a field if every repository is free to carry a merely similar—or silently dead—\nhook. Printing, installation, and inspection therefore share one five-event value and\none stable launcher per host. Presence means exactly one shared project copy, no competing\nlocal, inline, or legacy path, an aligned host/launcher root, a correct declared root\nmapping, an enabled project-hook layer, and a runnable target. Unrelated hooks may coexist.\nHistorical journal activity is reported beside this bit but can neither redeem current\nabsence nor erase current presence.\n\n**supported lifecycle hosts share one control contract without sharing host syntax.**\nClaude and Codex expose the same five lifecycle meanings through different settings files,\nmatchers, launch commands, and response envelopes. Host parity therefore means deriving\neach complete bundle from one host-selected domain while retaining a distinct fingerprint;\ncopying Claude bytes into Codex would be resemblance, not parity.\n\n**current-session activation requires exact installed-bundle evidence.** Structural\npresence proves that the project control is runnable, not that this session loaded it. A\nsession becomes observed only when its activity names the selected host, launcher\ntransport, and current bundle fingerprint. Direct probes, stale bundles, other sessions,\nand a guessed newest session cannot establish activation; parent-session fallback stays a\nnamed attribution ceiling rather than being promoted to child evidence.\n\n**customized hook text composes declared overrides and appends, degrading to canon on\ndamage.** The canonical hook text is the harness's voice — identical across adopting\nprojects, and byte-testable because of it — but a project knows things the harness cannot:\nits own commands, its conventions, the one warning its history taught it. So a project\ngets a declared voice per event rather than a fork of the hook body, under one composition\nrule with no conflict state: the override answers what the base is, the append answers\nwhat follows it, and both may coexist; an empty override is a deliberate, visible silence,\nnot an error. Damage must degrade to the canonical emission at hook time, because the hook\nbody runs inside every agent session of every adopting project — a torn customization\nfile that broke sessions would make the journal's carrier the thing that kills the work it\nrecords — so a tear costs exactly the customization, never the session, and the loud\nsurface for it is `hooks review`, where a reader is actually looking. Events with no\ncanonical emission — main Stop, PostToolUse — speak only with a declared project voice;\nmain Stop's canonical byte-silence and the attribution reasoning behind it stand unchanged\nas the default.\n\n**python sources feed the same instruments as typescript at their declared grade.**\nThe adapter seam always promised language-agnosticism, but three analyzers and two\nscanners parsed TypeScript directly, so a python project's surface grew invisibly — the\nzero-anchor alarm never fired, parity claims skipped `.py` oracles, duplicated domains\nwent unranked, batch oracles knew one report format, and f-string interpolations were not\nsites. Each instrument now reads python at a DECLARED grade: most through the shared\ngrammar queries of phase 2b (surface, sites, sinks), the oracle arms at the pinned\nindent-block grade their guards froze — in-harness, no subprocess, and since the arms\nported, no compiler dependency at all. The grade is declared, not hidden —\nprecision is preferred over recall everywhere, because an advisory that cries wolf\nretires the reader's attention without retiring risk, and with no compiler behind `.py`\na false positive can never be rescued downstream. What the regex grade deliberately does\nnot count is journaled beside each instrument, so the next reader inherits the boundary\nof the instrument instead of rediscovering it.\n\n**a declared language resolves to a real adapter or refuses, never a silent fallback.**\nThe graph is the one derivation everything downstream consumes, and the adapter decides\nwhat that derivation can see. The old `?? typescript` fallback meant a typo'd language\nname walked the wrong grammar and reported on the garbage with full confidence — the\nsame walking-a-different-tree failure the config loader refuses for, one seam later. So\nan unknown bare name now refuses with the live built-in list, and the same seam is where\na project brings its own language: a `./`-relative module exporting the LanguageAdapter\nshape, validated field-by-field so the refusal names the line that needs fixing.\nImporting project code is not new trust — the atlas already declares at the loadConfig\ncrossing that running the harness in a tree executes that tree's config. What a custom\nadapter buys is the graph tier: symbols, import edges, prose, claims over them. The\nper-language instrument arms (surface counting, oracle analysis, redundancy, sinks,\nbatch formats) remain harness contributions, and the documentation says so, because an\nadapter author who is not told the boundary believes they have the full field when they\nhave half.\n\n**a grammar-backed adapter derives the graph through the same language seam.** The\nregex adapters scale in expert code — the python push measured ~900 hand-built lines\nacross five instrument arms — while a grammar plus capture queries scales in data:\nmodern tree-sitter grammar packages ship a prebuilt wasm, `web-tree-sitter` runs it\nwithout a native toolchain, and the language-specific knowledge shrinks to patterns a\ncontributor can write without touching verdict logic. The factory is async once (wasm\nload) and the adapter it returns is synchronous, so the seam is unchanged and a project\nmodule reaches it with one top-level await. The corpus diff that justified the phase\nalso bounded it: on this repository's own sixty-three TypeScript files the regex grade\nmissed zero symbols a real parse found, so the graph tier was not where parse fidelity\nwas owed. The built-ins then CONVERGED onto the grammar path anyway — not for fidelity\nbut because two implementations of one outcome are two spellings of a domain, the\nredundancy class this harness ranks in other people's code. The regex adapters were\ncorpus-diffed to parity (every delta an enumerated regex mistake), their prose logic\nported verbatim, and then deleted; their grammars ship vendored with provenance. The\ninstrument arms remain hand-built until a later phase ports them to query packs.\n\n**instrument arms read languages through shared grammar queries, never a parallel\nscanner.** Phase 2b's contract, proven first on the injection ratchet: a language\ncontributes captures and signals — which node is an interpolation, how its SQL context\nannounces itself — and the mechanism owns classification, safe-pattern grading, site\nidentity, and the ratchet, once. The regex scanners this replaced matched line TEXT, so\nthey counted `${}` inside plain strings, comments, and test fixtures as sites, bounded\nvisibility at one brace of nesting, and one of them matched its own source. The query\nscan re-pinned the baseline with every delta enumerated: nineteen real nested-brace\nsites gained, one self-match artifact gone. A new language now gains the whole\ninstrument from a table row — ruby's took three lines and no scanner — which is the\ntwo-tier boundary dissolving arm by arm.\n\n**a built-in language pack is data: queries, patterns, and named strategies, never\ncode.** The declarative baseline is what keeps \"add a language\" a table-row act instead\nof an expert contribution — and it is a rule that erodes one convenient function at a\ntime unless something refuses. So the packs are inspectable values aggregated in one\nplace, and a guard sweeps them for function-valued fields by path: the hand-rolled\nscanner class is unrepresentable at the seam, not merely discouraged. The rule's edge\nis honest about what a pack may name — strategies from a closed, mechanism-owned set\n(\"jsdoc\", \"docstring\", \"cooked-string\") — because some knowledge is genuinely\nprocedural; naming it keeps the procedure written once where every language can reach\nit. Project adapter modules remain code territory by definition: purity governs what\nships built in, where a single spelling is the entire point.\n\n**a parse's heap is returned before the next file.** web-tree-sitter trees hold wasm\nheap only an explicit delete returns, and the emscripten heap is fixed — so a leak is\ninvisible on a small repository and fatal on a large one, the worst observability\nprofile a defect can have. The measured incident is the refutation above. The repair is\nthe ladder's top rung, not discipline: `withTree` owns the tree's whole lifetime, every\ncall site takes it, node captures die inside it (the one lazy consumer was made eager\nrather than allowed to touch a freed node), and forgetting to free is unrepresentable.\n\n**an undeclared root refuses the walk, never wanders.** A configless run walks whatever\ndirectory the shell happened to be in and grades that population with full confidence —\nthe incident run was `npx coherence verify` from a home directory, which is not exotic;\nit is the first thing a curious adopter types. The config file's PRESENCE is the\ndeclaration, so `{}` is a complete first rung of the adoption ladder, and the refusal\nprints exactly that one-line bootstrap. Journal, hook, and reference commands never\nwalk, so they stay available in an undeclared directory — the field does not require a\nconfig to remember decisions.\n\n**experiment outcomes require criterion-total evidence.** A\nplan is frozen before work with its predicted context, actions, criteria, and evidence\ncursors. Closure answers every action and criterion exactly once, preserves the assessor,\nand derives success, failure, or inconclusive from criterion statuses rather than accepting\nan outcome label. Otherwise the ledger would turn an incomplete story into a measured loop.\n\n**experiment telemetry preserves its weakest provable attribution.** Trace and activity\nwindows may be empty, prove an exact owner session, or only prove a parent-session aggregate\nthat can include descendants; older trace may carry no observation metadata at all. Those\nfour scopes remain distinct in the immutable close record. Damaged prefixes, unreadable\nrows, and unknown or inconsistent scope refuse. That keeps compatible history without\nturning absence or uncertainty into false precision.\n\n**activity evidence is accepted only when identity, scope, time, and command agree.** A\nrow is useful precisely because later status and experiment readers stop re-deriving the\nhost event. That cached inference is safe only while its relational fields still agree:\nagent attribution names the row session, parent fallback names its parent domain, event\nidentity recomputes, time is canonical, and command kind/result agrees with name and exit\ncode. One strict reader grades that whole relation; malformed rows become counted damage,\nnever partially trusted evidence.\n\n**surviving agent-assessed defect evidence is attributable and internally consistent.** A\nconjecture keeps uncertainty alive; a defect record says an agent crossed that epistemic\nboundary and must therefore carry the evidence for doing so, the repository subject it\njudged, and the caller-attributed writer labels attached to the assessment. Records append per session and\ndedupe exact retries, while the merged reader recomputes the ordinary content address and\nrefuses malformed, inconsistent, or displaced surviving rows. That detects partial damage;\nit does not prove that a valid row was never rewritten with a recomputed id. Committed Git\nhistory is this first recorder's external rewrite and deletion witness, and an independently\nanchored head is future work.\n\n**defect writes refuse pre-existing symlink redirection.** A path beneath the repository\nis not containment when its stable components redirect through a symlink. The reader\ntherefore refuses linked ledger directories and entries, while the writer validates both\ndirectory components and opens the session target without following its final link, then\ncompares the opened descriptor with the standing path before appending. This prevents the\nmeasured stable-state redirects; it is not an `openat`-grade promise against a privileged\nprocess racing parent-directory renames during the append.\n\n**defect provenance is data, never terminal control.** Repository identity is captured by\nthe machine, but the committed row is still untrusted input on its next read. A commit is\ntherefore null or has lowercase SHA-1/SHA-256 object-name shape, never merely a nonempty string; the\nhuman renderer also neutralizes its bytes. Without both the semantic constraint and the\noutput encoding, an edited but re-addressed row could turn provenance into a terminal\ninstruction while remaining structurally valid.\n\n**a streamed journal entry renders exactly once across appends and compaction.** The live\nstream exists for the one reader the settled render cannot serve — an orchestrator watching\nfive subagents mid-flight — and that reader has no way to audit the feed against the files.\nA dropped entry is a decision the orchestrator never saw, indistinguishable from one never\nmade; a duplicate teaches the opposite lie, that a question was decided twice. Both are\ncheap to produce, because the journal's files do not strictly grow: compaction moves lines\nbetween files and unlinks the originals, which a position-addressed reader replays in full.\nSo a record's identity in the stream comes from its content — the same triple the merged\ntimeline sorts by — and a moved line is one the feed already carried.\n\n(The import claims above separately prove that the composition root still reaches the\nconfiguration loader, graph derivation, verifier, spec walker, and journal.)",
       "invariants": [
         "agent lifecycle preserves decisions and exposes the current change signal",
         "significant behavioral growth acquires an anchor or patch-specific decision",
         "a weaker regulation obligation never masks a stronger one",
         "regulation evaluates and repairs the selected agent host",
         "task context is bounded and names its approximations",
+        "verdict-bearing decision reads fail closed on surviving journal damage",
+        "a committed decision population cannot disappear into adoption from zero",
+        "decision ratification follows explicit subject and authority, never prose similarity or recency",
+        "work state is append-only, attributable, and predecessor-checked",
+        "work cannot activate or complete before every dependency completes",
+        "runnable work with overlapping write scopes is a collision, never concurrent permission",
+        "a terminal parent has no live child and explicitly synthesizes every completed direct child",
+        "authored work text is single-line data, never model-instruction control",
+        "swarm write identity and authority flags are singleton or refused",
+        "consequence navigation contains only explicit assessed edges",
+        "specialized consequence relations admit only their declared endpoint kinds",
+        "consequence evidence refuses surviving storage damage instead of shrinking navigation",
+        "orientation refuses damaged evidence before selecting a swarm heading",
+        "orientation admits verification state only with valid shape and comparable provenance",
+        "verification currency follows material repository state without invalidating its own receipt",
+        "orientation selects synthesis only when parent closure can execute it",
+        "orientation derives live blockage only from closeable work state",
+        "completed work remains unverified until an explicit verification edge names it",
+        "high-frequency lifecycle hooks start without the analysis dependency stack",
+        "hook telemetry loss never kills PostToolUse",
+        "session startup injects only the exact session's current work order",
+        "session startup survives a damaged decision-journal path with named degradation",
+        "harness source remains searchable text rather than silently becoming binary",
         "cached decisions expose structurally expired premises",
         "predicted context closure is calibrated against observed reads and outcomes",
         "calibration preserves the weakest host attribution of its trace",
@@ -115,6 +163,24 @@
         "a streamed journal entry renders exactly once across appends and compaction"
       ],
       "refutations": [
+        "session startup survives a damaged decision-journal path with named degradation: with `.coherence/decisions` replaced by a regular file, SessionStart threw raw `ENOTDIR` before emitting any instructions. It now retains the exact host session, names `JOURNAL CONTROL unavailable`, performs no journal write, and exits zero.",
+        "hook telemetry loss never kills PostToolUse: the original no-dependency canary sent `{}`, producing no read event and never exercising persistence. A real Read event with `.coherence/read-traces` replaced by a regular file threw `EEXIST` out of the hook. The runtime boundary now contains telemetry failure, stays byte-silent, and the canary carries the hostile target.",
+        "orientation admits verification state only with valid shape and comparable provenance: a parseable status row with `at: \"not-a-time\"` and `failures: \"not-a-number\"` was reported as current and allowed `STEADY`; missing commit provenance on either side was also treated as agreement. Runtime shape, canonical time, count, tier, and commit checks now refuse malformed evidence, while absent provenance remains stale.",
+        "swarm write identity and authority flags are singleton or refused: `work create ... --session one --session two` succeeded and silently attributed the append to `two`; the same last-wins ambiguity existed for authority and consequence writers. The shared CLI check now refuses every non-repeatable flag before any append.",
+        "work state is append-only, attributable, and predecessor-checked: the first live four-agent field run replayed correctly in its originating worktree, but `.coherence/work/` still matched the repository's blanket ignore, so a fresh clone would lose every order, handoff, and closure. The repository guard now writes through the public CLI, commits under the live ignore policy, clones, and strictly replays the work instead of accepting that locally-correct but non-durable state.",
+        "authored work text is single-line data, never model-instruction control: a work objective containing a newline and `SYSTEM:` was accepted and interpolated into SessionStart as a peer instruction. Work writers now reject C0/C1 controls, while hook rendering escapes them defensively at the instruction boundary.",
+        "specialized consequence relations admit only their declared endpoint kinds: `work:a --produces--> decision:d` and `commit:a --produces--> work:b` were accepted even though the documented lifecycle defines production as work-to-commit. Endpoint validation now makes that relation exact rather than merely checking its source kind.",
+        "a terminal parent has no live child and explicitly synthesizes every completed direct child: a parent could close with `synthesizedChildren: []` after a child completed, leaving an irreparable synthesis heading because terminal work cannot close again; a child created after parent closure remained dispatch-ready even though its join target was dead. Prospective graph validation now refuses both transitions before append.",
+        "work cannot activate or complete before every dependency completes: readiness was projection-only, so a waiting work item could transition to active and then completed while its dependency stayed open; orientation accepted the impossible ordering. Every lifecycle write now validates the prospective graph and refuses that dependency-order violation.",
+        "verdict-bearing decision reads fail closed on surviving journal damage: a symlinked `.coherence` could supply external valid rows, a renamed or blank/torn file silently shrank the trusted population, and case-distinct `Owner`/`owner` sessions collided on case-folding filesystems. The trusted projection now validates containment, every directory entry, append framing, and domain-separated hashed session addresses before admitting any row.",
+        "a committed decision population cannot disappear into adoption from zero: two valid conflicting decision files produced `RESOLVE-CONFLICT`; deleting the entire tracked directory then produced zero trusted rows and `STEADY`. The strict empty projection now asks current Git `HEAD` whether tracked decision files disappeared, while a repository that never owned a ledger remains valid first-use adoption.",
+        "verification currency follows material repository state without invalidating its own receipt: a clean full status at `HEAD` remained `CURRENT` and allowed `STEADY` after a tracked source changed because orientation compared only commits. Live Git dirtiness now invalidates currency while excluding exactly `.coherence/status.json`, the receipt written after provenance was sampled.",
+        "orientation selects synthesis only when parent closure can execute it: with parent work active, child A completed, and dependency-clear child B ready, orientation selected `SYNTHESIZE`; the only synthesis operation is parent closure, which correctly refused while B was live, so obeying the heading could not advance. Pending results now select synthesis only after that parent's children are terminal; otherwise the live sibling receives `DISPATCH`, `CONTINUE`, or `UNBLOCK`.",
+        "orientation derives live blockage only from closeable work state: the first real-worktree `orient` canary emitted `UNBLOCK` with zero work orders because it counted 23 historical journal `blocked` reports. Those rows have no completion event, so the heading could never converge. They remain visible as historical evidence while only the append-only work lifecycle can select a live unblock action.",
+        "consequence evidence refuses surviving storage damage instead of shrinking navigation: the first strict reader inspected only the final ledger directory, filtered for `*.jsonl`, and accepted a complete last row without its append newline. A symlinked `.coherence` parent could therefore redirect the read, renaming a surviving session file to `.bak` made the graph look clean and empty, and case-distinct sessions collided on case-folding filesystems. The reader now validates both directory components, every surviving entry, canonical append framing, and domain-separated hashed session addresses before admitting any edge.",
+        "consequence navigation contains only explicit assessed edges: the live blind-handoff trial reconstructed the mission from explicit edges, but `.coherence/consequences/` was ignored, making that successful navigation disappear on clone. The same repository guard now commits a typed edge to a real Git endpoint, clones it, and requires both strict replay and a dangling-free orientation.",
+        "harness source remains searchable text rather than silently becoming binary: two new render/validation regexes carried literal NUL bytes, and `rg` classified `src/consequence.ts` as binary instead of returning navigable source matches. The ranges now use escaped source notation and the focused guard enumerates every live TypeScript source, so the same byte turns the claim red rather than degrading repository navigation silently.",
+        "high-frequency lifecycle hooks start without the analysis dependency stack: the live PostToolUse hook failed before reading its event with `ERR_MODULE_NOT_FOUND` for `web-tree-sitter`; the eager chain was `hook-cli → hooks → due → commands → phrasebook → oracle-domain → web-tree-sitter`. `npm ci` repaired the checkout but left the failure class intact. Moving executable phrasebook data injection to the CLI composition root dissolved the eager edge, and the isolated no-`node_modules` runtime canary now passes.",
         "fast verification rejects a statically vanished Vitest oracle without executing tests: changed `resolveStaticOracle`'s complete zero-match branch from `absent` to `unknown` (2026-08-20), laundering the motivating Mnemion rename into an ordinary fast-tier skip — the focused boundary guard failed and captured the dangerous verdict: `claims: 1 · 0 green · 0 red · 1 skipped`, followed by `✓ coherent`. Restored; the same fixture now reds `VANISHED ORACLE (static)` without Vitest installed or invoked.",
         "fast verification rejects a statically vanished Vitest oracle without executing tests: 0.36.2 made incompleteness project-wide, so Mnemion's finite data-driven titles made an unrelated renamed clipboard oracle UNKNOWN forever. Reproduced against current main: renaming the literal clipboard test left fast verify green. The scanner now retains concrete runner names and owner paths from Git `HEAD`; losing a name from a deleted or still-complete former owner reds before unrelated current uncertainty is consulted, while a former owner that itself became dynamic remains UNKNOWN. No prefix guess or partial JavaScript evaluator is allowed to manufacture global completeness.",
         "fast oracle absence requires a complete direct-declaration population: before release, conventional files whose tests came only from a bare side-effect import, top-level `import()`, or `require()` each produced `fullNames=[]`, `incomplete=[]`, and `absent`, so fast verification could call a live runtime-owned oracle vanished. Release audit then found the same false absence behind a transitive local Vitest alias and a live `build/live.test.ts`, while a conventional file symlink was followed outside the declared traversal boundary. The scanner now resolves exact alias chains, marks registration-time module loads incomplete, mirrors Vitest v4's `node_modules`/`.git` default exclusions, and refuses every symlink/custom collection surface into UNKNOWN; loads inside test callbacks remain ordinary subject execution.",
@@ -770,6 +836,15 @@
       "prose": "cli.ts — the coherence harness entrypoint. Run from a project root:\n  node <coherence>/cli.ts <command> [options]     # no args prints every command\nIt loads coherence.config.json from the cwd and operates on that project.\n\nTHE COMMAND LIST IS NOT SPELLED HERE. Which verbs exist, what each takes and what each\nis for live in src/commands.ts; the usage banner and README.md's command index are both\nderived from it, and test/commands.test.ts reads the `cmd === \"…\"` chain below out of\nthis file's AST and asserts it matches the registry exactly. Adding a branch here without\na registry entry (or the reverse) fails the suite."
     },
     {
+      "id": "s:src/cli.ts#repeatedSingletonFlags",
+      "parent": "f:src/cli.ts",
+      "label": "repeatedSingletonFlags",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/cli.ts",
+      "line": 94
+    },
+    {
       "id": "f:src/commands.ts",
       "parent": "c:src",
       "label": "commands.ts",
@@ -785,7 +860,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/commands.ts",
-      "line": 38,
+      "line": 36,
       "prose": "The README block `coherence docs` owns. A DISTINCT marker pair from CLAUDE.md's:\n a project may carry both files, the two blocks hold different things, and a shared\n marker would let one command clobber the other's zone."
     },
     {
@@ -795,7 +870,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/commands.ts",
-      "line": 39
+      "line": 37
     },
     {
       "id": "s:src/commands.ts#PHRASEBOOK_BEGIN",
@@ -804,7 +879,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/commands.ts",
-      "line": 46,
+      "line": 44,
       "prose": "The SECOND README block `coherence docs` owns: the claim-form table, derived from the\n `CLAIM_FORMS` registry (src/phrasebook.ts) — the same registry `evalClaim` executes.\n Its own distinct marker pair, for the same reason as above. The renderer lives HERE\n rather than in phrasebook.ts because this file is where README-owned marker pairs and\n their splice-ready spellings are declared once and derived from."
     },
     {
@@ -814,7 +889,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/commands.ts",
-      "line": 47
+      "line": 45
     },
     {
       "id": "s:src/commands.ts#CommandGroup",
@@ -823,7 +898,7 @@
       "kind": "symbol",
       "sub": "type",
       "path": "src/commands.ts",
-      "line": 52,
+      "line": 50,
       "prose": "Grouping for both derived spellings. Order comes from first appearance in `COMMANDS`,\n so the group sequence is declared exactly once — by the array below — and there is no\n second ordering list to fall out of step with it."
     },
     {
@@ -833,7 +908,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/commands.ts",
-      "line": 69
+      "line": 67
     },
     {
       "id": "s:src/commands.ts#COMMANDS",
@@ -842,7 +917,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/commands.ts",
-      "line": 122
+      "line": 120
     },
     {
       "id": "s:src/commands.ts#commandNames",
@@ -851,7 +926,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/commands.ts",
-      "line": 273,
+      "line": 280,
       "prose": "Every command name, in registry order. The `<a|b|c>` list — aliases excluded."
     },
     {
@@ -861,7 +936,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/commands.ts",
-      "line": 277,
+      "line": 284,
       "prose": "Every token the dispatch must accept: names AND aliases. The totality oracle compares\n THIS against the `cmd === \"…\"` literals it reads out of cli.ts."
     },
     {
@@ -871,7 +946,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/commands.ts",
-      "line": 290,
+      "line": 297,
       "prose": "The registry entry a typed token names — BY NAME OR BY ALIAS. The one lookup any guard\nkeyed on a flag (`writesArtifacts`, `writesBaseline`) may use.\n\nThe floor guarding the generators matched `c.name === cmd` and nothing else, which is a\nlatent bypass with no current victim: the only alias in the registry, `resolve`, writes\nnothing. But `aliases` exists precisely so a writing command can acquire a second\nspelling, and the day one does, the guard would silently exempt it — a gate that fails\nopen on a rename is the class of defect this whole file exists to end. Closed here\nrather than at the call site, because the call site is where it was forgotten once."
     },
     {
@@ -881,7 +956,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/commands.ts",
-      "line": 318,
+      "line": 325,
       "prose": "SPELLING ONE — the usage banner, printed to stderr when the verb is unknown or absent.\nDerived in full: there is no command-name string literal left in cli.ts's help text, so\nthe banner cannot be 29 while the dispatch is 30, and two branches editing different\ncommands can no longer conflict on one line."
     },
     {
@@ -891,8 +966,18 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/commands.ts",
-      "line": 351,
+      "line": 358,
       "prose": "SPELLING TWO — the README's command index, markers inclusive, ready for `spliceBlock`.\n\nA BULLET LIST, not a markdown table, and that is a real constraint rather than taste:\n`redundancy` reads the first column of every markdown table as an enumerated domain, so\na generated table would hand it a fresh README↔dispatch pair to report — trading the\nfinding this change exists to remove for an identical one. A generated block that the\nproject's own detector still flags has not fixed anything.\n\nThe block is an INDEX and nothing more: name, arg shape, one line. The authored\nper-command reasoning lives OUTSIDE the markers, below the block, and is not expected to\ncover every command — completeness is what the derivation owes, depth is what the prose\nowes, and confusing the two is how the reference got twelve commands behind."
+    },
+    {
+      "id": "s:src/commands.ts#PhrasebookFormSummary",
+      "parent": "f:src/commands.ts",
+      "label": "PhrasebookFormSummary",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/commands.ts",
+      "line": 399,
+      "prose": "The lightweight command catalog is imported by the lifecycle hook's due-work reader.\nKeep the executable claim registry on the docs side of this parameter boundary: a\nstatic import here makes every PostToolUse load parsers before it can record one path."
     },
     {
       "id": "s:src/commands.ts#renderPhrasebookBlock",
@@ -901,8 +986,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/commands.ts",
-      "line": 389,
-      "prose": "The README's claim-form index, markers inclusive, ready for `spliceBlock` — the same\ntreatment the command index got, for the same defect: the hand-kept table listed 8 forms\nwhile the registry carried 9 (`lives in` was missing entirely) and its boundary grammar\nhad lost the `[crossing <zone> -> <zone>]` clause. The README even predicted the drift\n(\"nothing compares it against the registry, so it *can* drift\"). Now something does.\n\nA BULLET LIST, not a markdown table, for the reason renderCommandsBlock records:\n`redundancy` reads the first column of every markdown table as an enumerated domain, so\na generated table would hand it a fresh README↔registry pair to report.\n\nThe block is the GRAMMAR and nothing more: name, tier, grammar, example — the fields the\nregistry actually carries. The authored per-form reasoning (tier behavior under `--fast`,\nthe meta-oracle, skip-vs-fail semantics) lives OUTSIDE the markers, below the block."
+      "line": 406
     },
     {
       "id": "f:src/config.ts",
@@ -924,6 +1008,213 @@
       "prose": "THE PROJECT'S CONFIG over the defaults — and a REFUSAL when a config is there and\ncannot be read (floor.ts's `readJsonOrRefuse`). ABSENT is legitimate and stays exactly\nas it was: every field has a default, and running with none of them overridden is the\nfirst rung of the adoption ladder.\n\nUNPARSEABLE never was. It used to degrade to the DEFAULTS silently, which is not a\nmilder version of the same thing — it is a harness reading a different tree than the\none it was configured to read, and reporting on it with full confidence. `ignore`,\n`codeExt` and `sources` all revert, so the walk changes shape; and `name` reverts to\nabsent, which resurrects the cross-checkout `docs --check` false positive b32965d\nshipped to kill. Every downstream refusal on this page is then computed over the\nwrong population."
     },
     {
+      "id": "f:src/consequence.ts",
+      "parent": "c:src",
+      "label": "consequence.ts",
+      "kind": "file",
+      "sub": "src/consequence.ts",
+      "path": "src/consequence.ts",
+      "prose": "consequence.ts — explicit, attributable links across the records an agent leaves behind.\n\nDecisions, work, commits, experiments, verification, and defects already have useful\nidentities. What they did not have was causality: a reader could see that two records\nwere nearby in time or touched one path, but neither fact says one implemented, tested,\ncontradicted, or repaired the other. This ledger records only the relationship an\nassessor actually states. It never mines timestamps or Git diffs to manufacture edges.\n\nOne JSONL file per writer session preserves the same concurrency property as the\ndecision and experiment ledgers. The merged reader is strict: malformed or conflicting\nsurviving evidence makes the projection unavailable rather than shrinking the graph."
+    },
+    {
+      "id": "s:src/consequence.ts#CONSEQUENCE_VERSION",
+      "parent": "f:src/consequence.ts",
+      "label": "CONSEQUENCE_VERSION",
+      "kind": "symbol",
+      "sub": "const",
+      "path": "src/consequence.ts",
+      "line": 21
+    },
+    {
+      "id": "s:src/consequence.ts#CONSEQUENCE_KINDS",
+      "parent": "f:src/consequence.ts",
+      "label": "CONSEQUENCE_KINDS",
+      "kind": "symbol",
+      "sub": "const",
+      "path": "src/consequence.ts",
+      "line": 22
+    },
+    {
+      "id": "s:src/consequence.ts#ConsequenceKind",
+      "parent": "f:src/consequence.ts",
+      "label": "ConsequenceKind",
+      "kind": "symbol",
+      "sub": "type",
+      "path": "src/consequence.ts",
+      "line": 25
+    },
+    {
+      "id": "s:src/consequence.ts#CONSEQUENCE_RELATIONS",
+      "parent": "f:src/consequence.ts",
+      "label": "CONSEQUENCE_RELATIONS",
+      "kind": "symbol",
+      "sub": "const",
+      "path": "src/consequence.ts",
+      "line": 27
+    },
+    {
+      "id": "s:src/consequence.ts#ConsequenceRelation",
+      "parent": "f:src/consequence.ts",
+      "label": "ConsequenceRelation",
+      "kind": "symbol",
+      "sub": "type",
+      "path": "src/consequence.ts",
+      "line": 31
+    },
+    {
+      "id": "s:src/consequence.ts#ConsequenceRef",
+      "parent": "f:src/consequence.ts",
+      "label": "ConsequenceRef",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/consequence.ts",
+      "line": 33
+    },
+    {
+      "id": "s:src/consequence.ts#ConsequenceRepoSnapshot",
+      "parent": "f:src/consequence.ts",
+      "label": "ConsequenceRepoSnapshot",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/consequence.ts",
+      "line": 38
+    },
+    {
+      "id": "s:src/consequence.ts#ConsequenceRecord",
+      "parent": "f:src/consequence.ts",
+      "label": "ConsequenceRecord",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/consequence.ts",
+      "line": 44
+    },
+    {
+      "id": "s:src/consequence.ts#RecordConsequenceInput",
+      "parent": "f:src/consequence.ts",
+      "label": "RecordConsequenceInput",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/consequence.ts",
+      "line": 61
+    },
+    {
+      "id": "s:src/consequence.ts#ConsequenceLedger",
+      "parent": "f:src/consequence.ts",
+      "label": "ConsequenceLedger",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/consequence.ts",
+      "line": 72
+    },
+    {
+      "id": "s:src/consequence.ts#ConsequenceTrace",
+      "parent": "f:src/consequence.ts",
+      "label": "ConsequenceTrace",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/consequence.ts",
+      "line": 76
+    },
+    {
+      "id": "s:src/consequence.ts#ConsequenceLedgerError",
+      "parent": "f:src/consequence.ts",
+      "label": "ConsequenceLedgerError",
+      "kind": "symbol",
+      "sub": "class",
+      "path": "src/consequence.ts",
+      "line": 82
+    },
+    {
+      "id": "s:src/consequence.ts#consequencesDir",
+      "parent": "f:src/consequence.ts",
+      "label": "consequencesDir",
+      "kind": "symbol",
+      "sub": "const",
+      "path": "src/consequence.ts",
+      "line": 92
+    },
+    {
+      "id": "s:src/consequence.ts#consequenceSessionPath",
+      "parent": "f:src/consequence.ts",
+      "label": "consequenceSessionPath",
+      "kind": "symbol",
+      "sub": "const",
+      "path": "src/consequence.ts",
+      "line": 100
+    },
+    {
+      "id": "s:src/consequence.ts#parseConsequenceRef",
+      "parent": "f:src/consequence.ts",
+      "label": "parseConsequenceRef",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/consequence.ts",
+      "line": 183
+    },
+    {
+      "id": "s:src/consequence.ts#formatConsequenceRef",
+      "parent": "f:src/consequence.ts",
+      "label": "formatConsequenceRef",
+      "kind": "symbol",
+      "sub": "const",
+      "path": "src/consequence.ts",
+      "line": 191
+    },
+    {
+      "id": "s:src/consequence.ts#relationProblem",
+      "parent": "f:src/consequence.ts",
+      "label": "relationProblem",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/consequence.ts",
+      "line": 196,
+      "prose": "Relation endpoint types are law, not documentation. Broad relationships remain\navailable (`supports`, `contradicts`, `depends-on`), while a nonsensical specialized\nedge such as a defect \"authorizes\" a commit refuses at write and read time."
+    },
+    {
+      "id": "s:src/consequence.ts#readConsequences",
+      "parent": "f:src/consequence.ts",
+      "label": "readConsequences",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/consequence.ts",
+      "line": 295
+    },
+    {
+      "id": "s:src/consequence.ts#recordConsequence",
+      "parent": "f:src/consequence.ts",
+      "label": "recordConsequence",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/consequence.ts",
+      "line": 362,
+      "prose": "Append an assessed edge. Exact semantic retries return the existing row."
+    },
+    {
+      "id": "s:src/consequence.ts#traceConsequences",
+      "parent": "f:src/consequence.ts",
+      "label": "traceConsequences",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/consequence.ts",
+      "line": 430,
+      "prose": "Undirected navigation around an explicit focus. Direction and relation remain on\nevery returned edge; traversal in both directions prevents \"what repaired this?\" and\n\"what did this repair?\" from requiring two indexes."
+    },
+    {
+      "id": "s:src/consequence.ts#renderConsequences",
+      "parent": "f:src/consequence.ts",
+      "label": "renderConsequences",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/consequence.ts",
+      "line": 452
+    },
+    {
+      "id": "x:node:child_process",
+      "label": "node:child_process",
+      "kind": "external",
+      "sub": "module"
+    },
+    {
       "id": "f:src/context.ts",
       "parent": "c:src",
       "label": "context.ts",
@@ -939,7 +1230,7 @@
       "kind": "symbol",
       "sub": "type",
       "path": "src/context.ts",
-      "line": 25
+      "line": 26
     },
     {
       "id": "s:src/context.ts#ContextRequest",
@@ -948,7 +1239,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/context.ts",
-      "line": 29,
+      "line": 30,
       "prose": "Explicit path/symbol selectors. `changedFiles` is injectable so a hook can pass the\nexact per-change domain it already computed instead of making this module rediscover it."
     },
     {
@@ -958,7 +1249,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/context.ts",
-      "line": 35
+      "line": 36
     },
     {
       "id": "s:src/context.ts#ContextOptions",
@@ -967,7 +1258,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/context.ts",
-      "line": 40
+      "line": 41
     },
     {
       "id": "s:src/context.ts#ContextSymbol",
@@ -976,7 +1267,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/context.ts",
-      "line": 45
+      "line": 49
     },
     {
       "id": "s:src/context.ts#ContextComponent",
@@ -985,7 +1276,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/context.ts",
-      "line": 52
+      "line": 56
     },
     {
       "id": "s:src/context.ts#ContextObligation",
@@ -994,7 +1285,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/context.ts",
-      "line": 60
+      "line": 64
     },
     {
       "id": "s:src/context.ts#ContextImport",
@@ -1003,7 +1294,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/context.ts",
-      "line": 69
+      "line": 73
     },
     {
       "id": "s:src/context.ts#ContextTest",
@@ -1012,7 +1303,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/context.ts",
-      "line": 75
+      "line": 79
     },
     {
       "id": "s:src/context.ts#ContextJournalEntry",
@@ -1021,7 +1312,16 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/context.ts",
-      "line": 80
+      "line": 84
+    },
+    {
+      "id": "s:src/context.ts#ContextSurface",
+      "parent": "f:src/context.ts",
+      "label": "ContextSurface",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/context.ts",
+      "line": 94
     },
     {
       "id": "s:src/context.ts#ContextResult",
@@ -1030,7 +1330,34 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/context.ts",
-      "line": 90
+      "line": 102
+    },
+    {
+      "id": "s:src/context.ts#ContextRenderOptions",
+      "parent": "f:src/context.ts",
+      "label": "ContextRenderOptions",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/context.ts",
+      "line": 124
+    },
+    {
+      "id": "s:src/context.ts#ContextWithholding",
+      "parent": "f:src/context.ts",
+      "label": "ContextWithholding",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/context.ts",
+      "line": 131
+    },
+    {
+      "id": "s:src/context.ts#ContextRenderProjection",
+      "parent": "f:src/context.ts",
+      "label": "ContextRenderProjection",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/context.ts",
+      "line": 137
     },
     {
       "id": "s:src/context.ts#normalizeContextPath",
@@ -1039,7 +1366,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/context.ts",
-      "line": 114,
+      "line": 154,
       "prose": "Graph paths are slash-normalized and root-relative. Accepting an absolute path under\n`absRoot` is a convenience for editor integrations; an absolute path outside the root\nstays absolute and therefore becomes an explicit unresolved selector."
     },
     {
@@ -1049,7 +1376,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/context.ts",
-      "line": 125,
+      "line": 165,
       "prose": "Default only; the limitation is carried in the result. Excluding `*.spec.md` matters:\nthose are coherence component specs, not test files despite the suffix."
     },
     {
@@ -1059,7 +1386,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/context.ts",
-      "line": 205,
+      "line": 245,
       "prose": "Pure, deterministic context projection. No filesystem, no Git, no clock."
     },
     {
@@ -1069,8 +1396,18 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/context.ts",
-      "line": 337,
+      "line": 393,
       "prose": "Read paths from Git without conflating staged with all working-tree changes."
+    },
+    {
+      "id": "s:src/context.ts#repositoryContextPaths",
+      "parent": "f:src/context.ts",
+      "label": "repositoryContextPaths",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/context.ts",
+      "line": 415,
+      "prose": "Establish the repository-wide selection domain at the I/O edge. Git contributes tracked\nand ordinary untracked files (including tracked deletions); explicit ignored/generated\nartifacts are admitted when their standing path is a file or symlink. The pure projector\nreceives only these names and never turns a plausible path into evidence of existence."
     },
     {
       "id": "s:src/context.ts#contextFromProject",
@@ -1079,8 +1416,18 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/context.ts",
-      "line": 351,
+      "line": 447,
       "prose": "Thin project edge for a CLI or per-change hook. Explicit selectors and Git-derived paths\ncompose: asking for `--staged --symbol seal` does not silently discard either domain."
+    },
+    {
+      "id": "s:src/context.ts#renderContextProjection",
+      "parent": "f:src/context.ts",
+      "label": "renderContextProjection",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/context.ts",
+      "line": 724,
+      "prose": "Produce the structured accounting behind both render modes. In bounded mode entries are\natomic and priority ordered; if even the title, named limitations, and omission report do\nnot fit, the function refuses rather than returning an apparently complete fragment."
     },
     {
       "id": "s:src/context.ts#renderContext",
@@ -1089,14 +1436,8 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/context.ts",
-      "line": 369,
-      "prose": "Stable human rendering over the structured result. The structured form remains the API\nfor hooks/agents; this compact text is for a terminal and deliberately names absence."
-    },
-    {
-      "id": "x:node:child_process",
-      "label": "node:child_process",
-      "kind": "external",
-      "sub": "module"
+      "line": 760,
+      "prose": "Stable human rendering. No options preserves the historical unbounded API; a byte limit\nselects the route-first projection and `expand` explicitly returns to the full view."
     },
     {
       "id": "f:src/contracts.ts",
@@ -1466,6 +1807,43 @@
       "line": 33
     },
     {
+      "id": "f:src/decision-position.ts",
+      "parent": "c:src",
+      "label": "decision-position.ts",
+      "kind": "file",
+      "sub": "src/decision-position.ts",
+      "path": "src/decision-position.ts",
+      "prose": "decision-position.ts — derive ratification and conflict from explicit decision fields.\n\nThis module does not guess that two prose labels concern the same question. Only a\nshared `subject` enters the comparison, and only an explicit authority grade outranks\nanother record. Historical decisions without those fields remain readable but do not\nbecome accidental swarm policy."
+    },
+    {
+      "id": "s:src/decision-position.ts#DecisionPositionState",
+      "parent": "f:src/decision-position.ts",
+      "label": "DecisionPositionState",
+      "kind": "symbol",
+      "sub": "type",
+      "path": "src/decision-position.ts",
+      "line": 9
+    },
+    {
+      "id": "s:src/decision-position.ts#DecisionPosition",
+      "parent": "f:src/decision-position.ts",
+      "label": "DecisionPosition",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/decision-position.ts",
+      "line": 11
+    },
+    {
+      "id": "s:src/decision-position.ts#analyzeDecisionPositions",
+      "parent": "f:src/decision-position.ts",
+      "label": "analyzeDecisionPositions",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/decision-position.ts",
+      "line": 32,
+      "prose": "One derived position per machine-addressable subject. Retractions are respected via\nthe journal's canonical resolver. Missing authority remains ungraded and can align,\nbut can never ratify or outrank another record."
+    },
+    {
       "id": "f:src/decisions.ts",
       "parent": "c:src",
       "label": "decisions.ts",
@@ -1481,7 +1859,36 @@
       "kind": "symbol",
       "sub": "type",
       "path": "src/decisions.ts",
-      "line": 95
+      "line": 96
+    },
+    {
+      "id": "s:src/decisions.ts#DecisionScope",
+      "parent": "f:src/decisions.ts",
+      "label": "DecisionScope",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/decisions.ts",
+      "line": 100,
+      "prose": "Machine-addressable scope for a decision. These are SETS, not a second prose field:\nwriters sort and deduplicate them before they enter the wire record and its identity."
+    },
+    {
+      "id": "s:src/decisions.ts#DecisionAuthority",
+      "parent": "f:src/decisions.ts",
+      "label": "DecisionAuthority",
+      "kind": "symbol",
+      "sub": "type",
+      "path": "src/decisions.ts",
+      "line": 110,
+      "prose": "Whose authority the row claims. Identity is intentionally a small closed vocabulary;\nan actor/session belongs in `agent`, while this field answers whether that actor was\nproposing, ratifying for the swarm, or carrying an explicit user direction."
+    },
+    {
+      "id": "s:src/decisions.ts#StructuredDecisionFields",
+      "parent": "f:src/decisions.ts",
+      "label": "StructuredDecisionFields",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/decisions.ts",
+      "line": 112
     },
     {
       "id": "s:src/decisions.ts#DecisionRecord",
@@ -1490,7 +1897,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/decisions.ts",
-      "line": 97
+      "line": 119
     },
     {
       "id": "s:src/decisions.ts#LABEL_SOFT_MAX",
@@ -1499,7 +1906,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/decisions.ts",
-      "line": 155,
+      "line": 181,
       "prose": "LABELS ARE CAPPED; EVIDENCE IS NOT. Measured on this repo's own journal at 53\nentries: `chose` p50 149 / p90 241, `over` p50 94 / p90 175 — both already read as\nlabels, and the few that run long are the ones where an agent put its rationale in\nthe title. But `because` p50 609, and ALL 53 exceed 250: capping it there would have\nstripped 16 of 23 file:line citations and 22 of 33 measured numbers, because the\nevidence lives at the END of a rationale, after the claim. That converts a checkable\nentry into an assertable one, which is the failure this journal exists to prevent.\nSo the cap is a WARNING on the label fields only, and readability is solved where it\nbelongs — at the render, with `--brief`."
     },
     {
@@ -1509,7 +1916,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/decisions.ts",
-      "line": 163,
+      "line": 189,
       "prose": "── the candidate nobody writes down ────────────────────────────────────────────────\n\nIt names the MOVE, not the mood. \"the instrument is wrong\" alone is unactionable; the\nclause after the dash is what turns it into a next step, because the mistake is always\nthe same one — reading a number as a fact about the subject when it is a fact about\nthe thing that produced it."
     },
     {
@@ -1519,7 +1926,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/decisions.ts",
-      "line": 165
+      "line": 191
     },
     {
       "id": "s:src/decisions.ts#readsAsInstrumentDoubt",
@@ -1528,7 +1935,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/decisions.ts",
-      "line": 187,
+      "line": 213,
       "prose": "Does this candidate already doubt the apparatus rather than the world?"
     },
     {
@@ -1538,7 +1945,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/decisions.ts",
-      "line": 203,
+      "line": 229,
       "prose": "THE GUARANTEE: every conjecture leaves here with instrument-doubt among its\n candidates. Six for six of the findings that motivated this record were instrument\n failures, so the prior is not merely high — and a candidate list that omits it has\n already made the mistake, at WRITE time, before any reader can catch it.\n\n Nothing is reordered when the author explicitly marks their own wording: their\n specific candidate (`[instrument] the decoder had an off-by-one`) beats the generic\n canonical line. Lexical inference is deliberately insufficient here: redundancy is\n recoverable, while a false positive silently removes the candidate."
     },
     {
@@ -1548,7 +1955,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/decisions.ts",
-      "line": 207
+      "line": 233
     },
     {
       "id": "s:src/decisions.ts#slug",
@@ -1557,7 +1964,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/decisions.ts",
-      "line": 223,
+      "line": 249,
       "prose": "ONE FILENAME COMPONENT, filesystem-safe, AND STILL INJECTIVE — that last part is the\n requirement that rules out a plain `replace`. A branch may contain `/`, and if\n `feat/x` and `feat-x` both flatten to `feat-x` they share a journal file, which is\n exactly the two-branches-conflict failure the split layout exists to prevent. So\n whenever sanitising CHANGED anything — a substitution, a trim, the length cap — a\n digest of the RAW string is appended, and two distinct inputs can no longer land on\n one name. A string that was already safe is passed through untouched, so every session\n id ever written (`s-` + 12 hex) still maps to the file it has always mapped to.\n\n It is applied at `sessionPath`, which also closes a hole that predates it: `--session`\n is caller-supplied and went straight into a path, so `--session ../../etc/x` wrote\n outside the journal."
     },
     {
@@ -1567,7 +1974,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/decisions.ts",
-      "line": 229
+      "line": 263
     },
     {
       "id": "s:src/decisions.ts#newSessionId",
@@ -1576,7 +1983,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/decisions.ts",
-      "line": 238,
+      "line": 350,
       "prose": "A fresh fallback session id. Random rather than derived: two agents started in the same\n second on the same branch with the same name must not collide, and they can.\n\n A host-supplied unique id is preferred by the hook. Randomness is its fallback, never\n the fallback for a hookless `coherence decide` — see `derivedSessionId`."
     },
     {
@@ -1586,8 +1993,18 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/decisions.ts",
-      "line": 265,
+      "line": 377,
       "prose": "THE HOOKLESS FALLBACK: `<branch>-<agent>-<YYYY-MM-DD>`, derived rather than random, so\n a human typing `decide` five times gets ONE file instead of five.\n\n THE BRANCH IS IN THE NAME AND MUST STAY THERE. Distinct filenames are the entire reason\n two parallel branches never conflict on the journal; an id that dropped the branch would\n buy a tidier PR by reintroducing the conflict this layout was built to avoid.\n\n THE DATE COMES FROM THE RECORD'S OWN `at`, so the filename and the timestamps inside it\n are on ONE clock (UTC). The cost is that an evening's work can straddle UTC midnight\n into two files; month-grouped compaction absorbs that completely, and a local-clock\n filename would put two timezones in one layout for the same money.\n\n THE RESIDUAL COLLISION IS TWO AGENTS THAT BOTH DEFAULTED TO agent \"main\" ON ONE BRANCH,\n and it is safe on four independent grounds:\n   1. Same branch means same checkout. Git refuses to check one branch out in two\n      worktrees, so genuinely concurrent agents have DIFFERENT branches by construction —\n      and therefore different files.\n   2. Even interleaved, the write survives: `appendFileSync` is measured here at 8\n      concurrent writers x 300 lines, 2400/2400 intact, 0 torn, 0 missing (and the same\n      probe loses 1242 of 2400 with a seek-then-write writer, so it can see loss).\n   3. What is actually lost is attribution BETWEEN two agents that already declined to\n      pass `--agent` — they were indistinguishable before the filename was.\n   4. The supported concurrency path is the hook, and the hook still mints random ids."
+    },
+    {
+      "id": "s:src/decisions.ts#recomputeDecisionId",
+      "parent": "f:src/decisions.ts",
+      "label": "recomputeDecisionId",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/decisions.ts",
+      "line": 505,
+      "prose": "Recompute the released content address. Callers should normally use\n`readTrustedJournal`; this export exists for ledger migrations and focused audits."
     },
     {
       "id": "s:src/decisions.ts#DecideInput",
@@ -1596,7 +2013,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/decisions.ts",
-      "line": 345
+      "line": 524
     },
     {
       "id": "s:src/decisions.ts#openSession",
@@ -1605,7 +2022,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/decisions.ts",
-      "line": 369,
+      "line": 548,
       "prose": "Open a session and write its header record. A lifecycle host may supply its stable,\n unique agent/session id so later tool hooks, calibration labels and journal writes all\n address the same file. Hookless callers still mint a collision-safe random id."
     },
     {
@@ -1615,7 +2032,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/decisions.ts",
-      "line": 387,
+      "line": 566,
       "prose": "Append one record to a session's file, creating the session on first write so an\n agent that never saw the hook still produces an attributable file.\n\n WITH NO ID FROM ANYWHERE THE ID IS DERIVED, NOT RANDOMISED — the one-line cause of\n twenty unreviewable files in a day. `null` is passed down rather than resolved here\n because the derivation needs the branch and the agent, and `write` is where those are\n worked out; computing them twice is how the two spellings drift."
     },
     {
@@ -1625,7 +2042,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/decisions.ts",
-      "line": 445
+      "line": 626
     },
     {
       "id": "s:src/decisions.ts#timelineOrder",
@@ -1634,7 +2051,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/decisions.ts",
-      "line": 453,
+      "line": 634,
       "prose": "THE TOTAL TIMELINE ORDER, exported because two readers depend on it agreeing with\n itself: `readJournal`'s merged render and the live stream (`journal.ts`), which\n receives records incrementally and must interleave them exactly where a cold read\n would have. Two hand-written copies of a three-key comparator is how \"compaction\n changes nothing\" stops being checkable. See `readJournal` for why the third key\n exists at all."
     },
     {
@@ -1644,7 +2061,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/decisions.ts",
-      "line": 468,
+      "line": 649,
       "prose": "A SESSION IS NAMED BY ITS WORK, NOT BY ITS HEADER. The header is written by the\n hook at agent start, BEFORE the agent knows what it is called — so it defaults to\n \"main\" and the branch. Taking identity from the first record therefore filed every\n agent's session under \"main\", which is exactly the attribution the split-file\n layout exists to guarantee. A real record's own claim always wins over the header's\n placeholder.\n\n Sorted INTERNALLY rather than trusting the caller's order, so the answer is a\n function of the record SET — the same property `readJournal`'s sort buys — and a\n caller holding an incrementally-grown array (the stream) gets the same sessions a\n cold read would."
     },
     {
@@ -1654,7 +2071,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/decisions.ts",
-      "line": 486,
+      "line": 667,
       "prose": "ONE SPELLING OF \"IN SCOPE\". `decisions` filters its render by job/agent/session/branch\n and the stream filters the same four ways; a second hand-written predicate is exactly\n the two-spellings drift `redundancy` exists to report, one file over from the module\n that hunts it."
     },
     {
@@ -1664,7 +2081,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/decisions.ts",
-      "line": 487
+      "line": 668
     },
     {
       "id": "s:src/decisions.ts#readJournal",
@@ -1673,8 +2090,46 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/decisions.ts",
-      "line": 498,
+      "line": 679,
       "prose": "THE COHERING READ. Every session file in the folder, merged into ONE timeline\n ordered by time — across agents, across jobs, across branches. This is the\n abstraction the whole split-file layout exists to make possible: writers are\n isolated so they never collide, and the reader sees a single history anyway.\n\n A malformed line is SKIPPED and COUNTED, never thrown on: a journal that refuses\n to render because one agent wrote garbage has failed at the one job it has."
+    },
+    {
+      "id": "s:src/decisions.ts#TrustedJournalDamageCode",
+      "parent": "f:src/decisions.ts",
+      "label": "TrustedJournalDamageCode",
+      "kind": "symbol",
+      "sub": "type",
+      "path": "src/decisions.ts",
+      "line": 710
+    },
+    {
+      "id": "s:src/decisions.ts#TrustedJournalDamage",
+      "parent": "f:src/decisions.ts",
+      "label": "TrustedJournalDamage",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/decisions.ts",
+      "line": 720
+    },
+    {
+      "id": "s:src/decisions.ts#TrustedJournalRead",
+      "parent": "f:src/decisions.ts",
+      "label": "TrustedJournalRead",
+      "kind": "symbol",
+      "sub": "type",
+      "path": "src/decisions.ts",
+      "line": 732,
+      "prose": "A damaged strict read contains no admissible records. Keeping `records` empty in the\nrefusal arm makes it difficult for a verdict caller to accidentally trust the valid\nsubset while merely printing a warning about the rest. `readJournal` remains the\ntolerant recovery/rendering surface."
+    },
+    {
+      "id": "s:src/decisions.ts#readTrustedJournal",
+      "parent": "f:src/decisions.ts",
+      "label": "readTrustedJournal",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/decisions.ts",
+      "line": 931,
+      "prose": "Strict, version-aware evidence projection. Unlike `readJournal`, one damaged row,\nbroken pointer, conflicting content address, or provable session/file displacement\nrefuses the entire projection. This is the reader verdict-bearing consumers use."
     },
     {
       "id": "s:src/decisions.ts#COMPACT_QUIET_MS",
@@ -1683,7 +2138,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/decisions.ts",
-      "line": 574,
+      "line": 1174,
       "prose": "THE QUIET WINDOW: a file written more recently than this is never folded.\n\n TWO HOURS, and both bounds are argued rather than picked. It has to be LONGER than the\n gap between one agent's successive appends, or compaction lands mid-session — measured\n on this repo's own journal, the largest gap between consecutive entries in a single\n session is 14.1 min and the longest session spans 22.5 min, so two hours is ~8x the\n observed worst case. And it has to be SHORTER than a day, because the motivating case is\n twenty files accumulated in ONE day and compacted before the PR goes up; a 24-hour\n window would refuse exactly the work it was asked to tidy.\n\n It is a heuristic, so it is not the only guard: every source is re-stat'ed immediately\n before its group is written and the group is abandoned if anything moved, and a fold\n that raced an append anyway would duplicate lines rather than lose them — which\n `resolve`'s content-hash dedupe renders identically."
     },
     {
@@ -1693,7 +2148,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/decisions.ts",
-      "line": 578
+      "line": 1178
     },
     {
       "id": "s:src/decisions.ts#planCompaction",
@@ -1702,7 +2157,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/decisions.ts",
-      "line": 590,
+      "line": 1190,
       "prose": "What compaction WOULD do. Separated from doing it so the refusals can be tested without\n a filesystem mutation, and so the executor has no policy left in it."
     },
     {
@@ -1712,7 +2167,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/decisions.ts",
-      "line": 669,
+      "line": 1269,
       "prose": "Execute the plan. Report lines out, exit code out; the CLI only prints."
     },
     {
@@ -1722,7 +2177,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/decisions.ts",
-      "line": 747,
+      "line": 1347,
       "prose": "Retractions resolve ACROSS session files — one agent may withdraw another's\n decision, which in a fan-out is the single most valuable thing that can happen.\n Resolutions cross files the same way, and for the same reason: the agent that\n notices the surprising number is very often not the one with the instrument to\n settle it. Dismissals too — and a dismissal by a SECOND agent is the ordinary case,\n because the advisory that raised the question is not a person at all.\n\n OPEN AND RESOLVED ARE SEPARATE BUCKETS, not a flag on one list, because the render\n has to be able to lead with the open ones. A conjecture never lands in `standing`:\n it is not a choice, and counting it as one would report an unanswered question as a\n settled position — the precise confusion this record exists to end.\n\n THE PRECEDENCE IS retraction > resolution > dismissal, and each step is a claim about\n how much a reader learns:\n   · a RETRACTION says the observation was never real — there is nothing to answer, so\n     it outranks an answer.\n   · a RESOLUTION beats a DISMISSAL because an answer is strictly more informative than\n     a decision not to ask. Filing an answered question under \"we chose not to chase\n     this\" would HIDE the answer, which is the more expensive of the two mistakes."
     },
     {
@@ -1732,7 +2187,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/decisions.ts",
-      "line": 817,
+      "line": 1417,
       "prose": "WHAT MAY BE RESOLVED OR DISMISSED, and the exact refusal when it may not.\n\n Two DIFFERENT failures live here and they need different messages: an id nobody ever\n wrote, versus an id that names the wrong KIND of thing. Accepting the second would\n append a resolution pointing at a decision, which no render ever reads — a command\n that exits 0 and does nothing, which is the defect this harness exists to hunt.\n\n It sits in the journal rather than in the CLI so the rule is testable without\n spawning a process, and so a second caller cannot reimplement it differently.\n\n DISMISSAL SHARES THE RULE RATHER THAN COPYING IT, and that is the point of the `verb`\n parameter. `dismiss` has to be as cheap to reach for as `resolved` — if it is even\n slightly harder, a noisy question stays open and the whole `--open` list gets skipped\n — and \"as cheap\" includes failing the same way, with the same words, on the same\n mistakes. Two hand-written copies of this rule would have drifted by the second edit."
     },
     {
@@ -1742,7 +2197,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/decisions.ts",
-      "line": 849
+      "line": 1449
     },
     {
       "id": "s:src/decisions.ts#BRIEF_BECAUSE",
@@ -1751,7 +2206,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/decisions.ts",
-      "line": 856,
+      "line": 1456,
       "prose": "`--brief`'s budget for `because`. Truncation is ALWAYS announced with the withheld\n count — a shortened rationale that looks complete is worse than no rationale."
     },
     {
@@ -1761,7 +2216,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/decisions.ts",
-      "line": 870,
+      "line": 1470,
       "prose": "The render IS the artifact, and its value is a COMPRESSION RATIO: a reader given\n this should be better equipped than one given the transcripts. So it leads with\n what is standing, states what was rejected inline, and gives retractions their own\n section — a retraction rendered as an absence is invisible, and it is the most\n valuable entry in the journal.\n\n OPEN CONJECTURES GO ABOVE EVERYTHING, INCLUDING `Standing`. That ordering is the\n feature, not decoration. A standing decision is settled and will still be there\n tomorrow; an open conjecture is a thing this project NOTICED AND DID NOT CHASE, and\n it decays — the agent that saw the surprising number is gone, and nobody else knows\n to look. Filed underneath the settled work it reads as an appendix, which is\n indistinguishable from never having recorded it."
     },
     {
@@ -1987,7 +2442,7 @@
       "kind": "file",
       "sub": "src/doctrine.ts",
       "path": "src/doctrine.ts",
-      "prose": "doctrine.ts — the small, versioned law the regulator is allowed to apply.\n\nA regulator without an explicit doctrine is only a pile of heuristics with an exit\ncode.  This registry is deliberately smaller than the harness: v1 names the two facts\nfor which the project already has live observations and concrete remedies.  Adding a\nrule is therefore a contract change, not another conditional hidden in a formatter."
+      "prose": "doctrine.ts — the small, versioned law the regulator is allowed to apply.\n\nA regulator without an explicit doctrine is only a pile of heuristics with an exit\ncode. This registry is deliberately smaller than the harness: each version names only\nfacts for which the project has live observations and concrete remedies. Adding a\nrule is therefore a contract change, not another conditional hidden in a formatter."
     },
     {
       "id": "s:src/doctrine.ts#DOCTRINE_ID",
@@ -2051,7 +2506,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/doctrine.ts",
-      "line": 82,
+      "line": 97,
       "prose": "A data-only representation for the CLI and other hosts."
     },
     {
@@ -2061,7 +2516,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/doctrine.ts",
-      "line": 94
+      "line": 109
     },
     {
       "id": "f:src/drift.ts",
@@ -2959,8 +3414,18 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 53,
+      "line": 60,
       "prose": "The text every agent is handed at startup. Short on purpose: it is paid for by\n every agent on every job, and an instruction nobody finishes reading is a comment."
+    },
+    {
+      "id": "s:src/hooks.ts#assignedWorkInstructions",
+      "parent": "f:src/hooks.ts",
+      "label": "assignedWorkInstructions",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/hooks.ts",
+      "line": 142,
+      "prose": "The exact-session work order injected beside the durable journal instructions.\nLoaded dynamically so PostToolUse's startup closure does not acquire the coordination\nledger. Failure is rendered as unavailable evidence, never thrown through a host's\nlifecycle boundary."
     },
     {
       "id": "s:src/hooks.ts#stopFeedbackActive",
@@ -2969,7 +3434,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 132,
+      "line": 176,
       "prose": "A Stop feedback turn stops again. Hosts mark that second pass so a non-blocking nudge\ncan be emitted exactly once instead of accidentally becoming an eight-turn gate."
     },
     {
@@ -2979,7 +3444,7 @@
       "kind": "symbol",
       "sub": "type",
       "path": "src/hooks.ts",
-      "line": 137
+      "line": 181
     },
     {
       "id": "s:src/hooks.ts#composeStopFeedback",
@@ -2988,7 +3453,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 147,
+      "line": 191,
       "prose": "Host semantics make this distinction consequential: any `additionalContext` continues\nthe conversation. A subagent's parent may genuinely need the final report restated;\nthe main user just read it. Main Stop therefore emits nothing. Shared-worktree state\ncannot be promoted into a task-local obligation merely because this agent stopped."
     },
     {
@@ -2998,7 +3463,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 169,
+      "line": 213,
       "prose": "`coherence hook <event>` — the hook body itself, so nothing has to be written to\n disk or kept in sync with a script file. Reads the event payload on stdin (unused\n today, but hooks are fed JSON and ignoring it silently would be rude to the next\n person who needs a field from it) and prints the documented output shape."
     },
     {
@@ -3008,7 +3473,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 315,
+      "line": 374,
       "prose": "What a subagent is told as it finishes. Split out of `runHook` so it is reachable\n without a stdin pipe — the hook body drains stdin, and a report you can only observe\n by feeding a process is a report nobody tests."
     },
     {
@@ -3018,7 +3483,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/hooks.ts",
-      "line": 390
+      "line": 449
     },
     {
       "id": "s:src/hooks.ts#CurrentHookObservation",
@@ -3027,7 +3492,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/hooks.ts",
-      "line": 402
+      "line": 461
     },
     {
       "id": "s:src/hooks.ts#activeHookHost",
@@ -3036,7 +3501,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 427,
+      "line": 486,
       "prose": "Which host owns the current shell. Explicit selection always wins."
     },
     {
@@ -3046,7 +3511,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 433,
+      "line": 492,
       "prose": "Never pick the newest session: concurrency makes \"latest\" an attribution bug."
     },
     {
@@ -3056,7 +3521,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 461
+      "line": 520
     },
     {
       "id": "s:src/hooks.ts#hookStatus",
@@ -3065,7 +3530,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 537,
+      "line": 596,
       "prose": "Structural configuration, historical memory, and this exact session stay separate."
     },
     {
@@ -3075,7 +3540,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 618,
+      "line": 677,
       "prose": "`coherence hooks status` — report the switch and the observation beside it."
     },
     {
@@ -3085,7 +3550,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 625,
+      "line": 684,
       "prose": "`coherence hooks --check` — the binary current-control gate. Observation never redeems absence."
     },
     {
@@ -3095,7 +3560,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 635
+      "line": 694
     },
     {
       "id": "s:src/hooks.ts#uninstallHooks",
@@ -3104,7 +3569,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 652
+      "line": 711
     },
     {
       "id": "s:src/hooks.ts#reviewHooks",
@@ -3113,7 +3578,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 669,
+      "line": 728,
       "prose": "`coherence hooks review` — every event's EFFECTIVE emission, with its provenance.\n The hook body degrades an unreadable customization to canon silently, because a torn\n file must not break a session; THIS is the loud surface where that damage lands, and\n the exit code carries it."
     },
     {
@@ -3123,7 +3588,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 717,
+      "line": 776,
       "prose": "`coherence hooks` — print one host's canonical block, plus the\n instruction text so a reader can see what agents will actually be told."
     },
     {
@@ -4267,6 +4732,88 @@
       "sub": "function",
       "path": "src/oracle-domain.ts",
       "line": 808
+    },
+    {
+      "id": "f:src/orient.ts",
+      "parent": "c:src",
+      "label": "orient.ts",
+      "kind": "file",
+      "sub": "src/orient.ts",
+      "path": "src/orient.ts",
+      "prose": "orient.ts — one compact, deterministic heading across the swarm's durable instruments.\n\nEach source keeps its own epistemic boundary: the work ledger owns coordination state,\nthe trusted journal owns decisions, consequences own assessed relationships, and the\nstatus record owns the last verification verdict. Orientation composes those readings;\nit does not mutate any of them and never promotes proximity into a relationship."
+    },
+    {
+      "id": "s:src/orient.ts#OrientationAction",
+      "parent": "f:src/orient.ts",
+      "label": "OrientationAction",
+      "kind": "symbol",
+      "sub": "type",
+      "path": "src/orient.ts",
+      "line": 19
+    },
+    {
+      "id": "s:src/orient.ts#OrientationSource",
+      "parent": "f:src/orient.ts",
+      "label": "OrientationSource",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/orient.ts",
+      "line": 30
+    },
+    {
+      "id": "s:src/orient.ts#DanglingConsequenceRef",
+      "parent": "f:src/orient.ts",
+      "label": "DanglingConsequenceRef",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/orient.ts",
+      "line": 36
+    },
+    {
+      "id": "s:src/orient.ts#VerificationOrientation",
+      "parent": "f:src/orient.ts",
+      "label": "VerificationOrientation",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/orient.ts",
+      "line": 42
+    },
+    {
+      "id": "s:src/orient.ts#Orientation",
+      "parent": "f:src/orient.ts",
+      "label": "Orientation",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/orient.ts",
+      "line": 50
+    },
+    {
+      "id": "s:src/orient.ts#verifyOrientation",
+      "parent": "f:src/orient.ts",
+      "label": "verifyOrientation",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/orient.ts",
+      "line": 102
+    },
+    {
+      "id": "s:src/orient.ts#observeOrientation",
+      "parent": "f:src/orient.ts",
+      "label": "observeOrientation",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/orient.ts",
+      "line": 218,
+      "prose": "Read every ledger independently. A failed source is preserved as a source failure and\nmakes the heading REFUSE; it never turns into an empty population."
+    },
+    {
+      "id": "s:src/orient.ts#renderOrientation",
+      "parent": "f:src/orient.ts",
+      "label": "renderOrientation",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/orient.ts",
+      "line": 375
     },
     {
       "id": "f:src/panel.ts",
@@ -5659,7 +6206,7 @@
       "kind": "symbol",
       "sub": "type",
       "path": "src/regulate.ts",
-      "line": 20
+      "line": 21
     },
     {
       "id": "s:src/regulate.ts#RegulationObservation",
@@ -5668,7 +6215,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/regulate.ts",
-      "line": 22
+      "line": 23
     },
     {
       "id": "s:src/regulate.ts#RegulationReading",
@@ -5677,7 +6224,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/regulate.ts",
-      "line": 31
+      "line": 32
     },
     {
       "id": "s:src/regulate.ts#SelectedRegulation",
@@ -5686,7 +6233,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/regulate.ts",
-      "line": 40
+      "line": 41
     },
     {
       "id": "s:src/regulate.ts#RegulationDecision",
@@ -5695,7 +6242,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/regulate.ts",
-      "line": 47
+      "line": 48
     },
     {
       "id": "s:src/regulate.ts#selectRegulation",
@@ -5704,7 +6251,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/regulate.ts",
-      "line": 113,
+      "line": 114,
       "prose": "The control law. Pure, total over arbitrary readings, and intentionally ignorant of\nfilesystems, Git, clocks, config, output, and exit codes."
     },
     {
@@ -5714,7 +6261,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/regulate.ts",
-      "line": 244
+      "line": 245
     },
     {
       "id": "s:src/regulate.ts#formatRegulation",
@@ -5723,7 +6270,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/regulate.ts",
-      "line": 251
+      "line": 252
     },
     {
       "id": "s:src/regulate.ts#RegulateOptions",
@@ -5732,7 +6279,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/regulate.ts",
-      "line": 273
+      "line": 274
     },
     {
       "id": "s:src/regulate.ts#observeRegulation",
@@ -5741,8 +6288,8 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/regulate.ts",
-      "line": 282,
-      "prose": "Read the two live v1 sensors. No writes."
+      "line": 283,
+      "prose": "Read every live doctrine sensor. No writes."
     },
     {
       "id": "s:src/regulate.ts#regulate",
@@ -5751,7 +6298,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/regulate.ts",
-      "line": 346,
+      "line": 390,
       "prose": "Explicit CLI surface. Report mode observes; --check turns intervention into a gate."
     },
     {
@@ -6052,7 +6599,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/signal.ts",
-      "line": 33
+      "line": 34
     },
     {
       "id": "s:src/signal.ts#SignalOptions",
@@ -6061,7 +6608,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/signal.ts",
-      "line": 43
+      "line": 47
     },
     {
       "id": "s:src/signal.ts#SignalState",
@@ -6070,7 +6617,7 @@
       "kind": "symbol",
       "sub": "type",
       "path": "src/signal.ts",
-      "line": 51
+      "line": 55
     },
     {
       "id": "s:src/signal.ts#attestationFinding",
@@ -6079,7 +6626,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/signal.ts",
-      "line": 55,
+      "line": 59,
       "prose": "Stable address for the one permissible waiver. It is intentionally readable up to the\nfingerprint: `grep signal:no-new-invariant` lists every place the escape hatch was used."
     },
     {
@@ -6089,7 +6636,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/signal.ts",
-      "line": 61,
+      "line": 65,
       "prose": "Only a standing, structured finding can waive a patch. Arbitrary prose containing the\nright words does not: that would turn spelling into authority and make false positives\nindistinguishable from deliberate attestations."
     },
     {
@@ -6099,7 +6646,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/signal.ts",
-      "line": 66
+      "line": 70
     },
     {
       "id": "s:src/signal.ts#anchorsAddedByChange",
@@ -6108,7 +6655,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/signal.ts",
-      "line": 76,
+      "line": 80,
       "prose": "`diffGraphs` intentionally summarizes a brand-new component as one component event\ninstead of exploding its whole ledger. Signal still needs to know whether that new\nsurface arrived with invariants and anchors, so recover those counts from the after\ngraph while retaining the temporal ledger's compact rendering contract."
     },
     {
@@ -6118,7 +6665,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/signal.ts",
-      "line": 95,
+      "line": 99,
       "prose": "Hash the base commit plus every assessable changed path's CURRENT bytes. Reading\ncurrent bytes rather than `git diff` also covers untracked files; a missing marker covers deletions.\nPath delimiters are NUL because NUL cannot occur in a git path or file text."
     },
     {
@@ -6128,7 +6675,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/signal.ts",
-      "line": 123,
+      "line": 127,
       "prose": "Derive the current patch signal. The before graph and surface come from ONE detached\nworktree; the after side is the caller's working tree. No writes."
     },
     {
@@ -6138,7 +6685,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/signal.ts",
-      "line": 152
+      "line": 161
     },
     {
       "id": "s:src/signal.ts#signal",
@@ -6147,7 +6694,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/signal.ts",
-      "line": 173,
+      "line": 189,
       "prose": "Command-shaped entrypoint. Attestation is an explicit write; ordinary report/check\npaths are read-only."
     },
     {
@@ -6782,13 +7329,23 @@
       "prose": "Per-file content STATS keyed by repo-relative path: the LINE count (honest mass) and a\n content HASH (the body-edit signal for any diff). Unreadable or binary (a NUL byte) →\n 0 lines; the hash is still taken from the raw bytes so a body edit to a binary would\n register. `lines` counts NEWLINES (join(cfg.root, path))."
     },
     {
+      "id": "s:src/tree.ts#sourceTextIsNavigable",
+      "parent": "f:src/tree.ts",
+      "label": "sourceTextIsNavigable",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/tree.ts",
+      "line": 41,
+      "prose": "A source containing NUL is binary to the repository's own instruments and to common\nnavigation tools such as rg. Keep this predicate shared by measurement and its live\nsource-population guard so the definition of searchable text has one home."
+    },
+    {
       "id": "s:src/tree.ts#fileStats",
       "parent": "f:src/tree.ts",
       "label": "fileStats",
       "kind": "symbol",
       "sub": "function",
       "path": "src/tree.ts",
-      "line": 37
+      "line": 45
     },
     {
       "id": "s:src/tree.ts#claimedFilePaths",
@@ -6797,7 +7354,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/tree.ts",
-      "line": 73,
+      "line": 81,
       "prose": "The ONE definition of which of a component's FILES a claim blesses — matched by PATH,\n blessing at MOST ONE file per claim token, NEVER over-reporting coverage. A file is\n named via `<file> exists at …` or `<file> imports …`; a boundary claim names a\n chokepoint SYMBOL (skipped here), and typechecks/passes test/responds/conforms name\n neither. The file token is resolved against the component's REAL paths:\n   · a token WITH a `/` → PATH-SUFFIX match (segments == the path's trailing segments);\n   · a BARE basename    → matches only if EXACTLY ONE file carries that basename.\n Either way, if a token has several candidates it blesses NONE — a component with four\n `hooks.ts` never reads 4/4 claimed off a single same-named claim. Every consumer reads\n this ONE set, so per-file flags and aggregate counts stay exactly consistent."
     },
     {
@@ -7105,6 +7662,414 @@
       "line": 121
     },
     {
+      "id": "f:src/work.ts",
+      "parent": "c:src",
+      "label": "work.ts",
+      "kind": "file",
+      "sub": "src/work.ts",
+      "path": "src/work.ts",
+      "prose": "work.ts — an append-only work-order graph for coordinated agent work.\n\nA work order records intent and authority, not executable instructions. Planned\nactions are deliberately absent: this module can persist and render work, but it\nnever shells out or dispatches an agent. One content-addressed event is appended to\nthe exact writer session's file. State is a strict predecessor chain, so concurrent\ntransitions cannot be hidden by timestamp ordering."
+    },
+    {
+      "id": "s:src/work.ts#WORK_VERSION",
+      "parent": "f:src/work.ts",
+      "label": "WORK_VERSION",
+      "kind": "symbol",
+      "sub": "const",
+      "path": "src/work.ts",
+      "line": 16
+    },
+    {
+      "id": "s:src/work.ts#WorkRisk",
+      "parent": "f:src/work.ts",
+      "label": "WorkRisk",
+      "kind": "symbol",
+      "sub": "type",
+      "path": "src/work.ts",
+      "line": 18
+    },
+    {
+      "id": "s:src/work.ts#WorkState",
+      "parent": "f:src/work.ts",
+      "label": "WorkState",
+      "kind": "symbol",
+      "sub": "type",
+      "path": "src/work.ts",
+      "line": 19
+    },
+    {
+      "id": "s:src/work.ts#WorkOpenState",
+      "parent": "f:src/work.ts",
+      "label": "WorkOpenState",
+      "kind": "symbol",
+      "sub": "type",
+      "path": "src/work.ts",
+      "line": 20
+    },
+    {
+      "id": "s:src/work.ts#WorkTerminalState",
+      "parent": "f:src/work.ts",
+      "label": "WorkTerminalState",
+      "kind": "symbol",
+      "sub": "type",
+      "path": "src/work.ts",
+      "line": 21
+    },
+    {
+      "id": "s:src/work.ts#WorkReadiness",
+      "parent": "f:src/work.ts",
+      "label": "WorkReadiness",
+      "kind": "symbol",
+      "sub": "type",
+      "path": "src/work.ts",
+      "line": 22
+    },
+    {
+      "id": "s:src/work.ts#WorkAuthorityKind",
+      "parent": "f:src/work.ts",
+      "label": "WorkAuthorityKind",
+      "kind": "symbol",
+      "sub": "type",
+      "path": "src/work.ts",
+      "line": 23
+    },
+    {
+      "id": "s:src/work.ts#WorkActor",
+      "parent": "f:src/work.ts",
+      "label": "WorkActor",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/work.ts",
+      "line": 25
+    },
+    {
+      "id": "s:src/work.ts#WorkAuthority",
+      "parent": "f:src/work.ts",
+      "label": "WorkAuthority",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/work.ts",
+      "line": 30
+    },
+    {
+      "id": "s:src/work.ts#WorkOpened",
+      "parent": "f:src/work.ts",
+      "label": "WorkOpened",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/work.ts",
+      "line": 49
+    },
+    {
+      "id": "s:src/work.ts#WorkTransitioned",
+      "parent": "f:src/work.ts",
+      "label": "WorkTransitioned",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/work.ts",
+      "line": 65
+    },
+    {
+      "id": "s:src/work.ts#WorkHandedOff",
+      "parent": "f:src/work.ts",
+      "label": "WorkHandedOff",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/work.ts",
+      "line": 74
+    },
+    {
+      "id": "s:src/work.ts#WorkClosed",
+      "parent": "f:src/work.ts",
+      "label": "WorkClosed",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/work.ts",
+      "line": 82
+    },
+    {
+      "id": "s:src/work.ts#WorkRecord",
+      "parent": "f:src/work.ts",
+      "label": "WorkRecord",
+      "kind": "symbol",
+      "sub": "type",
+      "path": "src/work.ts",
+      "line": 93
+    },
+    {
+      "id": "s:src/work.ts#CreateWorkInput",
+      "parent": "f:src/work.ts",
+      "label": "CreateWorkInput",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/work.ts",
+      "line": 95
+    },
+    {
+      "id": "s:src/work.ts#TransitionWorkInput",
+      "parent": "f:src/work.ts",
+      "label": "TransitionWorkInput",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/work.ts",
+      "line": 127
+    },
+    {
+      "id": "s:src/work.ts#HandoffWorkInput",
+      "parent": "f:src/work.ts",
+      "label": "HandoffWorkInput",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/work.ts",
+      "line": 132
+    },
+    {
+      "id": "s:src/work.ts#CloseWorkInput",
+      "parent": "f:src/work.ts",
+      "label": "CloseWorkInput",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/work.ts",
+      "line": 136
+    },
+    {
+      "id": "s:src/work.ts#WorkGraphProblemKind",
+      "parent": "f:src/work.ts",
+      "label": "WorkGraphProblemKind",
+      "kind": "symbol",
+      "sub": "type",
+      "path": "src/work.ts",
+      "line": 142
+    },
+    {
+      "id": "s:src/work.ts#WorkGraphProblem",
+      "parent": "f:src/work.ts",
+      "label": "WorkGraphProblem",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/work.ts",
+      "line": 152
+    },
+    {
+      "id": "s:src/work.ts#WorkGraphValidation",
+      "parent": "f:src/work.ts",
+      "label": "WorkGraphValidation",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/work.ts",
+      "line": 159
+    },
+    {
+      "id": "s:src/work.ts#WorkScopeOverlap",
+      "parent": "f:src/work.ts",
+      "label": "WorkScopeOverlap",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/work.ts",
+      "line": 164
+    },
+    {
+      "id": "s:src/work.ts#UnsynthesizedWorkChild",
+      "parent": "f:src/work.ts",
+      "label": "UnsynthesizedWorkChild",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/work.ts",
+      "line": 173
+    },
+    {
+      "id": "s:src/work.ts#WorkItem",
+      "parent": "f:src/work.ts",
+      "label": "WorkItem",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/work.ts",
+      "line": 179
+    },
+    {
+      "id": "s:src/work.ts#WorkStats",
+      "parent": "f:src/work.ts",
+      "label": "WorkStats",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/work.ts",
+      "line": 192
+    },
+    {
+      "id": "s:src/work.ts#WorkLedger",
+      "parent": "f:src/work.ts",
+      "label": "WorkLedger",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/work.ts",
+      "line": 206
+    },
+    {
+      "id": "s:src/work.ts#RenderWorkOpts",
+      "parent": "f:src/work.ts",
+      "label": "RenderWorkOpts",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/work.ts",
+      "line": 220
+    },
+    {
+      "id": "s:src/work.ts#WorkLedgerError",
+      "parent": "f:src/work.ts",
+      "label": "WorkLedgerError",
+      "kind": "symbol",
+      "sub": "class",
+      "path": "src/work.ts",
+      "line": 225
+    },
+    {
+      "id": "s:src/work.ts#workDir",
+      "parent": "f:src/work.ts",
+      "label": "workDir",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/work.ts",
+      "line": 236
+    },
+    {
+      "id": "s:src/work.ts#workSessionPath",
+      "parent": "f:src/work.ts",
+      "label": "workSessionPath",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/work.ts",
+      "line": 248
+    },
+    {
+      "id": "s:src/work.ts#validateWorkGraph",
+      "parent": "f:src/work.ts",
+      "label": "validateWorkGraph",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/work.ts",
+      "line": 763
+    },
+    {
+      "id": "s:src/work.ts#assertValidWorkGraph",
+      "parent": "f:src/work.ts",
+      "label": "assertValidWorkGraph",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/work.ts",
+      "line": 823
+    },
+    {
+      "id": "s:src/work.ts#workScopesOverlap",
+      "parent": "f:src/work.ts",
+      "label": "workScopesOverlap",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/work.ts",
+      "line": 835
+    },
+    {
+      "id": "s:src/work.ts#detectWorkScopeOverlaps",
+      "parent": "f:src/work.ts",
+      "label": "detectWorkScopeOverlaps",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/work.ts",
+      "line": 886
+    },
+    {
+      "id": "s:src/work.ts#readWork",
+      "parent": "f:src/work.ts",
+      "label": "readWork",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/work.ts",
+      "line": 976,
+      "prose": "Strict merged read: malformed rows and ambiguous event histories refuse."
+    },
+    {
+      "id": "s:src/work.ts#readWorkLedger",
+      "parent": "f:src/work.ts",
+      "label": "readWorkLedger",
+      "kind": "symbol",
+      "sub": "const",
+      "path": "src/work.ts",
+      "line": 981,
+      "prose": "Alias whose noun makes integration call sites read naturally."
+    },
+    {
+      "id": "s:src/work.ts#createWork",
+      "parent": "f:src/work.ts",
+      "label": "createWork",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/work.ts",
+      "line": 993
+    },
+    {
+      "id": "s:src/work.ts#openWork",
+      "parent": "f:src/work.ts",
+      "label": "openWork",
+      "kind": "symbol",
+      "sub": "const",
+      "path": "src/work.ts",
+      "line": 1037
+    },
+    {
+      "id": "s:src/work.ts#transitionWork",
+      "parent": "f:src/work.ts",
+      "label": "transitionWork",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/work.ts",
+      "line": 1055
+    },
+    {
+      "id": "s:src/work.ts#handoffWork",
+      "parent": "f:src/work.ts",
+      "label": "handoffWork",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/work.ts",
+      "line": 1080
+    },
+    {
+      "id": "s:src/work.ts#closeWork",
+      "parent": "f:src/work.ts",
+      "label": "closeWork",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/work.ts",
+      "line": 1103
+    },
+    {
+      "id": "s:src/work.ts#workStats",
+      "parent": "f:src/work.ts",
+      "label": "workStats",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/work.ts",
+      "line": 1138
+    },
+    {
+      "id": "s:src/work.ts#renderWork",
+      "parent": "f:src/work.ts",
+      "label": "renderWork",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/work.ts",
+      "line": 1143,
+      "prose": "Deterministic human projection; JSON callers should consume the returned ledger."
+    },
+    {
+      "id": "s:src/work.ts#renderWorkLedger",
+      "parent": "f:src/work.ts",
+      "label": "renderWorkLedger",
+      "kind": "symbol",
+      "sub": "const",
+      "path": "src/work.ts",
+      "line": 1182
+    },
+    {
       "id": "f:test/_helpers.ts",
       "parent": "c:test",
       "label": "_helpers.ts",
@@ -7301,6 +8266,22 @@
       "prose": "conjecture.test.ts — the CONJECTURE record: abduction as a first-class journal entry.\n\nWhat these pin, in order of how badly it hurts when it breaks:\n  1. THE INSTRUMENT CANDIDATE IS ALWAYS THERE. Every one of the six findings that\n     motivated this record was an instrument failure, and the candidate list that\n     omits it has already made the mistake — at WRITE time, before a reader can catch\n     it. If this guarantee is the thing that quietly stops holding, the record is\n     decoration.\n  2. OPEN AND RESOLVED LOOK DIFFERENT, AND OPEN COMES FIRST. A question somebody\n     stopped asking and a question somebody answered are not the same object. If the\n     render cannot tell them apart, nothing can.\n  3. A CONJECTURE IS NOT A DECISION. It must never land in `standing` — reporting an\n     unanswered question as a settled position is the exact confusion this exists to end.\n  4. IDS DO NOT MOVE. They are pointers: every `supersedes` on disk names one. Widening\n     the content hash for the new fields must leave every pre-existing id untouched."
     },
     {
+      "id": "f:test/consequence.test.ts",
+      "parent": "c:test",
+      "label": "consequence.test.ts",
+      "kind": "file",
+      "sub": "test/consequence.test.ts",
+      "path": "test/consequence.test.ts"
+    },
+    {
+      "id": "f:test/context-cli.test.ts",
+      "parent": "c:test",
+      "label": "context-cli.test.ts",
+      "kind": "file",
+      "sub": "test/context-cli.test.ts",
+      "path": "test/context-cli.test.ts"
+    },
+    {
       "id": "f:test/context.test.ts",
       "parent": "c:test",
       "label": "context.test.ts",
@@ -7326,6 +8307,14 @@
       "sub": "test/control.test.ts",
       "path": "test/control.test.ts",
       "prose": "control.test.ts — the lifecycle hook is the first binary control."
+    },
+    {
+      "id": "f:test/decision-position.test.ts",
+      "parent": "c:test",
+      "label": "decision-position.test.ts",
+      "kind": "file",
+      "sub": "test/decision-position.test.ts",
+      "path": "test/decision-position.test.ts"
     },
     {
       "id": "f:test/decisions.test.ts",
@@ -7553,6 +8542,22 @@
       "prose": "oracle.test.ts — the META-ORACLE (\"false oracles can't ship\"). This is the harness's\nmost load-bearing and least-obvious logic: it reads an oracle test's OWN source and\ndecides whether its assertion loop ranges over a LIVE domain (a real totality check)\nor a hand-list / source-grep (a sampling oracle wearing the totality label). It was\nshipped validated against n=1 real project; these fixtures pin each classification path."
     },
     {
+      "id": "f:test/orient.test.ts",
+      "parent": "c:test",
+      "label": "orient.test.ts",
+      "kind": "file",
+      "sub": "test/orient.test.ts",
+      "path": "test/orient.test.ts"
+    },
+    {
+      "id": "f:test/orientation-policy.test.ts",
+      "parent": "c:test",
+      "label": "orientation-policy.test.ts",
+      "kind": "file",
+      "sub": "test/orientation-policy.test.ts",
+      "path": "test/orientation-policy.test.ts"
+    },
+    {
       "id": "f:test/panel.test.ts",
       "parent": "c:test",
       "label": "panel.test.ts",
@@ -7739,6 +8744,14 @@
       "prose": "sinks.test.ts — the INTERPOLATION-SURFACE RATCHET (src/lint-sinks.ts), and specifically\nits addressing. The scanning half is a pair of regexes; the half that can actually lie is\nhow a live site is matched against the reviewed baseline:\n  · A MOVE READ AS NEW RISK — the baseline keys a site by `context|file|expr`, so\n    relocating a file used to re-address every sink inside it. A refactor then produced\n    false alarms in proportion to how much code it moved, and a ratchet whose alarms are\n    routinely wrong is a ratchet reviewers learn to wave through. (Observed live: eight\n    subsystems extracted out of one module, \"7 new sites\", four of them untouched.)\n  · A COPY READ AS A MOVE — the fix for the above must not become a laundering channel.\n    Dropping the path from identity would let an already-reviewed expression reappear in\n    a new and more dangerous file for free. Absorption is COUNT-CONSERVING: only a\n    baselined site that VANISHED can absorb a relocated one, one for one.\nBoth directions are pinned below; reversing either fails a test by name."
     },
     {
+      "id": "f:test/source-text.test.ts",
+      "parent": "c:test",
+      "label": "source-text.test.ts",
+      "kind": "file",
+      "sub": "test/source-text.test.ts",
+      "path": "test/source-text.test.ts"
+    },
+    {
       "id": "f:test/static-oracles.test.ts",
       "parent": "c:test",
       "label": "static-oracles.test.ts",
@@ -7766,6 +8779,23 @@
       "prose": "structural.test.ts — the temporal ledger that powers `coherence log [--strict]`. Its\nwhole job is to make a LOSS loud: a dropped invariant, a removed boundary anchor, or a\nsilently-rewired chokepoint is exactly the diff a prose review misses. diffGraphs is the\npure core; renderDiff returns the loss count that --strict turns into a nonzero exit."
     },
     {
+      "id": "f:test/swarm-acceptance.test.ts",
+      "parent": "c:test",
+      "label": "swarm-acceptance.test.ts",
+      "kind": "file",
+      "sub": "test/swarm-acceptance.test.ts",
+      "path": "test/swarm-acceptance.test.ts",
+      "prose": "swarm-acceptance.test.ts — one black-box field journey, not an orientation policy matrix.\n\nUnit suites prove each ledger and priority rule in isolation. This journey keeps the\nsequence a real orchestrator experiences: public commands create competing obligations,\nan explicit authority settles policy, a dependency and handoff move work, a parent\nsynthesizes terminal children, durable surfaces replace the transcript, and damaged\nevidence refuses until the exact bytes are restored."
+    },
+    {
+      "id": "f:test/swarm-cli.test.ts",
+      "parent": "c:test",
+      "label": "swarm-cli.test.ts",
+      "kind": "file",
+      "sub": "test/swarm-cli.test.ts",
+      "path": "test/swarm-cli.test.ts"
+    },
+    {
       "id": "f:test/test-batch.test.ts",
       "parent": "c:test",
       "label": "test-batch.test.ts",
@@ -7791,6 +8821,15 @@
       "sub": "test/tree.test.ts",
       "path": "test/tree.test.ts",
       "prose": "tree.test.ts — THE ANTI-OVER-REPORT RULE, restored to direct evidence.\n\nWHY THIS FILE EXISTS, AND IT IS NOT A FLATTERING STORY. `claimedFilePaths` decides which\nof a component's files a claim BLESSES, and it drives the contract's `accounted` coverage\nnumbers (src/promise.ts). Its whole doctrine is refusal: a claim token with several\ncandidates blesses NONE, so a component with four `hooks.ts` can never read 4/4 claimed\noff one bare-basename claim. Over-reporting coverage is the failure it exists to prevent.\n\nIts only direct witness lived in `test/scene.test.ts`, and `scene` was evicted. The\neviction was audited by TEST COUNT — 627 → 581, proven to be exactly the deleted suites\nand nothing else — and that audit was true and answered the wrong question. Counting what\nvanished says nothing about what the vanished tests were the SOLE WITNESS FOR. An\nadversarial review found the hole by mutation: flip the refusal to `for (const c of cands)\nblessed.add(c)` — bless every ambiguous candidate, the precise defect the function is\nbuilt to prevent — and the full suite passes 593/593 while `verify` prints ✓ coherent. No\nspec anchor names this function, so the project's own \"verify PLUS npm test\" pre-deploy\ngate was blind to it in both directions at once.\n\nThe asymmetry is the sharp part: mutating the function to bless NOTHING is caught (a\npromise.test.ts mass/accounted assertion reds), because under-reporting perturbs a number\nsomebody already asserts. Only the OVER-report direction went dark — the direction that\nsilently inflates a coverage figure a reader trusts. A guarantee is only defended in the\ndirection someone actually tested.\n\nTHE GENERAL LESSON, recorded here because it will recur: when a command is evicted, the\nquestion is not \"did the test count drop by exactly the deleted suites\" but \"was any\nsurviving guarantee ONLY witnessed there\". The first is arithmetic; the second is the one\nthat bites. This test is the deleted case ported to call `claimedFilePaths` directly,\nwith no scene-model wrapper between the assertion and the rule."
+    },
+    {
+      "id": "f:test/trusted-decisions.test.ts",
+      "parent": "c:test",
+      "label": "trusted-decisions.test.ts",
+      "kind": "file",
+      "sub": "test/trusted-decisions.test.ts",
+      "path": "test/trusted-decisions.test.ts",
+      "prose": "trusted-decisions.test.ts — the fail-closed projection for verdict-bearing evidence.\n\n`readJournal` remains deliberately forensic: it salvages readable rows around damage.\nThis guard pins the stronger contract used by regulation and orientation: one damaged\nsurviving row makes the entire admissible population unavailable."
     },
     {
       "id": "f:test/vacuity.test.ts",
@@ -7827,6 +8866,15 @@
       "sub": "test/why-lint.test.ts",
       "path": "test/why-lint.test.ts",
       "prose": "why-lint.test.ts — pins both halves of the `## why` discipline. The mechanism-\nrestatement check (#1) was the original; the paragraph↔invariant anchoring check\n(#2) is the harder one — it must be advisory, not a hard gate, and it must\ndistinguish a real anchor from a passing mention while staying lenient on form\n(bold lead-in, inline reference, hyphen/space variants all count)."
+    },
+    {
+      "id": "f:test/work.test.ts",
+      "parent": "c:test",
+      "label": "work.test.ts",
+      "kind": "file",
+      "sub": "test/work.test.ts",
+      "path": "test/work.test.ts",
+      "prose": "work.test.ts — contracts for the append-only swarm work-order graph."
     }
   ],
   "edges": [
@@ -8269,9 +9317,21 @@
       "kind": "imports"
     },
     {
-      "id": "f:src/commands.ts->f:src/phrasebook.ts:imports",
-      "source": "f:src/commands.ts",
-      "target": "f:src/phrasebook.ts",
+      "id": "f:src/cli.ts->f:src/work.ts:imports",
+      "source": "f:src/cli.ts",
+      "target": "f:src/work.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/cli.ts->f:src/consequence.ts:imports",
+      "source": "f:src/cli.ts",
+      "target": "f:src/consequence.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/cli.ts->f:src/orient.ts:imports",
+      "source": "f:src/cli.ts",
+      "target": "f:src/orient.ts",
       "kind": "imports"
     },
     {
@@ -8293,6 +9353,36 @@
       "kind": "imports"
     },
     {
+      "id": "f:src/consequence.ts->x:node:crypto:imports",
+      "source": "f:src/consequence.ts",
+      "target": "x:node:crypto",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/consequence.ts->x:node:child_process:imports",
+      "source": "f:src/consequence.ts",
+      "target": "x:node:child_process",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/consequence.ts->x:node:fs:imports",
+      "source": "f:src/consequence.ts",
+      "target": "x:node:fs",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/consequence.ts->x:node:path:imports",
+      "source": "f:src/consequence.ts",
+      "target": "x:node:path",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/consequence.ts->f:src/types.ts:imports",
+      "source": "f:src/consequence.ts",
+      "target": "f:src/types.ts",
+      "kind": "imports"
+    },
+    {
       "id": "f:src/context.ts->x:node:path:imports",
       "source": "f:src/context.ts",
       "target": "x:node:path",
@@ -8302,6 +9392,12 @@
       "id": "f:src/context.ts->x:node:child_process:imports",
       "source": "f:src/context.ts",
       "target": "x:node:child_process",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/context.ts->x:node:fs:imports",
+      "source": "f:src/context.ts",
+      "target": "x:node:fs",
       "kind": "imports"
     },
     {
@@ -8428,6 +9524,12 @@
       "id": "f:src/conventions.ts->f:src/floor.ts:imports",
       "source": "f:src/conventions.ts",
       "target": "f:src/floor.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/decision-position.ts->f:src/decisions.ts:imports",
+      "source": "f:src/decision-position.ts",
+      "target": "f:src/decisions.ts",
       "kind": "imports"
     },
     {
@@ -9199,6 +10301,60 @@
       "kind": "imports"
     },
     {
+      "id": "f:src/orient.ts->x:node:child_process:imports",
+      "source": "f:src/orient.ts",
+      "target": "x:node:child_process",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/orient.ts->f:src/types.ts:imports",
+      "source": "f:src/orient.ts",
+      "target": "f:src/types.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/orient.ts->f:src/decisions.ts:imports",
+      "source": "f:src/orient.ts",
+      "target": "f:src/decisions.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/orient.ts->f:src/decision-position.ts:imports",
+      "source": "f:src/orient.ts",
+      "target": "f:src/decision-position.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/orient.ts->f:src/work.ts:imports",
+      "source": "f:src/orient.ts",
+      "target": "f:src/work.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/orient.ts->f:src/consequence.ts:imports",
+      "source": "f:src/orient.ts",
+      "target": "f:src/consequence.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/orient.ts->f:src/experiment.ts:imports",
+      "source": "f:src/orient.ts",
+      "target": "f:src/experiment.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/orient.ts->f:src/defects.ts:imports",
+      "source": "f:src/orient.ts",
+      "target": "f:src/defects.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/orient.ts->f:src/status.ts:imports",
+      "source": "f:src/orient.ts",
+      "target": "f:src/status.ts",
+      "kind": "imports"
+    },
+    {
       "id": "f:src/panel.ts->x:node:child_process:imports",
       "source": "f:src/panel.ts",
       "target": "x:node:child_process",
@@ -9580,6 +10736,12 @@
       "id": "f:src/regulate.ts->f:src/floor.ts:imports",
       "source": "f:src/regulate.ts",
       "target": "f:src/floor.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/regulate.ts->f:src/orient.ts:imports",
+      "source": "f:src/regulate.ts",
+      "target": "f:src/orient.ts",
       "kind": "imports"
     },
     {
@@ -10111,6 +11273,30 @@
       "kind": "imports"
     },
     {
+      "id": "f:src/work.ts->x:node:crypto:imports",
+      "source": "f:src/work.ts",
+      "target": "x:node:crypto",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/work.ts->x:node:fs:imports",
+      "source": "f:src/work.ts",
+      "target": "x:node:fs",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/work.ts->x:node:path:imports",
+      "source": "f:src/work.ts",
+      "target": "x:node:path",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/work.ts->f:src/types.ts:imports",
+      "source": "f:src/work.ts",
+      "target": "f:src/types.ts",
+      "kind": "imports"
+    },
+    {
       "id": "f:test/_helpers.ts->x:node:fs/promises:imports",
       "source": "f:test/_helpers.ts",
       "target": "x:node:fs/promises",
@@ -10555,6 +11741,84 @@
       "kind": "imports"
     },
     {
+      "id": "f:test/consequence.test.ts->x:node:test:imports",
+      "source": "f:test/consequence.test.ts",
+      "target": "x:node:test",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/consequence.test.ts->x:node:assert/strict:imports",
+      "source": "f:test/consequence.test.ts",
+      "target": "x:node:assert/strict",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/consequence.test.ts->x:node:fs/promises:imports",
+      "source": "f:test/consequence.test.ts",
+      "target": "x:node:fs/promises",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/consequence.test.ts->x:node:path:imports",
+      "source": "f:test/consequence.test.ts",
+      "target": "x:node:path",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/consequence.test.ts->f:src/consequence.ts:imports",
+      "source": "f:test/consequence.test.ts",
+      "target": "f:src/consequence.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/consequence.test.ts->f:test/_helpers.ts:imports",
+      "source": "f:test/consequence.test.ts",
+      "target": "f:test/_helpers.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/context-cli.test.ts->x:node:test:imports",
+      "source": "f:test/context-cli.test.ts",
+      "target": "x:node:test",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/context-cli.test.ts->x:node:assert/strict:imports",
+      "source": "f:test/context-cli.test.ts",
+      "target": "x:node:assert/strict",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/context-cli.test.ts->x:node:child_process:imports",
+      "source": "f:test/context-cli.test.ts",
+      "target": "x:node:child_process",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/context-cli.test.ts->x:node:util:imports",
+      "source": "f:test/context-cli.test.ts",
+      "target": "x:node:util",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/context-cli.test.ts->x:node:path:imports",
+      "source": "f:test/context-cli.test.ts",
+      "target": "x:node:path",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/context-cli.test.ts->x:node:url:imports",
+      "source": "f:test/context-cli.test.ts",
+      "target": "x:node:url",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/context-cli.test.ts->f:test/_helpers.ts:imports",
+      "source": "f:test/context-cli.test.ts",
+      "target": "f:test/_helpers.ts",
+      "kind": "imports"
+    },
+    {
       "id": "f:test/context.test.ts->x:node:test:imports",
       "source": "f:test/context.test.ts",
       "target": "x:node:test",
@@ -10702,6 +11966,30 @@
       "id": "f:test/control.test.ts->f:test/_helpers.ts:imports",
       "source": "f:test/control.test.ts",
       "target": "f:test/_helpers.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/decision-position.test.ts->x:node:test:imports",
+      "source": "f:test/decision-position.test.ts",
+      "target": "x:node:test",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/decision-position.test.ts->x:node:assert/strict:imports",
+      "source": "f:test/decision-position.test.ts",
+      "target": "x:node:assert/strict",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/decision-position.test.ts->f:src/decision-position.ts:imports",
+      "source": "f:test/decision-position.test.ts",
+      "target": "f:src/decision-position.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/decision-position.test.ts->f:src/decisions.ts:imports",
+      "source": "f:test/decision-position.test.ts",
+      "target": "f:src/decisions.ts",
       "kind": "imports"
     },
     {
@@ -11461,6 +12749,12 @@
       "kind": "imports"
     },
     {
+      "id": "f:test/hook-stop.test.ts->f:src/work.ts:imports",
+      "source": "f:test/hook-stop.test.ts",
+      "target": "f:src/work.ts",
+      "kind": "imports"
+    },
+    {
       "id": "f:test/hook-text.test.ts->x:node:test:imports",
       "source": "f:test/hook-text.test.ts",
       "target": "x:node:test",
@@ -11979,6 +13273,114 @@
     {
       "id": "f:test/oracle.test.ts->f:test/_helpers.ts:imports",
       "source": "f:test/oracle.test.ts",
+      "target": "f:test/_helpers.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/orient.test.ts->x:node:test:imports",
+      "source": "f:test/orient.test.ts",
+      "target": "x:node:test",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/orient.test.ts->x:node:assert/strict:imports",
+      "source": "f:test/orient.test.ts",
+      "target": "x:node:assert/strict",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/orient.test.ts->x:node:child_process:imports",
+      "source": "f:test/orient.test.ts",
+      "target": "x:node:child_process",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/orient.test.ts->x:node:fs/promises:imports",
+      "source": "f:test/orient.test.ts",
+      "target": "x:node:fs/promises",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/orient.test.ts->x:node:path:imports",
+      "source": "f:test/orient.test.ts",
+      "target": "x:node:path",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/orient.test.ts->x:node:util:imports",
+      "source": "f:test/orient.test.ts",
+      "target": "x:node:util",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/orient.test.ts->f:src/work.ts:imports",
+      "source": "f:test/orient.test.ts",
+      "target": "f:src/work.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/orient.test.ts->f:src/decisions.ts:imports",
+      "source": "f:test/orient.test.ts",
+      "target": "f:src/decisions.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/orient.test.ts->f:src/orient.ts:imports",
+      "source": "f:test/orient.test.ts",
+      "target": "f:src/orient.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/orient.test.ts->f:test/_helpers.ts:imports",
+      "source": "f:test/orient.test.ts",
+      "target": "f:test/_helpers.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/orientation-policy.test.ts->x:node:test:imports",
+      "source": "f:test/orientation-policy.test.ts",
+      "target": "x:node:test",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/orientation-policy.test.ts->x:node:assert/strict:imports",
+      "source": "f:test/orientation-policy.test.ts",
+      "target": "x:node:assert/strict",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/orientation-policy.test.ts->x:node:child_process:imports",
+      "source": "f:test/orientation-policy.test.ts",
+      "target": "x:node:child_process",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/orientation-policy.test.ts->x:node:fs/promises:imports",
+      "source": "f:test/orientation-policy.test.ts",
+      "target": "x:node:fs/promises",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/orientation-policy.test.ts->x:node:path:imports",
+      "source": "f:test/orientation-policy.test.ts",
+      "target": "x:node:path",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/orientation-policy.test.ts->x:node:url:imports",
+      "source": "f:test/orientation-policy.test.ts",
+      "target": "x:node:url",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/orientation-policy.test.ts->x:node:util:imports",
+      "source": "f:test/orientation-policy.test.ts",
+      "target": "x:node:util",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/orientation-policy.test.ts->f:test/_helpers.ts:imports",
+      "source": "f:test/orientation-policy.test.ts",
       "target": "f:test/_helpers.ts",
       "kind": "imports"
     },
@@ -12529,6 +13931,18 @@
       "kind": "imports"
     },
     {
+      "id": "f:test/regulate.test.ts->f:src/work.ts:imports",
+      "source": "f:test/regulate.test.ts",
+      "target": "f:src/work.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/regulate.test.ts->f:src/consequence.ts:imports",
+      "source": "f:test/regulate.test.ts",
+      "target": "f:src/consequence.ts",
+      "kind": "imports"
+    },
+    {
       "id": "f:test/render-contract.test.ts->x:node:test:imports",
       "source": "f:test/render-contract.test.ts",
       "target": "x:node:test",
@@ -12787,6 +14201,42 @@
       "kind": "imports"
     },
     {
+      "id": "f:test/source-text.test.ts->x:node:test:imports",
+      "source": "f:test/source-text.test.ts",
+      "target": "x:node:test",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/source-text.test.ts->x:node:assert/strict:imports",
+      "source": "f:test/source-text.test.ts",
+      "target": "x:node:assert/strict",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/source-text.test.ts->x:node:fs/promises:imports",
+      "source": "f:test/source-text.test.ts",
+      "target": "x:node:fs/promises",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/source-text.test.ts->x:node:path:imports",
+      "source": "f:test/source-text.test.ts",
+      "target": "x:node:path",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/source-text.test.ts->x:node:url:imports",
+      "source": "f:test/source-text.test.ts",
+      "target": "x:node:url",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/source-text.test.ts->f:src/tree.ts:imports",
+      "source": "f:test/source-text.test.ts",
+      "target": "f:src/tree.ts",
+      "kind": "imports"
+    },
+    {
       "id": "f:test/static-oracles.test.ts->x:node:test:imports",
       "source": "f:test/static-oracles.test.ts",
       "target": "x:node:test",
@@ -12891,6 +14341,96 @@
     {
       "id": "f:test/structural.test.ts->f:test/_helpers.ts:imports",
       "source": "f:test/structural.test.ts",
+      "target": "f:test/_helpers.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/swarm-acceptance.test.ts->x:node:test:imports",
+      "source": "f:test/swarm-acceptance.test.ts",
+      "target": "x:node:test",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/swarm-acceptance.test.ts->x:node:assert/strict:imports",
+      "source": "f:test/swarm-acceptance.test.ts",
+      "target": "x:node:assert/strict",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/swarm-acceptance.test.ts->x:node:child_process:imports",
+      "source": "f:test/swarm-acceptance.test.ts",
+      "target": "x:node:child_process",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/swarm-acceptance.test.ts->x:node:util:imports",
+      "source": "f:test/swarm-acceptance.test.ts",
+      "target": "x:node:util",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/swarm-acceptance.test.ts->x:node:fs/promises:imports",
+      "source": "f:test/swarm-acceptance.test.ts",
+      "target": "x:node:fs/promises",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/swarm-acceptance.test.ts->x:node:path:imports",
+      "source": "f:test/swarm-acceptance.test.ts",
+      "target": "x:node:path",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/swarm-acceptance.test.ts->x:node:url:imports",
+      "source": "f:test/swarm-acceptance.test.ts",
+      "target": "x:node:url",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/swarm-acceptance.test.ts->f:test/_helpers.ts:imports",
+      "source": "f:test/swarm-acceptance.test.ts",
+      "target": "f:test/_helpers.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/swarm-cli.test.ts->x:node:test:imports",
+      "source": "f:test/swarm-cli.test.ts",
+      "target": "x:node:test",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/swarm-cli.test.ts->x:node:assert/strict:imports",
+      "source": "f:test/swarm-cli.test.ts",
+      "target": "x:node:assert/strict",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/swarm-cli.test.ts->x:node:child_process:imports",
+      "source": "f:test/swarm-cli.test.ts",
+      "target": "x:node:child_process",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/swarm-cli.test.ts->x:node:util:imports",
+      "source": "f:test/swarm-cli.test.ts",
+      "target": "x:node:util",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/swarm-cli.test.ts->x:node:path:imports",
+      "source": "f:test/swarm-cli.test.ts",
+      "target": "x:node:path",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/swarm-cli.test.ts->x:node:url:imports",
+      "source": "f:test/swarm-cli.test.ts",
+      "target": "x:node:url",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/swarm-cli.test.ts->f:test/_helpers.ts:imports",
+      "source": "f:test/swarm-cli.test.ts",
       "target": "f:test/_helpers.ts",
       "kind": "imports"
     },
@@ -13006,6 +14546,72 @@
       "id": "f:test/tree.test.ts->f:src/types.ts:imports",
       "source": "f:test/tree.test.ts",
       "target": "f:src/types.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/trusted-decisions.test.ts->x:node:test:imports",
+      "source": "f:test/trusted-decisions.test.ts",
+      "target": "x:node:test",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/trusted-decisions.test.ts->x:node:assert/strict:imports",
+      "source": "f:test/trusted-decisions.test.ts",
+      "target": "x:node:assert/strict",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/trusted-decisions.test.ts->x:node:child_process:imports",
+      "source": "f:test/trusted-decisions.test.ts",
+      "target": "x:node:child_process",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/trusted-decisions.test.ts->x:node:crypto:imports",
+      "source": "f:test/trusted-decisions.test.ts",
+      "target": "x:node:crypto",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/trusted-decisions.test.ts->x:node:fs/promises:imports",
+      "source": "f:test/trusted-decisions.test.ts",
+      "target": "x:node:fs/promises",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/trusted-decisions.test.ts->x:node:os:imports",
+      "source": "f:test/trusted-decisions.test.ts",
+      "target": "x:node:os",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/trusted-decisions.test.ts->x:node:path:imports",
+      "source": "f:test/trusted-decisions.test.ts",
+      "target": "x:node:path",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/trusted-decisions.test.ts->f:src/decisions.ts:imports",
+      "source": "f:test/trusted-decisions.test.ts",
+      "target": "f:src/decisions.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/trusted-decisions.test.ts->f:src/orient.ts:imports",
+      "source": "f:test/trusted-decisions.test.ts",
+      "target": "f:src/orient.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/trusted-decisions.test.ts->f:src/types.ts:imports",
+      "source": "f:test/trusted-decisions.test.ts",
+      "target": "f:src/types.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/trusted-decisions.test.ts->f:src/work.ts:imports",
+      "source": "f:test/trusted-decisions.test.ts",
+      "target": "f:src/work.ts",
       "kind": "imports"
     },
     {
@@ -13155,6 +14761,48 @@
     {
       "id": "f:test/why-lint.test.ts->f:test/_helpers.ts:imports",
       "source": "f:test/why-lint.test.ts",
+      "target": "f:test/_helpers.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/work.test.ts->x:node:crypto:imports",
+      "source": "f:test/work.test.ts",
+      "target": "x:node:crypto",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/work.test.ts->x:node:test:imports",
+      "source": "f:test/work.test.ts",
+      "target": "x:node:test",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/work.test.ts->x:node:assert/strict:imports",
+      "source": "f:test/work.test.ts",
+      "target": "x:node:assert/strict",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/work.test.ts->x:node:fs/promises:imports",
+      "source": "f:test/work.test.ts",
+      "target": "x:node:fs/promises",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/work.test.ts->x:node:path:imports",
+      "source": "f:test/work.test.ts",
+      "target": "x:node:path",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/work.test.ts->f:src/work.ts:imports",
+      "source": "f:test/work.test.ts",
+      "target": "f:src/work.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/work.test.ts->f:test/_helpers.ts:imports",
+      "source": "f:test/work.test.ts",
       "target": "f:test/_helpers.ts",
       "kind": "imports"
     }

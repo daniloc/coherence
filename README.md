@@ -16,8 +16,8 @@ the Codex host, and activating the lifecycle control properly.
 
 That is the mechanism. The **purpose** is narrower and worth stating before any of it:
 the expensive resource in a codebase is not bytes and not lines — it is **inference**,
-and this is a machine for spending less of it. Read the next section first; every
-command below is an instrument in that economy.
+and this is a machine for spending less of it. Read [the economy of inference](#the-economy-of-inference-what-a-codebase-actually-costs)
+for that model; every command below is an instrument in that economy.
 
 The **core is platform- and language-agnostic.** Project-specific knowledge lives
 behind two adapters:
@@ -34,6 +34,232 @@ inference consumes the same filtered code-file population as the graph, so put g
 machine-local declarations such as `worker-configuration.d.ts` in `ignore`. Wrangler
 runtime-variable names remain visible as declarations, but their deployment values are
 discarded at the adapter boundary and never enter `graph.json` or an overview.
+
+## Agent and swarm quick path
+
+Start with a heading, then buy only the context the task needs:
+
+```sh
+npx coherence orient
+npx coherence context src/payments/settle.ts       # bounded to 12,000 bytes by default
+npx coherence context --changed --max-bytes 20000
+npx coherence context src/payments/settle.ts --all # explicit unbounded expansion
+```
+
+`orient` reads the strict decision projection, work graph, consequence links,
+experiments, defects, and last verification. It emits **one** deterministic action:
+`REFUSE`, `RESOLVE-CONFLICT`, `REPAIR-NAVIGATION`, `UNBLOCK`, `SYNTHESIZE`,
+`DISPATCH`, `CONTINUE`, `VERIFY`, or `STEADY`. It never runs the action. If a
+required ledger is damaged, the heading is `REFUSE`; damaged or unreadable surviving
+evidence is not converted into an empty, healthy-looking swarm.
+
+The examples use `$COHERENCE_SESSION`, `$CHILD_SESSION`, and `$NEXT_SESSION` for
+exact host-provided session identities. Set them from your host or orchestrator before
+writing; for a Codex parent, `COHERENCE_SESSION="$CODEX_THREAD_ID"` is the usual mapping.
+Do not substitute a branch name, date, `unknown`, or a guessed newest session.
+
+For coordinated work, make authority, ownership, success, dependencies, and write scope
+addressable before agents start:
+
+```sh
+WORK_ID="$(
+  npx coherence work create "harden settlement retries" \
+  --success "the retry oracle passes" --risk high \
+  --authority orchestrator-delegated --granted-by orchestrator \
+  --boundary "src/payments/** and its focused tests only" \
+  --owner-session "$CHILD_SESSION" --owner-agent retry-agent \
+  --read-scope src/payments --write-scope src/payments \
+  --session "$COHERENCE_SESSION" | awk '/^OPEN / {print $2}'
+)"
+
+npx coherence work inspect
+npx coherence work transition "$WORK_ID" active --because "owner accepted the order" \
+  --session "$CHILD_SESSION"
+npx coherence work handoff "$WORK_ID" --owner-session "$NEXT_SESSION" --owner-agent reviewer \
+  --because "implementation complete; verification remains" --session "$CHILD_SESSION"
+npx coherence work close "$WORK_ID" completed --because "success criterion met" \
+  --evidence "focused oracle passed" --session "$NEXT_SESSION"
+```
+
+The work ledger is append-only and inert: it coordinates but does not spawn agents or
+execute commands. Every mutation names an exact writer session; ownership changes only by
+handoff; state transitions carry their predecessor; dependencies determine readiness;
+simultaneously runnable work with overlapping write scopes is reported as a collision.
+An order cannot activate or complete until every dependency completed. A parent cannot
+become terminal while a child remains live, and closure names every completed direct
+child whose result it synthesized.
+
+A completed child can remain visibly unsynthesized while one of its direct siblings is
+still ready, active, or blocked. Synthesis is represented only by closing the parent, so
+`orient` selects the live sibling's executable obligation first and emits `SYNTHESIZE`
+only after that parent's direct children are terminal.
+
+Work authority answers who may act and within what boundary. Decision authority is a
+separate question: whose choice may ratify policy for the swarm. Record a choice at the
+moment it is made, and add `--subject` whenever it should enter conflict analysis.
+`--authority` is optional, but an ungraded choice cannot ratify or outrank another:
+
+```sh
+DECISION_ID="$(
+  npx coherence decide "use compare-and-append state transitions" \
+  --over "last timestamp wins" \
+  --because "concurrent histories must refuse instead of hiding one writer" \
+  --work "$WORK_ID" --subject work-state/concurrency \
+  --authority local-proposal --scope-file src/work.ts \
+  --session "$CHILD_SESSION" --agent retry-agent | awk '{print $1}'
+)"
+```
+
+Two local proposals with the same explicit subject and different choices need
+ratification. An `orchestrator-accepted` or `user-directed` record can select one
+choice; incompatible records at the highest authority remain contested. Prose similarity,
+timestamp order, and “last writer wins” never decide policy. Historical journal rows
+remain readable. Rows without a subject stay outside position analysis; rows with a
+subject but no authority may align or conflict, but never ratify or outrank.
+
+Finally, state relationships rather than asking later readers to infer them from time,
+paths, or Git proximity:
+
+```text
+decision ──authorizes──▶ work ──produces──▶ commit
+                              ▲
+verification ───verifies─────┘
+work or commit ──repairs─────▶ defect
+```
+
+```sh
+npx coherence consequence add "decision:$DECISION_ID" authorizes "work:$WORK_ID" \
+  --evidence "the accepted decision grants this work order" --session "$COHERENCE_SESSION"
+npx coherence consequence add "verification:full@$(git rev-parse HEAD)" verifies "work:$WORK_ID" \
+  --evidence "full coherence verification passed at this commit" --session "$COHERENCE_SESSION"
+npx coherence consequence inspect "work:$WORK_ID"
+```
+
+The consequence ledger preserves the authored direction and renders both directions for
+navigation. Its typed relation table rejects nonsense, but an edge remains an attributable
+assessment—not proof of causality. A completed work order stays visibly unverified until a
+`verification --verifies--> work` edge names it. Today that verification reference is an
+assessor-authored address, not an existence-checked append-only receipt; record it only
+after the named check actually ran. The output and Known limits section keep that ceiling
+explicit.
+
+Commit `.coherence/work/` and `.coherence/consequences/`. They are repository evidence,
+not machine-local queues; configure blanket `.coherence/*` ignore rules to re-include both.
+This repository pins that requirement with a public-CLI write → Git commit → clone → strict
+replay test. First-use repositories need no tracked empty directories, but once records
+exist, a clone that drops them has lost the swarm's ownership and navigation state.
+
+That is the shortest operating loop:
+
+1. `orient` for the fleet heading.
+2. `context` for a bounded, omission-accounted reading packet.
+3. `work` for authority, ownership, dependencies, scopes, handoff, and synthesis.
+4. `decide` for alternatives and ratifiable policy.
+5. `consequence` for explicit provenance between durable records.
+6. `verify`, link the evidence, then run `orient` again.
+
+### Validate a swarm in the field
+
+A green harness proves mechanisms, not that a swarm delivered the right result. Keep two
+claims separate:
+
+- a **live canary** proves that attribution, conflict sensing, handoff, synthesis,
+  navigation, and fail-closed recovery work in the selected host;
+- a **matched efficacy trial** asks whether those mechanisms reduce inference, conflict,
+  rework, or defects without degrading the domain outcome.
+
+Predeclare the canary before dispatch. Use `experiment create` to freeze its representative
+task, actions, and observable criteria; choose the time/read budgets and sample counts now,
+not after seeing the result. At minimum name the native domain outcome, assignment delivery,
+actual-versus-declared write scope, one seeded collision and one dependency-serialized
+overlap, decision ratification, handoff and child synthesis, hook reliability, transcript-free
+navigation, damage recovery, and the final orientation:
+
+```sh
+npx coherence experiment create "the live swarm completes its domain task and leaves a recoverable field" \
+  --context src/changed-domain.ts \
+  --action "run the canary below with exact parent and child sessions" \
+  --success "the project-native acceptance criterion passes" \
+  --success "coordination, navigation, and recovery criteria all carry evidence" \
+  --session "$COHERENCE_SESSION"
+```
+
+Run the canary on a disposable branch with one parent, two real child sessions, a dependency,
+a shared integration seam, and a reviewer handoff:
+
+1. Capture the clean baseline: project-native acceptance, `coherence verify`, commit, elapsed
+   time, and the expected changed paths. Prove the selected lifecycle bundle and current
+   parent activation; have each child restate the exact work order its `SessionStart` emitted.
+   An unobserved bundle or empty event window is missing hook evidence, never a measured zero
+   failure rate.
+2. Make one pair of runnable orders claim an overlapping write scope. Before either writes,
+   `orient` must say `RESOLVE-CONFLICT`. Block or serialize one. A second overlapping order
+   waiting on a declared dependency must remain potential overlap, never a live collision.
+   Compare the actual diff and explicit-path trace with every declared write scope; the work
+   ledger records authority but cannot prevent an out-of-scope write.
+3. Have two children record incompatible `local-proposal` choices on one explicit subject.
+   Require `RESOLVE-CONFLICT`, then record the accepted authority and confirm timestamps did
+   not choose it. Exercise early dependency refusal, handoff to the exact reviewer, and the
+   parent's refusal to close until every live child is terminal and every completed child is
+   named as synthesized.
+4. Run the project-native acceptance and full verification. Preserve the command, output,
+   and commit, then record the decision-to-work, work-to-commit, and verification-to-work
+   links. The verification address is still assessor-authored, so the retained evidence is
+   part of this criterion.
+5. Give a fresh agent **no transcript**. Its only starting surfaces are `orient`, bounded
+   `context`, `work inspect`, and `consequence inspect`. Within the predeclared time and read
+   budget it must recover the objective, authority, owners, dependencies, ratified choice,
+   evidence, and next action, invent no causal edge, and make no out-of-scope follow-up edit.
+6. In a disposable copy, damage one surviving ledger row and stale the verification. The
+   headings must move to `REFUSE`, then `VERIFY`, never `STEADY`. Restore the row, close every
+   experiment criterion with evidence, and require native acceptance, current verification,
+   `regulate --check` release, and `orient` steady.
+
+The canary passes only with all assigned sessions accounted for, zero out-of-scope writes,
+the seeded collision detected before the first conflicting write, no false collision for the
+serialized pair, no old-owner write after handoff, complete child synthesis, zero hook failures
+across a nonzero predeclared event count, correct fresh-reader answers with zero invented
+links, and successful refusal and recovery. An empty trace cannot satisfy the hook criterion.
+A single canary establishes operability, not efficacy.
+
+For efficacy, pre-register a matched task set or historical comparator and one primary metric.
+Report sample size and attribution grade beside median time to the correct heading, context
+bytes and outside reads, duplicate/conflicting edits, reviewer reconstruction time, rework,
+and escaped defects. Pass only if domain correctness does not regress and the predeclared
+primary metric clears its chosen improvement band; the other measures remain evidence, not a
+post-hoc score. A few matched tasks are a pilot, not a population claim.
+
+Keep attribution at its weakest provable grade. Exact work owners and journal writers do not
+make Codex descendant `PostToolUse` rows exact: those remain a `parent-session-aggregate`.
+Explicit-path traces are a lower bound, shell/editor/remembered reads are absent, and current
+verification references are not receipt-checked. Score per-child behavior only from exact
+records, label aggregate measures as aggregate, and retain manual scope and verification
+evidence rather than upgrading either ceiling by inference.
+
+#### What this repository's V2 canary established
+
+The run behind commit `5ff3e7d` delegated three bounded implementation slices and then gave
+a separate reader no transcript. That reader recovered the root objective, exact owners, a
+host-session handoff, the accepted policy, explicit evidence links, trust ceilings, and the
+executable next action from `orient`, `context`, `work inspect`, and `consequence inspect`
+alone. The resulting tree passed 921 project tests and 80/80 coherence claims with all 60
+declared invariants anchored.
+
+The run also falsified four quiet paths before release: synthesis could outrank a live sibling
+even though parent closure was impossible; same-`HEAD` source changes could leave verification
+current; deleting the whole committed decision population could look like first adoption; and
+the new work/consequence ledgers worked locally while Git ignored them. Each now has a named
+negative control, and the last has an actual commit/clone/replay oracle rather than an ignore-
+pattern proxy.
+
+It did **not** establish hook reliability or swarm efficacy. Structural Codex control was
+present, but this API-hosted parent session was unobserved and the experiment captured zero
+trace and activity events, recorded honestly as `none`. No matched task population was run.
+Treat this as strong mechanism and navigation evidence with an unproven host-telemetry arm,
+not as evidence that swarms improve outcomes.
+
+The rest of this README explains the trust model, adoption, claim language, instruments,
+and known ceilings behind that loop.
 
 ## The economy of inference: what a codebase actually costs
 
@@ -136,7 +362,7 @@ exists for this one hazard. And **the bottom rung is the only free one.** Every 
 above `unaskable` costs something to keep, which is why "declare everything" is not the
 strategy and never was.
 
-### The work ledger: making the price perceptible
+### The maintenance-cost ledger: making the price perceptible
 
 Trust accounting says *where the untrusted becomes verified*. Work accounting says *what
 that costs to keep, continuously* — and the instruments in v0.18–0.19 exist because the
@@ -559,7 +785,9 @@ project-local dependency; no global installation is assumed.
    exact owner or child evidence. Exact agent/session rows are `owner-session`, an empty
    post-open window is `none`, and trace rows written before observation metadata existed
    remain visible as `legacy-unscoped`. Unreadable or internally unscoped/unknown rows
-   refuse closure. Likewise, a
+   refuse closure. `none` is an attribution result, not proof of a zero failure rate:
+   without current-bundle activation and a nonzero predeclared event denominator, hook
+   reliability remains unmeasured. Likewise, a
    `SubagentStop` without an exact child id reports the child journal count as unavailable
    and takes no child calibration snapshot; the repository-wide open-conjecture reminder
    remains explicitly repository-wide.
@@ -629,20 +857,21 @@ npx coherence regulate --host codex --json
 ```
 
 The doctrine is versioned and built in, not a configurable score. Its potential is
-lexicographic: **refuse an unavailable required reading**, then **require a decision for
-significant unanchored growth**, then **redirect an absent lifecycle control to its one
-repair command**, otherwise **release**. The first nonempty class wins. One run emits at
-most one executable command; lower-priority obligations are counted as withheld, and a
-rerun after the selected action reveals the next one. Insertion order, duplicate readings,
-and locally convenient weights cannot change that order.
+lexicographic: **refuse an unavailable required reading**, then **require a decision**,
+then **redirect an absent lifecycle control to its one repair command**, otherwise
+**release**. The first nonempty class wins. One run emits at most one executable command;
+lower-priority obligations are counted as withheld, and a rerun after the selected action
+reveals the next one. Insertion order, duplicate readings, and locally convenient weights
+cannot change that order.
 
-V1 evaluates exactly two rules: the selected agent host's complete canonical lifecycle
-control must be present,
-and significant behavioral growth must carry an invariant/boundary/parity anchor or a
+V2 evaluates exactly four rules: the selected host's canonical lifecycle control is
+present; swarm decisions and work are attributable, structurally readable, and
+collision-visible; completed work carries an explicit verification-to-work consequence
+link; and significant behavioral growth carries an invariant/boundary/parity anchor or a
 standing patch-bound decision. That is the whole domain. `release` therefore means “no
-intervention under those two live rules,” never “this repository is coherent” or “this
-change is correct.” `coherence doctrine [--json]` prints the rules and their stated limits
-from the same registry the selector executes.
+intervention under those four live rules,” never “this repository is coherent” or “this
+change is correct.” `coherence doctrine [--json]` prints the rules and their stated
+limits from the same registry the selector executes.
 
 `--host` selects the control being regulated; when omitted, a Codex process selects Codex
 and other environments select Claude. The host is part of the reading and decision id,
@@ -1252,11 +1481,53 @@ see no other account of the work. Main-agent `Stop` snapshots calibration with b
 stdout. It cannot safely turn the shared worktree's change signal or open-conjecture count
 into this agent's unfinished task, so no main conclusion receives a second model turn.
 Subagent feedback gets one turn; a `stop_hook_active` follow-up is silent so it cannot loop
-or become a gate.
+or become a gate. Trace-persistence failure is contained and keeps PostToolUse byte-silent;
+a damaged decision-journal path keeps SessionStart alive with the exact session instructions
+and a named `JOURNAL CONTROL unavailable` line rather than a stack trace.
 `signal --check` is the CI gate. The generated block invokes the dedicated
 `coherence-hook` binary so loading the full command registry is not part of every read.
 An event the harness does not recognize is deliberately *not* an error — hook sets grow,
-and a harness that crashes on a new name breaks every session that added one. Then:
+and a harness that crashes on a new name breaks every session that added one.
+
+### Two journal reads, two trust contracts
+
+The settled timeline and the control plane do not ask the same question. `decisions` and
+`journal` use the tolerant historical read: they preserve whatever valid rows can still
+be rendered and expose damage to a human. `signal`, `orient`, and `regulate` use the
+trusted projection: one malformed row, noncanonical timestamp, forged content id,
+conflicting duplicate, broken supersedes pointer, cycle, or provable session/file
+displacement makes the whole verdict-bearing decision source unavailable. It also validates
+real repository containment, every surviving directory entry, and canonical final-newline
+framing. A damaged row cannot shrink the standing set and thereby waive an obligation.
+
+Whole-population loss needs an external witness because no surviving row can report its own
+deletion. When the trusted projection derives zero rows, current Git `HEAD` is consulted: if
+it owns decision JSONL files that are now deleted, the source is unavailable rather than a
+valid adoption from zero. The witness is deliberately narrow. It does not prove completeness
+in a non-Git or unborn repository, detect deletion already committed into a newer history,
+survive a malicious history rewrite, or detect partial loss while any valid row remains.
+
+Legacy rows retain their original bytes and ids. A new row moves to decision wire v2 only
+when it carries at least one structured field:
+
+- `--work` associates the choice with one work identity.
+- `--subject` names the exact question on which choices may conflict.
+- `--authority` is `local-proposal`, `orchestrator-accepted`, or `user-directed`.
+- `--scope-component`, `--scope-file`, `--scope-symbol`, and `--environment` add
+  sorted, machine-addressable scope.
+
+These fields do not infer each other. In particular, similar prose does not create a
+shared subject, `--work` does not manufacture authorization, and a scope does not grant
+permission. Cross-record realization, verification, repair, and provenance belong only
+to the explicit `consequence` ledger.
+
+The authority order is deliberately small:
+`local-proposal < orchestrator-accepted < user-directed`. Differing local choices on one
+subject produce `needs-ratification`; one stronger choice ratifies the position; differing
+choices at the highest surviving authority remain `contested`. Retraction is the only
+way to withdraw a standing choice. Recency is never authority.
+
+The ordinary journal verbs remain cheap:
 
 ```sh
 coherence decide "species gas physics as its own commit" \
@@ -1288,6 +1559,87 @@ coherence decisions [--job X] [--agent Y] [--session S] [--branch B] [--sessions
 # it changes nothing the read prints: fold COMMITTED session files into one per (branch, month).
 coherence decisions --compact
 ```
+
+For a swarm-addressable choice, add the structured fields at write time:
+
+```sh
+coherence decide "serialize migrations through one owner" \
+  --over "let both agents write the migration directory" \
+  --because "the scopes collide and migration order is semantic" \
+  --work wrk-migrations --subject migrations/ownership \
+  --authority orchestrator-accepted --scope-file migrations \
+  --session "$CODEX_THREAD_ID" --agent orchestrator
+```
+
+### `coherence work` — an append-only swarm work graph
+
+Work records live one JSONL file per writer session under `.coherence/work/`. Opening a
+work order freezes its objective, observable success criteria, constraints, non-goals,
+risk, authority boundary, owner, parent, dependencies, and read/write scopes. Later events
+may transition state, hand ownership to an exact session/agent pair, or close the work;
+they cannot rewrite the opening contract.
+
+Each event points to the previous event. `work inspect --json` exposes the current
+`last.id` token for a coordinating caller to pass as `--expected-previous`: two
+writers advancing the same predecessor create competing history
+and the strict merged reader refuses instead of picking whichever timestamp sorts last.
+Exact semantic retries deduplicate. Missing parents or dependencies, parent/dependency
+cycles, activation or completion ahead of a dependency, live children below terminal
+parents, incomplete or invalid child synthesis, damaged rows, and displaced session files
+are likewise refusals. Objectives, criteria, authority text, and other authored work
+strings reject instruction-control bytes before they can cross into SessionStart.
+
+Scopes are repository addresses, not semantic ownership inference. An exact path overlaps
+the same exact path; a scope ending in `/**` owns that subtree; `**` overlaps everything.
+Two dependency-clear or active orders with overlapping write scopes are a live conflict.
+An overlap serialized behind a dependency stays visible as potential overlap, not a
+collision. Declare only the scope actually granted—the ledger reports the declaration; it
+cannot discover an undeclared coupling.
+
+`SessionStart` may render up to three current work orders, but only when the work owner
+session exactly matches the starting session. Parent-session guesses and “newest session”
+fallbacks do not transfer authority. A resumed or follow-up child may receive a new
+host-provided session id; ownership remains with the recorded session until an explicit
+`work handoff` transfers it.
+
+### `coherence consequence` — explicit record-to-record navigation
+
+Consequence records live under `.coherence/consequences/`, one append-only file per
+assessor session, addressed by a domain-separated hash so case-distinct sessions cannot
+alias on a portable filesystem. References have the form `kind:id`; kinds are `decision`, `work`,
+`commit`, `experiment`, `verification`, and `defect`. Specialized relations have
+typed endpoints—for example, `decision --authorizes--> work`,
+`verification --verifies--> work|commit`, and `work|commit --repairs--> defect` are
+admissible. General
+`supports`, `contradicts`, `supersedes`, and `depends-on` edges remain available
+where the assessor needs a weaker statement.
+
+The record requires evidence for why the edge is warranted and captures repository and
+writer attribution. Its reader recomputes content ids and refuses malformed, forged,
+conflicting, or displaced rows. `inspect <kind:id>` traverses incident edges in both
+directions while retaining the direction actually authored. It deliberately does not mine
+timestamps, common paths, or Git co-presence for causality.
+
+Both `.coherence/work/` and `.coherence/consequences/` must cross the repository boundary.
+If either is ignored, local inspection can look correct while a fresh clone loses the work
+graph or its navigation. This repository's acceptance guard writes both through the public
+CLI, commits them, clones the fixture, strictly replays them, and requires zero dangling
+consequence references.
+
+### `coherence orient` — one heading, not another dashboard
+
+`orient` composes the strict ledgers without collapsing their epistemic boundaries. Its
+priority is fixed: damaged evidence or an invalid work graph refuses first; decision or
+write-scope conflict follows; then dangling navigation and live work blockers. An
+unsynthesized child result comes next only when every direct child of that parent is terminal,
+making parent closure executable. Otherwise ready, active, or blocked sibling work keeps its
+own heading while the pending result remains visible. Ready work, active work, missing
+verification, stale/failing verification, and finally steady state complete the ordering.
+`--json` exposes the complete projection for an orchestrator.
+
+The heading does not authorize work and does not prove correctness. It is a gyroscope:
+one stable direction from the evidence agents deliberately left behind, with the
+instrument's limits printed beside it.
 
 ### `coherence experiment` — freeze a planned inference loop, then close it with evidence
 
@@ -1758,8 +2110,10 @@ absence is invisible.
 
 ### Storage: one append-only file per agent session
 
-`.coherence/decisions/<session>.jsonl`. **Commit the folder** — it is the record, not a
-cache. Three reasons for the split:
+`.coherence/decisions/<session>.jsonl` in the ordinary case. If two session labels alias
+under portable case/Unicode normalization, the later address uses a domain-separated
+session hash instead of sharing bytes; released readable filenames remain unchanged.
+**Commit the folder** — it is the record, not a cache. Three reasons for the split:
 
 1. **Two branches merge cleanly.** Distinct filenames never conflict; one shared JSONL
    conflicts on every parallel branch — exactly what five concurrent agents create.
@@ -1834,6 +2188,13 @@ and `feat-x` both flattened to `feat-x` they would share a file, so whenever san
 changes anything a digest of the raw string is appended. A name that was already safe passes
 through untouched, which is why every id ever written still maps to the file it always did
 — and why `--session ../../etc/x` no longer escapes the journal directory.
+
+Case is also identity. Before an append chooses a readable filename it checks for a
+portable case/normalization alias; a collision such as `Owner` and `owner` moves the second
+session to its hash address. Readers verify the filename against the row and refuse linked,
+unexpected, blank, or torn surviving storage. Writers refuse symlinked directory or final
+append targets without making recoverable historical row damage a gate on recording a new
+observation.
 
 The residual collision is two agents that both defaulted to agent `main` on one branch, and
 it is safe on four independent grounds: same branch means same checkout, and git refuses to
@@ -1932,7 +2293,7 @@ both is exactly what drifted.
      edit by hand — add the command to the registry and re-run. Everything OUTSIDE these
      markers is authored prose. -->
 
-_42 commands. This index is derived from the registry the dispatch is checked
+_45 commands. This index is derived from the registry the dispatch is checked
 against (`test/commands.test.ts` enumerates the live `cmd === …` chain and asserts the two
 sets are equal), so it cannot fall behind the CLI. The reasoning for the commands that have
 any is in **In detail** below — that half is authored, and does not cover all of them._
@@ -1953,7 +2314,7 @@ any is in **In detail** below — that half is authored, and does not cover all 
 
 **Durable agent record — appends only, gates nothing**
 
-- `coherence decide "<chose>" --over "<alt>" --because "<why>"` — log one choice and what it was chosen OVER
+- `coherence decide "<chose>" [--over "<alt>" ...] --because "<why>" [--work W] [--subject S] [--authority A] [--scope-component C] [--scope-file p] [--scope-symbol S] [--environment E] [--session S]` — log one choice, any rejected alternatives, and optional swarm-addressable authority
 - `coherence blocked "<what>" --because "<why>"` — log what you could NOT do — first-class, not a footnote
 - `coherence defect "<what failed>" --evidence "<what proves it>" [--file p] [--session S] [--agent A] [--job J]` — record an agent-assessed defect with the evidence that made it a defect
 - `coherence defects [--session S] [--json]` — read the merged append-only defect record across agent sessions
@@ -1965,13 +2326,16 @@ any is in **In detail** below — that half is authored, and does not cover all 
 - `coherence decisions [--job|--agent|--session|--branch|--sessions|--md|--brief|--open|--compact]` — the MERGED timeline across every session file; `--open` is what was noticed and not yet chased, `--compact` folds committed session files into one per (branch, month) without changing what this prints
 - `coherence journal [--follow | --once] [--job X] [--agent Y] [--session S] [--branch B]` — the LIVE read — stream entries as agents write them, and surf the history in aggregate or one session's stream
 - `coherence experiment <create|inspect|close> ... [--session S] [--json]` (alias: `plan`) — open a plan hypothesis, freeze its predicted context/actions/criteria, then close it with criterion-total evidence
+- `coherence work <create|transition|handoff|close|inspect> ... [--json]` — append-only swarm work graph; writes require an exact session, reads stay fleet-wide
+- `coherence consequence <add|inspect> ... [--json]` — explicit assessed links across durable records; add requires an exact session
 
 **Perceive the project**
 
 - `coherence index [--since <ref>]` — the returning human's page — MAP · JOURNAL · TRAJECTORY, framed against what you last saw (`_index.html` + `index.json`)
 - `coherence panel [--no-watch | --once]` — live TUI over the graph + the status record
+- `coherence orient [--json]` — one deterministic swarm heading over strict decisions, work, links, experiments, defects, and verification
 - `coherence contract` — the promise graph — graded gates + the reliance ledger (`_contract.html`)
-- `coherence context [<file>...] [--symbol <name>] [--changed|--staged]` — emit the smallest graph-addressed context packet for a file, symbol, or current change
+- `coherence context [<file>...] [--symbol <name>] [--changed|--staged] [--max-bytes N|--all]` — emit a bounded graph/repository context packet with exact omission accounting; --all expands
 
 **Ratchets and gates**
 
@@ -2103,13 +2467,16 @@ any is in **In detail** below — that half is authored, and does not cover all 
   attestation. Presence of an anchor is not proof that it is the right
   one; this gate makes the omission visible and addressable, then leaves semantics to
   review and verification.
-- `coherence context [<file>...] [--symbol <name>] [--changed|--staged]` — a bounded,
-  graph-addressed first read for a task. It returns the selected files' owning components,
-  intent and why, invariants and claims, chokepoints/oracles, direct imports and importers,
-  structurally relevant tests, standing decisions, open conjectures, unresolved inputs,
-  and an explicit limitations section. File, symbol and git-change selectors compose.
-  The closure is deliberately one hop and heuristic; it lowers retrieval cost without
-  claiming to have found every semantically relevant file.
+- `coherence context [<file>...] [--symbol <name>] [--changed|--staged] [--max-bytes N|--all]`
+  — a route-first reading packet for a task, bounded to 12,000 bytes by default. It returns
+  selected graph ownership, intent and why, invariants and claims, chokepoints/oracles,
+  one-hop imports/importers, structurally relevant tests, repository-level surfaces,
+  standing decisions, open conjectures, unresolved inputs, and named limitations. Tracked,
+  untracked, and explicitly requested ignored/generated files remain addressable even when
+  they have `graphOwner: null`. File, symbol and Git-change selectors compose. The
+  bounded render is deterministic and reports every withheld item and byte by reason; an
+  impossible budget refuses with the exact minimum. `--all` opts into the unbounded
+  expansion. This lowers retrieval cost without claiming semantic completeness.
 - `coherence decompose` — the **wise-decomposition** report. Coherence holds the Intent
   graph (spec tree) and the Structure graph (imports); this adds the Evolution graph (git
   change-coupling) and measures their *agreement*. Prints a **LOCALITY** score (the
@@ -2658,6 +3025,14 @@ commit + dirty flag. The record is the last known truth, honestly dated — neve
 claim about the present. Machine-readable by design (`jq`-able; the panel is just one
 consumer).
 
+For `orient`, a successful verification is `current` only when its failure count is zero,
+its recorded commit matches live `HEAD`, its recorded dirty bit is false, and the live index,
+tracked files, and untracked files contain no material change. Exactly
+`.coherence/status.json` is excluded from that live dirty reading because filing the receipt
+after sampling Git would otherwise invalidate every run immediately. A source or staged
+change at the same `HEAD` is therefore stale; committing after a pre-commit verification also
+moves `HEAD` and makes that receipt stale until verification runs again.
+
 **Commit `.coherence/status.json`.** The sticky red history (`everFailed`,
 `lastFailAt`, `lastFailCommit`, `runs`) is the only part of the record that is
 CUMULATIVE, and it is what makes the never-red advisory mean anything — a fresh
@@ -2766,15 +3141,35 @@ meant.
 ## Known limits (read this section; it is the point)
 
 - **The task context is a bounded hypothesis, not completeness.** It uses graph ownership,
-  one-hop imports/importers, structural test links and journal addresses. Dynamic loading,
-  semantic coupling and external state can live beyond that packet; its limitations are
-  printed in every result.
+  one-hop imports/importers, repository surfaces, structural test links and journal
+  addresses. The CLI defaults to 12,000 bytes and accounts exactly for withheld items and
+  bytes; `--all` is an explicit expansion. Dynamic loading, semantic coupling and external
+  state can live beyond that packet; its limitations are printed in every result.
+- **The work graph records declared coordination, not effective capability.** Authority,
+  owner, dependency, and path scope are attributable facts, but the ledger neither spawns
+  an agent nor prevents an out-of-scope write. Path overlap does not discover semantic
+  coupling, external systems, or an omitted scope.
+- **Decision disappearance detection has a Git-HEAD, zero-population grade.** It catches a
+  current checkout whose tracked decision files were all deleted. It does not prove an empty
+  non-Git/unborn repository complete, detect deletion already committed into history, resist
+  history rewrite, or detect partial loss while any valid row survives.
+- **Consequence edges are assessed provenance, not causal proof.** They are never inferred
+  from co-presence. Commit identities can be checked against Git and durable record ids
+  against their strict ledgers; verification is still a rolling status record rather than
+  an append-only receipt registry, so verification references remain explicitly
+  existence-unchecked.
+- **Orientation is one bounded heading, not an overall correctness verdict.** It refuses
+  unavailable required evidence and orders known coordination obligations. Unrecorded
+  work, wrong-but-well-formed decisions, and facts outside its listed sources remain
+  outside the reading.
 - **Premise leases detect dead addresses, not dead meanings.** Missing explicit files are
   strong failures; inferred prose paths are advisory. A live file or symbol can still
   support a rationale that is semantically obsolete.
 - **Read calibration is an explicit-path lower bound.** Shell commands, editor buffers and
   remembered context are not inferred. Per-agent patch attribution requires write-bearing
-  tool events; without them a sample uses the shared worktree's changed-file union.
+  tool events; without them a sample uses the shared worktree's changed-file union. An
+  unobserved lifecycle bundle or empty event window is absence of hook evidence, not a
+  measured zero failure rate.
 - **The change signal measures surface and anchor presence, not semantic adequacy.** A
   trivial anchor can satisfy its structural condition, and a patch-specific journal
   decision can attest that no anchor is needed. Review and claim verification still judge

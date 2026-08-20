@@ -85,16 +85,42 @@
 // IT GATES NOTHING, DELIBERATELY. The moment this can fail a build it acquires an
 // incentive to be complete, and a complete journal is a transcript again.
 import {
-  appendFileSync, existsSync, readFileSync, readdirSync, mkdirSync, statSync, writeFileSync, unlinkSync,
+  closeSync, constants, existsSync, fstatSync, lstatSync, readFileSync, readdirSync,
+  mkdirSync, openSync, statSync, unlinkSync, writeFileSync, writeSync,
 } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { createHash, randomBytes } from "node:crypto";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 import type { Config } from "./types.ts";
 
 export type DecisionKind = "session" | "decision" | "blocked" | "retraction" | "conjecture" | "resolution" | "dismissal";
 
-export interface DecisionRecord {
+/** Machine-addressable scope for a decision. These are SETS, not a second prose field:
+ * writers sort and deduplicate them before they enter the wire record and its identity. */
+export interface DecisionScope {
+  components?: string[];
+  files?: string[];
+  symbols?: string[];
+  environment?: string[];
+}
+
+/** Whose authority the row claims. Identity is intentionally a small closed vocabulary;
+ * an actor/session belongs in `agent`, while this field answers whether that actor was
+ * proposing, ratifying for the swarm, or carrying an explicit user direction. */
+export type DecisionAuthority = "local-proposal" | "orchestrator-accepted" | "user-directed";
+
+export interface StructuredDecisionFields {
+  work?: string;
+  subject?: string;
+  scope?: DecisionScope;
+  authority?: DecisionAuthority;
+}
+
+export interface DecisionRecord extends StructuredDecisionFields {
+  /** Absent is the released legacy wire format. V2 is emitted only when one of the
+   * structured fields above is present, so an ordinary historical row stays byte- and
+   * id-compatible. */
+  version?: 2;
   id: string;              // "d-" + 8 hex of the CONTENT hash — a re-log dedupes
   session: string;         // "s-" + 12 hex — the agent session that wrote it
   at: string;              // ISO
@@ -226,8 +252,94 @@ export function slug(raw: string): string {
   return safe === raw ? safe : `${safe}-${createHash("sha256").update(raw).digest("hex").slice(0, 6)}`;
 }
 
+function hashedDecisionSessionFilename(session: string): string {
+  const key = createHash("sha256")
+    .update("coherence:decision-session\0")
+    .update(session, "utf8")
+    .digest("hex");
+  return `s-${key}.jsonl`;
+}
+
 export function sessionPath(cfg: Config, session: string): string {
-  return join(decisionsDir(cfg), `${slug(session)}.jsonl`);
+  const dir = decisionsDir(cfg);
+  const legacyName = `${slug(session)}.jsonl`;
+  const legacy = join(dir, legacyName);
+  const hashed = join(dir, hashedDecisionSessionFilename(session));
+  // Reuse a historical direct-session file only when its surviving rows prove exact
+  // ownership. On a case-folding filesystem Owner.jsonl may also answer a lookup for
+  // owner.jsonl; existence alone would append the second session into the first.
+  try {
+    const standing = lstatSync(legacy);
+    if (standing.isFile() && !standing.isSymbolicLink()) {
+      const rows = readFileSync(legacy, "utf8").split("\n").filter((line) => line.trim());
+      if (rows.length && rows.every((line) => {
+        try {
+          const raw = JSON.parse(line) as { session?: unknown };
+          return raw.session === session;
+        } catch { return false; }
+      })) return legacy;
+    }
+  } catch { /* an absent or damaged readable address is resolved against portable aliases below */ }
+  // Once a collision has selected the hashed grade, every later append for that session
+  // returns to it. Hash ownership is checked by the strict reader; this resolver only
+  // chooses the stable address before the append boundary verifies file identity.
+  try {
+    const standing = lstatSync(hashed);
+    if (standing.isFile() && !standing.isSymbolicLink()) return hashed;
+  } catch { /* first append at the hashed grade */ }
+  // Preserve the released readable filenames for the overwhelmingly common case. Only
+  // a portable case/normalization alias selects the hash, so Owner and owner cannot
+  // share bytes on APFS while existing `session.jsonl` addresses do not churn.
+  try {
+    const portable = legacyName.normalize("NFD").toLowerCase();
+    if (readdirSync(dir).some((name) => name.normalize("NFD").toLowerCase() === portable)) return hashed;
+  } catch { /* an absent directory means this is the first direct file */ }
+  return legacy;
+}
+
+function ensureDecisionDirectory(cfg: Config): void {
+  for (const [path, label] of [
+    [join(cfg.root, ".coherence"), ".coherence"],
+    [decisionsDir(cfg), ".coherence/decisions"],
+  ] as const) {
+    if (!existsSync(path)) mkdirSync(path);
+    const standing = lstatSync(path);
+    if (standing.isSymbolicLink() || !standing.isDirectory()) {
+      throw new Error(`${label} must be a real repository directory, never a symlink`);
+    }
+  }
+}
+
+function appendDecisionRow(cfg: Config, session: string, record: DecisionRecord): void {
+  ensureDecisionDirectory(cfg);
+  const path = sessionPath(cfg, session);
+  const target = basename(path);
+  if (existsSync(path)) {
+    const standing = lstatSync(path);
+    if (standing.isSymbolicLink() || !standing.isFile()) {
+      throw new Error(`${target} is not a contained regular decision append target`);
+    }
+  }
+  const flags = constants.O_APPEND | constants.O_CREAT | constants.O_WRONLY | (constants.O_NOFOLLOW ?? 0);
+  let fd: number;
+  try { fd = openSync(path, flags, 0o666); }
+  catch (error) {
+    throw new Error(`${target} cannot be opened as a contained decision append target${(error as NodeJS.ErrnoException).code ? ` (${(error as NodeJS.ErrnoException).code})` : ""}`);
+  }
+  try {
+    const opened = fstatSync(fd);
+    const standing = lstatSync(path);
+    if (!opened.isFile() || !standing.isFile() || standing.isSymbolicLink()
+      || opened.dev !== standing.dev || opened.ino !== standing.ino) {
+      throw new Error(`${target} changed identity while opening; refusing the decision append`);
+    }
+    const bytes = Buffer.from(`${JSON.stringify(record)}\n`);
+    for (let offset = 0; offset < bytes.length;) {
+      const written = writeSync(fd, bytes, offset, bytes.length - offset);
+      if (written <= 0) throw new Error(`${target} decision append made no progress`);
+      offset += written;
+    }
+  } finally { closeSync(fd); }
 }
 
 /** A fresh fallback session id. Random rather than derived: two agents started in the same
@@ -334,15 +446,82 @@ const ID_SEP = "\u0000";
 function decisionId(
   kind: DecisionKind, agent: string, chose: string, over: string[], because: string,
   couldBe: string[] = [], discriminatedBy = "", supersedes = "", finding = "",
+  structured?: StructuredDecisionFields,
 ): string {
   const parts = [kind, agent, chose, over.join(" "), because];
   if (couldBe.length || discriminatedBy) parts.push(couldBe.join(" "), discriminatedBy);
   if (supersedes) parts.push(supersedes);
   if (finding) parts.push(finding);
+  if (structured && hasStructuredDecisionFields(structured)) {
+    // A version marker plus one fixed-order tuple makes the widening reviewable and
+    // unambiguous. It is conditional: the empty structured shape appends NO separators,
+    // preserving every V1 pointer already stored in a supersedes field.
+    parts.push("v2", JSON.stringify([
+      structured.work ?? null,
+      structured.subject ?? null,
+      structured.scope
+        ? [
+          structured.scope.components ?? [], structured.scope.files ?? [],
+          structured.scope.symbols ?? [], structured.scope.environment ?? [],
+        ]
+        : null,
+      structured.authority ?? null,
+      // Two retired relationship slots stay in the V2 identity tuple as empty arrays.
+      // No released row used them, but every structured row's existing content address
+      // included the placeholders. Consequence records are now the single link home.
+      [],
+      [],
+    ]));
+  }
   return "d-" + createHash("sha256").update(parts.join(ID_SEP)).digest("hex").slice(0, 8);
 }
 
-export interface DecideInput {
+const hasStructuredDecisionFields = (s: StructuredDecisionFields): boolean =>
+  s.work !== undefined || s.subject !== undefined || s.scope !== undefined
+  || s.authority !== undefined;
+
+const canonicalSet = (xs: string[] | undefined): string[] | undefined =>
+  xs === undefined ? undefined : [...new Set(xs)].sort((a, b) => a.localeCompare(b));
+
+function canonicalStructuredDecisionFields(s: StructuredDecisionFields): StructuredDecisionFields {
+  const scope = s.scope
+    ? {
+      ...(s.scope.components !== undefined ? { components: canonicalSet(s.scope.components) } : {}),
+      ...(s.scope.files !== undefined ? { files: canonicalSet(s.scope.files) } : {}),
+      ...(s.scope.symbols !== undefined ? { symbols: canonicalSet(s.scope.symbols) } : {}),
+      ...(s.scope.environment !== undefined ? { environment: canonicalSet(s.scope.environment) } : {}),
+    }
+    : undefined;
+  return {
+    ...(s.work !== undefined ? { work: s.work } : {}),
+    ...(s.subject !== undefined ? { subject: s.subject } : {}),
+    ...(scope !== undefined ? { scope } : {}),
+    ...(s.authority !== undefined ? { authority: s.authority } : {}),
+  };
+}
+
+/** Recompute the released content address. Callers should normally use
+ * `readTrustedJournal`; this export exists for ledger migrations and focused audits. */
+export function recomputeDecisionId(record: DecisionRecord): string {
+  return decisionId(
+    record.kind, record.agent, record.chose, record.over, record.because,
+    record.couldBe ?? [], record.discriminatedBy ?? "", record.supersedes ?? "",
+    record.finding ?? "", record,
+  );
+}
+
+/** Before 7d501e8, terminal identity omitted its target. Those rows remain valid wire
+ * history, even though the grade was later retired after four same-prose resolutions
+ * collapsed to one id. The trusted reader recognizes that frozen grade but its duplicate
+ * conflict check still refuses the exact many-target collision that retired it. */
+function recomputeTargetOmittingDecisionId(record: DecisionRecord): string {
+  return decisionId(
+    record.kind, record.agent, record.chose, record.over, record.because,
+    record.couldBe ?? [], record.discriminatedBy ?? "", "", record.finding ?? "",
+  );
+}
+
+export interface DecideInput extends StructuredDecisionFields {
   kind: DecisionKind;
   chose: string;
   because: string;
@@ -402,10 +581,13 @@ function write(cfg: Config, given: string | null, input: DecideInput): DecisionR
   const conjecture = input.kind === "conjecture";
   const couldBe = conjecture ? withInstrumentCandidate(input.couldBe ?? []) : (input.couldBe ?? []);
   const discriminatedBy = input.discriminatedBy ?? "";
+  const structured = canonicalStructuredDecisionFields(input);
+  const structuredV2 = hasStructuredDecisionFields(structured);
   const rec: DecisionRecord = {
+    ...(structuredV2 ? { version: 2 as const, ...structured } : {}),
     id: decisionId(
       input.kind, agent, input.chose, over, input.because, couldBe, discriminatedBy,
-      input.supersedes, input.finding,
+      input.supersedes, input.finding, structured,
     ),
     session,
     at,
@@ -426,8 +608,7 @@ function write(cfg: Config, given: string | null, input: DecideInput): DecisionR
       : {}),
     ...(input.finding ? { finding: input.finding } : {}),
   };
-  mkdirSync(decisionsDir(cfg), { recursive: true });
-  appendFileSync(sessionPath(cfg, session), JSON.stringify(rec) + "\n");
+  appendDecisionRow(cfg, session, rec);
   // Warn, never reject. A journal that can refuse a write is one an agent stops using
   // mid-job, and the entry it drops is the one it was too busy to reword.
   // `could-be` is a LABEL like `over` and warns with them; `discriminated-by` is prose
@@ -522,6 +703,425 @@ export function readJournal(cfg: Config): { records: DecisionRecord[]; sessions:
   // 0 duplicate ids across this repo's own 72 records, so it moved nothing on disk today.)
   records.sort(timelineOrder);
   return { records, sessions: deriveSessions(records), unreadable };
+}
+
+// ── TRUSTED PROJECTION — strict evidence admission, separate from forensic availability ─
+
+export type TrustedJournalDamageCode =
+  | "parse"
+  | "shape"
+  | "timestamp"
+  | "identity"
+  | "duplicate-conflict"
+  | "reference"
+  | "session-file"
+  | "storage";
+
+export interface TrustedJournalDamage {
+  code: TrustedJournalDamageCode;
+  file: string;
+  line?: number;
+  id?: string;
+  detail: string;
+}
+
+/** A damaged strict read contains no admissible records. Keeping `records` empty in the
+ * refusal arm makes it difficult for a verdict caller to accidentally trust the valid
+ * subset while merely printing a warning about the rest. `readJournal` remains the
+ * tolerant recovery/rendering surface. */
+export type TrustedJournalRead =
+  | { ok: true; records: DecisionRecord[]; sessions: Session[]; damage: [] }
+  | { ok: false; records: []; sessions: []; damage: TrustedJournalDamage[] };
+
+interface LocatedDecision { record: DecisionRecord; file: string; line: number }
+
+/** Git is the deletion witness the append-only files cannot provide for themselves.
+ * This asks only about paths present at the current HEAD and deleted from the combined
+ * index/worktree view. `null` means Git cannot establish a comparison (non-repository,
+ * unborn branch, or command failure); it is not promoted into evidence of prior rows.
+ *
+ * The witness is consulted only when the live projection derives ZERO records. That
+ * keeps compaction legal: replacing tracked session files with a populated fold changes
+ * addresses but does not erase the population. It also leaves a genuinely never-created
+ * ledger at adoption-from-zero, because HEAD then owns no deleted decision paths. */
+function trackedDecisionDeletions(root: string): string[] | null {
+  const deleted = gitLines(root, [
+    "diff", "--no-renames", "--name-only", "--diff-filter=D", "HEAD", "--",
+    ".coherence/decisions",
+  ]);
+  return deleted?.filter((path) => path.endsWith(".jsonl")) ?? null;
+}
+
+function trustedEmptyOrCommittedLoss(cfg: Config): TrustedJournalRead {
+  const deleted = trackedDecisionDeletions(cfg.root);
+  if (deleted?.length) {
+    return {
+      ok: false, records: [], sessions: [],
+      damage: [{
+        code: "storage", file: ".coherence/decisions",
+        detail: `trusted projection derived zero rows, but HEAD owns ${deleted.length} deleted decision file(s): ${deleted.join(", ")}`,
+      }],
+    };
+  }
+  return { ok: true, records: [], sessions: [], damage: [] };
+}
+
+const DECISION_KINDS = new Set<DecisionKind>([
+  "session", "decision", "blocked", "retraction", "conjecture", "resolution", "dismissal",
+]);
+const TERMINAL_KINDS = new Set<DecisionKind>(["retraction", "resolution", "dismissal"]);
+const DECISION_KEYS = new Set([
+  "version", "id", "session", "at", "kind", "agent", "job", "branch", "commit", "dirty",
+  "chose", "over", "because", "supersedes", "files", "couldBe", "discriminatedBy",
+  "metric", "value", "baseline", "threshold", "unit", "finding",
+  "work", "subject", "scope", "authority",
+]);
+const SCOPE_KEYS = new Set(["components", "files", "symbols", "environment"]);
+const AUTHORITIES = new Set<DecisionAuthority>([
+  "local-proposal", "orchestrator-accepted", "user-directed",
+]);
+
+const object = (v: unknown): v is Record<string, unknown> =>
+  typeof v === "object" && v !== null && !Array.isArray(v);
+
+/** Canonical means the writer's exact UTC millisecond spelling, not merely a date that
+ * JavaScript happens to parse. Alternate offsets and omitted milliseconds otherwise give
+ * one instant several timeline identities. */
+const canonicalTimestamp = (v: unknown): v is string => {
+  if (typeof v !== "string" || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(v)) return false;
+  try { return new Date(v).toISOString() === v; } catch { return false; }
+};
+
+const normalizedString = (v: unknown, allowEmpty = false): v is string =>
+  typeof v === "string" && (allowEmpty || v.length > 0) && v.trim() === v && !v.includes(ID_SEP);
+
+function canonicalStringSet(v: unknown): v is string[] {
+  if (!Array.isArray(v) || !v.length || !v.every((x) => normalizedString(x))) return false;
+  return v.every((x, i) => i === 0 || v[i - 1].localeCompare(x) < 0);
+}
+
+const stringList = (v: unknown): v is string[] =>
+  Array.isArray(v) && v.every((x) => normalizedString(x));
+
+function identitySignature(r: DecisionRecord): string {
+  return JSON.stringify([
+    r.kind, r.agent, r.chose, r.over, r.because, r.couldBe ?? null,
+    r.discriminatedBy ?? null, r.supersedes ?? null, r.finding ?? null,
+    r.version ?? 1,
+    r.work ?? null, r.subject ?? null,
+    r.scope
+      ? [r.scope.components ?? [], r.scope.files ?? [], r.scope.symbols ?? [], r.scope.environment ?? []]
+      : null,
+    r.authority ?? null, [], [],
+  ]);
+}
+
+function validateTrustedRecord(
+  raw: unknown, file: string, line: number,
+): { record?: DecisionRecord; damage: TrustedJournalDamage[] } {
+  const damage: TrustedJournalDamage[] = [];
+  const add = (code: TrustedJournalDamageCode, detail: string, id?: string) =>
+    damage.push({ code, file, line, ...(id ? { id } : {}), detail });
+  if (!object(raw)) {
+    add("shape", "row is not a JSON object");
+    return { damage };
+  }
+  const id = typeof raw.id === "string" ? raw.id : undefined;
+  const unknown = Object.keys(raw).filter((k) => !DECISION_KEYS.has(k));
+  if (unknown.length) add("shape", `unknown field(s): ${unknown.sort().join(", ")}`, id);
+  if (raw.version !== undefined && raw.version !== 2) {
+    add("shape", `unsupported decision wire version ${String(raw.version)}`, id);
+  }
+  if (typeof raw.id !== "string" || !/^d-[0-9a-f]{8}$/.test(raw.id)) add("shape", "id is not d- plus eight lowercase hex digits", id);
+  for (const field of ["session", "agent", "job"] as const) {
+    if (!normalizedString(raw[field])) add("shape", `${field} must be a nonempty normalized string`, id);
+  }
+  if (!canonicalTimestamp(raw.at)) add("timestamp", "at must be canonical UTC with millisecond precision", id);
+  if (typeof raw.kind !== "string" || !DECISION_KINDS.has(raw.kind as DecisionKind)) add("shape", "kind is not a supported decision kind", id);
+  if (raw.branch !== null && !normalizedString(raw.branch)) add("shape", "branch must be null or a normalized string", id);
+  if (raw.commit !== null && !normalizedString(raw.commit)) add("shape", "commit must be null or a normalized string", id);
+  if (typeof raw.dirty !== "boolean") add("shape", "dirty must be boolean", id);
+  if (!normalizedString(raw.chose)) add("shape", "chose must be a nonempty normalized string", id);
+  if (!stringList(raw.over)) add("shape", "over must be an array of nonempty normalized strings", id);
+
+  const kind = typeof raw.kind === "string" && DECISION_KINDS.has(raw.kind as DecisionKind)
+    ? raw.kind as DecisionKind
+    : undefined;
+  const becauseMayBeEmpty = kind === "conjecture";
+  if (!normalizedString(raw.because, becauseMayBeEmpty)) {
+    add("shape", `because must be a ${becauseMayBeEmpty ? "normalized" : "nonempty normalized"} string`, id);
+  }
+  if (raw.files !== undefined && (!Array.isArray(raw.files) || !raw.files.length || !raw.files.every((x) => normalizedString(x)))) {
+    add("shape", "files must be a nonempty array of normalized repository addresses", id);
+  }
+
+  if (kind && TERMINAL_KINDS.has(kind)) {
+    if (!normalizedString(raw.supersedes) || !/^d-[0-9a-f]{8}$/.test(raw.supersedes)) {
+      add("shape", `${kind} requires a content-address supersedes target`, id);
+    }
+  } else if (raw.supersedes !== undefined) {
+    add("shape", "supersedes is only valid on a terminal row", id);
+  }
+
+  if (kind === "conjecture") {
+    if (!stringList(raw.couldBe) || !raw.couldBe.length) add("shape", "conjecture requires at least one candidate", id);
+    if (!normalizedString(raw.discriminatedBy)) add("shape", "conjecture requires a discriminating test", id);
+  } else if (raw.couldBe !== undefined || raw.discriminatedBy !== undefined) {
+    add("shape", "couldBe and discriminatedBy are conjecture-only fields", id);
+  }
+
+  const metricFields = ["metric", "value", "baseline", "threshold", "unit"] as const;
+  if (metricFields.some((k) => raw[k] !== undefined)) {
+    if (kind !== "conjecture") add("shape", "metric evidence is only valid on a conjecture", id);
+    if (!normalizedString(raw.metric)) add("shape", "metric must be a normalized string", id);
+    for (const field of ["value", "baseline", "threshold"] as const) {
+      if (typeof raw[field] !== "number" || !Number.isFinite(raw[field])) add("shape", `${field} must be a finite number`, id);
+    }
+    if (raw.unit !== undefined && !normalizedString(raw.unit)) add("shape", "unit must be a normalized string", id);
+  }
+  if (raw.finding !== undefined) {
+    if ((kind !== "decision" && kind !== "conjecture") || !normalizedString(raw.finding)) {
+      add("shape", "finding must be a normalized decision/conjecture key", id);
+    }
+  }
+
+  const hasStructured = ["work", "subject", "scope", "authority"]
+    .some((k) => raw[k] !== undefined);
+  if (hasStructured !== (raw.version === 2)) {
+    add("shape", hasStructured
+      ? "structured decision fields require wire version 2"
+      : "wire version 2 requires at least one structured decision field", id);
+  }
+  for (const field of ["work", "subject"] as const) {
+    if (raw[field] !== undefined && !normalizedString(raw[field])) add("shape", `${field} must be a normalized string`, id);
+  }
+  if (raw.authority !== undefined && (typeof raw.authority !== "string" || !AUTHORITIES.has(raw.authority as DecisionAuthority))) {
+    add("shape", "authority is not a supported authority grade", id);
+  }
+  if (raw.scope !== undefined) {
+    if (!object(raw.scope)) add("shape", "scope must be an object", id);
+    else {
+      const scope = raw.scope;
+      const scopeUnknown = Object.keys(scope).filter((k) => !SCOPE_KEYS.has(k));
+      if (scopeUnknown.length) add("shape", `unknown scope field(s): ${scopeUnknown.sort().join(", ")}`, id);
+      const present = [...SCOPE_KEYS].filter((k) => scope[k] !== undefined);
+      if (!present.length) add("shape", "scope must name at least one address set", id);
+      for (const field of present) {
+        if (!canonicalStringSet(scope[field])) add("shape", `scope.${field} must be a nonempty sorted set of normalized addresses`, id);
+      }
+    }
+  }
+
+  if (damage.length) return { damage };
+  const record = raw as unknown as DecisionRecord;
+  const expected = recomputeDecisionId(record);
+  const legacyTerminal = record.version === undefined && !!record.supersedes
+    ? recomputeTargetOmittingDecisionId(record)
+    : null;
+  if (record.id !== expected && record.id !== legacyTerminal) {
+    add("identity", `stored id ${record.id} does not match recomputed ${expected}${legacyTerminal ? ` or legacy ${legacyTerminal}` : ""}`, record.id);
+    return { damage };
+  }
+  return { record, damage };
+}
+
+/** Strict, version-aware evidence projection. Unlike `readJournal`, one damaged row,
+ * broken pointer, conflicting content address, or provable session/file displacement
+ * refuses the entire projection. This is the reader verdict-bearing consumers use. */
+export function readTrustedJournal(cfg: Config): TrustedJournalRead {
+  const dir = decisionsDir(cfg);
+  const damage: TrustedJournalDamage[] = [];
+  for (const [path, label] of [
+    [join(cfg.root, ".coherence"), ".coherence"],
+    [dir, ".coherence/decisions"],
+  ] as const) {
+    let standing;
+    try { standing = lstatSync(path); }
+    catch (error) {
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+        return trustedEmptyOrCommittedLoss(cfg);
+      }
+      return {
+        ok: false, records: [], sessions: [],
+        damage: [{
+          code: "storage", file: label,
+          detail: "cannot inspect ledger directory: " + (error instanceof Error ? error.message : String(error)),
+        }],
+      };
+    }
+    if (standing.isSymbolicLink() || !standing.isDirectory()) {
+      return {
+        ok: false, records: [], sessions: [],
+        damage: [{ code: "storage", file: label, detail: "must be a real repository directory, never a symlink" }],
+      };
+    }
+  }
+  const located: LocatedDecision[] = [];
+  const byFile = new Map<string, LocatedDecision[]>();
+  let entries;
+  try {
+    entries = readdirSync(dir, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name));
+  } catch (error) {
+    return {
+      ok: false, records: [], sessions: [],
+      damage: [{
+        code: "storage", file: ".coherence/decisions",
+        detail: "cannot enumerate ledger: " + (error instanceof Error ? error.message : String(error)),
+      }],
+    };
+  }
+  const portableNames = new Map<string, string>();
+  for (const entry of entries) {
+    const file = entry.name;
+    if (entry.isSymbolicLink()) {
+      damage.push({ code: "storage", file, detail: "journal evidence must be a contained regular file, never a symlink" });
+      continue;
+    }
+    if (file === ".DS_Store") continue;
+    if (!file.endsWith(".jsonl")) {
+      damage.push({ code: "storage", file, detail: "unexpected journal entry; only decision .jsonl files belong here" });
+      continue;
+    }
+    if (!entry.isFile()) {
+      damage.push({ code: "storage", file, detail: "journal entry is not a regular file" });
+      continue;
+    }
+    const portable = file.normalize("NFD").toLowerCase();
+    const priorName = portableNames.get(portable);
+    if (priorName && priorName !== file) {
+      damage.push({ code: "storage", file, detail: priorName + " and " + file + " alias on a portable filesystem" });
+    } else portableNames.set(portable, file);
+    let source: string;
+    try { source = readFileSync(join(dir, file), "utf8"); }
+    catch (e) {
+      damage.push({ code: "parse", file, detail: `cannot read file: ${e instanceof Error ? e.message : String(e)}` });
+      continue;
+    }
+    const rows: LocatedDecision[] = [];
+    if (!source.trim()) {
+      damage.push({ code: "storage", file, detail: "journal file contains no records" });
+      byFile.set(file, rows);
+      continue;
+    }
+    const lines = source.split("\n");
+    if (lines.pop() !== "") {
+      damage.push({ code: "storage", file, detail: "journal file has no canonical final newline; its last append may be torn" });
+      byFile.set(file, rows);
+      continue;
+    }
+    for (const [index, text] of lines.entries()) {
+      const line = index + 1;
+      if (!text.trim()) {
+        damage.push({ code: "storage", file, line, detail: "blank journal row is not canonical append framing" });
+        continue;
+      }
+      let raw: unknown;
+      try { raw = JSON.parse(text); }
+      catch {
+        damage.push({ code: "parse", file, line, detail: "line is not valid JSON" });
+        continue;
+      }
+      const checked = validateTrustedRecord(raw, file, line);
+      damage.push(...checked.damage);
+      if (checked.record) {
+        const row = { record: checked.record, file, line };
+        rows.push(row); located.push(row);
+      }
+    }
+    byFile.set(file, rows);
+  }
+
+  // A direct file is named by its session. A compacted file is named by branch/month.
+  // One released legacy file followed a session across a branch switch; if at least one
+  // row anchors that session to the filename, later rows from THE SAME session remain
+  // attributable. An unrelated, unanchored session in that file still refuses.
+  for (const [file, rows] of byFile) {
+    if (!rows.length) continue;
+    const stem = file.slice(0, -".jsonl".length);
+    const matches = (r: DecisionRecord) =>
+      file === hashedDecisionSessionFilename(r.session)
+      || stem === slug(r.session)
+      || stem === `${slug(r.branch ?? "nobranch")}-${r.at.slice(0, 7)}`;
+    const anchoredSessions = new Set(rows.filter((x) => matches(x.record)).map((x) => x.record.session));
+    if (!anchoredSessions.size) {
+      damage.push({ code: "session-file", file, detail: "filename is anchored by neither a contained session nor a contained branch/month" });
+      continue;
+    }
+    for (const row of rows) {
+      if (!matches(row.record) && !anchoredSessions.has(row.record.session)) {
+        damage.push({
+          code: "session-file", file, line: row.line, id: row.record.id,
+          detail: `session ${row.record.session} is not attributable to this journal file`,
+        });
+      }
+    }
+  }
+
+  const byId = new Map<string, { signature: string; first: LocatedDecision; records: LocatedDecision[] }>();
+  for (const row of located) {
+    const signature = identitySignature(row.record);
+    const prior = byId.get(row.record.id);
+    if (!prior) byId.set(row.record.id, { signature, first: row, records: [row] });
+    else {
+      prior.records.push(row);
+      if (prior.signature !== signature) {
+        damage.push({
+          code: "duplicate-conflict", file: row.file, line: row.line, id: row.record.id,
+          detail: `content address conflicts with ${prior.first.file}:${prior.first.line}`,
+        });
+      }
+    }
+  }
+
+  for (const row of located) {
+    const targetId = row.record.supersedes;
+    if (!targetId) continue;
+    const target = byId.get(targetId)?.first.record;
+    if (!target) {
+      damage.push({
+        code: "reference", file: row.file, line: row.line, id: row.record.id,
+        detail: `supersedes target ${targetId} does not exist`,
+      });
+      continue;
+    }
+    if (target.kind === "session") {
+      damage.push({ code: "reference", file: row.file, line: row.line, id: row.record.id, detail: "a session header cannot be superseded" });
+    }
+    if ((row.record.kind === "resolution" || row.record.kind === "dismissal") && target.kind !== "conjecture") {
+      damage.push({
+        code: "reference", file: row.file, line: row.line, id: row.record.id,
+        detail: `${row.record.kind} target ${targetId} is ${target.kind}, not conjecture`,
+      });
+    }
+  }
+
+  // Generic cycle check even though finding one through a content hash normally requires
+  // a collision: the projection must not inherit that cryptographic assumption as control
+  // flow, especially with the deliberately short historical eight-hex addresses.
+  for (const row of located) {
+    const seen = new Set<string>();
+    let cursor: DecisionRecord | undefined = row.record;
+    while (cursor?.supersedes) {
+      if (seen.has(cursor.id)) {
+        damage.push({ code: "reference", file: row.file, line: row.line, id: row.record.id, detail: "supersedes relation contains a cycle" });
+        break;
+      }
+      seen.add(cursor.id);
+      cursor = byId.get(cursor.supersedes)?.first.record;
+    }
+  }
+
+  if (!located.length && !damage.length) {
+    const empty = trustedEmptyOrCommittedLoss(cfg);
+    if (!empty.ok) damage.push(...empty.damage);
+  }
+
+  if (damage.length) {
+    damage.sort((a, b) => a.file.localeCompare(b.file) || (a.line ?? 0) - (b.line ?? 0) || a.code.localeCompare(b.code));
+    return { ok: false, records: [], sessions: [], damage };
+  }
+  const records = located.map((x) => x.record).sort(timelineOrder);
+  return { ok: true, records, sessions: deriveSessions(records), damage: [] };
 }
 
 // ── COMPACTION — tidying the working tree, never editing the record ──────────────────

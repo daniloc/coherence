@@ -25,7 +25,8 @@ import {
   type NoveltySignals, type NoveltyVerdict,
 } from "./novelty.ts";
 import {
-  appendDecision, readJournal, resolve as resolveJournal, type DecisionRecord,
+  appendDecision, readTrustedJournal, resolve as resolveJournal,
+  type DecisionRecord, type TrustedJournalDamage,
 } from "./decisions.ts";
 import { parseBoundary } from "./boundary.ts";
 import { parseParity } from "./parity.ts";
@@ -38,6 +39,9 @@ export interface ChangeSignal {
   novelty: NoveltyVerdict;
   structural: StructuralDiff;
   attestation?: DecisionRecord;
+  /** Present means the evidence projection refused as a whole. No record from that read
+   * can become `attestation`; callers get the refusal rather than a best-effort subset. */
+  attestationDamage?: TrustedJournalDamage[];
 }
 
 export interface SignalOptions {
@@ -145,8 +149,13 @@ export async function analyzeChange(cfg: Config, graph?: Graph, ref = "HEAD"): P
     },
   );
   const novelty = noveltyVerdict(signals, cfg.novelty);
-  const attestation = findAttestation(readJournal(cfg).records, fingerprint);
-  return { ref, changed, fingerprint, signals, novelty, structural, ...(attestation ? { attestation } : {}) };
+  const trusted = readTrustedJournal(cfg);
+  const attestation = trusted.ok ? findAttestation(trusted.records, fingerprint) : undefined;
+  return {
+    ref, changed, fingerprint, signals, novelty, structural,
+    ...(attestation ? { attestation } : {}),
+    ...(!trusted.ok ? { attestationDamage: trusted.damage } : {}),
+  };
 }
 
 export function formatSignal(s: ChangeSignal): string[] {
@@ -165,6 +174,13 @@ export function formatSignal(s: ChangeSignal): string[] {
     lines.push("    Add an invariant/boundary/parity claim, or record why this change creates none:");
     lines.push("    coherence signal --attest-no-invariant --because \"<why the existing contract is sufficient>\"");
   }
+  if (s.attestationDamage?.length) {
+    lines.push(`  ! decision attestations REFUSED — trusted journal projection found ${s.attestationDamage.length} damaged row(s).`);
+    for (const d of s.attestationDamage.slice(0, 3)) {
+      lines.push(`    ${d.file}${d.line ? `:${d.line}` : ""}: ${d.detail}`);
+    }
+    if (s.attestationDamage.length > 3) lines.push(`    … ${s.attestationDamage.length - 3} more refusal(s)`);
+  }
   return lines;
 }
 
@@ -181,7 +197,12 @@ export async function signal(cfg: Config, graph: Graph | undefined, opts: Signal
       console.error("--attest-no-invariant requires --because \"<why the existing contract is sufficient>\"");
       return 2;
     }
-    const rec = appendDecision(cfg, {
+    if (analysis.attestationDamage?.length) {
+      console.error("cannot attest — the trusted decision projection refused the journal; repair the reported damage first");
+      for (const line of formatSignal(analysis)) console.log(line);
+      return 2;
+    }
+    appendDecision(cfg, {
       kind: "decision",
       chose: `no new invariant for patch ${analysis.fingerprint}`,
       over: ["add an invariant or boundary claim that the change does not require"],
@@ -191,8 +212,23 @@ export async function signal(cfg: Config, graph: Graph | undefined, opts: Signal
       session: opts.session,
       agent: opts.agent,
     });
-    analysis = { ...analysis, attestation: rec };
-    console.log(`${rec.id}  attests no new invariant for patch ${analysis.fingerprint}\n`);
+    // Admission happens only after the bytes make a strict trip through disk. Trusting
+    // appendDecision's return directly would give this write path a private bypass around
+    // the projection used by the ordinary --check path.
+    const reread = readTrustedJournal(cfg);
+    const admitted = reread.ok ? findAttestation(reread.records, analysis.fingerprint) : undefined;
+    if (!reread.ok || !admitted) {
+      analysis = {
+        ...analysis,
+        attestation: undefined,
+        ...(!reread.ok ? { attestationDamage: reread.damage } : {}),
+      };
+      console.error("attestation was written but not admitted by the trusted decision projection");
+      for (const line of formatSignal(analysis)) console.log(line);
+      return 2;
+    }
+    analysis = { ...analysis, attestation: admitted, attestationDamage: undefined };
+    console.log(`${admitted.id}  attests no new invariant for patch ${analysis.fingerprint}\n`);
   }
   for (const line of formatSignal(analysis)) console.log(line);
   return opts.check && signalState(analysis.novelty, analysis.signals.anchorsAdded, !!analysis.attestation) === "needs-decision" ? 1 : 0;

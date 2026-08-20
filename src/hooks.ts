@@ -20,7 +20,7 @@
 // at which point it is a transcript again, which is the thing it compresses.
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { readJournal, openSession, resolve } from "./decisions.ts";
+import { readJournal, readTrustedJournal, openSession, resolve, newSessionId } from "./decisions.ts";
 import {
   canonicalLifecycleHookSettings, inspectLifecycleHook, setLifecycleHook,
   lifecycleHookScript, lifecycleRootMapping, resolveHookProjectRoot, LIFECYCLE_HOOK_EVENTS,
@@ -48,10 +48,18 @@ function projectCli(cfg: Config): string {
   return "npx coherence";
 }
 
+/** Ledger and host strings cross into an instruction channel here. Keep their bytes
+ * data-shaped even if a damaged or older ledger admitted terminal control characters. */
+function instructionValue(value: string): string {
+  return value.replace(/[\x00-\x1f\x7f-\x9f]/g, (char) =>
+    `\\u${char.codePointAt(0)!.toString(16).padStart(4, "0")}`);
+}
+
 /** The text every agent is handed at startup. Short on purpose: it is paid for by
  *  every agent on every job, and an instruction nobody finishes reading is a comment. */
 export function agentInstructions(session: string, cli = "npx coherence", agent?: string): string {
   const scope = `--session ${JSON.stringify(session)}${agent ? ` --agent ${JSON.stringify(agent)}` : ""}`;
+  const shownSession = instructionValue(session);
   return [
     "DECISION JOURNAL — this repo keeps one, and you are expected to write to it.",
     "",
@@ -60,7 +68,7 @@ export function agentInstructions(session: string, cli = "npx coherence", agent?
     "",
     `  ${cli} decide "<what you chose>" --over "<what you rejected>" --because "<why>" ${scope}`,
     "",
-    `YOUR SESSION ID IS ${session}. Pass it on every call — it is what keeps your`,
+    `YOUR SESSION ID IS ${shownSession}. Pass it on every call — it is what keeps your`,
     "decisions attributable to you when four other agents are writing at the same time.",
     "",
     "`--over` is repeatable and it is the field that matters most: what you REJECTED is",
@@ -125,6 +133,42 @@ export function agentInstructions(session: string, cli = "npx coherence", agent?
     "handful of choices a reader who never saw your transcript would need, not every step.",
     "A job that logs three real decisions is worth more than one that logs thirty steps.",
   ].join("\n");
+}
+
+/** The exact-session work order injected beside the durable journal instructions.
+ * Loaded dynamically so PostToolUse's startup closure does not acquire the coordination
+ * ledger. Failure is rendered as unavailable evidence, never thrown through a host's
+ * lifecycle boundary. */
+export async function assignedWorkInstructions(
+  cfg: Config,
+  session: string,
+  cli = "npx coherence",
+): Promise<string[]> {
+  try {
+    const { readWork } = await import("./work.ts");
+    const ledger = readWork(cfg);
+    const assigned = ledger.works.filter((item) => item.owner.session === session
+      && item.state !== "completed" && item.state !== "cancelled");
+    if (!assigned.length) return [];
+    const shown = assigned.slice(0, 3);
+    const lines = ["", "CURRENT WORK — exact assignments for this session:"];
+    for (const item of shown) {
+      lines.push(
+        `  ${instructionValue(item.work)} [${item.state}/${item.readiness}; ${item.opened.risk} risk] ${instructionValue(item.opened.objective)}`,
+        `    success: ${item.opened.criteria.map(instructionValue).join(" · ")}`,
+        `    authority: ${item.opened.authority.kind} by ${instructionValue(item.opened.authority.grantedBy)} — ${instructionValue(item.opened.authority.boundary)}`,
+        `    write scope: ${item.opened.writeScopes.length ? item.opened.writeScopes.map(instructionValue).join(" · ") : "none declared"}`,
+        `    inspect: ${cli} work inspect ${JSON.stringify(item.work)}`,
+      );
+      if (item.blockedBy.length) lines.push(`    blocked by: ${item.blockedBy.map(instructionValue).join(" · ")}`);
+      if (item.conflictsWith.length) lines.push(`    WRITE CONFLICT: ${item.conflictsWith.map(instructionValue).join(" · ")}`);
+    }
+    if (assigned.length > shown.length) lines.push(`  … ${assigned.length - shown.length} more assignment(s) withheld; run ${cli} work inspect`);
+    lines.push(`  Re-read fleet state with: ${cli} work inspect`);
+    return lines;
+  } catch (error) {
+    return ["", `WORK CONTROL unavailable: ${instructionValue(error instanceof Error ? error.message : String(error))}`];
+  }
 }
 
 /** A Stop feedback turn stops again. Hosts mark that second pass so a non-blocking nudge
@@ -192,16 +236,25 @@ export async function runHook(cfg: Config, event: string): Promise<number> {
   if (event === "SubagentStart" || event === "SessionStart") {
     // The session is OPENED here, by the hook, once per agent — which is the only
     // place that can guarantee one id per agent rather than one per shell command.
-    const session = hostScope === undefined ? undefined : String(hostScope);
+    const session = hostScope === undefined ? newSessionId() : String(hostScope);
+    const agent = String(p.agent_type ?? p.agentType ?? process.env.COHERENCE_AGENT ?? "main");
+    let rec: { session: string; agent: string } = { session, agent };
+    let journalUnavailable: string | null = null;
     // Codex re-fires SessionStart on resume, clear and compaction. Re-inject the current
     // work order every time, but keep one logical journal opening for one host session.
-    const existing = session === undefined ? undefined : readJournal(cfg).records
-      .find((record) => record.kind === "session" && record.session === session);
-    const rec = existing ?? openSession(cfg, {
-      session,
-      agent: String(p.agent_type ?? p.agentType ?? process.env.COHERENCE_AGENT ?? "main"),
-      job: String(p.session_id ?? p.sessionId ?? process.env.COHERENCE_JOB ?? "-"),
-    });
+    try {
+      const trusted = readTrustedJournal(cfg);
+      if (!trusted.ok) throw new Error(`${trusted.damage.length} decision journal damage item(s)`);
+      const existing = trusted.records
+        .find((record) => record.kind === "session" && record.session === session);
+      rec = existing ?? openSession(cfg, {
+        session,
+        agent,
+        job: String(p.session_id ?? p.sessionId ?? process.env.COHERENCE_JOB ?? "-"),
+      });
+    } catch (error) {
+      journalUnavailable = instructionValue(error instanceof Error ? error.message : String(error));
+    }
     // THE WORK ORDER IS COMPOSED HERE, not inside `agentInstructions`. That function is
     // printed verbatim by `coherence hooks` and asserted byte-wise by its tests; making it
     // read git and the run record would make a documentation command's output vary by
@@ -217,8 +270,12 @@ export async function runHook(cfg: Config, event: string): Promise<number> {
     const scope = `--session ${JSON.stringify(rec.session)}${rec.agent ? ` --agent ${JSON.stringify(rec.agent)}` : ""}`;
     // A hook that throws breaks every session in every adopting project on repin. This
     // reading is worth strictly less than that, so it can fail to nothing.
-    const due = await readDue(cfg).then((r) => formatDue(r, cli, scope)).catch(() => []);
-    const canonical = [agentInstructions(rec.session, cli, rec.agent), ...due].join("\n");
+    const [work, due] = await Promise.all([
+      assignedWorkInstructions(cfg, rec.session, cli),
+      readDue(cfg).then((r) => formatDue(r, cli, scope)).catch(() => []),
+    ]);
+    const journalControl = journalUnavailable ? ["", `JOURNAL CONTROL unavailable: ${journalUnavailable}`] : [];
+    const canonical = [agentInstructions(rec.session, cli, rec.agent), ...journalControl, ...work, ...due].join("\n");
     // The project's declared voice composes here — an override replaces the canon, an
     // append follows it. An empty override is a deliberate silence, so a falsy text
     // emits nothing at all.
@@ -231,8 +288,10 @@ export async function runHook(cfg: Config, event: string): Promise<number> {
   // and no attempt to reverse-engineer shell command strings. These transient rows are
   // what `calibrate` later compares with economy's predicted closure.
   if (event === "PostToolUse") {
-    const { recordHookReads } = await import("./read-trace.ts");
-    recordHookReads(cfg, payload);
+    try {
+      const { recordHookReads } = await import("./read-trace.ts");
+      recordHookReads(cfg, payload);
+    } catch { /* telemetry damage must not become agent-lifecycle failure */ }
     // Deliberately dependency-light: with nothing declared on disk this is two stat
     // calls and out. The project voice is the only reason this event ever speaks.
     emitProjectVoice(cfg, host, event, hostScope);

@@ -107,6 +107,84 @@
         "security": true,
         "translates": "Committed defect rows become admissible controller evidence only after their exact shape, self-consistent content address, session placement, Git object-name shape, and stable regular-file placement agree. Pre-existing symlinks, malformed or internally inconsistent surviving rows, and terminal-capable provenance refuse the whole corpus rather than entering a reading surface; Git history, not the in-row unkeyed hash, witnesses valid rewrites or deletion."
       },
+      "readTrustedJournal": {
+        "from": "record",
+        "to": "derived-model",
+        "security": true,
+        "translates": "Surviving decision rows become verdict-bearing evidence only when repository containment, complete entry inventory, canonical append framing, version, exact shape, canonical time, content identity, terminal references, duplicate agreement, and portable session/file attribution all hold. At zero rows, current Git HEAD distinguishes deleted tracked evidence from genuine adoption. A human may still use the tolerant historical render, but damage makes the trusted projection unavailable rather than silently shrinking it."
+      },
+      "readWork": {
+        "from": "record",
+        "to": "derived-model",
+        "security": true,
+        "translates": "Per-session work events become one coordination graph only after their content identities, predecessor chain, ownership handoffs, dependency and parent graph, terminal evidence, and contained append paths agree. State is replayed rather than overwritten; competing or detached histories refuse."
+      },
+      "readConsequences": {
+        "from": "record",
+        "to": "derived-model",
+        "security": true,
+        "translates": "Assessor-authored relationship rows become navigation edges only after exact typed endpoints, relation admissibility, evidence, content identity, session placement, duplicate agreement, and contained regular-file placement agree. Timestamp, path, and commit proximity never enter this crossing as inferred edges."
+      },
+      "observeOrientation": {
+        "from": "record",
+        "to": "derived-model",
+        "security": true,
+        "translates": "Independent strict decision, work, consequence, experiment, defect, and runtime-validated verification readings become one deterministic swarm heading. Any unavailable source outranks an apparently empty action list; missing verification provenance stays stale, collisions and dangling addresses remain named, and synthesis is selected only when the representing parent close can execute. The projection executes nothing."
+      },
+      "analyzeDecisionPositions": {
+        "from": "record",
+        "to": "derived-model",
+        "security": true,
+        "translates": "Standing trusted decisions become swarm policy positions only through explicit subject and authority fields. Similar prose and timestamp order contribute nothing; local disagreement requires ratification and incompatible choices tied at the highest authority remain contested."
+      },
+      "validateWorkGraph": {
+        "from": "record",
+        "to": "derived-model",
+        "security": true,
+        "translates": "Replayed work records become an admissible coordination graph only when parent and dependency references are acyclic and ordered, terminal parents have no live children, and every completed direct child is explicitly synthesized. Prospective writes cross this same validation before append."
+      },
+      "detectWorkScopeOverlaps": {
+        "from": "record",
+        "to": "derived-model",
+        "security": true,
+        "translates": "Declared exact and subtree write addresses become potential overlaps or live collisions according to dependency readiness. The projection names both owners and scopes; it never upgrades an overlap into permission or infers undeclared semantic coupling."
+      },
+      "createWork": {
+        "from": "shell",
+        "to": "record",
+        "security": true,
+        "translates": "A caller's objective, authority, criteria, graph references, and repository scopes become an immutable work opening only after exact writer identity, canonical shape, contained scope, and single-line data checks hold. Invalid prospective graph state refuses before append."
+      },
+      "repeatedSingletonFlags": {
+        "from": "shell",
+        "to": "verdict",
+        "security": true,
+        "translates": "Repeated CLI arguments become either declared plural evidence and scope values or a refusal. Session, owner, authority, predecessor, and other singleton selectors never silently become last-wins attribution for a ledger append."
+      },
+      "traceConsequences": {
+        "from": "record",
+        "to": "reading-surface",
+        "security": false,
+        "translates": "Strict explicit consequence edges become bidirectional navigation around an optional focus while every row retains its assessed relation and authored direction. The trace adds no edge from timestamp, path, commit, or record co-presence."
+      },
+      "relationProblem": {
+        "from": "record",
+        "to": "verdict",
+        "security": true,
+        "translates": "An assessor's relation verb and endpoint kinds become an admission or refusal. Specialized lifecycle verbs accept only their declared source-target pairs; the generic relations remain available when no stronger causal grammar is warranted."
+      },
+      "verifyOrientation": {
+        "from": "record",
+        "to": "derived-model",
+        "security": true,
+        "translates": "Persisted verification JSON plus the live Git tree become never, stale, failing, or current only after canonical time, commit shape, dirty bit, tier, and nonnegative failure count validate. Current additionally requires matching commit addresses and no material live change; the status receipt itself is excluded so filing evidence does not self-invalidate."
+      },
+      "sourceTextIsNavigable": {
+        "from": "project-source",
+        "to": "verdict",
+        "security": true,
+        "translates": "Every live TypeScript source blob becomes admissible searchable input only when it contains no NUL byte. A source that common repository tools classify as binary fails the guard instead of silently disappearing from agent navigation."
+      },
       "analyzeOracle": {
         "from": "project-source",
         "to": "verdict",
@@ -231,7 +309,7 @@
         "from": "project-source",
         "to": "verdict",
         "security": true,
-        "translates": "The selected agent host's lifecycle surface becomes the control observation consumed by doctrine. A complete Claude path cannot satisfy a Codex reading (or vice versa), and the repair command remains bound to the host actually inspected."
+        "translates": "The selected agent host's lifecycle surface plus strict swarm orientation become the observations consumed by doctrine v2. A complete Claude path cannot satisfy a Codex reading (or vice versa); damaged coordination evidence fails closed; live work collisions and completed work without an explicit verification link become obligations rather than being inferred away."
       },
       "isActivityRow": {
         "from": "record",
@@ -275,11 +353,23 @@
         "security": false,
         "translates": "The graph becomes the smallest packet an agent needs for one task. Bounded and byte-stable, and every approximation it makes is named in the packet — a reader must be able to see what was left out."
       },
+      "renderContextProjection": {
+        "from": "derived-model",
+        "to": "reading-surface",
+        "security": false,
+        "translates": "A task-addressed context packet becomes a byte-bounded reading surface in stable route-first order. Mandatory framing and named limitations are never truncated; every withheld item and byte is accounted for, and a budget too small for that accounting refuses with its exact minimum."
+      },
       "runHook": {
         "from": "shell",
         "to": "record",
         "security": false,
         "translates": "A lifecycle event the selected agent host hands this process becomes durable journal state or a transient read/activity row carrying host, transport, and bundle identity. It writes memory but never a verdict, so a tear loses history rather than earning a green."
+      },
+      "assignedWorkInstructions": {
+        "from": "record",
+        "to": "reading-surface",
+        "security": true,
+        "translates": "Repository-authored work data becomes a model startup instruction only for the exact owner session. Authority, criteria, write scope, blockers, and collisions are control-byte neutralized before crossing into that agent's context; another session's assignment does not. An unreadable ledger becomes a named unavailable message rather than a lifecycle failure."
       },
       "composeHookText": {
         "from": "project-source",
