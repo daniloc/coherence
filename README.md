@@ -6,9 +6,15 @@ That's the strange new problem of the agent age. An agent has inexhaustible stam
 
 Answering those questions by reading code and simulating it in your head is **inference**, and it's the most expensive operation in software. Worse, it's paid again by every reader, forever—nobody's inference makes the next reader's cheaper. In a world where the readers are mostly agents burning tokens, that invoice compounds fast.
 
-Coherence is a machine for spending less inference.
+Coherence is a machine for spending less inference. It guides your agent toward more correctness, driving the *irreducible complexity* of your project toward its floor.
 
-It gives a project durable, *checkable* spine of truth and design intention. A decision journal records what was chosen, what was rejected, and why, so settled questions stay settled instead of getting re-litigated by every fresh session. Machine-checkable specs tie documentation to the code with oracles that re-grade it every build—when the docs rot, the build says so. An agent orients in seconds instead of spelunking. And a work ledger coordinates whole swarms: who owns what, within what boundary, and where two agents are about to collide.
+It gives a project durable, *checkable* spine of truth and design intention:
+
+**A decision journal** records what was chosen, what was rejected, and why, so settled questions stay settled instead of getting re-litigated by every fresh session. This also gives you, the human, a highlight reel to review.
+
+**Machine-checkable specs** tie documentation to the code with oracles that re-grade it every build—when the docs rot, the build says so. An agent orients in seconds instead of spelunking.
+
+**A work ledger** coordinates whole swarms: who owns what, within what boundary, and where two agents are about to collide.
 
 Think of an electrical panel. A tidy one—every breaker labeled, every label tested—can be acted on from its labels. A tangled one has to be carefully analyzed by tracing wires. Tracing wires is inference. Coherence keeps the panel labeled, and keeps proving the labels true.
 
