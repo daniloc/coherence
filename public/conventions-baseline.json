@@ -16,16 +16,20 @@
     "sites": 3
   },
   {
+    "name": "isCalleeBuilder",
+    "sites": 2
+  },
+  {
     "name": "isDocumented",
     "sites": 4
   },
   {
     "name": "iso",
-    "sites": 2
+    "sites": 3
   },
   {
     "name": "isObject",
-    "sites": 29
+    "sites": 31
   },
   {
     "name": "isOutsideBand",
@@ -41,6 +45,10 @@
   },
   {
     "name": "validateItems",
+    "sites": 2
+  },
+  {
+    "name": "validateRepo",
     "sites": 2
   },
   {

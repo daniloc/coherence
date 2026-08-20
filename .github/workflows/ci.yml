@@ -25,6 +25,9 @@ jobs:
       # five minutes leaves headroom while making this failure observable the same run.
       - run: npm test
         timeout-minutes: 5
+      - name: Smoke-test the packed artifact in a fresh consumer
+        run: node scripts/package-smoke.mjs
+        timeout-minutes: 5
       - name: Check per-change read signaling
         env:
           PR_BASE: ${{ github.event.pull_request.base.sha }}

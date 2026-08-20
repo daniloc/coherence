@@ -20,6 +20,7 @@ import { PARITY_RE } from "./parity.ts";
 import { analyzeOracle, analyzeParityOracle } from "./oracle-domain.ts";
 import { unescapeMd } from "./walk.ts";
 import { resolveFromBatch, type OracleAccess } from "./test-batch.ts";
+import { staticFastVerdict, type StaticOracleIndex } from "./static-oracles.ts";
 
 const fileExists = async (p: string) => { try { await stat(p); return true; } catch { return false; } };
 
@@ -56,6 +57,9 @@ export interface ClaimCtx {
   anchor: (inv: string) => void;
   wordStack: string[];
   oracles?: () => OracleAccess;
+  /** The zero-execution Vitest name index. Fast claims consult it before skipping;
+   *  found proves existence only, absent reds, and incomplete source stays unknown. */
+  staticOracles?: () => Promise<StaticOracleIndex>;
 }
 
 export interface ClaimForm {
@@ -186,6 +190,12 @@ function hasRunner(ctx: ClaimCtx): boolean {
   return !!(ctx.cfg.test && ctx.cfg.test.length);
 }
 
+async function fastNamedOracle(ctx: ClaimCtx, name: string, skippedAs: string): Promise<ClaimResult> {
+  if (!ctx.staticOracles)
+    return { kind: "skip", detail: `${skippedAs} — static oracle existence UNKNOWN: no supported static index` };
+  return staticFastVerdict(await ctx.staticOracles(), name, skippedAs);
+}
+
 /** Scan the dictionary dir + cross-reference the graph's `conforms to` claims. Empty when
  *  the project has no dictionary dir (so the overview's Dictionary section is omitted). */
 export async function loadDictionary(cfg: Config, graph: Graph): Promise<DictEntry[]> {
@@ -268,8 +278,8 @@ export const CLAIM_FORMS: ClaimForm[] = [
     example: 'passes test "write policy totality"',
     tier: "executable",
     match: (l) => l.match(/^passes test\s+"(.+)"$/),
-    evaluate: (ctx, m) => {
-      if (ctx.fast) return { kind: "skip", detail: "executable tier (--fast)" };
+    evaluate: async (ctx, m) => {
+      if (ctx.fast) return fastNamedOracle(ctx, m[1], "executable tier (--fast)");
       if (!hasRunner(ctx)) return { kind: "skip", detail: "no test runner configured (config.test)" };
       const r = execNamedTest(ctx, m[1]);
       return r.ok ? { kind: "pass", ms: r.ms } : { kind: "fail", detail: r.detail, ms: r.ms };
@@ -301,7 +311,7 @@ export const CLAIM_FORMS: ClaimForm[] = [
         if (a.verdict === "not-found")
           return { kind: "fail", detail: `[oracle] "${test}" — no describe() with this EXACT title found, so the meta-oracle cannot analyze its domain (the runner alone would still pass on an it()-name match, silently skipping analysis). Anchor the claim to the oracle's exact describe title, or declare it \`passes test\`/\`via guard\` if it is not a domain totality.` };
       }
-      if (ctx.fast) return { kind: "skip", detail: "boundary oracle (--fast)" };
+      if (ctx.fast) return fastNamedOracle(ctx, test, "boundary oracle (--fast)");
       if (!hasRunner(ctx)) return { kind: "skip", detail: "no test runner configured (config.test)" };
       const r = execNamedTest(ctx, test);
       if (!r.ok) return { kind: "fail", detail: r.detail, ms: r.ms };
@@ -351,7 +361,7 @@ export const CLAIM_FORMS: ClaimForm[] = [
         if (a.verdict !== "ok")
           return { kind: "fail", detail: `[parity] "${oracle}" ${a.detail} (${a.file}). Loop the declared domain and assert \`${f}\` ≡ \`${g}\` per member.` };
       }
-      if (ctx.fast) return { kind: "skip", detail: "parity oracle (--fast)" };
+      if (ctx.fast) return fastNamedOracle(ctx, oracle, "parity oracle (--fast)");
       if (!hasRunner(ctx)) return { kind: "skip", detail: "no test runner configured (config.test)" };
       const r = execNamedTest(ctx, oracle);
       if (!r.ok) return { kind: "fail", detail: r.detail, ms: r.ms };

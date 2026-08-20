@@ -95,6 +95,12 @@
         "security": true,
         "translates": "The one door every remembered fact enters through — status.json, each ratchet baseline, the journal. It separates ABSENT (legitimate: first run, nothing pinned) from UNREADABLE (never legitimate), because the `catch → return default` it replaced turned a single garbage byte into every floor on the page quietly agreeing."
       },
+      "readDefects": {
+        "from": "record",
+        "to": "derived-model",
+        "security": true,
+        "translates": "Committed defect rows become admissible controller evidence only after their exact shape, self-consistent content address, session placement, Git object-name shape, and stable regular-file placement agree. Pre-existing symlinks, malformed or internally inconsistent surviving rows, and terminal-capable provenance refuse the whole corpus rather than entering a reading surface; Git history, not the in-row unkeyed hash, witnesses valid rewrites or deletion."
+      },
       "analyzeOracle": {
         "from": "project-source",
         "to": "verdict",
@@ -118,6 +124,12 @@
         "to": "verdict",
         "security": true,
         "translates": "One batched runner's output is split back into per-claim verdicts. ZERO matching tests is its own named state, never a quiet pass — the batch's efficiency must not buy back the absence it would otherwise hide."
+      },
+      "resolveStaticOracle": {
+        "from": "derived-model",
+        "to": "verdict",
+        "security": true,
+        "translates": "Current conventional Vitest source names become a tri-state existence verdict without executing test configuration or modules. A literal match proves existence only; a complete zero-match within the direct-declaration grade is VANISHED ORACLE (static); recognized dynamic, extended, runtime-registered, custom-included, unreadable, or otherwise incomplete source remains UNKNOWN. Projects assembled beyond that grade disable staticOracleExistence or use a fresh report."
       },
       "runVerify": {
         "from": "derived-model",
@@ -226,6 +238,12 @@
         "to": "record",
         "security": false,
         "translates": "An assessor's action and criterion evidence becomes an immutable close row joined to the frozen owner plan. Every planned id must be answered exactly once, trace and activity prefixes must remain intact, each telemetry window names its weakest provable scope (none, owner-session, parent-session-aggregate, and legacy-unscoped for older trace), and the outcome is derived from criterion statuses; malformed, partial, rewritten, unreadable, or internally unscoped evidence refuses instead of becoming history."
+      },
+      "recordDefect": {
+        "from": "shell",
+        "to": "record",
+        "security": true,
+        "translates": "An agent's explicit defect assessment becomes one content-addressed session record carrying required evidence and repository provenance. Exact retries dedupe; malformed, internally inconsistent, or session-displaced surviving rows refuse the merged read, while committed Git history remains the external witness for valid rewrites or clean deletion. The crossing stores accountable testimony and labels it agent-assessed — it does not manufacture machine proof, cryptographic immutability, or causal attribution."
       },
       "tailJournal": {
         "from": "record",

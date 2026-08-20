@@ -35,6 +35,7 @@ import { readSurface, vacuityRefusal, Unrunnable } from "./floor.ts";
 import { CLAIM_FORMS, loadDictionary } from "./phrasebook.ts";
 import { appendDecision, renderJournal, readJournal, resolvableConjecture, compactJournal } from "./decisions.ts";
 import { runJournal } from "./journal.ts";
+import { DefectLedgerError, readDefects, recordDefect, renderDefects } from "./defects.ts";
 import {
   closeExperiment, createExperiment, experimentStats, readExperiments, renderExperiments,
   ExperimentLedgerError,
@@ -70,6 +71,7 @@ const since = sinceIdx >= 0 ? argv[sinceIdx + 1] : null;
 // count of candidates IS the signal. One candidate is a hunch dressed as an inquiry.
 const VALUED = new Set(["--since", "--apply", "--over", "--because", "--agent", "--job", "--file", "--for", "--session", "--branch",
   "--could-be", "--discriminated-by", "--as",
+  "--evidence",
   "--value", "--baseline", "--threshold", "--unit", "--why", "--raise-cap", "--symbol", "--outcome", "--host",
   "--context", "--action", "--success", "--hypothesis", "--action-result", "--result"]);
 const many = (flag: string): string[] => argv.reduce<string[]>((acc, a, i) => (a === flag && argv[i + 1] !== undefined ? [...acc, argv[i + 1]] : acc), []);
@@ -568,6 +570,90 @@ if (cmd === "graph") {
     follow: argv.includes("--follow"), once: argv.includes("--once"),
     job: one("--job"), agent: one("--agent"), session: one("--session"), branch: one("--branch"),
   }));
+} else if (cmd === "defect") {
+  // A direct agent assertion, deliberately smaller than an experiment and stronger than
+  // a conjecture. The required evidence says why the agent crossed that epistemic line;
+  // the exact non-placeholder session label makes the assertion attributable and gives
+  // each writer its own append target. A canonical hook supplies its real host id; direct
+  // callers can supply a label but this recorder does not authenticate that claim.
+  const usage = 'usage: coherence defect "<what failed>" --evidence "<what proves it>"'
+    + " [--file p] [--session S] [--agent A] [--job J]";
+  const fail = async (message: string): Promise<never> => {
+    console.error(message);
+    console.error(usage);
+    return await exit(2);
+  };
+  const allowed = new Set(["--evidence", "--file", "--session", "--agent", "--job"]);
+  const badFlags = argv.filter((arg) => arg.startsWith("--") && !allowed.has(arg));
+  const missingValues = argv.filter((arg, index) => allowed.has(arg)
+    && (argv[index + 1] === undefined || argv[index + 1]!.startsWith("--")));
+  const repeatedSingletons = ["--evidence", "--session", "--agent", "--job"].filter((flag) =>
+    argv.filter((arg) => arg === flag).length > 1);
+  if (badFlags.length) await fail(`unsupported flag(s) for defect: ${badFlags.join(", ")}`);
+  if (missingValues.length) await fail(`missing value for: ${[...new Set(missingValues)].join(", ")}`);
+  if (repeatedSingletons.length) await fail(`repeated defect field is ambiguous: ${repeatedSingletons.join(", ")}`);
+  const summary = positional[0];
+  const evidence = one("--evidence");
+  const writerSession = one("--session") ?? process.env.COHERENCE_SESSION ?? process.env.CODEX_THREAD_ID ?? null;
+  if (positional.length !== 1 || !summary) await fail("defect requires exactly one summary");
+  if (!evidence) await fail("defect requires non-empty --evidence");
+  if (!writerSession || writerSession === "unknown") await fail("defect requires an exact non-placeholder writer session");
+  // `fail` exits asynchronously after stdout drains, so TypeScript cannot use it to
+  // narrow the three values even though every absent case has just terminated.
+  const exactSummary = summary as string;
+  const exactEvidence = evidence as string;
+  const exactSession = writerSession as string;
+  const writerAgent = one("--agent") ?? process.env.COHERENCE_AGENT
+    ?? (process.env.CODEX_THREAD_ID ? "codex" : undefined);
+  const writerJob = one("--job") ?? process.env.COHERENCE_JOB ?? undefined;
+  try {
+    const record = recordDefect(cfg, {
+      session: exactSession,
+      summary: exactSummary,
+      evidence: exactEvidence,
+      files: many("--file"),
+      agent: writerAgent,
+      job: writerJob,
+    });
+    console.log(`${record.id}  agent-assessed defect recorded by ${record.session}`);
+    await exit(0);
+  } catch (error) {
+    if (!(error instanceof DefectLedgerError)) throw error;
+    await fail(error.problems.join("; "));
+  }
+} else if (cmd === "defects") {
+  // Read the fleet-wide corpus by default. Ambient session identity attributes WRITES;
+  // only an explicit selector may hide other agents' evidence from this merged view.
+  const json = argv.includes("--json");
+  const usage = "usage: coherence defects [--session S] [--json]";
+  const fail = async (message: string): Promise<never> => {
+    if (json) console.log(JSON.stringify({ error: message, usage }, null, 2));
+    else { console.error(message); console.error(usage); }
+    return await exit(2);
+  };
+  const allowed = new Set(["--session", "--json"]);
+  const badFlags = argv.filter((arg) => arg.startsWith("--") && !allowed.has(arg));
+  const missingSession = argv.some((arg, index) => arg === "--session"
+    && (argv[index + 1] === undefined || argv[index + 1]!.startsWith("--")));
+  const repeatedSession = argv.filter((arg) => arg === "--session").length > 1;
+  if (positional.length) await fail("defects accepts no positional arguments");
+  if (badFlags.length) await fail(`unsupported flag(s) for defects: ${badFlags.join(", ")}`);
+  if (missingSession) await fail("missing value for: --session");
+  if (repeatedSession) await fail("repeated defects selector: --session");
+  const session = one("--session");
+  if (session !== null && (!session.trim() || session.trim() !== session || session === "unknown")) {
+    await fail("--session requires an exact trimmed, non-unknown id");
+  }
+  try {
+    if (json) {
+      const records = readDefects(cfg).records.filter((record) => !session || record.session === session);
+      console.log(JSON.stringify({ defects: records }, null, 2));
+    } else console.log(renderDefects(cfg, { session }).text);
+    await exit(0);
+  } catch (error) {
+    if (!(error instanceof DefectLedgerError)) throw error;
+    await fail(error.problems.join("; "));
+  }
 } else if (cmd === "experiment" || cmd === "plan") {
   // A plan becomes useful evidence only when its prediction is frozen before the work and
   // every declared criterion is answered afterward. The ledger derives the outcome; this

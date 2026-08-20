@@ -20,6 +20,8 @@ rendering, and journaling remain independently addressable modules beneath this 
 - pinned mass follows a value-conserving rename but never absorbs growth
 - a claim goes green only on positive evidence its oracle ran
 - a vanished oracle reds its claim, never green-by-absence
+- fast verification rejects a statically vanished Vitest oracle without executing tests
+- fast oracle absence requires a complete direct-declaration population
 - a declared invariant unanchored by any boundary fails coverage
 - a via-test oracle that iterates no live domain fails its claim
 - a skipped run never clobbers an oracle's recorded verdict
@@ -39,12 +41,20 @@ rendering, and journaling remain independently addressable modules beneath this 
 - experiment outcomes require criterion-total evidence
 - experiment telemetry preserves its weakest provable attribution
 - activity evidence is accepted only when identity, scope, time, and command agree
+- surviving agent-assessed defect evidence is attributable and internally consistent
+- defect writes refuse pre-existing symlink redirection
+- defect provenance is data, never terminal control
 - a streamed journal entry renders exactly once across appends and compaction
 
 ## refutations
 
+- fast verification rejects a statically vanished Vitest oracle without executing tests: changed `resolveStaticOracle`'s complete zero-match branch from `absent` to `unknown` (2026-08-20), laundering the motivating Mnemion rename into an ordinary fast-tier skip — the focused boundary guard failed and captured the dangerous verdict: `claims: 1 · 0 green · 0 red · 1 skipped`, followed by `✓ coherent`. Restored; the same fixture now reds `VANISHED ORACLE (static)` without Vitest installed or invoked.
+- fast oracle absence requires a complete direct-declaration population: before release, conventional files whose tests came only from a bare side-effect import, top-level `import()`, or `require()` each produced `fullNames=[]`, `incomplete=[]`, and `absent`, so fast verification could call a live runtime-owned oracle vanished. Release audit then found the same false absence behind a transitive local Vitest alias and a live `build/live.test.ts`, while a conventional file symlink was followed outside the declared traversal boundary. The scanner now resolves exact alias chains, marks registration-time module loads incomplete, mirrors Vitest v4's `node_modules`/`.git` default exclusions, and refuses every symlink/custom collection surface into UNKNOWN; loads inside test callbacks remain ordinary subject execution.
 - a parse's heap is returned before the next file: shipped 0.34.0 with no `tree.delete()` at any parse site — an adopter's configless `verify` from a home directory aborted the wasm runtime mid-walk (`RuntimeError: Aborted()` in Parser.parse). Reproduced at exactly parse #638 of an 80KB file; the identical loop with delete runs unbounded. The oracle-gate agent had already observed the failure mode in its harness and it was read as gate plumbing rather than a shipped hazard. Fixed by dissolution: every parse routes through `withTree`, which frees in a finally, so the leak is unrepresentable — and the guard is calibrated just past the measured cliff.
 
+- surviving agent-assessed defect evidence is attributable and internally consistent: disabled the content-address recomputation in the strict reader (2026-08-20), so a summary, evidence string, or timestamp changed without its id remained readable — full verify red this claim by name at `claims: 51 · 50 green · 1 red`; the guard observed that the inconsistent row no longer refused. Restored. This detects accidental or partial damage, not an adversary who rewrites a valid row and recomputes its unkeyed id; committed Git history is that rewrite witness.
+- defect writes refuse pre-existing symlink redirection: before release, replaced `.coherence/defects` with a symlink to an outside temporary directory and `recordDefect` created the session ledger there; replacing a session target with an outside-file symlink likewise appended through it. The focused containment guard now refuses both, and the writer opens the final component with `O_NOFOLLOW` plus descriptor/path identity checks. This is a stable-filesystem guarantee, not a claim to defeat a privileged concurrent parent-directory rename.
+- defect provenance is data, never terminal control: before release, replaced a valid row's commit with `deadbeef` plus an ESC clear-screen sequence, recomputed its ordinary content id, and the strict reader accepted it; the human render contained the live control byte. The focused provenance guard now requires lowercase 40- or 64-hex Git object-name shape, and rendering still escapes it defensively.
 - a weaker regulation obligation never masks a stronger one: swapped `candidateCompare` from potential-first to doctrine-rule-first (2026-08-04), so the earlier lifecycle-control redirect masked the stronger current-patch decision when both were owed — full verify red by name, alongside the independent Stop mutation, at `claims: 32 · 30 green · 2 red`; the guard observed `redirect` where `require-decision` was required. Restored. This is the dangerous direction: a stable ordering that is stable on the wrong axis still makes the controller converge on lower-value work.
 - agent lifecycle preserves decisions and exposes the current change signal: inserted an `emit` immediately after main Stop's calibration snapshot (2026-08-04), recreating the conclusion-echo failure and the deeper attribution error — shared-worktree state bought whichever main agent happened to stop another model turn. Full verify red this claim by name at `claims: 32 · 31 green · 1 red`; the runtime guard observed nonempty stdout even for the quiet main Stop. Restored. SubagentStop still restates because its parent may see only the final reply; main Stop now snapshots calibration with byte-empty stdout.
 - lifecycle hook presence is one canonical runnable bit: loosened `inspectLifecycleHook` so `present` ignored `wiringPresent` and trusted only valid JSON plus the launcher (2026-08-03) — full verify named this claim as the sole red, `claims: 30 · 29 green · 1 red`; the guard's duplicate-canonical-group fixture observed the laundered `true`. Restored. This is the dangerous direction: a checker that accepts two firing paths is not a binary control, only a substring detector with a nicer report.
@@ -82,6 +92,8 @@ rendering, and journaling remain independently addressable modules beneath this 
 - boundary "pinned mass follows a value-conserving rename but never absorbs growth" at reconcileMass via guard "mass — a renamed component keeps its pin; growth and novelty are never absorbed"
 - boundary "a claim goes green only on positive evidence its oracle ran" at execNamedTest via guard "testMatch — a runner exiting 0 with no matching output FAILS (the renamed-test trap)"
 - boundary "a vanished oracle reds its claim, never green-by-absence" at resolveFromBatch via guard "match — ZERO matching tests is its OWN state: the vanished oracle, named as such"
+- boundary "fast verification rejects a statically vanished Vitest oracle without executing tests" at resolveStaticOracle via guard "static oracle floor — a renamed literal Vitest oracle reds --fast without running tests"
+- boundary "fast oracle absence requires a complete direct-declaration population" at resolveStaticOracle via guard "static names — a bare side-effect import may register tests and keeps absence UNKNOWN"
 - boundary "a declared invariant unanchored by any boundary fails coverage" at runVerify via guard "RATCHET — a declared invariant with no anchoring boundary fails coverage"
 - boundary "a via-test oracle that iterates no live domain fails its claim" at analyzeOracle via guard "META-ORACLE — a `via test` boundary whose oracle loops a LITERAL fails"
 - boundary "a skipped run never clobbers an oracle's recorded verdict" at recordVerify via guard "merge — a skip never clobbers a real verdict; the old verdict rides through with its own stamp"
@@ -105,6 +117,9 @@ rendering, and journaling remain independently addressable modules beneath this 
 - boundary "experiment outcomes require criterion-total evidence" at closeExperiment via guard "close — total nonempty evidence is mandatory and outcome is derived, never supplied"
 - boundary "experiment telemetry preserves its weakest provable attribution" at closeExperiment via guard "Codex parent-only tool events close the loop as an aggregate, never exact owner evidence"
 - boundary "activity evidence is accepted only when identity, scope, time, and command agree" at isActivityRow via guard "activity — internally inconsistent scope, time, and command rows are damage, not evidence"
+- boundary "surviving agent-assessed defect evidence is attributable and internally consistent" at recordDefect via guard "defects — agent-assessed evidence is attributable, content-addressed, and strict on inconsistent rows"
+- boundary "defect writes refuse pre-existing symlink redirection" at recordDefect via guard "defect containment — pre-existing directory and session symlinks refuse external append targets"
+- boundary "defect provenance is data, never terminal control" at readDefects via guard "defect provenance — commit ids have Git shape and cannot carry terminal controls"
 - boundary "a streamed journal entry renders exactly once across appends and compaction" at tailJournal via guard "tail — an appended record arrives exactly once, a compaction fold re-emits nothing and drops nothing, and a half-written line waits for its bytes"
 
 ## why
@@ -180,6 +195,24 @@ leaves a claim citing a name nothing owns, and that claim then guards nothing wh
 wearing green. Absence has to be its own observable verdict, distinct from ran-and-failed,
 because the two demand different repairs: a red test needs the code fixed, a vanished
 oracle needs the contract re-tied to something that exists.
+
+**fast verification rejects a statically vanished Vitest oracle without executing
+tests.** Name ownership is cheaper than test outcome: a literal Vitest declaration either
+still supplies a runner-style full name or it does not. The edit loop should answer that
+structural question without buying remote credentials or a suite boot, while refusing to
+turn dynamic or damaged source into false certainty. Static presence therefore remains a
+skip, static absence reds, and incomplete source stays explicitly unknown; the executable
+tier alone can supply pass/fail evidence. This is a direct-declaration grade, not an
+evaluator for arbitrary runtime registration; projects beyond it disable
+`staticOracleExistence` or resolve a fresh report.
+
+**fast oracle absence requires a complete direct-declaration population.** Absence is a
+stronger statement than failure: it says the registry owns no matching name. The static
+floor may say that only when every registration mechanism it recognizes was enumerable;
+dynamic titles, fixture DSLs, registration-time module loads, custom includes, and damaged
+source must poison absence into UNKNOWN while still allowing positive direct matches.
+Otherwise the cheap tier would turn its own inability to see a live oracle into evidence
+that the oracle vanished.
 
 **a declared invariant unanchored by any boundary fails coverage.** A spec may not
 assert a property that nothing enforces: that is the ratchet the whole harness turns on,
@@ -367,6 +400,31 @@ agent attribution names the row session, parent fallback names its parent domain
 identity recomputes, time is canonical, and command kind/result agrees with name and exit
 code. One strict reader grades that whole relation; malformed rows become counted damage,
 never partially trusted evidence.
+
+**surviving agent-assessed defect evidence is attributable and internally consistent.** A
+conjecture keeps uncertainty alive; a defect record says an agent crossed that epistemic
+boundary and must therefore carry the evidence for doing so, the repository subject it
+judged, and the caller-attributed writer labels attached to the assessment. Records append per session and
+dedupe exact retries, while the merged reader recomputes the ordinary content address and
+refuses malformed, inconsistent, or displaced surviving rows. That detects partial damage;
+it does not prove that a valid row was never rewritten with a recomputed id. Committed Git
+history is this first recorder's external rewrite and deletion witness, and an independently
+anchored head is future work.
+
+**defect writes refuse pre-existing symlink redirection.** A path beneath the repository
+is not containment when its stable components redirect through a symlink. The reader
+therefore refuses linked ledger directories and entries, while the writer validates both
+directory components and opens the session target without following its final link, then
+compares the opened descriptor with the standing path before appending. This prevents the
+measured stable-state redirects; it is not an `openat`-grade promise against a privileged
+process racing parent-directory renames during the append.
+
+**defect provenance is data, never terminal control.** Repository identity is captured by
+the machine, but the committed row is still untrusted input on its next read. A commit is
+therefore null or has lowercase SHA-1/SHA-256 object-name shape, never merely a nonempty string; the
+human renderer also neutralizes its bytes. Without both the semantic constraint and the
+output encoding, an edited but re-addressed row could turn provenance into a terminal
+instruction while remaining structurally valid.
 
 **a streamed journal entry renders exactly once across appends and compaction.** The live
 stream exists for the one reader the settled render cannot serve — an orchestrator watching

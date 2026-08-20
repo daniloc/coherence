@@ -117,6 +117,10 @@ export interface QueryOracleLanguage extends OracleLanguageCommon {
   scopeQuery: string;
   iterationQuery: string;
   floorQuery: string;
+  /** Vitest declaration calls + imports for the fast-tier static name floor. The query
+   *  contributes syntax only; static-oracles.ts owns reconstruction and the tri-state
+   *  verdict. Optional because only Vitest's TS/JS report semantics are supported today. */
+  staticNameQuery?: string;
   /** Receiver methods peeled while resolving a chain to its source collection. */
   chainMethods: string[];
   /** A spread whose HOST node is one of these types is not domain iteration (object
@@ -195,6 +199,21 @@ export const ORACLE_LANGUAGES: { typescript: QueryOracleLanguage; python: RegexO
         (#match? @floor.target "\\\\.(length|size|count)\\\\b"))
       ((binary_expression operator: [">=" ">"]) @floor.compare
         (#match? @floor.compare "\\\\.(length|size|count)\\\\b"))
+    `,
+    staticNameQuery: `
+      (call_expression
+        function: (_) @static.fn
+        arguments: (arguments) @static.args) @static.call
+      (import_statement
+        source: (string) @static.import-source) @static.import
+      (variable_declarator
+        name: (_) @static.binding-name) @static.binding
+      (function_declaration
+        name: (identifier) @static.binding-name) @static.binding
+      (formal_parameters
+        (_) @static.parameter)
+      (arrow_function
+        parameter: (_) @static.parameter)
     `,
     unwrapCalls: ["Object.keys", "Object.values", "Object.entries", "Array.from"],
     chainMethods: ["map", "forEach", "flatMap", "filter", "every", "some", "reduce", "reduceRight", "find", "findIndex", "sort"],
@@ -385,7 +404,7 @@ const UNESCAPE: Record<string, string> = { n: "\n", t: "\t", r: "\r", b: "\b", f
 /** The "cooked-string" strategy: the cooked text of a string literal or substitution-free
  *  template — the compiler's `.text` decoded escapes, so fragments+escapes reassemble the
  *  same way. Language-blind (escape decoding owes nothing to the grammar), so mechanism. */
-function stringText(node: Node): string | null {
+export function cookedStringText(node: Node): string | null {
   if (node.type !== "string" && node.type !== "template_string") return null;
   if (node.type === "template_string" && node.namedChildren.some((c) => c?.type === "template_substitution")) return null;
   let out = "";
@@ -411,7 +430,7 @@ function findAnchor(anchor: Query, rootNode: Node, oracleName: string): { call: 
   hits.sort((a, b) => preorder(a.call, b.call));
   for (const h of hits) {
     const title = nonComment(h.args)[0];
-    if (title && stringText(title) === oracleName) return h;
+    if (title && cookedStringText(title) === oracleName) return h;
   }
   return null;
 }

@@ -149,6 +149,15 @@ export const COMMANDS: Command[] = [
   { name: "decide", group: "journal", usage: '"<chose>" --over "<alt>" --because "<why>"', summary: "log one choice and what it was chosen OVER" },
   { name: "blocked", group: "journal", usage: '"<what>" --because "<why>"', summary: "log what you could NOT do — first-class, not a footnote" },
   {
+    name: "defect", group: "journal",
+    usage: '"<what failed>" --evidence "<what proves it>" [--file p] [--session S] [--agent A] [--job J]',
+    summary: "record an agent-assessed defect with the evidence that made it a defect",
+  },
+  {
+    name: "defects", group: "journal", usage: "[--session S] [--json]",
+    summary: "read the merged append-only defect record across agent sessions",
+  },
+  {
     name: "conjecture", group: "journal",
     usage: '"<observation>" [--could-be "<explanation>"] --discriminated-by "<the test>"',
     summary: "log what surprised you; `the instrument is wrong` is added if you omit it",

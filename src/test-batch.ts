@@ -483,6 +483,14 @@ export function pytestFunctionName(nodeid: string): string {
   return seg.replace(/\[.*\]$/, "");
 }
 
+/** The ONE Vitest oracle-name predicate. Both a collected JSON report and the static
+ *  fast-tier floor ask the same question: would Vitest's escaped, unanchored `-t` filter
+ *  select this runner-supplied `fullName`? Keeping the literal substring relation here
+ *  prevents the cheap existence floor and the executable verdict from disagreeing. */
+export function matchesVitestOracleName(fullName: string, name: string): boolean {
+  return fullName.includes(name);
+}
+
 // The outcomes that RED a pytest match. `failed` and `error` (a raising fixture is as
 // broken as a raising test) — and `xpassed`, because an xfail-marked test that passes is
 // the expectation gone stale, which `xfail_strict` pytest itself reds; the vitest path
@@ -502,7 +510,7 @@ export function resolveFromBatch(report: BatchReport, name: string): { ok: boole
   //     depend on unrelated tests sharing a prefix.
   const pytest = report.format === "pytest-json";
   const matches = report.tests.filter((t) =>
-    pytest ? pytestFunctionName(t.fullName) === name : t.fullName.includes(name));
+    pytest ? pytestFunctionName(t.fullName) === name : matchesVitestOracleName(t.fullName, name));
   const timed = matches.filter((t) => typeof t.duration === "number");
   const ms = timed.length ? timed.reduce((n, t) => n + (t.duration as number), 0) : undefined;
   if (!matches.length)

@@ -1,15 +1,17 @@
 node_modules/
 dist/
+.DS_Store
 # .coherence/ holds two DIFFERENT kinds of thing, and they need opposite treatment.
 # verify-jobs.json is regenerated on every run and is genuinely a cache. decisions/,
-# experiments/, calibration/, and status.json are the RECORD — durable choices, planned
-# loops and evidence, calibration history, and sticky reds. All are cumulative and
-# worthless if a fresh clone starts empty. A blanket ignore was
+# defects/, experiments/, calibration/, and status.json are the RECORD — durable choices,
+# agent-assessed defects, planned loops and evidence, calibration history, and sticky
+# reds. All are cumulative and worthless if a fresh clone starts empty. A blanket ignore was
 # defensible when this directory held only transient files; it stopped being defensible
 # the moment the journal landed here, and this repo was ignoring the very folder its
 # own README tells consumers to commit.
 .coherence/*
 !.coherence/decisions/
+!.coherence/defects/
 !.coherence/status.json
 !.coherence/calibration/
 !.coherence/experiments/

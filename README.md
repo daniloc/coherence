@@ -649,8 +649,8 @@ control. The first release earns automation by direct use. A later rollout needs
 per-agent attribution before it can canary the same decision without charging one agent
 for another agent's shared-worktree change.
 
-Full (every field the `Config` interface in `src/types.ts` accepts; defaults from
-`src/config.ts`):
+Representative configuration (the `Config` interface in `src/types.ts` is authoritative;
+defaults come from `src/config.ts`):
 
 ```json
 {
@@ -665,6 +665,7 @@ Full (every field the `Config` interface in `src/types.ts` accepts; defaults fro
   "testBatch": ["npx", "vitest", "run", "--reporter=json", "--outputFile=.coherence/test-report.json"],
   "testBatchFormat": "vitest-json",
   "oracleDomain": true,
+  "staticOracleExistence": true,
   "language": "typescript",
   "platform": "cloudflare",
   "claudeMdPath": "../CLAUDE.md",
@@ -690,15 +691,16 @@ Full (every field the `Config` interface in `src/types.ts` accepts; defaults fro
 | `outputDir` | `"public"` | Where generated artifacts go (`graph.json`, `_graph.html`, `_overview.html`, ratchet baselines). |
 | `entryDir` | `"."` | The entrypoint component's dir (`.` = root). |
 | `tooling` | `[]` | Path prefixes demoted to a "tooling" group in the graph. |
-| `ignore` | `["node_modules",".git","dist",".turbo",".wrangler"]` | Dir names the spec/code walk never enters. NOTE: the meta-oracle does **not** reuse this list when hunting for oracle test files (see below). |
+| `ignore` | `["node_modules",".git","dist",".turbo",".wrangler"]` | Dir names the spec/code walk never enters. NOTE: neither the meta-oracle nor the fast Vitest name floor reuses this graph list when hunting for oracle test files (see below). |
 | `codeExt` | `["ts"]` | File extensions treated as code for the tree. |
 | `typecheck` | `["npm","run","typecheck"]` | Command the `typechecks` claim shells. |
 | `test` | `[]` | Base command for `passes test "<name>"` / boundary-oracle claims; `<name>` is appended as the final arg. Empty = those claims skip. |
 | `testMatch` | unset | Optional regex the test output MUST contain to count as a pass. Guards the **serial** arm against runners like `vitest -t` that exit 0 when the name matched nothing. **Not needed for batched claims** — a batch report observes a missing test directly (see "Batched oracle execution"). It does **not** protect a `node --test` project at all (measured: a pattern matching nothing still reports the file as one passing test). |
 | `testBatch` | **derived** from `test` | Command that runs the **whole suite** once and emits a machine-readable report. Left unset, coherence **derives** it when the runner is recognizable (vitest today), so batching needs no configuration. Set it explicitly for any other runner: `["npx","vitest","run","--reporter=json","--outputFile=.coherence/test-report.json"]`. |
-| `testBatchFormat` | `"vitest-json"` | The report format. `vitest-json` is the only one v1 knows. An **unknown** value fails the run immediately — it is never a silent fallback to the slow path. |
+| `testBatchFormat` | `"vitest-json"` | The report format: `vitest-json` or `pytest-json`. An **unknown** value fails the run immediately — it is never a silent fallback to the slow path. |
 | `oracleExecution` | unset (= batched) | Set to `"serial"` to demand the pre-0.17 profile: one **full test-pool boot per claim**. Supported, never implicit — see "Batched oracle execution". Same as the `--serial-oracles` flag, which wins if both are present. |
 | `oracleDomain` | `true` (anything but `false`) | The META-ORACLE gate: assert a `via test` oracle iterates a LIVE domain. Set `false` to disable the gate. |
+| `staticOracleExistence` | `true` when Vitest is identifiable | The runner-free `verify --fast` name-existence floor for conventional Vitest source. Set `false` when a project's test registry is assembled outside the scanner's direct-declaration grade; named executable claims then remain UNKNOWN/skipped and no source index is built. |
 | `language` | `"typescript"` | Language adapter key. |
 | `platform` | `null` | Platform adapter key, or null. |
 | `components` | unset | Sub-component overrides for `decompose`/`drift` co-change analysis ONLY (globs relative to root; first match wins). The spec graph, verify, and coverage are untouched. |
@@ -1342,6 +1344,63 @@ their original content-addressed ids before adapting anything, and normalizes th
 `owner-session` spelling in memory to `none` or `legacy-unscoped` where the frozen rows
 prove only that weaker scope. It never rewrites the append-only bytes.
 
+### `coherence defect` — record observed damage before the repair erases it
+
+A conjecture preserves a question. A defect record preserves the stronger conclusion an
+agent reached when behavior violated an expectation, together with the evidence that made
+the agent call it a defect:
+
+```sh
+coherence defect "verify aborts while walking a large repository" \
+  --evidence "v0.34.0 aborted in Parser.parse at parse 638 of an 80KB source" \
+  --file src/adapters/tree-sitter.ts \
+  --session "$CODEX_THREAD_ID"
+
+coherence defects
+coherence defects --session "$CODEX_THREAD_ID"
+coherence defects --json
+```
+
+The distinction is semantic, not cosmetic: use `conjecture` while whether something is a
+defect remains unsettled; use `defect` only when the agent is asserting that it is one.
+`--evidence` and an exact non-placeholder writer-session label are required; the canonical
+hook supplies its host session and any available agent label. Direct callers may set `COHERENCE_SESSION`,
+`COHERENCE_AGENT`, and `COHERENCE_JOB`; Codex also recognizes `CODEX_THREAD_ID` and uses
+`codex` as the final agent fallback. Explicit flags win over those environment values.
+`--file` is repeatable. The record captures caller-supplied attribution plus the available
+repository branch, commit, and dirty-state snapshot. Direct flags and environment values
+are labels, not authenticated identities; callers must give concurrent writers distinct
+sessions. Every row says `agent-assessed`: it stores accountable testimony, not a
+machine-demonstrated oracle breach.
+Because this directory is committed, redact credentials, tokens, personal data, and
+customer data from summaries and evidence before recording them.
+
+New records append under `.coherence/defects/` to one lowercase SHA-256-named target per
+exact session label. Hashing the append target keeps distinct writers separate even when a filesystem
+folds case or normalizes Unicode; the exact session remains visible inside every row.
+Legacy pre-release slug files remain readable, so a migrated session may span its legacy
+file and the canonical target used by new writes.
+Record ids are independently content-addressed, so an exact retry dedupes instead of
+inflating the record. The merged reader validates every surviving row, recomputes its id,
+and checks that the containing filename agrees with the writer session; malformed,
+internally inconsistent, or displaced surviving evidence refuses the read instead of
+being skipped. The recorder API only appends, but its in-row unkeyed hash is not a
+cryptographic promise that repository bytes were never rewritten.
+Pre-existing ledger-directory and row symlinks refuse, and the writer opens the session
+target without following its final link. This protects stable local filesystem state; it
+does not claim to defeat a privileged process racing parent-directory renames during the
+append. Captured commit names must have lowercase SHA-1/SHA-256 shape; every human field
+is terminal-safe on render.
+A self-contained ledger cannot prove a valid row was rewritten with a recomputed id, or
+that a whole row, tail, or file was cleanly deleted: commit `.coherence/defects/` so Git
+history is the external rewrite/deletion witness. A separately anchored ledger head is
+intentionally future work, not a property this first cut claims.
+
+This first cut deliberately has no automatic collector, causal attribution, resolution
+lifecycle, calibration projection, or regulator rule. Those can grow around this
+attributable assessment without changing what this command claimed. A failed command or experiment is not
+silently promoted into this ledger, and recording a defect gates nothing.
+
 ### The conjecture — abduction as a first-class entry
 
 `decide` records a choice and `blocked` records an impasse. Neither records what was
@@ -1860,7 +1919,7 @@ both is exactly what drifted.
      edit by hand — add the command to the registry and re-run. Everything OUTSIDE these
      markers is authored prose. -->
 
-_40 commands. This index is derived from the registry the dispatch is checked
+_42 commands. This index is derived from the registry the dispatch is checked
 against (`test/commands.test.ts` enumerates the live `cmd === …` chain and asserts the two
 sets are equal), so it cannot fall behind the CLI. The reasoning for the commands that have
 any is in **In detail** below — that half is authored, and does not cover all of them._
@@ -1883,6 +1942,8 @@ any is in **In detail** below — that half is authored, and does not cover all 
 
 - `coherence decide "<chose>" --over "<alt>" --because "<why>"` — log one choice and what it was chosen OVER
 - `coherence blocked "<what>" --because "<why>"` — log what you could NOT do — first-class, not a footnote
+- `coherence defect "<what failed>" --evidence "<what proves it>" [--file p] [--session S] [--agent A] [--job J]` — record an agent-assessed defect with the evidence that made it a defect
+- `coherence defects [--session S] [--json]` — read the merged append-only defect record across agent sessions
 - `coherence conjecture "<observation>" [--could-be "<explanation>"] --discriminated-by "<the test>"` — log what surprised you; `the instrument is wrong` is added if you omit it
 - `coherence observed "<label>" --value <n> --baseline <n> --threshold <n> [--unit U] [--why "<explanation>"]` — a tracked metric from the harness that measured it — outside its band and unexplained, one conjecture per label
 - `coherence resolved <id> --because "<what the test showed>" [--as "<which candidate won>"]` (alias: `resolve`) — close a conjecture with what the discriminating test showed
@@ -2353,10 +2414,10 @@ of a green: the same empty observation, told apart by the record.
 `coherence verify` runs in two tiers:
 
 - **`--fast` (the deterministic tier)** — structural claims (`exists`, `imports`),
-  `typechecks`, boundary **anchoring** + chokepoint-symbol resolution + the
-  **meta-oracle** (static AST analysis — it runs even under `--fast`), the coverage
-  gates, and the narrative evidence hashing. No test runner, no network. This is the
-  pre-commit tier.
+  `typechecks`, boundary **anchoring** + chokepoint-symbol resolution, the
+  source-derived Vitest oracle-name floor, the **meta-oracle** (static AST analysis —
+  it runs even under `--fast`), the coverage gates, and the narrative evidence hashing.
+  No test runner, no network. This is the pre-commit tier.
 - **the full run (the live tier)** — everything above **plus** `responds` probes
   (needs the server up; unreachable = skip), `passes test` runs, and boundary-oracle
   test runs. This is the outer-loop / CI tier. Since v0.17.0 the executable tier runs
@@ -2422,16 +2483,53 @@ CI step, a `check.mjs`) has just run the suite, hand coherence its report and th
 executable tier costs a file read. The flag is its own opt-in; passing a path asserts the
 file is current, which is a claim only the caller can make.
 
+For Vitest, make the report the suite's ordinary CI output rather than paying for a second
+run. Keeping the human reporter beside JSON preserves the useful failure log; `always()`
+lets Coherence attribute failing and vanished oracles even when the test step is red:
+
+```yaml
+- name: Test and write oracle evidence
+  run: >-
+    npx vitest run --reporter=default --reporter=json
+    --outputFile.json=.coherence/vitest-report.json
+- name: Resolve Coherence claims from that same run
+  if: always()
+  run: npx coherence verify --from-report .coherence/vitest-report.json
+```
+
+#### Source-derived oracle existence in `--fast`
+
+A vanished oracle is a name-resolution failure before it is a test outcome. The fast tier
+therefore derives an ephemeral Vitest-title index directly from the current test source and
+uses the same literal-substring matcher as the JSON-report path. It reconstructs each
+literal `fullName` through its enclosing `describe`/`suite` titles, so a claim may still
+name a whole suite or a substring spanning the suite/test boundary.
+
+This floor never upgrades a skipped executable claim to green. A source match proves only
+that the named oracle exists, so the claim remains skipped until a real run supplies its
+outcome. Zero matches after a complete scan is red — `VANISHED ORACLE (static)`. The
+red-capable population is conventional `*.test/spec` TypeScript/JavaScript source.
+Recognized dynamic titles, parameterized declarations, local or imported test DSLs,
+runtime registration helpers, unreadable or damaged source, unsupported Vitest wrappers,
+zero conventional candidates, and visible custom `include`/`includeSource` configuration
+make the scan explicitly **unknown**, never absent. This is a direct-declaration grade:
+arbitrary side-effect imports, evaluation, or dynamically assembled configuration cannot
+be proven complete without executing the project. Set `staticOracleExistence: false` for
+such a registry; fast claims then remain UNKNOWN/skipped. The scanner executes no test
+configuration, imports no test module, touches no remote binding, and writes no index
+artifact; the node is derived again from the working tree on every fast verification.
+
 #### Three states, and the third one is the actual point
 
 Speed is the visible win. The one that matters is that a report distinguishes what an exit
 code cannot:
 
-| | serial (per claim) | batch report |
-| --- | --- | --- |
-| named test ran and **passed** | green | green |
-| named test ran and **failed** | red | red, naming the failing test |
-| named test **does not exist** | *green* unless you set `testMatch` | **red — `VANISHED ORACLE`** |
+| | fast source floor | serial (per claim) | batch report |
+| --- | --- | --- | --- |
+| named test ran and **passed** | skip — existence only | green | green |
+| named test ran and **failed** | skip — no outcome | red | red, naming the failing test |
+| named test **does not exist** | **red when statically provable** | *green* unless you set `testMatch` | **red — `VANISHED ORACLE`** |
+| source title cannot be resolved | explicit unknown/skip | runner answers | report answers |
 
 `vitest -t` exits **0** when its filter matched nothing, so a renamed or deleted oracle reads
 as a pass — the hole `config.testMatch` exists to plug, by having the project hand-configure
@@ -2471,8 +2569,9 @@ passes.) Both were measured on Node 25.2.1.
   healthy.
 - **A typo'd `testBatchFormat` fails the run** rather than falling back. A silent revert
   would produce a correct-looking green that took thirty minutes.
-- **`--fast` is unaffected** — the executable tier skips, so nothing is booted and nothing is
-  refused. Resolution is lazy: a project with no test-backed claims never pays either.
+- **`--fast` stays runner-free** — executable outcomes still skip, but Vitest-backed claims
+  pay the small source-derived existence floor above. A project with no test-backed claims
+  never builds the index.
 - **Scoped runs still batch the whole suite once** and resolve only the in-scope claims from
   it. One boot is already cheaper than even three scoped per-claim boots.
 - The `responds` probes and the **meta-oracle** are untouched — neither is runner-based.

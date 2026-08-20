@@ -14,6 +14,62 @@ evidence inside that record.
 
 ---
 
+## v0.36.0 — damage leaves evidence; vanished evidence turns red
+
+The field can now remember damage before a repair erases the observation. `coherence
+defect` records one agent-assessed contradiction with required evidence, optional affected
+paths, caller-attributed writer/session labels, and the available repository snapshot; `coherence defects`
+reads the fleet-wide record or one explicitly selected session. The API appends
+content-addressed rows, exact retries dedupe, and the strict merged reader refuses
+malformed, internally inconsistent, blank, torn, or session-displaced surviving evidence
+instead of silently skipping it. Pre-existing directory and session-target symlinks
+refuse external append targets, and repository commit names must have lowercase Git-object shape rather than
+being terminal-capable free text. A valid rewrite with a recomputed id or a clean deletion
+needs an external witness, so the ledger is committed and Git history shows changed or
+removed rows and files; a separately anchored head remains future work. This is
+deliberately testimony, labelled `agent-assessed`: it neither invents machine proof nor
+guesses causal attribution or repair status. The canonical agent hook now teaches the
+distinction from conjecture at the moment an observation is cheapest to preserve.
+
+The release rehearsal found two attribution failures before the tag. `COHERENCE_AGENT`
+and `COHERENCE_JOB` now keep their precedence over Codex/repository fallbacks, and exact
+session labels append to lowercase full-SHA-256 targets, so case-folding or Unicode-normalizing
+filesystems cannot merge two writers. The row still carries the readable session; the
+hash is only its portable append address. Legacy pre-release paths remain readable.
+
+Mnemion supplied the first live defect: a `passes test` claim kept the old title after its
+Vitest oracle was renamed. Full verification correctly said `VANISHED ORACLE`, but the
+everyday `verify --fast` path skipped name resolution, while running the remote-binding
+suite required account authentication. Fast verification now derives an ephemeral oracle
+index from the current Vitest source, reconstructs literal full names through nested
+`describe`/`suite` scopes, and resolves them with the exact same substring matcher as a
+runtime JSON report. A complete zero-match is `VANISHED ORACLE (static)` without booting a
+runner; a found title remains skipped until execution supplies an outcome. The red-capable
+population is conventional `*.test/spec` TypeScript/JavaScript source; recognized dynamic,
+parameterized, locally extended, runtime-registered, unreadable, custom-included, or
+unsupported declarations stay explicit unknowns rather than becoming false absence. This
+is a direct-declaration grade, not an evaluator for arbitrary side-effect registration;
+projects built that way can set `staticOracleExistence: false` and keep the fast verdict
+UNKNOWN. Nothing is generated or committed, and no test configuration, module, or remote
+binding is executed.
+
+The complementary CI path is now copy-pasteable: let Vitest write the JSON report from the
+suite CI already runs, then hand it to `verify --from-report` for outcome-grade claim
+resolution without a second suite boot. Coherence's own CI and publish workflow also gain
+a five-minute packed-artifact gate: it installs the tarball in a fresh Git consumer and
+proves the bins, defect write/read/retry/filter/tamper behavior, both lifecycle controls,
+and real SessionStart instructions from the packaged launcher. The source tree and the npm
+artifact can no longer silently expose different control surfaces.
+The tag workflow now also refuses an off-main commit or one without a successful `main`
+CI run for that exact SHA, making “qualify, then publish” a control rather than a release
+operator's memory. Its npm and GitHub-release steps are replay-safe after a partial failure;
+an existing npm version is accepted only when its recorded `gitHead` is this exact tag SHA.
+
+Release qualification is 825/825 source tests, 55/55 spec claims, and 37/37 anchored
+invariants. A clean Node 22.23.2 copy repeated `npm ci`, build, typecheck, the full suite,
+the packed-consumer smoke test, every ratchet, both host hook-presence checks, and full
+verification independently of the warm development worktree.
+
 ## v0.35.0 — the crash report, answered twice
 
 An adopter ran `npx coherence verify` from their home directory and the wasm runtime

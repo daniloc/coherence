@@ -312,6 +312,7 @@
   "sql-ident|src/scaffold.ts|inv",
   "sql-ident|src/scaffold.ts|name",
   "sql-ident|src/scaffold.ts|oracle",
+  "sql-ident|src/static-oracles.ts|name",
   "sql-ident|src/structural.ts|b.inv",
   "sql-ident|src/structural.ts|b.oracle",
   "sql-ident|src/structural.ts|p.inv",

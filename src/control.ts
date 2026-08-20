@@ -32,7 +32,7 @@ export const CODEX_LIFECYCLE_HOOK_LAUNCHER = 'codex_root=$(git rev-parse --show-
 
 const BUNDLE_FINGERPRINT_TOKEN = "__COHERENCE_HOOK_BUNDLE_FINGERPRINT__";
 /** Bump when a hook-body wire meaning changes without a package-version change. */
-export const HOOK_BODY_PROTOCOL_VERSION = 1 as const;
+export const HOOK_BODY_PROTOCOL_VERSION = 2 as const;
 
 function packageVersion(): string {
   try {

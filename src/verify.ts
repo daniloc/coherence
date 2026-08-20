@@ -20,8 +20,9 @@ import { readSurface, vacuityRefusal, adoptionLadder } from "./floor.ts";
 import { readCommitLog, fileChurn, gitPrefix, rebaseCommits, CHURN_WINDOW } from "./evolution.ts";
 import {
   resolveBatchFormat, runTestBatch, readReportFile, selectOracleMode, serialCostLines,
-  type BatchOutcome, type OracleAccess,
+  detectRunner, type BatchOutcome, type OracleAccess,
 } from "./test-batch.ts";
+import { indexStaticVitestOracles, type StaticOracleIndex } from "./static-oracles.ts";
 
 const hashOf = (s: string) => createHash("sha256").update(s).digest("hex").slice(0, 16);
 const jobsPath = (cfg: Config) => join(cfg.root, ".coherence", "verify-jobs.json");
@@ -300,6 +301,29 @@ export async function runVerify(cfg: Config, graph: Graph, opts: VerifyOpts): Pr
     return 1;
   }
   const batchFormat = fmt.format;
+  // The fast tier's oracle-name floor is source-derived and memoized independently of
+  // executable access: consulting it can never engage `config.test`/`testBatch`. V1 is
+  // intentionally Vitest-only; another report format is explicit UNKNOWN, never absence.
+  let staticIndex: Promise<StaticOracleIndex> | null = null;
+  const staticOracles = (): Promise<StaticOracleIndex> => {
+    const declaredVitest = detectRunner(cfg.test) === "vitest"
+      || detectRunner(cfg.testBatch) === "vitest"
+      || cfg.testBatchFormat === "vitest-json";
+    if (!staticIndex) staticIndex = cfg.staticOracleExistence === false
+      ? Promise.resolve({
+          fullNames: [], files: 0,
+          incomplete: ["static oracle-name resolution is disabled by config.staticOracleExistence"],
+        })
+      : batchFormat === "vitest-json" && declaredVitest
+        ? indexStaticVitestOracles(cfg)
+        : Promise.resolve({
+          fullNames: [], files: 0,
+          incomplete: [batchFormat !== "vitest-json"
+            ? `static oracle-name resolution does not support ${batchFormat}`
+            : "the configured runner is not statically identifiable as Vitest (set testBatchFormat to vitest-json to declare it)"],
+        });
+    return staticIndex;
+  };
   // Collected per advisory rather than in one list, so the concat below can state the
   // PRIORITY explicitly. The cap is per run, so under it the order is the whole policy.
   const neverRed: Finding[] = [], warnedKind: Finding[] = [], refutation: Finding[] = [], cost: Finding[] = [];
@@ -421,7 +445,7 @@ export async function runVerify(cfg: Config, graph: Graph, opts: VerifyOpts): Pr
       return { kind: "fail", claim, node, declaredKind,
         detail: `unknown claim kind "${declaredKind}" — config.claimKinds declares: ${Object.keys(kindPolicy).join(", ")}` };
     const ctx: ClaimCtx = {
-      cfg, graph, root, nodeDir, node, fast: !!opts.fast, typecheck, wordStack: [], oracles,
+      cfg, graph, root, nodeDir, node, fast: !!opts.fast, typecheck, wordStack: [], oracles, staticOracles,
       anchor: (inv) => { let set = anchored.get(node); if (!set) { set = new Set(); anchored.set(node, set); } set.add(inv); },
     };
     for (const form of CLAIM_FORMS) {
