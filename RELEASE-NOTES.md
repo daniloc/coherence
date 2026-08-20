@@ -14,7 +14,13 @@ evidence inside that record.
 
 ---
 
-## v0.36.0 — damage leaves evidence; vanished evidence turns red
+## v0.36.1 — damage leaves evidence; vanished evidence turns red
+
+`v0.36.0` was never published. Its first publish attempt exposed an E404-handling defect
+in the replay guard; a concurrent recovery then moved the public tag before its new commit
+had qualified. The guard refused both attempts before npm publication. That compromised
+the tag's immutability premise, so `0.36.0` was burned and this release starts from a fresh,
+exactly qualified tag.
 
 The field can now remember damage before a repair erases the observation. `coherence
 defect` records one agent-assessed contradiction with required evidence, optional affected
@@ -64,6 +70,10 @@ The tag workflow now also refuses an off-main commit or one without a successful
 CI run for that exact SHA, making “qualify, then publish” a control rather than a release
 operator's memory. Its npm and GitHub-release steps are replay-safe after a partial failure;
 an existing npm version is accepted only when its recorded `gitHead` is this exact tag SHA.
+The repaired boundary accepts only annotated tags, rechecks the remote tag object before
+both irreversible steps, and shares one CI-refuted npm-state classifier: only E404 means
+absent, a published version must carry a shaped `gitHead`, and every other registry failure
+refuses.
 
 Release qualification is 825/825 source tests, 55/55 spec claims, and 37/37 anchored
 invariants. A clean Node 22.23.2 copy repeated `npm ci`, build, typecheck, the full suite,
