@@ -1045,56 +1045,64 @@
     ]
   },
   "economy": {
-    "at": "2026-08-18T16:44:47.584Z",
-    "commit": "97ce1f2",
+    "at": "2026-08-20T21:53:47.603Z",
+    "commit": "3d1e647",
     "dirty": true,
-    "considered": 93,
-    "medianFiles": 52,
-    "medianLines": 18707,
-    "p90Files": 82,
-    "p90Lines": 27009,
+    "considered": 111,
+    "medianFiles": 53,
+    "medianLines": 23737,
+    "p90Files": 92,
+    "p90Lines": 36693,
     "series": [
-      66,
-      51,
-      64,
-      60,
-      56.5,
-      22.5,
-      19,
-      32
+      76.5,
+      65,
+      68,
+      60.5,
+      27.5,
+      20.5,
+      38,
+      33
     ]
   },
   "drift": {
-    "at": "2026-08-18T16:44:47.197Z",
-    "commit": "97ce1f2",
-    "devCommits": 97,
+    "at": "2026-08-20T21:53:46.623Z",
+    "commit": "3d1e647",
+    "devCommits": 113,
     "locality": [
-      0.8435374149659864,
-      0.48314606741573035,
-      0.5411764705882353,
-      0.5404411764705882,
-      0.503448275862069,
-      0.5081967213114754,
+      0.8785714285714286,
       0.5,
-      0.4649122807017544
+      0.5620437956204379,
+      0.5112107623318386,
+      0.5048543689320388,
+      0.5132743362831859,
+      0.4537037037037037,
+      0.48727272727272725
     ],
     "spread": [
-      1.1538461538461537,
-      1.9230769230769231,
-      1.8461538461538463,
-      1.8461538461538463,
-      1.8461538461538463,
-      1.5384615384615385,
-      1.6923076923076923,
-      1.8333333333333333
+      1.2666666666666666,
+      1.8,
+      1.9333333333333333,
+      1.8,
+      1.6,
+      1.7333333333333334,
+      1.8666666666666667,
+      2.25
     ],
     "seams": [
       [
         "Executable contracts  ⇄  Harness core",
-        22
+        28
+      ],
+      [
+        "Executable contracts  ⇄  Source adapters",
+        6
+      ],
+      [
+        "Harness core  ⇄  Source adapters",
+        5
       ]
     ],
-    "verdict": "LOCALITY decohering, SPREAD widening — driving toward wider SPREAD, but recent gestures are mostly converge/couple — likely cross-cutting or one-off work, not a smearing trend; read the seam, not the slope"
+    "verdict": "LOCALITY decohering, SPREAD widening — driving toward divergence — smears dominate recent work; watch for a block-list forming"
   },
   "atlas": {
     "at": "2026-08-20T21:42:15.467Z",
