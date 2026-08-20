@@ -78,6 +78,11 @@ An order cannot activate or complete until every dependency completed. A parent 
 become terminal while a child remains live, and closure names every completed direct
 child whose result it synthesized.
 
+A completed child can remain visibly unsynthesized while one of its direct siblings is
+still ready, active, or blocked. Synthesis is represented only by closing the parent, so
+`orient` selects the live sibling's executable obligation first and emits `SYNTHESIZE`
+only after that parent's direct children are terminal.
+
 Work authority answers who may act and within what boundary. Decision authority is a
 separate question: whose choice may ratify policy for the swarm. Record a choice at the
 moment it is made, and add `--subject` whenever it should enter conflict analysis.
@@ -127,6 +132,12 @@ assessor-authored address, not an existence-checked append-only receipt; record 
 after the named check actually ran. The output and Known limits section keep that ceiling
 explicit.
 
+Commit `.coherence/work/` and `.coherence/consequences/`. They are repository evidence,
+not machine-local queues; configure blanket `.coherence/*` ignore rules to re-include both.
+This repository pins that requirement with a public-CLI write → Git commit → clone → strict
+replay test. First-use repositories need no tracked empty directories, but once records
+exist, a clone that drops them has lost the swarm's ownership and navigation state.
+
 That is the shortest operating loop:
 
 1. `orient` for the fleet heading.
@@ -168,6 +179,8 @@ a shared integration seam, and a reviewer handoff:
 1. Capture the clean baseline: project-native acceptance, `coherence verify`, commit, elapsed
    time, and the expected changed paths. Prove the selected lifecycle bundle and current
    parent activation; have each child restate the exact work order its `SessionStart` emitted.
+   An unobserved bundle or empty event window is missing hook evidence, never a measured zero
+   failure rate.
 2. Make one pair of runnable orders claim an overlapping write scope. Before either writes,
    `orient` must say `RESOLVE-CONFLICT`. Block or serialize one. A second overlapping order
    waiting on a declared dependency must remain potential overlap, never a live collision.
@@ -194,8 +207,9 @@ a shared integration seam, and a reviewer handoff:
 The canary passes only with all assigned sessions accounted for, zero out-of-scope writes,
 the seeded collision detected before the first conflicting write, no false collision for the
 serialized pair, no old-owner write after handoff, complete child synthesis, zero hook failures
-across the predeclared event count, correct fresh-reader answers with zero invented links, and
-successful refusal and recovery. A single canary establishes operability, not efficacy.
+across a nonzero predeclared event count, correct fresh-reader answers with zero invented
+links, and successful refusal and recovery. An empty trace cannot satisfy the hook criterion.
+A single canary establishes operability, not efficacy.
 
 For efficacy, pre-register a matched task set or historical comparator and one primary metric.
 Report sample size and attribution grade beside median time to the correct heading, context
@@ -210,6 +224,28 @@ Explicit-path traces are a lower bound, shell/editor/remembered reads are absent
 verification references are not receipt-checked. Score per-child behavior only from exact
 records, label aggregate measures as aggregate, and retain manual scope and verification
 evidence rather than upgrading either ceiling by inference.
+
+#### What this repository's V2 canary established
+
+The run behind commit `5ff3e7d` delegated three bounded implementation slices and then gave
+a separate reader no transcript. That reader recovered the root objective, exact owners, a
+host-session handoff, the accepted policy, explicit evidence links, trust ceilings, and the
+executable next action from `orient`, `context`, `work inspect`, and `consequence inspect`
+alone. The resulting tree passed 921 project tests and 80/80 coherence claims with all 60
+declared invariants anchored.
+
+The run also falsified four quiet paths before release: synthesis could outrank a live sibling
+even though parent closure was impossible; same-`HEAD` source changes could leave verification
+current; deleting the whole committed decision population could look like first adoption; and
+the new work/consequence ledgers worked locally while Git ignored them. Each now has a named
+negative control, and the last has an actual commit/clone/replay oracle rather than an ignore-
+pattern proxy.
+
+It did **not** establish hook reliability or swarm efficacy. Structural Codex control was
+present, but this API-hosted parent session was unobserved and the experiment captured zero
+trace and activity events, recorded honestly as `none`. No matched task population was run.
+Treat this as strong mechanism and navigation evidence with an unproven host-telemetry arm,
+not as evidence that swarms improve outcomes.
 
 The rest of this README explains the trust model, adoption, claim language, instruments,
 and known ceilings behind that loop.
@@ -738,7 +774,9 @@ project-local dependency; no global installation is assumed.
    exact owner or child evidence. Exact agent/session rows are `owner-session`, an empty
    post-open window is `none`, and trace rows written before observation metadata existed
    remain visible as `legacy-unscoped`. Unreadable or internally unscoped/unknown rows
-   refuse closure. Likewise, a
+   refuse closure. `none` is an attribution result, not proof of a zero failure rate:
+   without current-bundle activation and a nonzero predeclared event denominator, hook
+   reliability remains unmeasured. Likewise, a
    `SubagentStop` without an exact child id reports the child journal count as unavailable
    and takes no child calibration snapshot; the repository-wide open-conjecture reminder
    remains explicitly repository-wide.
@@ -1451,6 +1489,13 @@ displacement makes the whole verdict-bearing decision source unavailable. It als
 real repository containment, every surviving directory entry, and canonical final-newline
 framing. A damaged row cannot shrink the standing set and thereby waive an obligation.
 
+Whole-population loss needs an external witness because no surviving row can report its own
+deletion. When the trusted projection derives zero rows, current Git `HEAD` is consulted: if
+it owns decision JSONL files that are now deleted, the source is unavailable rather than a
+valid adoption from zero. The witness is deliberately narrow. It does not prove completeness
+in a non-Git or unborn repository, detect deletion already committed into a newer history,
+survive a malicious history rewrite, or detect partial loss while any valid row remains.
+
 Legacy rows retain their original bytes and ids. A new row moves to decision wire v2 only
 when it carries at least one structured field:
 
@@ -1542,7 +1587,9 @@ cannot discover an undeclared coupling.
 
 `SessionStart` may render up to three current work orders, but only when the work owner
 session exactly matches the starting session. Parent-session guesses and “newest session”
-fallbacks do not transfer authority.
+fallbacks do not transfer authority. A resumed or follow-up child may receive a new
+host-provided session id; ownership remains with the recorded session until an explicit
+`work handoff` transfers it.
 
 ### `coherence consequence` — explicit record-to-record navigation
 
@@ -1562,13 +1609,22 @@ conflicting, or displaced rows. `inspect <kind:id>` traverses incident edges in 
 directions while retaining the direction actually authored. It deliberately does not mine
 timestamps, common paths, or Git co-presence for causality.
 
+Both `.coherence/work/` and `.coherence/consequences/` must cross the repository boundary.
+If either is ignored, local inspection can look correct while a fresh clone loses the work
+graph or its navigation. This repository's acceptance guard writes both through the public
+CLI, commits them, clones the fixture, strictly replays them, and requires zero dangling
+consequence references.
+
 ### `coherence orient` — one heading, not another dashboard
 
 `orient` composes the strict ledgers without collapsing their epistemic boundaries. Its
 priority is fixed: damaged evidence or an invalid work graph refuses first; decision or
-write-scope conflict follows; then dangling navigation, live work blockers, unsynthesized child
-results, ready work, active work, missing verification, stale/failing verification, and
-finally steady state. `--json` exposes the complete projection for an orchestrator.
+write-scope conflict follows; then dangling navigation and live work blockers. An
+unsynthesized child result comes next only when every direct child of that parent is terminal,
+making parent closure executable. Otherwise ready, active, or blocked sibling work keeps its
+own heading while the pending result remains visible. Ready work, active work, missing
+verification, stale/failing verification, and finally steady state complete the ordering.
+`--json` exposes the complete projection for an orchestrator.
 
 The heading does not authorize work and does not prove correctness. It is a gyroscope:
 one stable direction from the evidence agents deliberately left behind, with the
@@ -2951,6 +3007,14 @@ commit + dirty flag. The record is the last known truth, honestly dated — neve
 claim about the present. Machine-readable by design (`jq`-able; the panel is just one
 consumer).
 
+For `orient`, a successful verification is `current` only when its failure count is zero,
+its recorded commit matches live `HEAD`, its recorded dirty bit is false, and the live index,
+tracked files, and untracked files contain no material change. Exactly
+`.coherence/status.json` is excluded from that live dirty reading because filing the receipt
+after sampling Git would otherwise invalidate every run immediately. A source or staged
+change at the same `HEAD` is therefore stale; committing after a pre-commit verification also
+moves `HEAD` and makes that receipt stale until verification runs again.
+
 **Commit `.coherence/status.json`.** The sticky red history (`everFailed`,
 `lastFailAt`, `lastFailCommit`, `runs`) is the only part of the record that is
 CUMULATIVE, and it is what makes the never-red advisory mean anything — a fresh
@@ -3067,6 +3131,10 @@ meant.
   owner, dependency, and path scope are attributable facts, but the ledger neither spawns
   an agent nor prevents an out-of-scope write. Path overlap does not discover semantic
   coupling, external systems, or an omitted scope.
+- **Decision disappearance detection has a Git-HEAD, zero-population grade.** It catches a
+  current checkout whose tracked decision files were all deleted. It does not prove an empty
+  non-Git/unborn repository complete, detect deletion already committed into history, resist
+  history rewrite, or detect partial loss while any valid row survives.
 - **Consequence edges are assessed provenance, not causal proof.** They are never inferred
   from co-presence. Commit identities can be checked against Git and durable record ids
   against their strict ledgers; verification is still a rolling status record rather than
@@ -3081,7 +3149,9 @@ meant.
   support a rationale that is semantically obsolete.
 - **Read calibration is an explicit-path lower bound.** Shell commands, editor buffers and
   remembered context are not inferred. Per-agent patch attribution requires write-bearing
-  tool events; without them a sample uses the shared worktree's changed-file union.
+  tool events; without them a sample uses the shared worktree's changed-file union. An
+  unobserved lifecycle bundle or empty event window is absence of hook evidence, not a
+  measured zero failure rate.
 - **The change signal measures surface and anchor presence, not semantic adequacy.** A
   trivial anchor can satisfy its structural condition, and a patch-specific journal
   decision can attest that no anchor is needed. Review and claim verification still judge
