@@ -14,13 +14,19 @@ evidence inside that record.
 
 ---
 
-## v0.36.1 — damage leaves evidence; vanished evidence turns red
+## v0.36.2 — damage leaves evidence; vanished evidence turns red
 
 `v0.36.0` was never published. Its first publish attempt exposed an E404-handling defect
 in the replay guard; a concurrent recovery then moved the public tag before its new commit
 had qualified. The guard refused both attempts before npm publication. That compromised
 the tag's immutability premise, so `0.36.0` was burned and this release starts from a fresh,
 exactly qualified tag.
+
+`v0.36.1` was never published either. GitHub's checkout action fetched the annotated tag,
+then replaced its local tag ref with the peeled commit before the workflow could inspect it;
+the annotated-tag guard refused before setup or publication. The public tag remains on its
+original qualified commit, `0.36.1` is burned, and this release restores the tag object from
+origin before checking its type and identity.
 
 The field can now remember damage before a repair erases the observation. `coherence
 defect` records one agent-assessed contradiction with required evidence, optional affected

@@ -27,6 +27,7 @@ jobs:
         run: |
           git fetch --no-tags origin main:refs/remotes/origin/main
           tag_ref="refs/tags/$GITHUB_REF_NAME"
+          git fetch --no-tags origin "+$tag_ref:$tag_ref"
           [ "$(git cat-file -t "$tag_ref")" = "tag" ] || {
             echo "release tag $GITHUB_REF_NAME must be annotated" >&2
             exit 1
