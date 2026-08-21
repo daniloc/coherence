@@ -71,6 +71,21 @@ export function agentInstructions(session: string, cli = "npx coherence", agent?
     `YOUR SESSION ID IS ${shownSession}. Pass it on every call — it is what keeps your`,
     "decisions attributable to you when four other agents are writing at the same time.",
     "",
+    "SWARM GYROSCOPE — read the durable field before acting:",
+    `  ${cli} orient`,
+    `  ${cli} work inspect`,
+    "",
+    "`orient` selects one heading from strict evidence; it does not grant authority.",
+    "Only an orchestrator or explicitly authorized coordinator creates or hands off work.",
+    "Freeze objective, observable success, risk, authority, owner, dependencies, and scope",
+    "before dispatch; add parent/dependency/read/write flags when the boundary grants them:",
+    `  ${cli} work create "OBJECTIVE" --success "OBSERVABLE_RESULT" --risk high \\`,
+    `    --authority orchestrator-delegated --granted-by "ORCHESTRATOR" \\`,
+    `    --boundary "GRANTED_SCOPE" ${scope}`,
+    "Owners advance only the exact assignment printed by SessionStart. Re-inspect after",
+    "each mutation because predecessor tokens deliberately expire instead of last-writer-win.",
+    `Navigate explicit provenance with: ${cli} consequence inspect "work:WORK_ID"`,
+    "",
     "`--over` is repeatable and it is the field that matters most: what you REJECTED is",
     "what stops the next agent re-litigating a settled question. If you rejected nothing,",
     "omit it — an unexamined choice and a forced one should not look alike.",
@@ -143,6 +158,7 @@ export async function assignedWorkInstructions(
   cfg: Config,
   session: string,
   cli = "npx coherence",
+  agent?: string,
 ): Promise<string[]> {
   try {
     const { readWork } = await import("./work.ts");
@@ -152,7 +168,9 @@ export async function assignedWorkInstructions(
     if (!assigned.length) return [];
     const shown = assigned.slice(0, 3);
     const lines = ["", "CURRENT WORK — exact assignments for this session:"];
+    const mutationScope = `--session ${JSON.stringify(session)}${agent ? ` --agent ${JSON.stringify(agent)}` : ""}`;
     for (const item of shown) {
+      const predecessor = `--expected-previous ${JSON.stringify(item.last.id)}`;
       lines.push(
         `  ${instructionValue(item.work)} [${item.state}/${item.readiness}; ${item.opened.risk} risk] ${instructionValue(item.opened.objective)}`,
         `    success: ${item.opened.criteria.map(instructionValue).join(" · ")}`,
@@ -162,6 +180,25 @@ export async function assignedWorkInstructions(
       );
       if (item.blockedBy.length) lines.push(`    blocked by: ${item.blockedBy.map(instructionValue).join(" · ")}`);
       if (item.conflictsWith.length) lines.push(`    WRITE CONFLICT: ${item.conflictsWith.map(instructionValue).join(" · ")}`);
+      const lifecycle: string[] = [];
+      const mutate = (label: string, command: string): string =>
+        `    ${label}: ${cli} ${command} ${predecessor} ${mutationScope}`;
+      if (item.conflictsWith.length && item.state !== "blocked") {
+        lifecycle.push(mutate("yield", `work transition ${JSON.stringify(item.work)} blocked --because "HOW_CONFLICT_WILL_BE_SERIALIZED"`));
+      } else if (item.readiness === "ready") {
+        lifecycle.push(mutate("start", `work transition ${JSON.stringify(item.work)} active --because "WHY_READY_NOW"`));
+      } else if (item.state === "active" && !item.conflictsWith.length) {
+        lifecycle.push(
+          mutate("block", `work transition ${JSON.stringify(item.work)} blocked --because "WHAT_PREVENTS_PROGRESS"`),
+          mutate("finish", `work close ${JSON.stringify(item.work)} completed --because "CRITERION_SATISFIED" --evidence "PROOF"`),
+        );
+      } else if (item.state === "blocked"
+        && item.blockedBy.every((reason) => reason === "explicitly blocked")
+        && !item.conflictsWith.length) {
+        lifecycle.push(mutate("resume", `work transition ${JSON.stringify(item.work)} active --because "BLOCKER_CLEARED"`));
+      }
+      lifecycle.push(mutate("handoff", `work handoff ${JSON.stringify(item.work)} --owner-session "NEXT_EXACT_SESSION" --owner-agent "AGENT" --because "WHY_OWNERSHIP_MOVES"`));
+      lines.push(...lifecycle, `    after any lifecycle write: ${cli} work inspect ${JSON.stringify(item.work)}`);
     }
     if (assigned.length > shown.length) lines.push(`  … ${assigned.length - shown.length} more assignment(s) withheld; run ${cli} work inspect`);
     lines.push(`  Re-read fleet state with: ${cli} work inspect`);
@@ -271,7 +308,7 @@ export async function runHook(cfg: Config, event: string): Promise<number> {
     // A hook that throws breaks every session in every adopting project on repin. This
     // reading is worth strictly less than that, so it can fail to nothing.
     const [work, due] = await Promise.all([
-      assignedWorkInstructions(cfg, rec.session, cli),
+      assignedWorkInstructions(cfg, rec.session, cli, rec.agent),
       readDue(cfg).then((r) => formatDue(r, cli, scope)).catch(() => []),
     ]);
     const journalControl = journalUnavailable ? ["", `JOURNAL CONTROL unavailable: ${journalUnavailable}`] : [];

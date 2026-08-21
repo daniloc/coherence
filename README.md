@@ -1510,7 +1510,16 @@ The block `coherence hooks` prints carries **five** event names. `SubagentStart`
 can guarantee one id per *agent* rather than one per shell command — and injects the
 instruction. `SubagentStart` fires for every agent a run spawns; `SessionStart` fires for
 the session itself, so work that never spawns an agent still journals under an id of its
-own instead of falling back to a derived one. `PostToolUse` records only explicit
+own instead of falling back to a derived one. The canonical startup instruction makes the
+gyroscope executable without pretending it grants authority: every agent sees `orient`
+and the fleet-wide `work inspect`; explicitly authorized coordinators are pointed to work
+creation and handoff; and an exactly owned order receives only lifecycle commands valid
+for its standing state. Those commands carry the host session and current predecessor,
+then require a fresh inspect after mutation so stale startup text refuses instead of
+becoming last-writer-wins. Startup names consequence navigation but does not auto-run the
+full orientation projection or infer causal links. This instruction contract is part of
+the versioned hook-body protocol, so installing an update still requires a new start or
+resume before current-bundle activation can be observed. `PostToolUse` records only explicit
 read/write path fields in a transient per-session trace and narrow lifecycle/command
 activity carrying host, launcher, bundle, and the strongest available attribution; it does
 no graph or git analysis on that high-frequency path. The path trace is an explicit-path

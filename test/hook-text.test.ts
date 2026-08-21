@@ -5,15 +5,17 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { execFile, spawnSync } from "node:child_process";
 import { promisify } from "node:util";
-import { mkdir, rm } from "node:fs/promises";
+import { mkdir, readFile, rm } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { tmpProject, cleanup, cfg } from "./_helpers.ts";
 import {
   HOOK_TEXT_DIR, hookTextPaths, readHookText, substituteHookTokens, composeHookText,
 } from "../src/hook-text.ts";
+import { agentInstructions } from "../src/hooks.ts";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
+const REPO_ROOT = join(HERE, "..");
 const HOOK_CLI = join(HERE, "..", "src", "hook-cli.ts");
 const CLI = join(HERE, "..", "src", "cli.ts");
 const exec = promisify(execFile);
@@ -258,5 +260,42 @@ test("hooks review — every event's effective emission prints with provenance a
     const flagged = await run(root, ["hooks", "review", "--json"]);
     assert.equal(flagged.code, 2, flagged.stderr);
     assert.match(JSON.parse(flagged.stdout).error, /unsupported flag/);
+  } finally { await cleanup(root); }
+});
+
+test("repository voice — contributor startup keeps public capability changes tied to the global hook contract", async () => {
+  const path = join(REPO_ROOT, HOOK_TEXT_DIR, "SessionStart.append.md");
+  const appendix = await readFile(path, "utf8");
+
+  for (const required of [
+    "public agent-facing command or coordination function",
+    "agentInstructions",
+    "assignedWorkInstructions",
+    "HOOK_BODY_PROTOCOL_VERSION",
+    "{{cli}} hooks install --host codex",
+    "{{cli}} hooks install --host claude",
+    "exact hook/control tests",
+    "packed-consumer smoke",
+    "README",
+    "generated docs",
+    "decision journal",
+  ]) assert.ok(appendix.includes(required), `the repository reminder lost ${required}`);
+
+  assert.doesNotMatch(agentInstructions("consumer-session"), /COHERENCE MAINTAINER CONTRACT/,
+    "repository maintainer policy must not leak into every adopting project's canonical hook");
+
+  const root = await fixture({
+    ".coherence/hooks/SessionStart.append.md": appendix,
+  });
+  try {
+    const started = hook(root, "SessionStart", { session_id: "maintainer-session" });
+    assert.equal(started.status, 0, started.stderr);
+    const context = JSON.parse(started.stdout).hookSpecificOutput.additionalContext as string;
+    assert.match(context, /DECISION JOURNAL/, "consumer canon remains the composed base");
+    assert.match(context, /COHERENCE MAINTAINER CONTRACT/);
+    assert.match(context, /npx coherence hooks install --host codex/,
+      "the real SessionStart crossing substitutes the project's executable CLI");
+    assert.ok(context.endsWith(appendix.trim().replaceAll("{{cli}}", "npx coherence")),
+      "the local maintainer contract is the final project voice a contributor receives");
   } finally { await cleanup(root); }
 });

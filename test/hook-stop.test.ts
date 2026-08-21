@@ -11,7 +11,7 @@ import { recordHookReads } from "../src/read-trace.ts";
 import { readCalibrationSamples } from "../src/calibration.ts";
 import { appendDecision, readJournal } from "../src/decisions.ts";
 import { hookStatus, reportHooks } from "../src/hooks.ts";
-import { createWork } from "../src/work.ts";
+import { createWork, transitionWork } from "../src/work.ts";
 
 const HOOK_CLI = join(dirname(fileURLToPath(import.meta.url)), "..", "src", "hook-cli.ts");
 
@@ -215,7 +215,7 @@ test("hooks — Codex gets its own subagent continuation shape and session refre
   } finally { await cleanup(root); }
 });
 
-test("SessionStart injects only the exact session's current work order", async () => {
+test("SessionStart teaches the executable swarm loop and exact owned lifecycle", async () => {
   const root = await repo();
   try {
     const config = await loadConfig(root);
@@ -240,16 +240,67 @@ test("SessionStart injects only the exact session's current work order", async (
       now: "2026-01-01T00:00:01.000Z",
     });
 
-    const started = hook(root, "SessionStart", { session_id: "codex-thread", source: "startup" }, "codex");
+    const started = hook(root, "SessionStart", {
+      session_id: "codex-thread", source: "startup", agent_type: "worker",
+    }, "codex");
     assert.equal(started.status, 0, started.stderr);
     const text = JSON.parse(started.stdout).hookSpecificOutput.additionalContext as string;
+    assert.match(text, /npx coherence orient/);
+    assert.match(text, /npx coherence work inspect/);
+    assert.match(text, /npx coherence work create/);
+    assert.match(text, /npx coherence consequence inspect "work:WORK_ID"/);
     assert.match(text, /CURRENT WORK — exact assignments for this session/);
     assert.match(text, /repair the lifecycle import closure/);
     assert.match(text, /PostToolUse runs without parser packages/);
     assert.doesNotMatch(text, /unrelated assignment/);
     assert.match(text, new RegExp(`work inspect "${assigned.work}"`));
+    assert.match(text, new RegExp(`work transition "${assigned.work}" active`));
+    assert.match(text, new RegExp(`--expected-previous "${assigned.id}"`));
+    assert.match(text, /--session "codex-thread" --agent "worker"/);
+    assert.doesNotMatch(text, new RegExp(`work transition "wrk-[^"]+" active.*unrelated`));
     assert.doesNotMatch(text, /work inspect --session/,
       "the injected re-read command must be accepted by the fleet-wide inspect CLI");
+
+    const active = transitionWork(config, {
+      session: "codex-thread", agent: "worker", work: assigned.work, to: "active",
+      reason: "owner accepted the order", expectedPrevious: assigned.id,
+      now: "2026-01-01T00:00:02.000Z",
+    });
+    const resumed = hook(root, "SessionStart", {
+      session_id: "codex-thread", source: "resume", agent_type: "worker",
+    }, "codex");
+    assert.equal(resumed.status, 0, resumed.stderr);
+    const resumedText = JSON.parse(resumed.stdout).hookSpecificOutput.additionalContext as string;
+    assert.match(resumedText, new RegExp(`work close "${assigned.work}" completed`));
+    assert.match(resumedText, new RegExp(`--expected-previous "${active.id}"`));
+    assert.match(resumedText, /--evidence "PROOF"/);
+  } finally { await cleanup(root); }
+});
+
+test("SessionStart turns an owned write conflict into yield commands, never start or finish", async () => {
+  const root = await repo();
+  try {
+    const config = await loadConfig(root);
+    for (const [objective, at] of [["edit the shared seam", "00"], ["review the shared seam", "01"]]) {
+      createWork(config, {
+        session: "orchestrator",
+        owner: { session: "codex-thread", agent: "worker" },
+        objective, criteria: [`${objective} is settled`],
+        authority: { kind: "orchestrator-delegated", grantedBy: "main", boundary: "src/shared.ts only" },
+        risk: "high", writeScopes: ["src/shared.ts"],
+        now: `2026-01-01T00:01:${at}.000Z`,
+      });
+    }
+
+    const started = hook(root, "SessionStart", {
+      session_id: "codex-thread", source: "startup", agent_type: "worker",
+    }, "codex");
+    assert.equal(started.status, 0, started.stderr);
+    const text = JSON.parse(started.stdout).hookSpecificOutput.additionalContext as string;
+    assert.match(text, /WRITE CONFLICT/);
+    assert.match(text, /yield: npx coherence work transition "wrk-[^"]+" blocked/);
+    assert.doesNotMatch(text, /work transition "wrk-[^"]+" active/);
+    assert.doesNotMatch(text, /work close "wrk-[^"]+" completed/);
   } finally { await cleanup(root); }
 });
 

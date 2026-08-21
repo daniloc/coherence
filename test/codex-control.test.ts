@@ -10,6 +10,7 @@ import {
   CODEX_LIFECYCLE_HOOK_BUNDLE_FINGERPRINT,
   CODEX_LIFECYCLE_HOOK_SCRIPT,
   CODEX_POST_TOOL_USE_MATCHER,
+  HOOK_BODY_PROTOCOL_VERSION,
   inspectCodexProjectConfig,
   inspectLifecycleHook,
   LIFECYCLE_HOOK_BUNDLE_FINGERPRINT,
@@ -45,6 +46,7 @@ async function readHooks(root: string): Promise<Json> {
 }
 
 test("Codex control — canonical bundle uses the host's exact matchers, commands, and identity", () => {
+  assert.equal(HOOK_BODY_PROTOCOL_VERSION, 3, "the planning-aware hook text has a distinct activation identity");
   const settings = canonicalLifecycleHookSettings("codex") as Json;
   assert.deepEqual(Object.keys(settings.hooks), [...LIFECYCLE_HOOK_EVENTS]);
   assert.equal(settings.hooks.SessionStart[0].matcher, "startup|resume|clear|compact");

@@ -34,6 +34,7 @@ rendering, and journaling remain independently addressable modules beneath this 
 - high-frequency lifecycle hooks start without the analysis dependency stack
 - hook telemetry loss never kills PostToolUse
 - session startup injects only the exact session's current work order
+- session startup teaches the executable swarm loop without manufacturing authority
 - session startup survives a damaged decision-journal path with named degradation
 - harness source remains searchable text rather than silently becoming binary
 - cached decisions expose structurally expired premises
@@ -73,6 +74,7 @@ rendering, and journaling remain independently addressable modules beneath this 
 ## refutations
 
 - session startup survives a damaged decision-journal path with named degradation: with `.coherence/decisions` replaced by a regular file, SessionStart threw raw `ENOTDIR` before emitting any instructions. It now retains the exact host session, names `JOURNAL CONTROL unavailable`, performs no journal write, and exits zero.
+- session startup teaches the executable swarm loop without manufacturing authority: after the work graph, orientation, and consequence ledger shipped, canonical startup still taught only the decision journal and experiment planning; an exact assignment printed `work inspect` but no safe way to accept, block, hand off, or close it. Startup now names the read-only heading and fleet reads for everyone, reserves create/handoff for explicit coordination authority, and emits state-valid lifecycle commands with the standing predecessor only beside work owned by that exact session.
 - hook telemetry loss never kills PostToolUse: the original no-dependency canary sent `{}`, producing no read event and never exercising persistence. A real Read event with `.coherence/read-traces` replaced by a regular file threw `EEXIST` out of the hook. The runtime boundary now contains telemetry failure, stays byte-silent, and the canary carries the hostile target.
 - orientation admits verification state only with valid shape and comparable provenance: a parseable status row with `at: "not-a-time"` and `failures: "not-a-number"` was reported as current and allowed `STEADY`; missing commit provenance on either side was also treated as agreement. Runtime shape, canonical time, count, tier, and commit checks now refuse malformed evidence, while absent provenance remains stale.
 - swarm write identity and authority flags are singleton or refused: `work create ... --session one --session two` succeeded and silently attributed the append to `two`; the same last-wins ambiguity existed for authority and consequence writers. The shared CLI check now refuses every non-repeatable flag before any append.
@@ -152,7 +154,8 @@ rendering, and journaling remain independently addressable modules beneath this 
 - boundary "completed work remains unverified until an explicit verification edge names it" at observeRegulation via guard "regulate — completed work requires an explicit verification link before release"
 - boundary "high-frequency lifecycle hooks start without the analysis dependency stack" at runHook via guard "PostToolUse starts from the source bundle with no dependency installation"
 - boundary "hook telemetry loss never kills PostToolUse" at runHook via guard "PostToolUse starts from the source bundle with no dependency installation"
-- boundary "session startup injects only the exact session's current work order" at assignedWorkInstructions via guard "SessionStart injects only the exact session's current work order"
+- boundary "session startup injects only the exact session's current work order" at assignedWorkInstructions via guard "SessionStart teaches the executable swarm loop and exact owned lifecycle"
+- boundary "session startup teaches the executable swarm loop without manufacturing authority" at runHook via guard "SessionStart teaches the executable swarm loop and exact owned lifecycle"
 - boundary "session startup survives a damaged decision-journal path with named degradation" at runHook via guard "SessionStart degrades around a damaged journal path without killing the session"
 - boundary "harness source remains searchable text rather than silently becoming binary" at sourceTextIsNavigable via guard "source text — every live TypeScript source remains NUL-free and searchable"
 - boundary "cached decisions expose structurally expired premises" at auditPremiseLeases via guard "audit — retracted decisions disappear and only broken strong leases fail a check"
@@ -377,6 +380,14 @@ dependencies, write scope, and collisions from another worker's. SessionStart re
 work graph dynamically and emits only records whose owner session exactly matches the
 host session; failure degrades to a named unavailable reading rather than breaking agent
 startup.
+
+**session startup teaches the executable swarm loop without manufacturing authority.**
+Every agent gets the two inert readings that establish direction and fleet state, while
+creation and handoff remain explicitly conditional on coordination authority. Only an
+exactly owned live order acquires mutation examples, and those examples are selected from
+its standing state and carry both the host session and predecessor token. After one write
+the token expires and the hook says to inspect again; startup guidance therefore cannot
+turn a stale instruction or a general orientation heading into last-writer-wins authority.
 
 **session startup survives a damaged decision-journal path with named degradation.** The
 journal carries decisions but cannot be allowed to prevent the agent that might repair it

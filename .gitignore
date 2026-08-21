@@ -18,6 +18,7 @@ dist/
 !.coherence/experiments/
 !.coherence/work/
 !.coherence/consequences/
+!.coherence/hooks/
 
 # AGENTS.md and public/{graph.json,_graph.html,_overview.html} are committed, fully-owned
 # reading surfaces now that this repository has a real spec tree. `coherence docs --check`

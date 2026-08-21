@@ -10,6 +10,7 @@ keeps only the files that establish how those components are built, read, and re
 
 - coherence.config.json exists at root
 - passes test "control — this repository's own lifecycle control is PRESENT"
+- passes test "repository voice — contributor startup keeps public capability changes tied to the global hook contract"
 
 ## why
 
@@ -36,3 +37,11 @@ composition, host-specific exclusion controls, the absence of a competing path, 
 runnable target. One meaningful claim is lighter and stronger than six
 green file-existence claims. Fewer claims, honestly scoped, is still the trade this
 harness teaches; making its own root spec take it is the least it owes.
+
+The repository-specific SessionStart appendix is a third silent surface: if it vanishes,
+the canonical consumer hook correctly falls back and no host reports an error, but a
+contributor can add an agent-facing capability without reviewing the global startup
+contract, protocol identity, host controls, or docs. Its claim therefore exercises the
+real composition crossing and pins the maintenance trigger's named surfaces while proving
+that the reminder stays out of consumer canon. This is project policy carried by the
+project voice, not maintenance detail imposed on every adopter.

@@ -67,6 +67,10 @@ function parseHookEmission(stdout, event, session) {
   const text = envelope.hookSpecificOutput?.additionalContext;
   assert.equal(typeof text, "string", `${event} did not emit agent context`);
   assert.match(text, /coherence defect "<what failed>" --evidence/);
+  assert.match(text, /coherence orient/);
+  assert.match(text, /coherence work inspect/);
+  assert.match(text, /coherence work create/);
+  assert.match(text, /coherence consequence inspect "work:WORK_ID"/);
   assert.ok(text.includes(`YOUR SESSION ID IS ${session}.`), "SessionStart omitted the exact session id");
   assert.ok(text.includes(`--session ${JSON.stringify(session)}`), "defect instruction omitted the exact session scope");
 }
