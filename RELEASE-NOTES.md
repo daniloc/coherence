@@ -14,6 +14,53 @@ evidence inside that record.
 
 ---
 
+## v0.37.1 — the gyroscope reaches the agent
+
+v0.37.0 shipped the swarm work graph, strict orientation, explicit consequence links,
+and experiment loop, but its canonical SessionStart text still taught only the older
+decision journal and experiment command. An exactly assigned worker saw its objective and
+an inspection command but not the predecessor-scoped transition, close, block, resume, or
+handoff actions that make the work graph executable. Reinstalling the already-current
+bundle could not repair source text the bundle never contained.
+
+The global lifecycle contract is now protocol v3. Every agent is told to orient and read
+the fleet before acting, how authority gates work creation and handoff, and where explicit
+provenance lives. An exact owner additionally receives only the lifecycle commands valid
+for the work's standing state, each carrying its current predecessor token, session, and
+agent; a write conflict emits a yield command instead of start or finish. Both Claude and
+Codex launchers were regenerated from that one protocol identity, and packed-consumer
+smoke now proves the startup loop survives publication.
+
+This repository also commits a project-only SessionStart appendix that tells future
+contributors when a new public agent-facing command or coordination function requires a
+global-hook review. A named root claim pins the canonical instruction functions, protocol
+bump, both host reinstall commands, exact tests, package smoke, README/docs, and the
+decision-journal record for an intentional omission. The oracle exercises real hook
+composition while proving that this maintainer policy does not leak into adopting
+projects' canonical text.
+
+Pre-tag qualification is 936/936 source tests, 83/83 spec claims, 62/62 anchored
+invariants, typecheck and build, package smoke in an isolated Git consumer, both host
+control checks, every ratchet, docs and atlas freshness, and a successful Node 22 main CI
+run on the exact hook-repair predecessor. The v0.37.1 release commit must repeat that CI
+before its immutable tag is created.
+
+### Rollback record
+
+If only the protocol-v3 startup control proves harmful, retain the gyroscope data and
+commands while restoring the previous hook body:
+
+```sh
+npm install --save-dev --save-exact @danilocampos/coherence@0.37.0
+npx -y @danilocampos/coherence@0.37.0 hooks install --host codex   # or: --host claude
+```
+
+That rollback deliberately reintroduces the v0.37.0 instruction omission; it is
+containment, not a fix. If the gyroscope itself proves ill-conceived, use the full
+evidence-preserving v0.36.4 rollback below. Because v0.37.1 now names this patch, any new
+rollback artifact must start at v0.37.2. Never move either immutable tag or erase the
+append-only evidence that explains the withdrawal.
+
 ## v0.37.0 — a gyroscope, not an autopilot
 
 This release adds a correctness-and-navigation gyroscope for agent swarms. `orient`
@@ -79,6 +126,8 @@ channel and marks the bad version; the immutable artifact remains available for 
 npm dist-tag add @danilocampos/coherence@0.36.4 latest
 npm deprecate '@danilocampos/coherence@0.37.0' \
   'Gyroscope rollout withdrawn; pin 0.36.4 pending a qualified replacement.'
+npm deprecate '@danilocampos/coherence@0.37.1' \
+  'Gyroscope rollout withdrawn; pin 0.36.4 pending a qualified replacement.'
 ```
 
 The source rollback was rehearsed in a disposable worktree. The raw merge revert is
@@ -99,7 +148,7 @@ git add -A
 GIT_EDITOR=true git revert --continue
 
 # A rollback is a new release, never a moved tag.
-npm version 0.37.1 --no-git-tag-version
+npm version 0.37.2 --no-git-tag-version
 node src/cli.ts docs
 node src/cli.ts atlas
 node src/cli.ts mass --update-baseline
@@ -108,8 +157,8 @@ npm test
 node src/cli.ts verify
 ```
 
-Commit the regenerated surfaces and v0.37.1 metadata, push `main`, wait for exact-SHA CI,
-then create the immutable `v0.37.1` tag. The rehearsal preserved the current ledgers,
+Commit the regenerated surfaces and v0.37.2 metadata, push `main`, wait for exact-SHA CI,
+then create the immutable `v0.37.2` tag. The rehearsal preserved the current ledgers,
 returned `src/`, `test/`, package metadata, configuration, workflows, and scripts exactly
 to the pre-gyroscope main state, and passed docs freshness, typecheck, and the whole source
 suite.
