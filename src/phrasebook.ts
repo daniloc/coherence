@@ -151,9 +151,12 @@ export function execNamedTest(ctx: ClaimCtx, name: string): { ok: boolean; detai
  *  path a claim's verdict rides on — same spawn, same exit-code reading, same `testMatch`
  *  evidence rule. Exit 0 alone is not trusted: `testMatch` requires positive evidence the
  *  named test actually ran (a zero-match runner that exits 0 would otherwise pass a
- *  renamed/deleted oracle). */
+ *  renamed/deleted oracle). This path boots the full pool; its bound is above the measured
+ *  ~259s suite baseline so slow but valid oracles do not become blank failures. */
+const SERIAL_ORACLE_TIMEOUT_MS = 300_000;
+
 export function runSerialNamedTest(cfg: Config, root: string, name: string): { ok: boolean; detail: string } {
-  const r = spawnSync(cfg.test[0], [...cfg.test.slice(1), reEscape(name)], { cwd: root, encoding: "utf8", timeout: 120000 });
+  const r = spawnSync(cfg.test[0], [...cfg.test.slice(1), reEscape(name)], { cwd: root, encoding: "utf8", timeout: SERIAL_ORACLE_TIMEOUT_MS });
   const out = (r.stderr || "") + (r.stdout || "");
   if (r.status !== 0) return { ok: false, detail: out.split("\n").filter(Boolean).slice(-3).join(" | ").slice(0, 200) };
   if (cfg.testMatch && !new RegExp(cfg.testMatch).test(out)) return { ok: false, detail: `test "${name}" matched no run (testMatch)` };

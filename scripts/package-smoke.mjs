@@ -30,6 +30,7 @@ function withoutHostSession(env = process.env) {
     "COHERENCE_JOB",
     "COHERENCE_PROJECT_ROOT",
     "COHERENCE_SESSION",
+    "PI_SESSION_ID",
   ]) delete clean[key];
   return clean;
 }
@@ -94,7 +95,7 @@ try {
     type: "module",
   }, null, 2)}\n`);
   await writeFile(join(consumer, "coherence.config.json"), "{}\n");
-  await writeFile(join(consumer, ".gitignore"), "node_modules/\n.coherence/\n.claude/\n.codex/\n");
+  await writeFile(join(consumer, ".gitignore"), "node_modules/\n.coherence/\n.claude/\n.codex/\n.pi/\n");
   await writeFile(join(consumer, "src", "index.js"), "export const consumer = true;\n");
 
   run(git, ["init", "-q", "-b", "main"], { cwd: consumer });
@@ -109,6 +110,9 @@ try {
   assert.equal(existsSync(join(installed, "dist", "defects.js")), true, "packed dist/defects.js is absent");
   assert.equal(existsSync(join(installed, "dist", "cli.js")), true, "packed dist/cli.js is absent");
   assert.equal(existsSync(join(installed, "dist", "hook-cli.js")), true, "packed dist/hook-cli.js is absent");
+  assert.equal(existsSync(join(installed, "dist", "pi-extension.js")), true, "packed dist/pi-extension.js is absent");
+  const manifest = JSON.parse(await readFile(join(installed, "package.json"), "utf8"));
+  assert.deepEqual(manifest.pi.extensions, ["./dist/pi-extension.js"]);
   const coherence = join(consumer, "node_modules", ".bin", "coherence");
   const coherenceHook = join(consumer, "node_modules", ".bin", "coherence-hook");
   await executable(coherence);
@@ -175,6 +179,8 @@ try {
   // Both hosts must install from the consumer's packed bin and independently satisfy the
   // structural control bit. No session selector is supplied: this is presence, not a claim
   // that the current runner process was launched by either host.
+  run(coherence, ["hooks", "install", "--host", "pi"], { cwd: consumer });
+  run(coherence, ["hooks", "--check", "--host", "pi"], { cwd: consumer });
   for (const host of ["claude", "codex"]) {
     run(coherence, ["hooks", "install", "--host", host], { cwd: consumer });
     run(coherence, ["hooks", "--check", "--host", host], { cwd: consumer });

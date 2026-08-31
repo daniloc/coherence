@@ -7,14 +7,55 @@ import {
   activityAttribution, activityPath, activityRow, classifyActivityCommand,
   currentSessionSummary, readActivity, recordActivity, type ActivityContext,
 } from "../src/activity.ts";
-import { recordHookReads } from "../src/read-trace.ts";
+import { readTraceDetailed, recordHookReads } from "../src/read-trace.ts";
 import { hookStatus } from "../src/hooks.ts";
 import { CODEX_LIFECYCLE_HOOK_BUNDLE_FINGERPRINT } from "../src/control.ts";
+import { PI_HOOK_BUNDLE_FINGERPRINT } from "../src/pi-control.ts";
 import { cfg, cleanup, tmpProject } from "./_helpers.ts";
 
 const launcher: ActivityContext = {
   host: "codex", transport: "launcher", bundleHash: "sha256:canonical", experimentId: "plan/v1",
 };
+
+test("Pi status — launcher rows stay separate from stale native buckets", async () => {
+  const root = await tmpProject({ "src/a.ts": "export const a = 1;\n" });
+  try {
+    const c = cfg(root);
+    const payload = (id: string) => ({ session_id: "pi-session", agent_id: "pi-session", tool_use_id: id, tool_name: "Read", tool_input: { path: "src/a.ts" } });
+    const staleContext = { host: "pi", transport: "native", bundleHash: "old-pi", experimentId: null } as const;
+    const directContext = { host: "pi", transport: "direct", bundleHash: null, experimentId: null } as const;
+    recordActivity(c, "PostToolUse", payload("launcher"), launcher, "2026-08-24T00:00:00.000Z");
+    recordHookReads(c, payload("launcher"), "2026-08-24T00:00:00.000Z", launcher);
+    recordActivity(c, "PostToolUse", payload("stale"), staleContext, "2026-08-24T00:00:01.000Z");
+    recordHookReads(c, payload("stale"), "2026-08-24T00:00:01.000Z", staleContext);
+    recordActivity(c, "PostToolUse", payload("direct"), directContext, "2026-08-24T00:00:02.000Z");
+    recordHookReads(c, payload("direct"), "2026-08-24T00:00:02.000Z", directContext);
+    const { currentPiObservation } = await import("../src/hooks.ts");
+    const control = { host: "pi", bundleFingerprint: "pi-bundle" } as Parameters<typeof currentPiObservation>[1];
+    const observation = currentPiObservation(c, control, "pi-session");
+    assert.equal(observation.staleNativeEvents, 1);
+    assert.equal(observation.directEvents, 1);
+    assert.deepEqual(observation.trace.bundle, { exactNative: 0, staleNative: 1, direct: 1, legacy: 0 });
+  } finally { await cleanup(root); }
+});
+
+test("Pi telemetry — native activity and path traces stay exact-session and strict", async () => {
+  const root = await tmpProject({ "src/a.ts": "export const a = 1;\n" });
+  try {
+    const c = cfg(root);
+    const context = { host: "pi", transport: "native", bundleHash: "pi-bundle", experimentId: null } as const;
+    const payload = {
+      session_id: "pi-session", agent_id: "pi-session", tool_use_id: "call-1",
+      tool_name: "Read", tool_input: { path: "src/a.ts" },
+    };
+    recordActivity(c, "PostToolUse", payload, context, "2026-08-24T00:00:00.000Z");
+    recordHookReads(c, payload, "2026-08-24T00:00:00.000Z", context);
+    assert.equal(readActivity(c, "pi-session").rows[0]?.transport, "native");
+    const { readTraceDetailed } = await import("../src/read-trace.ts");
+    assert.equal(readTraceDetailed(c, "pi-session").rows[0]?.observation?.host, "pi");
+    assert.equal(readTraceDetailed(c, "pi-session").rows[0]?.observation?.transport, "native");
+  } finally { await cleanup(root); }
+});
 
 test("activity — host metadata and exact agent attribution survive one row", () => {
   const row = activityRow("PostToolUse", {
@@ -175,6 +216,49 @@ test("activity — internally inconsistent scope, time, and command rows are dam
     const read = readActivity(c, "agent-a");
     assert.deepEqual(read.rows, [valid]);
     assert.equal(read.unreadable, 4);
+  } finally { await cleanup(root); }
+});
+
+test("activity — native and launcher transports require their matching hosts", async () => {
+  const root = await tmpProject({ "src/a.ts": "export const a = 1;\n" });
+  try {
+    const c = cfg(root);
+    const payload = { session_id: "relation", tool_use_id: "call", tool_name: "Read", tool_input: { path: "src/a.ts" } };
+    const nativeClaude = recordActivity(c, "PostToolUse", payload, { host: "claude", transport: "native", bundleHash: "x", experimentId: null }, "2026-08-04T12:00:00.000Z");
+    const launcherPi = activityRow("PostToolUse", { ...payload, tool_use_id: "call-2" }, { host: "pi", transport: "launcher", bundleHash: "x", experimentId: null }, "2026-08-04T12:00:01.000Z");
+    appendFileSync(activityPath(c, "relation"), `${JSON.stringify(launcherPi)}\n`);
+    assert.deepEqual(readActivity(c, "relation"), { rows: [], unreadable: 2 });
+
+    recordHookReads(c, payload, "2026-08-04T12:00:00.000Z", { host: "claude", transport: "native", bundleHash: "x", experimentId: null });
+    recordHookReads(c, { ...payload, tool_use_id: "call-2" }, "2026-08-04T12:00:01.000Z", { host: "pi", transport: "launcher", bundleHash: "x", experimentId: null });
+    assert.deepEqual(readTraceDetailed(c, "relation"), { rows: [], unreadable: 2 });
+  } finally { await cleanup(root); }
+});
+
+test("Pi status — activation isolates exact, stale, direct, damaged, and other-session evidence", async () => {
+  const root = await tmpProject();
+  try {
+    const c = cfg(root);
+    const current = { host: "pi", transport: "native", bundleHash: PI_HOOK_BUNDLE_FINGERPRINT, experimentId: null } as const;
+    recordActivity(c, "SessionStart", { session_id: "pi-current" }, current, "2026-08-04T12:00:00.000Z");
+    recordActivity(c, "SessionStart", { session_id: "pi-stale" }, { ...current, bundleHash: "old-pi" }, "2026-08-04T12:00:01.000Z");
+    recordActivity(c, "SessionStart", { session_id: "pi-direct" }, { ...current, transport: "direct" }, "2026-08-04T12:00:02.000Z");
+    recordActivity(c, "SessionStart", { session_id: "pi-other" }, current, "2026-08-04T12:00:03.000Z");
+    const malformed = activityRow("SessionStart", { session_id: "pi-damaged" }, { host: "claude", transport: "native", bundleHash: PI_HOOK_BUNDLE_FINGERPRINT, experimentId: null }, "2026-08-04T12:00:04.000Z");
+    appendFileSync(activityPath(c, "pi-damaged"), JSON.stringify(malformed) + "\n");
+    const control = { host: "pi", bundleFingerprint: PI_HOOK_BUNDLE_FINGERPRINT } as Parameters<(typeof import("../src/hooks.ts"))["currentPiObservation"]>[1];
+    const { currentPiObservation } = await import("../src/hooks.ts");
+    assert.equal(currentPiObservation(c, control, "pi-current").state, "observed");
+    assert.equal(currentPiObservation(c, control, "pi-stale").state, "stale");
+    assert.equal(currentPiObservation(c, control, "pi-direct").state, "unobserved");
+    assert.deepEqual(currentPiObservation(c, control, "pi-damaged"), {
+      ...currentPiObservation(c, control, "pi-damaged"), state: "unobserved", exactNativeEvents: 0, staleNativeEvents: 0, unreadableActivity: 1,
+    });
+    assert.equal(currentPiObservation(c, control, "pi-current").exactNativeEvents, 1);
+    assert.equal(currentPiObservation(c, control, "pi-current").staleNativeEvents, 0);
+    assert.equal(currentPiObservation(c, control, "pi-current").directEvents, 0);
+    assert.equal(currentPiObservation(c, control, "pi-current").session, "pi-current");
+    assert.equal(currentPiObservation(c, control, "pi-other").session, "pi-other");
   } finally { await cleanup(root); }
 });
 

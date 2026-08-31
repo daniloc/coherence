@@ -3,23 +3,60 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { existsSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { tmpProject, cleanup } from "./_helpers.ts";
 import { loadConfig } from "../src/config.ts";
-import { recordHookReads } from "../src/read-trace.ts";
 import { readCalibrationSamples } from "../src/calibration.ts";
+import { recordHookReads } from "../src/read-trace.ts";
+import { readActivity } from "../src/activity.ts";
 import { appendDecision, readJournal } from "../src/decisions.ts";
-import { hookStatus, reportHooks } from "../src/hooks.ts";
+import {
+  hookStatus, reportHooks, prepareSessionStart, recordMainSettlement, prepareChildSettlement,
+} from "../src/hooks.ts";
 import { createWork, transitionWork } from "../src/work.ts";
+import { projectWritePolicy } from "../src/write-policy.ts";
 
 const HOOK_CLI = join(dirname(fileURLToPath(import.meta.url)), "..", "src", "hook-cli.ts");
+
+test("runHook — non-tool lifecycle events append exactly one activity row", async () => {
+  const root = await tmpProject();
+  try {
+    const result = hook(root, "SessionStart", { session_id: "lifecycle-session" });
+    assert.equal(result.status, 0, result.stderr);
+    const rows = readActivity(await loadConfig(root), "lifecycle-session").rows;
+    assert.equal(rows.length, 1);
+    assert.equal(rows[0]?.event, "SessionStart");
+  } finally { await cleanup(root); }
+});
+
+test("shared lifecycle operations — native startup and settlements preserve evidence", async () => {
+  const root = await tmpProject();
+  try {
+    const config = await loadConfig(root);
+    const text = await prepareSessionStart(config, "SessionStart", {
+      session: "pi-session", agent: "main", job: "pi-session",
+      host: "pi", transport: "native", bundleHash: "pi-bundle",
+    }, projectWritePolicy(config));
+    assert.match(text, /YOUR SESSION ID IS pi-session/);
+    recordHookReads(config, {
+      session_id: "pi-session", agent_id: "pi-session", tool_name: "Read",
+      tool_input: { path: "package.json" },
+    });
+    await recordMainSettlement(config, "pi-session", projectWritePolicy(config));
+    const child = await prepareChildSettlement(config, "pi-child", projectWritePolicy(config));
+    assert.match(child, /YOUR REPLY MUST RESTATE YOUR FINAL REPORT/);
+    assert.match(child, /CHANGE SIGNAL/);
+    assert.ok(readJournal(config).records.some((record) => record.kind === "session" && record.session === "pi-session"));
+  } finally { await cleanup(root); }
+});
 
 function git(root: string, ...args: string[]) {
   return spawnSync("git", args, { cwd: root, encoding: "utf8" });
 }
 
-function hook(root: string, event: "SessionStart" | "Stop" | "SubagentStop", payload: object, host?: "codex") {
+function hook(root: string, event: "SessionStart" | "PostToolUse" | "Stop" | "SubagentStop", payload: object, host?: "claude" | "codex") {
   return spawnSync(process.execPath, [HOOK_CLI, event], {
     cwd: root,
     input: JSON.stringify(payload),
@@ -46,6 +83,38 @@ async function repo(novelty?: { minSurface: number; minLoc: number; ratio: numbe
   assert.equal(git(root, "commit", "-q", "-m", "base").status, 0);
   return root;
 }
+
+test("protected primary — Claude and Codex lifecycle stays read-only with guidance", async () => {
+  const root = await tmpProject({ "coherence.config.json": '{"protectPrimaryCheckout":true}\n' });
+  try {
+    git(root, "init", "-q", "-b", "main");
+    git(root, "config", "user.email", "test@example.com");
+    git(root, "config", "user.name", "Test");
+    git(root, "add", ".");
+    assert.equal(git(root, "commit", "-q", "-m", "base").status, 0);
+    for (const host of ["claude", "codex"] as const) {
+      const started = hook(root, "SessionStart", { session_id: `${host}-session` }, host);
+      assert.equal(started.status, 0, started.stderr);
+      assert.match(started.stdout, /COHERENCE PERSISTENCE unavailable/);
+      assert.match(started.stdout, /registered linked worktree/);
+      assert.equal(existsSync(join(root, ".coherence")), false);
+      const tool = hook(root, "PostToolUse", {
+        session_id: `${host}-session`, tool_name: "Read", tool_input: { file_path: "package.json" },
+      }, host);
+      assert.equal(tool.status, 0, tool.stderr);
+      assert.equal(tool.stdout, "");
+      assert.equal(existsSync(join(root, ".coherence")), false);
+      const settled = hook(root, "Stop", { session_id: `${host}-session` }, host);
+      assert.equal(settled.status, 0, settled.stderr);
+      assert.equal(settled.stdout, "");
+      assert.equal(existsSync(join(root, ".coherence", "calibration")), false);
+      const child = hook(root, "SubagentStop", { session_id: `${host}-parent`, agent_id: `${host}-child` }, host);
+      assert.equal(child.status, 0, child.stderr);
+      assert.match(child.stdout, /YOUR REPLY MUST RESTATE YOUR FINAL REPORT/);
+      assert.equal(existsSync(join(root, ".coherence")), false);
+    }
+  } finally { await cleanup(root); }
+});
 
 test("hooks — main Stop snapshots without feedback while SubagentStop alone restates", async () => {
   const quietRoot = await repo();

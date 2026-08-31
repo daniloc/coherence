@@ -61,7 +61,8 @@
       "isProse": "redundancy.ts's site-kind classifier — it only weights a ranked ADVISORY that gates nothing. A site mis-weighted here changes the order of a report, never a verdict.",
       "isTooling": "render-outline.ts's display grouping — which subtree prints under `tooling` in the outline. Presentation over an already-derived graph; the graph itself is unaffected.",
       "isPyTestPath": "One shared definition exported from oracle-domain.ts and imported where python test files must be excluded (novelty surface, redundancy walk). A single spelling, not a scattered convention — and it scopes advisories, never a verdict.",
-      "scopeKeyOf": "redundancy.ts's chain-grouping key — which enclosing scope a compare chain belongs to, computed by capture containment. It shapes how an ADVISORY groups candidates; it grades nothing and cannot make a verdict unearned."
+      "scopeKeyOf": "redundancy.ts's chain-grouping key — which enclosing scope a compare chain belongs to, computed by capture containment. It shapes how an ADVISORY groups candidates; it grades nothing and cannot make a verdict unearned.",
+      "canonicalEntry": "pi-control.ts's package-relative native extension entry computes the one controlled settings value used by inspection and installation; it is a single path convention at the host boundary, not an unvalidated external input."
     }
   },
   "sinks": {
@@ -381,7 +382,19 @@
         "from": "record",
         "to": "verdict",
         "security": true,
-        "translates": "One explicitly named session's activity becomes the activation reading used by session-scoped hook checks. Only launcher events from the selected host and current installed bundle count as observed; direct probes, stale bundles, and other sessions cannot earn activation. Parent-fallback may prove that exact bundle reached the parent session, but it cannot establish which child produced the event."
+        "translates": "One explicitly named session's activity becomes the activation reading used by session-scoped hook checks. Only canonical host transport events from the selected host and current installed bundle count as observed; direct probes, stale bundles, and other sessions cannot earn activation. Parent-fallback may prove that exact bundle reached the parent session, but it cannot establish which child produced the event."
+      },
+      "registerPiHooks": {
+        "from": "shell",
+        "to": "record",
+        "security": false,
+        "translates": "Pi's native extension events become exact-session lifecycle activity and journal state without a launcher or pi-subagents dependency; main settlement remains silent while an optional child emits one guarded follow-up turn."
+      },
+      "inspectPiLifecycleHook": {
+        "from": "project-source",
+        "to": "verdict",
+        "security": true,
+        "translates": "The Pi project settings package entry, piProjectRoot mapping, and runnable extension target become one structural native control bit; unrelated or missing settings cannot masquerade as the host control."
       },
       "inspectLifecycleHook": {
         "from": "project-source",

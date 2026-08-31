@@ -16,7 +16,7 @@ import { appendFileSync, existsSync, mkdirSync, readFileSync, readdirSync } from
 import { createHash } from "node:crypto";
 import { spawnSync } from "node:child_process";
 import { basename, join, posix } from "node:path";
-import { activityReplayKey, isActivityRow, readActivity, type ActivityRow } from "./activity.ts";
+import { activityReplayKey, isActivityHostTransport, isActivityRow, readActivity, type ActivityRow } from "./activity.ts";
 import { slug } from "./decisions.ts";
 import { readTraceDetailed, type ReadEvent } from "./read-trace.ts";
 import type { Config } from "./types.ts";
@@ -489,11 +489,8 @@ function validateTrace(
       if (!isObject(observation)) problems.push(`${label}.trace.events[${i}].observation must be an object`);
       else {
         if (observation.version !== 1) problems.push(`${label}.trace.events[${i}].observation.version must be 1`);
-        if (observation.host !== "claude" && observation.host !== "codex" && observation.host !== "unknown") {
-          problems.push(`${label}.trace.events[${i}].observation.host is not recognized`);
-        }
-        if (observation.transport !== "launcher" && observation.transport !== "direct") {
-          problems.push(`${label}.trace.events[${i}].observation.transport is not launcher|direct`);
+        if (!isActivityHostTransport(observation.host, observation.transport)) {
+          problems.push(`${label}.trace.events[${i}].observation host/transport relation is invalid`);
         }
         if (observation.attribution !== "agent" && observation.attribution !== "session"
           && observation.attribution !== "parent-fallback" && observation.attribution !== "unknown") {
@@ -581,8 +578,6 @@ function validateActivity(
       && (row.parentSession !== session || row.agentId !== null)) {
       problems.push(`${rowLabel}.parent-fallback does not describe the owner session domain`);
     }
-    if (row.transport !== "launcher" && row.transport !== "direct") problems.push(`${rowLabel}.transport is not launcher|direct`);
-    if (row.host !== "claude" && row.host !== "codex" && row.host !== "unknown") problems.push(`${rowLabel}.host is not recognized`);
     for (const key of ["bundleHash", "parentSession", "agentId", "turn", "tool", "toolUseId", "eventId", "experimentId"] as const) {
       if (row[key] !== null && (typeof row[key] !== "string" || !(row[key] as string).length)) {
         problems.push(`${rowLabel}.${key} must be string|null`);

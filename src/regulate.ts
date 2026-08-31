@@ -13,7 +13,8 @@ import {
   type DoctrineRule,
   type RegulationAction,
 } from "./doctrine.ts";
-import { inspectLifecycleHook, type HookHost } from "./control.ts";
+import { inspectLifecycleHook, type ExternalHookHost, type HookHost } from "./control.ts";
+import { inspectPiLifecycleHook } from "./pi-control.ts";
 import { analyzeChange, signalState } from "./signal.ts";
 import { Unrunnable } from "./floor.ts";
 import { observeOrientation } from "./orient.ts";
@@ -134,7 +135,7 @@ export function selectRegulation(reading: RegulationReading): RegulationDecision
       `scope:${String(reading.scope)}`,
     ));
   }
-  if (reading.host !== "claude" && reading.host !== "codex") {
+  if (reading.host !== "claude" && reading.host !== "codex" && reading.host !== "pi") {
     candidates.push(refusal(
       "host",
       `reading names unsupported agent host ${String(reading.host)}`,
@@ -184,7 +185,7 @@ export function selectRegulation(reading: RegulationReading): RegulationDecision
       name: rule.command.name,
       args: [
         ...rule.command.args,
-        ...(rule.command.hostScoped && (reading.host === "claude" || reading.host === "codex")
+        ...(rule.command.hostScoped && (reading.host === "claude" || reading.host === "codex" || reading.host === "pi")
           ? ["--host", reading.host]
           : []),
       ],
@@ -289,27 +290,28 @@ export async function observeRegulation(
   const limitations: string[] = [];
 
   const host: HookHost = options.host ?? (process.env.CODEX_THREAD_ID ? "codex" : "claude");
-  const control = inspectLifecycleHook(cfg, host);
+  const pi = host === "pi" ? inspectPiLifecycleHook(cfg) : null;
+  const control = pi ?? inspectLifecycleHook(cfg, host as ExternalHookHost);
   if (!control.valid) {
-    const errors = control.files.filter((file) => !file.valid)
+    const errors = host === "pi" ? [pi!.settings.error ?? "invalid Pi settings"] : (control as ReturnType<typeof inspectLifecycleHook>).files.filter((file) => !file.valid)
       .map((file) => `${file.path}: ${file.error ?? "invalid settings"}`);
     observations.push({
       rule: "canonical-lifecycle-control",
       status: "unavailable",
       evidence: errors.join("; ") || `${host} lifecycle settings could not be interpreted`,
     });
-  } else if (!control.launcher.targetPresent) {
-    observations.push({
-      rule: "canonical-lifecycle-control",
-      status: "unavailable",
-      evidence: `${control.launcher.targetPath}: lifecycle target is missing; install this coherence version in the project first`,
-    });
+  } else if (host === "pi" && !pi!.settings.canonicalEntries && !pi!.settings.managedEntries && !pi!.mapping.present) {
+    observations.push({ rule: "canonical-lifecycle-control", status: "violated", evidence: "project Pi control is absent; install the native package entry and root mapping" });
+  } else if (host === "pi" && (!pi!.target.present || pi!.mapping.actual !== pi!.mapping.expected)) {
+    observations.push({ rule: "canonical-lifecycle-control", status: "unavailable", evidence: !pi!.target.present
+      ? `${pi!.target.extensionPath || ".pi extension"}: Pi extension target is missing`
+      : `${pi!.mapping.path}: Pi root mapping is missing or drifted` });
+  } else if (host !== "pi" && !(control as ReturnType<typeof inspectLifecycleHook>).launcher.targetPresent) {
+    observations.push({ rule: "canonical-lifecycle-control", status: "unavailable", evidence: (control as ReturnType<typeof inspectLifecycleHook>).launcher.targetPath + ": lifecycle target is missing; install this coherence version in the project first" });
   } else if (control.present) {
-    observations.push({
-      rule: "canonical-lifecycle-control",
-      status: "satisfied",
-      evidence: `the canonical ${host} five-event bundle, launcher, root mapping, and target are present`,
-    });
+    observations.push({ rule: "canonical-lifecycle-control", status: "satisfied", evidence: host === "pi"
+      ? "the native Pi package, root mapping, and extension target are present"
+      : `the canonical ${host} five-event bundle, launcher, root mapping, and target are present` });
   } else {
     observations.push({
       rule: "canonical-lifecycle-control",

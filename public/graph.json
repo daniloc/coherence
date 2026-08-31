@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-08-21 17:28Z",
+  "generatedAt": "2026-08-30 19:26Z",
   "root": "coherence",
-  "absRoot": "/Users/daniloc/Documents/Development/coherence",
+  "absRoot": "/home/kthorn/coherence/.worktrees/protected-primary-checkout",
   "nodes": [
     {
       "id": "c:.",
@@ -15,7 +15,7 @@
         "passes test \"repository voice — contributor startup keeps public capability changes tied to the global hook contract\""
       ],
       "prose": "Implementation belongs to the nested source and test components. This root component\nkeeps only the files that establish how those components are built, read, and released.",
-      "why": "An agent should encounter the project's purpose and its ownership seams before source\ndetail. The project hook wiring also records which repository reads informed a change and\nwhich decisions survived it. Keeping coordination separate from implementation makes that\nfirst read small while still checking that every deeper entry point is reachable.\n\nThis spec once claimed five obvious files existed at root; three were pruned rather than\ndressed up, because a root claim earns its line only when the failure it detects would\notherwise be SILENT. `package.json`, `README.md`, and `src/cli.ts` fail loudly on their\nown — npm, the reader, and the CLI itself all scream within seconds of their absence —\nso claiming them was green weight that could never turn red for an interesting reason\n(the Known-limits section calls that spec \"coherent and worthless\"). The two claims\nkept from that pruning are the ones whose absence the system absorbs without a sound:\n`loadConfig`\nfalls back to defaults when `coherence.config.json` is missing (verify would silently\nrun with no test runner, no serial pin, and the wrong testMatch), and a missing lifecycle\ncontrol kills the journal hooks with no host error at all. The latter used to be the weak\nstructural claim `.claude/settings.json exists at root`; now the root claims the binary\ncontrol reading itself for every host this repository supports. Its oracle checks each\nhost's three tracked parts—settings, stable launcher, and root mapping—their exact\ncomposition, host-specific exclusion controls, the absence of a competing path, and the\nrunnable target. One meaningful claim is lighter and stronger than six\ngreen file-existence claims. Fewer claims, honestly scoped, is still the trade this\nharness teaches; making its own root spec take it is the least it owes.\n\nThe repository-specific SessionStart appendix is a third silent surface: if it vanishes,\nthe canonical consumer hook correctly falls back and no host reports an error, but a\ncontributor can add an agent-facing capability without reviewing the global startup\ncontract, protocol identity, host controls, or docs. Its claim therefore exercises the\nreal composition crossing and pins the maintenance trigger's named surfaces while proving\nthat the reminder stays out of consumer canon. This is project policy carried by the\nproject voice, not maintenance detail imposed on every adopter."
+      "why": "An agent should encounter the project's purpose and its ownership seams before source\ndetail. The project hook wiring also records which repository reads informed a change and\nwhich decisions survived it. Keeping coordination separate from implementation makes that\nfirst read small while still checking that every deeper entry point is reachable.\n\nThis spec once claimed five obvious files existed at root; three were pruned rather than\ndressed up, because a root claim earns its line only when the failure it detects would\notherwise be SILENT. `package.json`, `README.md`, and `src/cli.ts` fail loudly on their\nown — npm, the reader, and the CLI itself all scream within seconds of their absence —\nso claiming them was green weight that could never turn red for an interesting reason\n(the Known-limits section calls that spec \"coherent and worthless\"). The two claims\nkept from that pruning are the ones whose absence the system absorbs without a sound:\n`loadConfig`\nfalls back to defaults when `coherence.config.json` is missing (verify would silently\nrun with no test runner, no serial pin, and the wrong testMatch), and a missing lifecycle\ncontrol kills the journal hooks with no host error at all. The latter used to be the weak\nstructural claim `.claude/settings.json exists at root`; now the root claims the binary\ncontrol reading itself for every host this repository supports. Its oracle checks each\nhost's complete tracked control—settings, native package or stable launcher, and root\nmapping—their exact composition, host-specific exclusion controls, the absence of a\ncompeting path, and the runnable target. One meaningful claim is lighter and stronger than six\ngreen file-existence claims. Fewer claims, honestly scoped, is still the trade this\nharness teaches; making its own root spec take it is the least it owes.\n\nThe repository-specific SessionStart appendix is a third silent surface: if it vanishes,\nthe canonical consumer hook correctly falls back and no host reports an error, but a\ncontributor can add an agent-facing capability without reviewing the global startup\ncontract, protocol identity, host controls, or docs. Its claim therefore exercises the\nreal composition crossing and pins the maintenance trigger's named surfaces while proving\nthat the reminder stays out of consumer canon. This is project policy carried by the\nproject voice, not maintenance detail imposed on every adopter."
     },
     {
       "id": "c:src",
@@ -78,6 +78,8 @@
         "boundary \"an empty derivation against a remembered surface refuses, never passes\" at vacuityRefusal via guard \"FLOOR — an empty derivation against a remembered surface REFUSES, never reports coherent\"",
         "boundary \"lifecycle hook presence is one canonical runnable bit\" at inspectLifecycleHook via guard \"control — presence is the complete canonical bundle, never a partial or lookalike\"",
         "boundary \"supported lifecycle hosts share one control contract without sharing host syntax\" at setLifecycleHookForHost via guard \"Codex control — install is exact, idempotent, preserving, and runnable across nested paths\"",
+        "boundary \"native Pi lifecycle preserves host meaning without requiring pi-subagents\" at registerPiHooks via guard \"Pi extension — main settlement stays silent and child settlement triggers exactly one final report without pi-subagents\"",
+        "boundary \"lifecycle persistence respects protected checkout ownership across every supported host\" at projectWritePolicy via guard \"protected primary checkout stays read-only across CLI, Claude, Codex, and Pi\"",
         "boundary \"current-session activation requires exact installed-bundle evidence\" at currentObservation via guard \"hook status — exact current bundle activates; stale, direct, replayed, and damaged evidence does not\"",
         "boundary \"customized hook text composes declared overrides and appends, degrading to canon on damage\" at composeHookText via guard \"hook text — override replaces, append follows, and damage degrades to the canonical emission\"",
         "boundary \"python sources feed the same instruments as typescript at their declared grade\" at surfaceOfSource via guard \"python surface — module defs, enum variants, and dict keys count; underscore and nested names do not\"",
@@ -100,7 +102,7 @@
         "boundary \"a streamed journal entry renders exactly once across appends and compaction\" at tailJournal via guard \"tail — an appended record arrives exactly once, a compaction fold re-emits nothing and drops nothing, and a half-written line waits for its bytes\""
       ],
       "prose": "The CLI is deliberately a thin composition root. Parsing, derivation, verification,\nrendering, and journaling remain independently addressable modules beneath this boundary.",
-      "why": "**agent lifecycle preserves decisions and exposes the current change signal.** Decisions\nand risk are cheapest to surface while the agent still holds the context that produced\nthem; waiting for a later reviewer externalizes both reconstruction costs. The two stop\nsurfaces are not interchangeable: a subagent restates its report because its caller may\nsee nothing else, while the main agent has already shown its report to the user and is\nnever interrupted by shared-worktree state that may belong to another agent. Main Stop\nkeeps the calibration observation and emits no bytes; only SubagentStop carries the\njournal and patch signal forward.\n\n**significant behavioral growth acquires an anchor or patch-specific decision.** The cost\nof adding an invariant is immediate while the cost of omitting it appears later, so the\ncurrent patch must carry either enforcement or an addressable reason that it needs none.\n\n**a weaker regulation obligation never masks a stronger one.** Regulation compares live\nobligations by a lexicographic potential, with missing observations failing closed instead\nof becoming zero, and returns the single strongest action owed. V2 evaluates only rules\ndeclared in the live doctrine registry; even a no-action result makes no claim of overall\nsafety.\n\n**regulation evaluates and repairs the selected agent host.** A canonical Claude control\ncannot create a field around a Codex session, even though both hosts implement the same\nlifecycle domain. The sensor therefore names the explicit or current host in its reading,\nthe decision identity retains it, and a lifecycle redirect installs that same host. A\nforeign host value refuses before it can release or author a shell command.\n\n**task context is bounded and names its approximations.** A focused context packet is\nuseful only when its one-hop and heuristic limits stay visible; otherwise convenience is\nmisread as completeness and recreates the omission gradient this project exists to oppose.\nRoutes, named limitations, and omission accounting are mandatory framing; a byte budget\nthat cannot hold them refuses with its exact minimum. Everything else is included in a\nstable priority order, and the withheld item and byte totals make truncation observable.\nRepository-level, generated, and explicitly requested ignored files remain navigable even\nwhen the source graph owns no component for them; `graphOwner: null` is evidence, not a miss.\n\n**verdict-bearing decision reads fail closed on surviving journal damage.** The journal's\ntolerant reader is useful for a human salvaging old history, but a regulator or waiver\ncannot turn its skipped lines into a smaller trusted population. The strict projection\nvalidates wire version, canonical shape and time, content identity, session/file\nattribution, containment, append framing, duplicate agreement, and terminal references\nas one relation. Domain-separated session hashes retain case-sensitive identity on\ncase-folding filesystems while an owned historical filename remains readable. Any damage\nmakes the verdict-bearing population unavailable while the historical render stays\nbackward-compatible.\n\n**a committed decision population cannot disappear into adoption from zero.** An absent\nledger is legitimate before first use, so filesystem absence alone proves nothing. Once\ncurrent Git `HEAD` owns decision files, however, their wholesale deletion is an external\nwitness that zero rows means lost evidence rather than adoption. The witness is consulted\nonly at zero: populated compaction remains legal, while non-Git and unborn repositories\nretain an honestly unproven empty state.\n\n**decision ratification follows explicit subject and authority, never prose similarity or\nrecency.** Independent agents can word the same question differently and can mention the\nsame noun while answering different questions. Conflict detection therefore compares only\nstanding decisions that share a machine-authored subject. Local alternatives remain\nproposals; one explicit orchestrator-accepted or user-directed choice can ratify them;\nincompatible choices tied at the highest authority stay contested.\n\n**work state is append-only, attributable, and predecessor-checked.** A shared task board\nthat mutates in place loses the handoffs and rejected transitions a swarm most needs after\ncontext loss. Each work order and transition is content-addressed in its writer session,\nand the current state is a strict replay. Broken predecessors, competing successors,\ndetached histories, damaged rows, and missing graph referents refuse instead of resolving\nby last-write-wins. The ledger is repository evidence rather than a machine-local queue;\nthe repository control therefore writes one through the public boundary, commits it,\nclones the repository, and requires the strict reader to reconstruct it.\n\n**work cannot activate or complete before every dependency completes.** Readiness is not\nadvice layered over the lifecycle; it is the lifecycle's ordering law. Every transition\nand closure validates its prospective graph before append, so a caller cannot bypass a\nwaiting projection by naming `active` or `completed` directly. Cancellation remains a\nterminal non-success and therefore does not satisfy a dependency that requires completed\noutput.\n\n**runnable work with overlapping write scopes is a collision, never concurrent\npermission.** Read and write scopes are repository-relative addresses. Dependency order\ncan make an overlap merely potential, but two dependency-clear or active writers whose\nexact/tree scopes intersect are a live conflict. The projection blocks dispatch and names\nboth work ids and both scopes; ownership is explicit rather than reverse-engineered from a\nshared diff.\n\n**a terminal parent has no live child and explicitly synthesizes every completed direct\nchild.** A child returning is not evidence that its parent incorporated the result, and a\nlive child whose join target is closed has nowhere truthful to report. Prospective graph\nvalidation therefore refuses parent closure until every direct child is terminal, requires\nevery completed child in the synthesis set, and refuses a late live child beneath a\nterminal parent. Cancellation can settle a child but cannot masquerade as synthesized\nsuccess.\n\n**authored work text is single-line data, never model-instruction control.** Work records\nare repository-authored evidence on read, even when they were valid on write. Their text\ncrosses into SessionStart's model-instruction channel, so public writes reject C0/C1\ncontrols and the hook renderer escapes such bytes again. A newline can remain visible as\ndata but cannot acquire the grammar of a peer instruction.\n\n**swarm write identity and authority flags are singleton or refused.** Repeated evidence,\ncriteria, alternatives, and scopes represent honest plurality; repeated session, owner,\nauthority, or predecessor selectors represent two incompatible attributions for one\nappend. One shared parser predicate distinguishes those sets and refuses ambiguity before\nany ledger writer runs.\n\n**consequence navigation contains only explicit assessed edges.** Decisions, work,\ncommits, experiments, verification, and defects already have addresses; temporal or path\nproximity does not make one cause another. The consequence ledger stores an assessor,\nevidence, typed endpoints, and a constrained relation per edge. Its graph traverses both\ndirections for navigation while retaining the authored direction, and strict reads refuse\nforged, displaced, conflicting, or symlink-redirected evidence. Those edges are durable\nonly if they cross a clone boundary, so the repository control writes a typed edge to a\nreal commit, transports it through Git, and requires a dangling-free cloned orientation.\n\n**specialized consequence relations admit only their declared endpoint kinds.** A generic\n`relates-to` edge can connect any two supported addresses, but verbs such as `produces`,\n`verifies`, `reveals`, and `repairs` carry lifecycle meaning. Their source and target kinds\nare checked as a pair, keeping the typed graph from accepting grammatically valid nonsense\nthat its render would otherwise state with unwarranted confidence.\n\n**consequence evidence refuses surviving storage damage instead of shrinking navigation.**\nAbsence is a legitimate first-use state; a surviving but unreadable, displaced, renamed,\nor torn edge is not. If damaged bytes could disappear from the population, removing one\nfile suffix or final newline could erase the only path from a defect to its repair while\nleaving an innocent empty graph. Storage framing and containment therefore belong to the\nevidence contract, not merely to filesystem hygiene.\n\n**orientation refuses damaged evidence before selecting a swarm heading.** The gyroscope\nis a projection over independent instruments, not a new source of truth. It reads each\nstrictly, preserves source availability and denominators, and selects one deterministic\nheading: refuse, resolve a collision, repair navigation, unblock, synthesize, dispatch,\ncontinue, verify, or steady. A damaged source outranks every actionable-looking empty list.\n\n**orientation admits verification state only with valid shape and comparable provenance.**\nThe status file is persisted JSON, not a TypeScript value at runtime. Orientation validates\nthe fields it uses—canonical time, commit shape, dirty bit, tier, and nonnegative failure\ncount—and refuses malformed evidence. A green report is current only when both repository\nand report commit addresses exist and agree; missing provenance is stale, never an\nimplicit match.\n\n**verification currency follows material repository state without invalidating its own\nreceipt.** Matching `HEAD` identifies a commit, not the live index and working tree layered\nover it. A source, staged, or untracked change therefore makes a clean report stale even\nwhen `HEAD` did not move. The status file itself is the one excluded path because recording\nthe report happens after its Git sample; counting that receipt would make every successful\nverification invalidate itself immediately.\n\n**orientation selects synthesis only when parent closure can execute it.** Synthesis is\nrepresented by the parent's terminal close, not by a separate mutable checkbox. A completed\nchild can therefore remain visibly unsynthesized while a ready, active, or blocked sibling\nstill owes work; selecting synthesis then would demand an operation the lifecycle refuses.\nOnly when that parent's children are terminal does synthesis become the executable highest\nheading.\n\n**orientation derives live blockage only from closeable work state.** A journaled impasse\nis historical testimony and has no event that later marks it complete. Treating such rows\nas the live scheduler makes the heading demand an action the record cannot ever discharge.\nThe work lifecycle owns current blocked state; journal incidents remain visible context\nwithout acquiring scheduler semantics.\n\n**completed work remains unverified until an explicit verification edge names it.** A\npassing command nearby in time cannot establish which work it assessed. V2 regulation\ntherefore treats a completed work order without a `verification --verifies--> work` edge\nas an obligation. This is deliberately stronger than command success and deliberately\nweaker than a proof of semantic correctness; append-only verification receipts remain a\nnamed future limit.\n\n**high-frequency lifecycle hooks start without the analysis dependency stack.**\nPostToolUse is the hottest and most fragile control boundary. Its eager import closure is\nbuilt-ins plus local lifecycle modules; parser registries enter only through the main CLI\ncomposition root. The runtime canary copies the complete source tree into an isolated\nproject with no dependency installation and executes PostToolUse, so a future eager edge\nto a parser package recreates the measured startup failure.\n\n**hook telemetry loss never kills PostToolUse.** Read traces calibrate the context model,\nbut losing that observation is cheaper than breaking every tool call in an agent session.\nThe hook contains both dynamic-load and persistence failures, emits no canonical bytes,\nand leaves the damaged target untouched. A real file-bearing hostile-target canary ensures\nthis contract exercises the write path rather than vacuously recording zero events.\n\n**session startup injects only the exact session's current work order.** Assignment is\nuseful only if the receiving agent can distinguish its authority, success criteria,\ndependencies, write scope, and collisions from another worker's. SessionStart reads the\nwork graph dynamically and emits only records whose owner session exactly matches the\nhost session; failure degrades to a named unavailable reading rather than breaking agent\nstartup.\n\n**session startup teaches the executable swarm loop without manufacturing authority.**\nEvery agent gets the two inert readings that establish direction and fleet state, while\ncreation and handoff remain explicitly conditional on coordination authority. Only an\nexactly owned live order acquires mutation examples, and those examples are selected from\nits standing state and carry both the host session and predecessor token. After one write\nthe token expires and the hook says to inspect again; startup guidance therefore cannot\nturn a stale instruction or a general orientation heading into last-writer-wins authority.\n\n**session startup survives a damaged decision-journal path with named degradation.** The\njournal carries decisions but cannot be allowed to prevent the agent that might repair it\nfrom starting. SessionStart keeps the exact host identity in memory, emits the canonical\ninstructions plus a visible unavailable control, and skips the journal write when the\nstanding path cannot be read or opened. This is degradation, not silent adoption of an\nempty history.\n\n**harness source remains searchable text rather than silently becoming binary.** Agent\nnavigation depends on ordinary repository search seeing every source file. A single literal\nzero byte can make common tools classify an otherwise textual module as binary and omit its\nmatches without a syntax or type error. Keeping control ranges escaped in source preserves\nruntime meaning while making disappearance from the reading surface a loud regression.\n\n**cached decisions expose structurally expired premises.** A decision saves inference only\nwhile the repository addresses supporting it remain live. Broken explicit referents must\nbe louder than readable but stale rationale.\n\n**predicted context closure is calibrated against observed reads and outcomes.** Economy's\none-hop closure is a hypothesis about necessary reading, not cognition. Observed reads and\nlater defect labels give that model a path to correction instead of turning it into dogma.\n\n**calibration preserves the weakest host attribution of its trace.** A Codex parent\nsession file can contain parent and descendant tool use because PostToolUse supplies no\nchild id. Calibration may still compare that aggregate against a patch, but it must name\nthe aggregate rather than relabeling those writes as one agent's work. Legacy rows remain\nunscoped, shared-worktree fallback remains separate, and any unreadable row prevents a\nnew sample instead of disappearing from its denominator.\n\n**reviewed risk sites survive relocation but never duplication.** A ratchet baseline is a\ncached review, and a cached fact that expires on a rename rots the same way a decision's\npremises do — a refactor then spends a reviewer's attention on sites nobody touched, and\nattention spent on false alarms is how a real one gets waved through. Relocation changes\nwhere a reviewed site lives; duplication changes how much unreviewed surface exists, and\nonly the second is news.\n\n**pinned mass follows a value-conserving rename but never absorbs growth.** A mass\ndimension's key embeds a name someone chose — a spec H1, a measure's config key — so a\nrename re-addresses the pin, and a ratchet that reads its own re-addressing as \"gained\nparts nobody named\" prints a lie beside the unchanged total that refutes it (measured:\none H1 edit, 35 lines relabeled, zero gained, gate red). The repair must stay\ncount-conserving: only a vanished pin with the same family, unit and exact value can\nabsorb a new name, or growth and novelty would ride in under renames.\n\n**a claim goes green only on positive evidence its oracle ran.** The verifier's whole\nauthority rests on this one property, and until now no claim cited it: an audit deleted\nthe rule and the tree stayed \"✓ coherent\" while the unit test failed unseen. An exit\ncode is the runner's statement about itself, not about the named test — a filter that\nmatched nothing exits clean on every runner class this repo has measured — so green\nmust require output that names the run, the one reading absence cannot produce.\n\n**a vanished oracle reds its claim, never green-by-absence.** A renamed or deleted test\nleaves a claim citing a name nothing owns, and that claim then guards nothing while\nwearing green. Absence has to be its own observable verdict, distinct from ran-and-failed,\nbecause the two demand different repairs: a red test needs the code fixed, a vanished\noracle needs the contract re-tied to something that exists.\n\n**fast verification rejects a statically vanished Vitest oracle without executing\ntests.** Name ownership is cheaper than test outcome: a literal Vitest declaration either\nstill supplies a runner-style full name or it does not. The edit loop should answer that\nstructural question without buying remote credentials or a suite boot, while refusing to\nturn dynamic or damaged source into false certainty. Static presence therefore remains a\nskip. A complete current population can prove absence; independently, a concrete Git\n`HEAD` owner disappearing from a deleted or still-complete former path proves an ownership\nloss even when unrelated current source is incomplete. If that same path becomes dynamic\nor damaged, it stays explicitly unknown; everything else does too. The\nexecutable tier alone can supply pass/fail evidence. This is a direct-declaration grade,\nnot an evaluator for arbitrary runtime registration; projects beyond it disable\n`staticOracleExistence` or resolve a fresh report.\n\n**fast oracle absence requires a complete direct-declaration population.** Absence is a\nstronger statement than failure: it says the registry owns no matching name. The static\nfloor may say that only when every registration mechanism it recognizes was enumerable;\ndynamic titles, fixture DSLs, registration-time module loads, custom includes, and damaged\nsource must poison absence into UNKNOWN while still allowing positive direct matches.\nOtherwise the cheap tier would turn its own inability to see a live oracle into evidence\nthat the oracle vanished.\n\n**committed platform capabilities survive optional deployment-config toggles.** The graph\ndescribes the capability surface authored code can address, not only what one machine has\nenabled for its next deploy. For Cloudflare stores, a direct `Env` property with a known\nbinding type and a wrangler stanza are two observations of the same binding domain: the\nadapter unions them, collapses agreement, and refuses disagreement. Source inference uses\nthe graph's already-filtered file population, so a generated machine-local environment\ndeclaration cannot become a hidden second walk. Runtime-variable names are retained as\ndeclarations, but their deployment values are unrepresentable in `Bindings` and never\nenter generated artifacts. An optional binding or machine-specific value may therefore\nchange without silently changing the architecture documented for the same source tree.\n\n**a declared invariant unanchored by any boundary fails coverage.** A spec may not\nassert a property that nothing enforces: that is the ratchet the whole harness turns on,\nand if it silently loosened, specs would drift back into aspiration prose. The gap has to\ncost a red at the run that opened it, while the person who opened it still holds the\ncontext to close it.\n\n**a via-test oracle that iterates no live domain fails its claim.** A totality label on a\nsampling test is worse than no label: it retires the reader's suspicion without retiring\nthe risk. Deriving the checked set from the live registry the chokepoint actually serves\nis what makes \"covers every case\" a fact about the system rather than about the fixture\nlist the author remembered.\n\n**a skipped run never clobbers an oracle's recorded verdict.** The record is the last\nknown truth, honestly dated. A fast tier that skips the executable claims every commit\nwould otherwise erase last week's real pass — or, worse, a real fail — with \"did not\nlook\", and history that can be overwritten by not looking is not history.\n\n**a named oracle that no test runs cannot pass.** The serial runner is the component the\nexecutable tier leans its trust on, and it was outside the evidence perimeter — unclaimed,\nuntested, and (measured) willing to exit clean when the cited title survived only as a\nstring in a file. The runner itself must refuse a name it cannot show ran, because every\ngreen above it inherits that refusal.\n\n**an empty derivation against a remembered surface refuses, never passes.** Every verdict\nin this file rests on the graph deriving non-empty, and nothing checked that premise:\ngutting `buildGraph` left the gate printing \"claims: 0\" and \"✓ coherent\", exit 0 —\ndeeper than a vanished oracle, because it empties every check at once while announcing\nthey all passed. The record remembers how many claims the last run graded, so a run that\nsuddenly sees zero must refuse rather than report success over nothing; the only\nlegitimate zero (a project adopting from nothing) is exactly the one with no memory, and\nit gets the adoption ladder instead. The floor deliberately stops at zero: a partial\ncollapse where every component keeps a claim is observationally identical to deliberate\npruning, and deletion has to stay free or people stop deleting. What the complement\nunderneath it actually reaches is narrower than it first appears — a component stripped of\nits claims is still a node someone can red, while a component the walk never discovered\nleaves nothing behind to notice, so an N→1 slide reads as N ordinary prunings. Pinning the\npopulation as a mass dimension is the honest answer there, because the question it settles\nis not whether anything survived but whether as much survived as last time.\n\n**lifecycle hook presence is one canonical runnable bit.** The control surface cannot\ncreate a field if every repository is free to carry a merely similar—or silently dead—\nhook. Printing, installation, and inspection therefore share one five-event value and\none stable launcher per host. Presence means exactly one shared project copy, no competing\nlocal, inline, or legacy path, an aligned host/launcher root, a correct declared root\nmapping, an enabled project-hook layer, and a runnable target. Unrelated hooks may coexist.\nHistorical journal activity is reported beside this bit but can neither redeem current\nabsence nor erase current presence.\n\n**supported lifecycle hosts share one control contract without sharing host syntax.**\nClaude and Codex expose the same five lifecycle meanings through different settings files,\nmatchers, launch commands, and response envelopes. Host parity therefore means deriving\neach complete bundle from one host-selected domain while retaining a distinct fingerprint;\ncopying Claude bytes into Codex would be resemblance, not parity.\n\n**current-session activation requires exact installed-bundle evidence.** Structural\npresence proves that the project control is runnable, not that this session loaded it. A\nsession becomes observed only when its activity names the selected host, launcher\ntransport, and current bundle fingerprint. Direct probes, stale bundles, other sessions,\nand a guessed newest session cannot establish activation; parent-session fallback stays a\nnamed attribution ceiling rather than being promoted to child evidence.\n\n**customized hook text composes declared overrides and appends, degrading to canon on\ndamage.** The canonical hook text is the harness's voice — identical across adopting\nprojects, and byte-testable because of it — but a project knows things the harness cannot:\nits own commands, its conventions, the one warning its history taught it. So a project\ngets a declared voice per event rather than a fork of the hook body, under one composition\nrule with no conflict state: the override answers what the base is, the append answers\nwhat follows it, and both may coexist; an empty override is a deliberate, visible silence,\nnot an error. Damage must degrade to the canonical emission at hook time, because the hook\nbody runs inside every agent session of every adopting project — a torn customization\nfile that broke sessions would make the journal's carrier the thing that kills the work it\nrecords — so a tear costs exactly the customization, never the session, and the loud\nsurface for it is `hooks review`, where a reader is actually looking. Events with no\ncanonical emission — main Stop, PostToolUse — speak only with a declared project voice;\nmain Stop's canonical byte-silence and the attribution reasoning behind it stand unchanged\nas the default.\n\n**python sources feed the same instruments as typescript at their declared grade.**\nThe adapter seam always promised language-agnosticism, but three analyzers and two\nscanners parsed TypeScript directly, so a python project's surface grew invisibly — the\nzero-anchor alarm never fired, parity claims skipped `.py` oracles, duplicated domains\nwent unranked, batch oracles knew one report format, and f-string interpolations were not\nsites. Each instrument now reads python at a DECLARED grade: most through the shared\ngrammar queries of phase 2b (surface, sites, sinks), the oracle arms at the pinned\nindent-block grade their guards froze — in-harness, no subprocess, and since the arms\nported, no compiler dependency at all. The grade is declared, not hidden —\nprecision is preferred over recall everywhere, because an advisory that cries wolf\nretires the reader's attention without retiring risk, and with no compiler behind `.py`\na false positive can never be rescued downstream. What the regex grade deliberately does\nnot count is journaled beside each instrument, so the next reader inherits the boundary\nof the instrument instead of rediscovering it.\n\n**a declared language resolves to a real adapter or refuses, never a silent fallback.**\nThe graph is the one derivation everything downstream consumes, and the adapter decides\nwhat that derivation can see. The old `?? typescript` fallback meant a typo'd language\nname walked the wrong grammar and reported on the garbage with full confidence — the\nsame walking-a-different-tree failure the config loader refuses for, one seam later. So\nan unknown bare name now refuses with the live built-in list, and the same seam is where\na project brings its own language: a `./`-relative module exporting the LanguageAdapter\nshape, validated field-by-field so the refusal names the line that needs fixing.\nImporting project code is not new trust — the atlas already declares at the loadConfig\ncrossing that running the harness in a tree executes that tree's config. What a custom\nadapter buys is the graph tier: symbols, import edges, prose, claims over them. The\nper-language instrument arms (surface counting, oracle analysis, redundancy, sinks,\nbatch formats) remain harness contributions, and the documentation says so, because an\nadapter author who is not told the boundary believes they have the full field when they\nhave half.\n\n**a grammar-backed adapter derives the graph through the same language seam.** The\nregex adapters scale in expert code — the python push measured ~900 hand-built lines\nacross five instrument arms — while a grammar plus capture queries scales in data:\nmodern tree-sitter grammar packages ship a prebuilt wasm, `web-tree-sitter` runs it\nwithout a native toolchain, and the language-specific knowledge shrinks to patterns a\ncontributor can write without touching verdict logic. The factory is async once (wasm\nload) and the adapter it returns is synchronous, so the seam is unchanged and a project\nmodule reaches it with one top-level await. The corpus diff that justified the phase\nalso bounded it: on this repository's own sixty-three TypeScript files the regex grade\nmissed zero symbols a real parse found, so the graph tier was not where parse fidelity\nwas owed. The built-ins then CONVERGED onto the grammar path anyway — not for fidelity\nbut because two implementations of one outcome are two spellings of a domain, the\nredundancy class this harness ranks in other people's code. The regex adapters were\ncorpus-diffed to parity (every delta an enumerated regex mistake), their prose logic\nported verbatim, and then deleted; their grammars ship vendored with provenance. The\ninstrument arms remain hand-built until a later phase ports them to query packs.\n\n**instrument arms read languages through shared grammar queries, never a parallel\nscanner.** Phase 2b's contract, proven first on the injection ratchet: a language\ncontributes captures and signals — which node is an interpolation, how its SQL context\nannounces itself — and the mechanism owns classification, safe-pattern grading, site\nidentity, and the ratchet, once. The regex scanners this replaced matched line TEXT, so\nthey counted `${}` inside plain strings, comments, and test fixtures as sites, bounded\nvisibility at one brace of nesting, and one of them matched its own source. The query\nscan re-pinned the baseline with every delta enumerated: nineteen real nested-brace\nsites gained, one self-match artifact gone. A new language now gains the whole\ninstrument from a table row — ruby's took three lines and no scanner — which is the\ntwo-tier boundary dissolving arm by arm.\n\n**a built-in language pack is data: queries, patterns, and named strategies, never\ncode.** The declarative baseline is what keeps \"add a language\" a table-row act instead\nof an expert contribution — and it is a rule that erodes one convenient function at a\ntime unless something refuses. So the packs are inspectable values aggregated in one\nplace, and a guard sweeps them for function-valued fields by path: the hand-rolled\nscanner class is unrepresentable at the seam, not merely discouraged. The rule's edge\nis honest about what a pack may name — strategies from a closed, mechanism-owned set\n(\"jsdoc\", \"docstring\", \"cooked-string\") — because some knowledge is genuinely\nprocedural; naming it keeps the procedure written once where every language can reach\nit. Project adapter modules remain code territory by definition: purity governs what\nships built in, where a single spelling is the entire point.\n\n**a parse's heap is returned before the next file.** web-tree-sitter trees hold wasm\nheap only an explicit delete returns, and the emscripten heap is fixed — so a leak is\ninvisible on a small repository and fatal on a large one, the worst observability\nprofile a defect can have. The measured incident is the refutation above. The repair is\nthe ladder's top rung, not discipline: `withTree` owns the tree's whole lifetime, every\ncall site takes it, node captures die inside it (the one lazy consumer was made eager\nrather than allowed to touch a freed node), and forgetting to free is unrepresentable.\n\n**an undeclared root refuses the walk, never wanders.** A configless run walks whatever\ndirectory the shell happened to be in and grades that population with full confidence —\nthe incident run was `npx coherence verify` from a home directory, which is not exotic;\nit is the first thing a curious adopter types. The config file's PRESENCE is the\ndeclaration, so `{}` is a complete first rung of the adoption ladder, and the refusal\nprints exactly that one-line bootstrap. Journal, hook, and reference commands never\nwalk, so they stay available in an undeclared directory — the field does not require a\nconfig to remember decisions.\n\n**experiment outcomes require criterion-total evidence.** A\nplan is frozen before work with its predicted context, actions, criteria, and evidence\ncursors. Closure answers every action and criterion exactly once, preserves the assessor,\nand derives success, failure, or inconclusive from criterion statuses rather than accepting\nan outcome label. Otherwise the ledger would turn an incomplete story into a measured loop.\n\n**experiment telemetry preserves its weakest provable attribution.** Trace and activity\nwindows may be empty, prove an exact owner session, or only prove a parent-session aggregate\nthat can include descendants; older trace may carry no observation metadata at all. Those\nfour scopes remain distinct in the immutable close record. Damaged prefixes, unreadable\nrows, and unknown or inconsistent scope refuse. That keeps compatible history without\nturning absence or uncertainty into false precision.\n\n**activity evidence is accepted only when identity, scope, time, and command agree.** A\nrow is useful precisely because later status and experiment readers stop re-deriving the\nhost event. That cached inference is safe only while its relational fields still agree:\nagent attribution names the row session, parent fallback names its parent domain, event\nidentity recomputes, time is canonical, and command kind/result agrees with name and exit\ncode. One strict reader grades that whole relation; malformed rows become counted damage,\nnever partially trusted evidence.\n\n**surviving agent-assessed defect evidence is attributable and internally consistent.** A\nconjecture keeps uncertainty alive; a defect record says an agent crossed that epistemic\nboundary and must therefore carry the evidence for doing so, the repository subject it\njudged, and the caller-attributed writer labels attached to the assessment. Records append per session and\ndedupe exact retries, while the merged reader recomputes the ordinary content address and\nrefuses malformed, inconsistent, or displaced surviving rows. That detects partial damage;\nit does not prove that a valid row was never rewritten with a recomputed id. Committed Git\nhistory is this first recorder's external rewrite and deletion witness, and an independently\nanchored head is future work.\n\n**defect writes refuse pre-existing symlink redirection.** A path beneath the repository\nis not containment when its stable components redirect through a symlink. The reader\ntherefore refuses linked ledger directories and entries, while the writer validates both\ndirectory components and opens the session target without following its final link, then\ncompares the opened descriptor with the standing path before appending. This prevents the\nmeasured stable-state redirects; it is not an `openat`-grade promise against a privileged\nprocess racing parent-directory renames during the append.\n\n**defect provenance is data, never terminal control.** Repository identity is captured by\nthe machine, but the committed row is still untrusted input on its next read. A commit is\ntherefore null or has lowercase SHA-1/SHA-256 object-name shape, never merely a nonempty string; the\nhuman renderer also neutralizes its bytes. Without both the semantic constraint and the\noutput encoding, an edited but re-addressed row could turn provenance into a terminal\ninstruction while remaining structurally valid.\n\n**a streamed journal entry renders exactly once across appends and compaction.** The live\nstream exists for the one reader the settled render cannot serve — an orchestrator watching\nfive subagents mid-flight — and that reader has no way to audit the feed against the files.\nA dropped entry is a decision the orchestrator never saw, indistinguishable from one never\nmade; a duplicate teaches the opposite lie, that a question was decided twice. Both are\ncheap to produce, because the journal's files do not strictly grow: compaction moves lines\nbetween files and unlinks the originals, which a position-addressed reader replays in full.\nSo a record's identity in the stream comes from its content — the same triple the merged\ntimeline sorts by — and a moved line is one the feed already carried.\n\n(The import claims above separately prove that the composition root still reaches the\nconfiguration loader, graph derivation, verifier, spec walker, and journal.)",
+      "why": "**agent lifecycle preserves decisions and exposes the current change signal.** Decisions\nand risk are cheapest to surface while the agent still holds the context that produced\nthem; waiting for a later reviewer externalizes both reconstruction costs. The two stop\nsurfaces are not interchangeable: a subagent restates its report because its caller may\nsee nothing else, while the main agent has already shown its report to the user and is\nnever interrupted by shared-worktree state that may belong to another agent. Main Stop\nkeeps the calibration observation and emits no bytes; only SubagentStop carries the\njournal and patch signal forward.\n\n**significant behavioral growth acquires an anchor or patch-specific decision.** The cost\nof adding an invariant is immediate while the cost of omitting it appears later, so the\ncurrent patch must carry either enforcement or an addressable reason that it needs none.\n\n**native Pi lifecycle preserves host meaning without requiring pi-subagents.** Pi's\nin-process extension maps exact native session, tool, and settlement events, remains\nuseful with no child package, and allows one guarded child completion turn when\n`PI_SUBAGENT_CHILD=1`; native transport stays distinct from Claude/Codex launchers.\n\n**lifecycle persistence respects protected checkout ownership across every supported host.**\nA host event arrives before an agent can obey repository prose, so textual worktree guidance\ncannot authorize automatic persistence. When the project opts in, Git's registered primary\nworktree remains read-only across explicit CLI operations and Claude, Codex, and Pi lifecycle\nevents; an unprovable identity refuses writes rather than becoming permission. Linked\nworktrees retain the complete evidence path.\n\n**a weaker regulation obligation never masks a stronger one.** Regulation compares live\nobligations by a lexicographic potential, with missing observations failing closed instead\nof becoming zero, and returns the single strongest action owed. V2 evaluates only rules\ndeclared in the live doctrine registry; even a no-action result makes no claim of overall\nsafety.\n\n**regulation evaluates and repairs the selected agent host.** A canonical Claude control\ncannot create a field around a Codex session, even though both hosts implement the same\nlifecycle domain. The sensor therefore names the explicit or current host in its reading,\nthe decision identity retains it, and a lifecycle redirect installs that same host. A\nforeign host value refuses before it can release or author a shell command.\n\n**task context is bounded and names its approximations.** A focused context packet is\nuseful only when its one-hop and heuristic limits stay visible; otherwise convenience is\nmisread as completeness and recreates the omission gradient this project exists to oppose.\nRoutes, named limitations, and omission accounting are mandatory framing; a byte budget\nthat cannot hold them refuses with its exact minimum. Everything else is included in a\nstable priority order, and the withheld item and byte totals make truncation observable.\nRepository-level, generated, and explicitly requested ignored files remain navigable even\nwhen the source graph owns no component for them; `graphOwner: null` is evidence, not a miss.\n\n**verdict-bearing decision reads fail closed on surviving journal damage.** The journal's\ntolerant reader is useful for a human salvaging old history, but a regulator or waiver\ncannot turn its skipped lines into a smaller trusted population. The strict projection\nvalidates wire version, canonical shape and time, content identity, session/file\nattribution, containment, append framing, duplicate agreement, and terminal references\nas one relation. Domain-separated session hashes retain case-sensitive identity on\ncase-folding filesystems while an owned historical filename remains readable. Any damage\nmakes the verdict-bearing population unavailable while the historical render stays\nbackward-compatible.\n\n**a committed decision population cannot disappear into adoption from zero.** An absent\nledger is legitimate before first use, so filesystem absence alone proves nothing. Once\ncurrent Git `HEAD` owns decision files, however, their wholesale deletion is an external\nwitness that zero rows means lost evidence rather than adoption. The witness is consulted\nonly at zero: populated compaction remains legal, while non-Git and unborn repositories\nretain an honestly unproven empty state.\n\n**decision ratification follows explicit subject and authority, never prose similarity or\nrecency.** Independent agents can word the same question differently and can mention the\nsame noun while answering different questions. Conflict detection therefore compares only\nstanding decisions that share a machine-authored subject. Local alternatives remain\nproposals; one explicit orchestrator-accepted or user-directed choice can ratify them;\nincompatible choices tied at the highest authority stay contested.\n\n**work state is append-only, attributable, and predecessor-checked.** A shared task board\nthat mutates in place loses the handoffs and rejected transitions a swarm most needs after\ncontext loss. Each work order and transition is content-addressed in its writer session,\nand the current state is a strict replay. Broken predecessors, competing successors,\ndetached histories, damaged rows, and missing graph referents refuse instead of resolving\nby last-write-wins. The ledger is repository evidence rather than a machine-local queue;\nthe repository control therefore writes one through the public boundary, commits it,\nclones the repository, and requires the strict reader to reconstruct it.\n\n**work cannot activate or complete before every dependency completes.** Readiness is not\nadvice layered over the lifecycle; it is the lifecycle's ordering law. Every transition\nand closure validates its prospective graph before append, so a caller cannot bypass a\nwaiting projection by naming `active` or `completed` directly. Cancellation remains a\nterminal non-success and therefore does not satisfy a dependency that requires completed\noutput.\n\n**runnable work with overlapping write scopes is a collision, never concurrent\npermission.** Read and write scopes are repository-relative addresses. Dependency order\ncan make an overlap merely potential, but two dependency-clear or active writers whose\nexact/tree scopes intersect are a live conflict. The projection blocks dispatch and names\nboth work ids and both scopes; ownership is explicit rather than reverse-engineered from a\nshared diff.\n\n**a terminal parent has no live child and explicitly synthesizes every completed direct\nchild.** A child returning is not evidence that its parent incorporated the result, and a\nlive child whose join target is closed has nowhere truthful to report. Prospective graph\nvalidation therefore refuses parent closure until every direct child is terminal, requires\nevery completed child in the synthesis set, and refuses a late live child beneath a\nterminal parent. Cancellation can settle a child but cannot masquerade as synthesized\nsuccess.\n\n**authored work text is single-line data, never model-instruction control.** Work records\nare repository-authored evidence on read, even when they were valid on write. Their text\ncrosses into SessionStart's model-instruction channel, so public writes reject C0/C1\ncontrols and the hook renderer escapes such bytes again. A newline can remain visible as\ndata but cannot acquire the grammar of a peer instruction.\n\n**swarm write identity and authority flags are singleton or refused.** Repeated evidence,\ncriteria, alternatives, and scopes represent honest plurality; repeated session, owner,\nauthority, or predecessor selectors represent two incompatible attributions for one\nappend. One shared parser predicate distinguishes those sets and refuses ambiguity before\nany ledger writer runs.\n\n**consequence navigation contains only explicit assessed edges.** Decisions, work,\ncommits, experiments, verification, and defects already have addresses; temporal or path\nproximity does not make one cause another. The consequence ledger stores an assessor,\nevidence, typed endpoints, and a constrained relation per edge. Its graph traverses both\ndirections for navigation while retaining the authored direction, and strict reads refuse\nforged, displaced, conflicting, or symlink-redirected evidence. Those edges are durable\nonly if they cross a clone boundary, so the repository control writes a typed edge to a\nreal commit, transports it through Git, and requires a dangling-free cloned orientation.\n\n**specialized consequence relations admit only their declared endpoint kinds.** A generic\n`relates-to` edge can connect any two supported addresses, but verbs such as `produces`,\n`verifies`, `reveals`, and `repairs` carry lifecycle meaning. Their source and target kinds\nare checked as a pair, keeping the typed graph from accepting grammatically valid nonsense\nthat its render would otherwise state with unwarranted confidence.\n\n**consequence evidence refuses surviving storage damage instead of shrinking navigation.**\nAbsence is a legitimate first-use state; a surviving but unreadable, displaced, renamed,\nor torn edge is not. If damaged bytes could disappear from the population, removing one\nfile suffix or final newline could erase the only path from a defect to its repair while\nleaving an innocent empty graph. Storage framing and containment therefore belong to the\nevidence contract, not merely to filesystem hygiene.\n\n**orientation refuses damaged evidence before selecting a swarm heading.** The gyroscope\nis a projection over independent instruments, not a new source of truth. It reads each\nstrictly, preserves source availability and denominators, and selects one deterministic\nheading: refuse, resolve a collision, repair navigation, unblock, synthesize, dispatch,\ncontinue, verify, or steady. A damaged source outranks every actionable-looking empty list.\n\n**orientation admits verification state only with valid shape and comparable provenance.**\nThe status file is persisted JSON, not a TypeScript value at runtime. Orientation validates\nthe fields it uses—canonical time, commit shape, dirty bit, tier, and nonnegative failure\ncount—and refuses malformed evidence. A green report is current only when both repository\nand report commit addresses exist and agree; missing provenance is stale, never an\nimplicit match.\n\n**verification currency follows material repository state without invalidating its own\nreceipt.** Matching `HEAD` identifies a commit, not the live index and working tree layered\nover it. A source, staged, or untracked change therefore makes a clean report stale even\nwhen `HEAD` did not move. The status file itself is the one excluded path because recording\nthe report happens after its Git sample; counting that receipt would make every successful\nverification invalidate itself immediately.\n\n**orientation selects synthesis only when parent closure can execute it.** Synthesis is\nrepresented by the parent's terminal close, not by a separate mutable checkbox. A completed\nchild can therefore remain visibly unsynthesized while a ready, active, or blocked sibling\nstill owes work; selecting synthesis then would demand an operation the lifecycle refuses.\nOnly when that parent's children are terminal does synthesis become the executable highest\nheading.\n\n**orientation derives live blockage only from closeable work state.** A journaled impasse\nis historical testimony and has no event that later marks it complete. Treating such rows\nas the live scheduler makes the heading demand an action the record cannot ever discharge.\nThe work lifecycle owns current blocked state; journal incidents remain visible context\nwithout acquiring scheduler semantics.\n\n**completed work remains unverified until an explicit verification edge names it.** A\npassing command nearby in time cannot establish which work it assessed. V2 regulation\ntherefore treats a completed work order without a `verification --verifies--> work` edge\nas an obligation. This is deliberately stronger than command success and deliberately\nweaker than a proof of semantic correctness; append-only verification receipts remain a\nnamed future limit.\n\n**high-frequency lifecycle hooks start without the analysis dependency stack.**\nPostToolUse is the hottest and most fragile control boundary. Its eager import closure is\nbuilt-ins plus local lifecycle modules; parser registries enter only through the main CLI\ncomposition root. The runtime canary copies the complete source tree into an isolated\nproject with no dependency installation and executes PostToolUse, so a future eager edge\nto a parser package recreates the measured startup failure.\n\n**hook telemetry loss never kills PostToolUse.** Read traces calibrate the context model,\nbut losing that observation is cheaper than breaking every tool call in an agent session.\nThe hook contains both dynamic-load and persistence failures, emits no canonical bytes,\nand leaves the damaged target untouched. A real file-bearing hostile-target canary ensures\nthis contract exercises the write path rather than vacuously recording zero events.\n\n**session startup injects only the exact session's current work order.** Assignment is\nuseful only if the receiving agent can distinguish its authority, success criteria,\ndependencies, write scope, and collisions from another worker's. SessionStart reads the\nwork graph dynamically and emits only records whose owner session exactly matches the\nhost session; failure degrades to a named unavailable reading rather than breaking agent\nstartup.\n\n**session startup teaches the executable swarm loop without manufacturing authority.**\nEvery agent gets the two inert readings that establish direction and fleet state, while\ncreation and handoff remain explicitly conditional on coordination authority. Only an\nexactly owned live order acquires mutation examples, and those examples are selected from\nits standing state and carry both the host session and predecessor token. After one write\nthe token expires and the hook says to inspect again; startup guidance therefore cannot\nturn a stale instruction or a general orientation heading into last-writer-wins authority.\n\n**session startup survives a damaged decision-journal path with named degradation.** The\njournal carries decisions but cannot be allowed to prevent the agent that might repair it\nfrom starting. SessionStart keeps the exact host identity in memory, emits the canonical\ninstructions plus a visible unavailable control, and skips the journal write when the\nstanding path cannot be read or opened. This is degradation, not silent adoption of an\nempty history.\n\n**harness source remains searchable text rather than silently becoming binary.** Agent\nnavigation depends on ordinary repository search seeing every source file. A single literal\nzero byte can make common tools classify an otherwise textual module as binary and omit its\nmatches without a syntax or type error. Keeping control ranges escaped in source preserves\nruntime meaning while making disappearance from the reading surface a loud regression.\n\n**cached decisions expose structurally expired premises.** A decision saves inference only\nwhile the repository addresses supporting it remain live. Broken explicit referents must\nbe louder than readable but stale rationale.\n\n**predicted context closure is calibrated against observed reads and outcomes.** Economy's\none-hop closure is a hypothesis about necessary reading, not cognition. Observed reads and\nlater defect labels give that model a path to correction instead of turning it into dogma.\n\n**calibration preserves the weakest host attribution of its trace.** A Codex parent\nsession file can contain parent and descendant tool use because PostToolUse supplies no\nchild id. Calibration may still compare that aggregate against a patch, but it must name\nthe aggregate rather than relabeling those writes as one agent's work. Legacy rows remain\nunscoped, shared-worktree fallback remains separate, and any unreadable row prevents a\nnew sample instead of disappearing from its denominator.\n\n**reviewed risk sites survive relocation but never duplication.** A ratchet baseline is a\ncached review, and a cached fact that expires on a rename rots the same way a decision's\npremises do — a refactor then spends a reviewer's attention on sites nobody touched, and\nattention spent on false alarms is how a real one gets waved through. Relocation changes\nwhere a reviewed site lives; duplication changes how much unreviewed surface exists, and\nonly the second is news.\n\n**pinned mass follows a value-conserving rename but never absorbs growth.** A mass\ndimension's key embeds a name someone chose — a spec H1, a measure's config key — so a\nrename re-addresses the pin, and a ratchet that reads its own re-addressing as \"gained\nparts nobody named\" prints a lie beside the unchanged total that refutes it (measured:\none H1 edit, 35 lines relabeled, zero gained, gate red). The repair must stay\ncount-conserving: only a vanished pin with the same family, unit and exact value can\nabsorb a new name, or growth and novelty would ride in under renames.\n\n**a claim goes green only on positive evidence its oracle ran.** The verifier's whole\nauthority rests on this one property, and until now no claim cited it: an audit deleted\nthe rule and the tree stayed \"✓ coherent\" while the unit test failed unseen. An exit\ncode is the runner's statement about itself, not about the named test — a filter that\nmatched nothing exits clean on every runner class this repo has measured — so green\nmust require output that names the run, the one reading absence cannot produce.\n\n**a vanished oracle reds its claim, never green-by-absence.** A renamed or deleted test\nleaves a claim citing a name nothing owns, and that claim then guards nothing while\nwearing green. Absence has to be its own observable verdict, distinct from ran-and-failed,\nbecause the two demand different repairs: a red test needs the code fixed, a vanished\noracle needs the contract re-tied to something that exists.\n\n**fast verification rejects a statically vanished Vitest oracle without executing\ntests.** Name ownership is cheaper than test outcome: a literal Vitest declaration either\nstill supplies a runner-style full name or it does not. The edit loop should answer that\nstructural question without buying remote credentials or a suite boot, while refusing to\nturn dynamic or damaged source into false certainty. Static presence therefore remains a\nskip. A complete current population can prove absence; independently, a concrete Git\n`HEAD` owner disappearing from a deleted or still-complete former path proves an ownership\nloss even when unrelated current source is incomplete. If that same path becomes dynamic\nor damaged, it stays explicitly unknown; everything else does too. The\nexecutable tier alone can supply pass/fail evidence. This is a direct-declaration grade,\nnot an evaluator for arbitrary runtime registration; projects beyond it disable\n`staticOracleExistence` or resolve a fresh report.\n\n**fast oracle absence requires a complete direct-declaration population.** Absence is a\nstronger statement than failure: it says the registry owns no matching name. The static\nfloor may say that only when every registration mechanism it recognizes was enumerable;\ndynamic titles, fixture DSLs, registration-time module loads, custom includes, and damaged\nsource must poison absence into UNKNOWN while still allowing positive direct matches.\nOtherwise the cheap tier would turn its own inability to see a live oracle into evidence\nthat the oracle vanished.\n\n**committed platform capabilities survive optional deployment-config toggles.** The graph\ndescribes the capability surface authored code can address, not only what one machine has\nenabled for its next deploy. For Cloudflare stores, a direct `Env` property with a known\nbinding type and a wrangler stanza are two observations of the same binding domain: the\nadapter unions them, collapses agreement, and refuses disagreement. Source inference uses\nthe graph's already-filtered file population, so a generated machine-local environment\ndeclaration cannot become a hidden second walk. Runtime-variable names are retained as\ndeclarations, but their deployment values are unrepresentable in `Bindings` and never\nenter generated artifacts. An optional binding or machine-specific value may therefore\nchange without silently changing the architecture documented for the same source tree.\n\n**a declared invariant unanchored by any boundary fails coverage.** A spec may not\nassert a property that nothing enforces: that is the ratchet the whole harness turns on,\nand if it silently loosened, specs would drift back into aspiration prose. The gap has to\ncost a red at the run that opened it, while the person who opened it still holds the\ncontext to close it.\n\n**a via-test oracle that iterates no live domain fails its claim.** A totality label on a\nsampling test is worse than no label: it retires the reader's suspicion without retiring\nthe risk. Deriving the checked set from the live registry the chokepoint actually serves\nis what makes \"covers every case\" a fact about the system rather than about the fixture\nlist the author remembered.\n\n**a skipped run never clobbers an oracle's recorded verdict.** The record is the last\nknown truth, honestly dated. A fast tier that skips the executable claims every commit\nwould otherwise erase last week's real pass — or, worse, a real fail — with \"did not\nlook\", and history that can be overwritten by not looking is not history.\n\n**a named oracle that no test runs cannot pass.** The serial runner is the component the\nexecutable tier leans its trust on, and it was outside the evidence perimeter — unclaimed,\nuntested, and (measured) willing to exit clean when the cited title survived only as a\nstring in a file. The runner itself must refuse a name it cannot show ran, because every\ngreen above it inherits that refusal.\n\n**an empty derivation against a remembered surface refuses, never passes.** Every verdict\nin this file rests on the graph deriving non-empty, and nothing checked that premise:\ngutting `buildGraph` left the gate printing \"claims: 0\" and \"✓ coherent\", exit 0 —\ndeeper than a vanished oracle, because it empties every check at once while announcing\nthey all passed. The record remembers how many claims the last run graded, so a run that\nsuddenly sees zero must refuse rather than report success over nothing; the only\nlegitimate zero (a project adopting from nothing) is exactly the one with no memory, and\nit gets the adoption ladder instead. The floor deliberately stops at zero: a partial\ncollapse where every component keeps a claim is observationally identical to deliberate\npruning, and deletion has to stay free or people stop deleting. What the complement\nunderneath it actually reaches is narrower than it first appears — a component stripped of\nits claims is still a node someone can red, while a component the walk never discovered\nleaves nothing behind to notice, so an N→1 slide reads as N ordinary prunings. Pinning the\npopulation as a mass dimension is the honest answer there, because the question it settles\nis not whether anything survived but whether as much survived as last time.\n\n**lifecycle hook presence is one canonical runnable bit.** The control surface cannot\ncreate a field if every repository is free to carry a merely similar—or silently dead—\nhook. Printing, installation, and inspection therefore share one five-event value and\none stable launcher per host. Presence means exactly one shared project copy, no competing\nlocal, inline, or legacy path, an aligned host/launcher root, a correct declared root\nmapping, an enabled project-hook layer, and a runnable target. Unrelated hooks may coexist.\nHistorical journal activity is reported beside this bit but can neither redeem current\nabsence nor erase current presence.\n\n**supported lifecycle hosts share one control contract without sharing host syntax.**\nClaude and Codex expose the same five lifecycle meanings through different settings files,\nmatchers, launch commands, and response envelopes. Host parity therefore means deriving\neach complete bundle from one host-selected domain while retaining a distinct fingerprint;\ncopying Claude bytes into Codex would be resemblance, not parity.\n\n**current-session activation requires exact installed-bundle evidence.** Structural\npresence proves that the project control is runnable, not that this session loaded it. A\nsession becomes observed only when its activity names the selected host, launcher\ntransport, and current bundle fingerprint. Direct probes, stale bundles, other sessions,\nand a guessed newest session cannot establish activation; parent-session fallback stays a\nnamed attribution ceiling rather than being promoted to child evidence.\n\n**customized hook text composes declared overrides and appends, degrading to canon on\ndamage.** The canonical hook text is the harness's voice — identical across adopting\nprojects, and byte-testable because of it — but a project knows things the harness cannot:\nits own commands, its conventions, the one warning its history taught it. So a project\ngets a declared voice per event rather than a fork of the hook body, under one composition\nrule with no conflict state: the override answers what the base is, the append answers\nwhat follows it, and both may coexist; an empty override is a deliberate, visible silence,\nnot an error. Damage must degrade to the canonical emission at hook time, because the hook\nbody runs inside every agent session of every adopting project — a torn customization\nfile that broke sessions would make the journal's carrier the thing that kills the work it\nrecords — so a tear costs exactly the customization, never the session, and the loud\nsurface for it is `hooks review`, where a reader is actually looking. Events with no\ncanonical emission — main Stop, PostToolUse — speak only with a declared project voice;\nmain Stop's canonical byte-silence and the attribution reasoning behind it stand unchanged\nas the default.\n\n**python sources feed the same instruments as typescript at their declared grade.**\nThe adapter seam always promised language-agnosticism, but three analyzers and two\nscanners parsed TypeScript directly, so a python project's surface grew invisibly — the\nzero-anchor alarm never fired, parity claims skipped `.py` oracles, duplicated domains\nwent unranked, batch oracles knew one report format, and f-string interpolations were not\nsites. Each instrument now reads python at a DECLARED grade: most through the shared\ngrammar queries of phase 2b (surface, sites, sinks), the oracle arms at the pinned\nindent-block grade their guards froze — in-harness, no subprocess, and since the arms\nported, no compiler dependency at all. The grade is declared, not hidden —\nprecision is preferred over recall everywhere, because an advisory that cries wolf\nretires the reader's attention without retiring risk, and with no compiler behind `.py`\na false positive can never be rescued downstream. What the regex grade deliberately does\nnot count is journaled beside each instrument, so the next reader inherits the boundary\nof the instrument instead of rediscovering it.\n\n**a declared language resolves to a real adapter or refuses, never a silent fallback.**\nThe graph is the one derivation everything downstream consumes, and the adapter decides\nwhat that derivation can see. The old `?? typescript` fallback meant a typo'd language\nname walked the wrong grammar and reported on the garbage with full confidence — the\nsame walking-a-different-tree failure the config loader refuses for, one seam later. So\nan unknown bare name now refuses with the live built-in list, and the same seam is where\na project brings its own language: a `./`-relative module exporting the LanguageAdapter\nshape, validated field-by-field so the refusal names the line that needs fixing.\nImporting project code is not new trust — the atlas already declares at the loadConfig\ncrossing that running the harness in a tree executes that tree's config. What a custom\nadapter buys is the graph tier: symbols, import edges, prose, claims over them. The\nper-language instrument arms (surface counting, oracle analysis, redundancy, sinks,\nbatch formats) remain harness contributions, and the documentation says so, because an\nadapter author who is not told the boundary believes they have the full field when they\nhave half.\n\n**a grammar-backed adapter derives the graph through the same language seam.** The\nregex adapters scale in expert code — the python push measured ~900 hand-built lines\nacross five instrument arms — while a grammar plus capture queries scales in data:\nmodern tree-sitter grammar packages ship a prebuilt wasm, `web-tree-sitter` runs it\nwithout a native toolchain, and the language-specific knowledge shrinks to patterns a\ncontributor can write without touching verdict logic. The factory is async once (wasm\nload) and the adapter it returns is synchronous, so the seam is unchanged and a project\nmodule reaches it with one top-level await. The corpus diff that justified the phase\nalso bounded it: on this repository's own sixty-three TypeScript files the regex grade\nmissed zero symbols a real parse found, so the graph tier was not where parse fidelity\nwas owed. The built-ins then CONVERGED onto the grammar path anyway — not for fidelity\nbut because two implementations of one outcome are two spellings of a domain, the\nredundancy class this harness ranks in other people's code. The regex adapters were\ncorpus-diffed to parity (every delta an enumerated regex mistake), their prose logic\nported verbatim, and then deleted; their grammars ship vendored with provenance. The\ninstrument arms remain hand-built until a later phase ports them to query packs.\n\n**instrument arms read languages through shared grammar queries, never a parallel\nscanner.** Phase 2b's contract, proven first on the injection ratchet: a language\ncontributes captures and signals — which node is an interpolation, how its SQL context\nannounces itself — and the mechanism owns classification, safe-pattern grading, site\nidentity, and the ratchet, once. The regex scanners this replaced matched line TEXT, so\nthey counted `${}` inside plain strings, comments, and test fixtures as sites, bounded\nvisibility at one brace of nesting, and one of them matched its own source. The query\nscan re-pinned the baseline with every delta enumerated: nineteen real nested-brace\nsites gained, one self-match artifact gone. A new language now gains the whole\ninstrument from a table row — ruby's took three lines and no scanner — which is the\ntwo-tier boundary dissolving arm by arm.\n\n**a built-in language pack is data: queries, patterns, and named strategies, never\ncode.** The declarative baseline is what keeps \"add a language\" a table-row act instead\nof an expert contribution — and it is a rule that erodes one convenient function at a\ntime unless something refuses. So the packs are inspectable values aggregated in one\nplace, and a guard sweeps them for function-valued fields by path: the hand-rolled\nscanner class is unrepresentable at the seam, not merely discouraged. The rule's edge\nis honest about what a pack may name — strategies from a closed, mechanism-owned set\n(\"jsdoc\", \"docstring\", \"cooked-string\") — because some knowledge is genuinely\nprocedural; naming it keeps the procedure written once where every language can reach\nit. Project adapter modules remain code territory by definition: purity governs what\nships built in, where a single spelling is the entire point.\n\n**a parse's heap is returned before the next file.** web-tree-sitter trees hold wasm\nheap only an explicit delete returns, and the emscripten heap is fixed — so a leak is\ninvisible on a small repository and fatal on a large one, the worst observability\nprofile a defect can have. The measured incident is the refutation above. The repair is\nthe ladder's top rung, not discipline: `withTree` owns the tree's whole lifetime, every\ncall site takes it, node captures die inside it (the one lazy consumer was made eager\nrather than allowed to touch a freed node), and forgetting to free is unrepresentable.\n\n**an undeclared root refuses the walk, never wanders.** A configless run walks whatever\ndirectory the shell happened to be in and grades that population with full confidence —\nthe incident run was `npx coherence verify` from a home directory, which is not exotic;\nit is the first thing a curious adopter types. The config file's PRESENCE is the\ndeclaration, so `{}` is a complete first rung of the adoption ladder, and the refusal\nprints exactly that one-line bootstrap. Journal, hook, and reference commands never\nwalk, so they stay available in an undeclared directory — the field does not require a\nconfig to remember decisions.\n\n**experiment outcomes require criterion-total evidence.** A\nplan is frozen before work with its predicted context, actions, criteria, and evidence\ncursors. Closure answers every action and criterion exactly once, preserves the assessor,\nand derives success, failure, or inconclusive from criterion statuses rather than accepting\nan outcome label. Otherwise the ledger would turn an incomplete story into a measured loop.\n\n**experiment telemetry preserves its weakest provable attribution.** Trace and activity\nwindows may be empty, prove an exact owner session, or only prove a parent-session aggregate\nthat can include descendants; older trace may carry no observation metadata at all. Those\nfour scopes remain distinct in the immutable close record. Damaged prefixes, unreadable\nrows, and unknown or inconsistent scope refuse. That keeps compatible history without\nturning absence or uncertainty into false precision.\n\n**activity evidence is accepted only when identity, scope, time, and command agree.** A\nrow is useful precisely because later status and experiment readers stop re-deriving the\nhost event. That cached inference is safe only while its relational fields still agree:\nagent attribution names the row session, parent fallback names its parent domain, event\nidentity recomputes, time is canonical, and command kind/result agrees with name and exit\ncode. One strict reader grades that whole relation; malformed rows become counted damage,\nnever partially trusted evidence.\n\n**surviving agent-assessed defect evidence is attributable and internally consistent.** A\nconjecture keeps uncertainty alive; a defect record says an agent crossed that epistemic\nboundary and must therefore carry the evidence for doing so, the repository subject it\njudged, and the caller-attributed writer labels attached to the assessment. Records append per session and\ndedupe exact retries, while the merged reader recomputes the ordinary content address and\nrefuses malformed, inconsistent, or displaced surviving rows. That detects partial damage;\nit does not prove that a valid row was never rewritten with a recomputed id. Committed Git\nhistory is this first recorder's external rewrite and deletion witness, and an independently\nanchored head is future work.\n\n**defect writes refuse pre-existing symlink redirection.** A path beneath the repository\nis not containment when its stable components redirect through a symlink. The reader\ntherefore refuses linked ledger directories and entries, while the writer validates both\ndirectory components and opens the session target without following its final link, then\ncompares the opened descriptor with the standing path before appending. This prevents the\nmeasured stable-state redirects; it is not an `openat`-grade promise against a privileged\nprocess racing parent-directory renames during the append.\n\n**defect provenance is data, never terminal control.** Repository identity is captured by\nthe machine, but the committed row is still untrusted input on its next read. A commit is\ntherefore null or has lowercase SHA-1/SHA-256 object-name shape, never merely a nonempty string; the\nhuman renderer also neutralizes its bytes. Without both the semantic constraint and the\noutput encoding, an edited but re-addressed row could turn provenance into a terminal\ninstruction while remaining structurally valid.\n\n**a streamed journal entry renders exactly once across appends and compaction.** The live\nstream exists for the one reader the settled render cannot serve — an orchestrator watching\nfive subagents mid-flight — and that reader has no way to audit the feed against the files.\nA dropped entry is a decision the orchestrator never saw, indistinguishable from one never\nmade; a duplicate teaches the opposite lie, that a question was decided twice. Both are\ncheap to produce, because the journal's files do not strictly grow: compaction moves lines\nbetween files and unlinks the originals, which a position-addressed reader replays in full.\nSo a record's identity in the stream comes from its content — the same triple the merged\ntimeline sorts by — and a moved line is one the feed already carried.\n\n(The import claims above separately prove that the composition root still reaches the\nconfiguration loader, graph derivation, verifier, spec walker, and journal.)",
       "invariants": [
         "agent lifecycle preserves decisions and exposes the current change signal",
         "significant behavioral growth acquires an anchor or patch-specific decision",
@@ -148,6 +150,8 @@
         "an empty derivation against a remembered surface refuses, never passes",
         "lifecycle hook presence is one canonical runnable bit",
         "supported lifecycle hosts share one control contract without sharing host syntax",
+        "native Pi lifecycle preserves host meaning without requiring pi-subagents",
+        "lifecycle persistence respects protected checkout ownership across every supported host",
         "current-session activation requires exact installed-bundle evidence",
         "customized hook text composes declared overrides and appends, degrading to canon on damage",
         "python sources feed the same instruments as typescript at their declared grade",
@@ -367,13 +371,22 @@
       "line": 104
     },
     {
+      "id": "s:src/activity.ts#isActivityHostTransport",
+      "parent": "f:src/activity.ts",
+      "label": "isActivityHostTransport",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/activity.ts",
+      "line": 110
+    },
+    {
       "id": "s:src/activity.ts#activityReplayKey",
       "parent": "f:src/activity.ts",
       "label": "activityReplayKey",
       "kind": "symbol",
       "sub": "function",
       "path": "src/activity.ts",
-      "line": 138,
+      "line": 145,
       "prose": "A host event may legitimately arrive through more than one configured path while a\ncontrol is being repaired. Replays collapse only inside the same observation domain;\notherwise a stale or direct copy could overwrite exact launcher evidence (or vice versa)."
     },
     {
@@ -383,7 +396,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/activity.ts",
-      "line": 154,
+      "line": 161,
       "prose": "Resolve attribution once for every reader/writer. Codex supplies only the parent session\nid on PostToolUse, and a malformed/older subagent lifecycle payload can omit agent_id too.\nBoth are `parent-fallback`: calling the parent id exact agent attribution would be a lie."
     },
     {
@@ -393,7 +406,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/activity.ts",
-      "line": 197,
+      "line": 204,
       "prose": "Recognize only a bare `verify` or `regulate` invocation observed as the Bash tool.\nA log line, quoted example, pipeline, wrapper, command substitution, or compound shell\ncommand is not execution evidence. The result is likewise unknown without an explicit\nnumeric exit-code field in the structured tool response."
     },
     {
@@ -403,7 +416,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/activity.ts",
-      "line": 217,
+      "line": 224,
       "prose": "Pure payload conversion; exported so hook wiring can be tested without filesystem I/O."
     },
     {
@@ -413,7 +426,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/activity.ts",
-      "line": 248,
+      "line": 255,
       "prose": "One append and no graph/config/git work: safe on the high-frequency hook path."
     },
     {
@@ -423,7 +436,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/activity.ts",
-      "line": 261
+      "line": 268
     },
     {
       "id": "s:src/activity.ts#readActivity",
@@ -432,7 +445,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/activity.ts",
-      "line": 296,
+      "line": 303,
       "prose": "A torn or foreign row is skipped and counted, never converted into no activity."
     },
     {
@@ -442,7 +455,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/activity.ts",
-      "line": 349,
+      "line": 356,
       "prose": "The launcher view is separate by construction. A direct/manual body invocation remains\nuseful diagnostic activity but cannot become proof that installed, trusted wiring ran."
     },
     {
@@ -846,7 +859,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/cli.ts",
-      "line": 94
+      "line": 88
     },
     {
       "id": "f:src/commands.ts",
@@ -906,13 +919,40 @@
       "prose": "Grouping for both derived spellings. Order comes from first appearance in `COMMANDS`,\n so the group sequence is declared exactly once — by the array below — and there is no\n second ordering list to fall out of step with it."
     },
     {
+      "id": "s:src/commands.ts#CommandEffect",
+      "parent": "f:src/commands.ts",
+      "label": "CommandEffect",
+      "kind": "symbol",
+      "sub": "type",
+      "path": "src/commands.ts",
+      "line": 67
+    },
+    {
       "id": "s:src/commands.ts#Command",
       "parent": "f:src/commands.ts",
       "label": "Command",
       "kind": "symbol",
       "sub": "interface",
       "path": "src/commands.ts",
-      "line": 67
+      "line": 70
+    },
+    {
+      "id": "s:src/commands.ts#VALUED_FLAGS",
+      "parent": "f:src/commands.ts",
+      "label": "VALUED_FLAGS",
+      "kind": "symbol",
+      "sub": "const",
+      "path": "src/commands.ts",
+      "line": 125
+    },
+    {
+      "id": "s:src/commands.ts#commandPositionals",
+      "parent": "f:src/commands.ts",
+      "label": "commandPositionals",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/commands.ts",
+      "line": 133
     },
     {
       "id": "s:src/commands.ts#COMMANDS",
@@ -921,7 +961,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/commands.ts",
-      "line": 120
+      "line": 143
     },
     {
       "id": "s:src/commands.ts#commandNames",
@@ -930,7 +970,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/commands.ts",
-      "line": 280,
+      "line": 325,
       "prose": "Every command name, in registry order. The `<a|b|c>` list — aliases excluded."
     },
     {
@@ -940,7 +980,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/commands.ts",
-      "line": 284,
+      "line": 329,
       "prose": "Every token the dispatch must accept: names AND aliases. The totality oracle compares\n THIS against the `cmd === \"…\"` literals it reads out of cli.ts."
     },
     {
@@ -950,8 +990,17 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/commands.ts",
-      "line": 297,
+      "line": 342,
       "prose": "The registry entry a typed token names — BY NAME OR BY ALIAS. The one lookup any guard\nkeyed on a flag (`writesArtifacts`, `writesBaseline`) may use.\n\nThe floor guarding the generators matched `c.name === cmd` and nothing else, which is a\nlatent bypass with no current victim: the only alias in the registry, `resolve`, writes\nnothing. But `aliases` exists precisely so a writing command can acquire a second\nspelling, and the day one does, the guard would silently exempt it — a gate that fails\nopen on a rename is the class of defect this whole file exists to end. Closed here\nrather than at the call site, because the call site is where it was forgotten once."
+    },
+    {
+      "id": "s:src/commands.ts#commandEffect",
+      "parent": "f:src/commands.ts",
+      "label": "commandEffect",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/commands.ts",
+      "line": 345
     },
     {
       "id": "s:src/commands.ts#usageBanner",
@@ -960,7 +1009,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/commands.ts",
-      "line": 325,
+      "line": 376,
       "prose": "SPELLING ONE — the usage banner, printed to stderr when the verb is unknown or absent.\nDerived in full: there is no command-name string literal left in cli.ts's help text, so\nthe banner cannot be 29 while the dispatch is 30, and two branches editing different\ncommands can no longer conflict on one line."
     },
     {
@@ -970,7 +1019,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/commands.ts",
-      "line": 358,
+      "line": 409,
       "prose": "SPELLING TWO — the README's command index, markers inclusive, ready for `spliceBlock`.\n\nA BULLET LIST, not a markdown table, and that is a real constraint rather than taste:\n`redundancy` reads the first column of every markdown table as an enumerated domain, so\na generated table would hand it a fresh README↔dispatch pair to report — trading the\nfinding this change exists to remove for an identical one. A generated block that the\nproject's own detector still flags has not fixed anything.\n\nThe block is an INDEX and nothing more: name, arg shape, one line. The authored\nper-command reasoning lives OUTSIDE the markers, below the block, and is not expected to\ncover every command — completeness is what the derivation owes, depth is what the prose\nowes, and confusing the two is how the reference got twelve commands behind."
     },
     {
@@ -980,7 +1029,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/commands.ts",
-      "line": 399,
+      "line": 450,
       "prose": "The lightweight command catalog is imported by the lifecycle hook's due-work reader.\nKeep the executable claim registry on the docs side of this parameter boundary: a\nstatic import here makes every PostToolUse load parsers before it can record one path."
     },
     {
@@ -990,7 +1039,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/commands.ts",
-      "line": 406
+      "line": 457
     },
     {
       "id": "f:src/config.ts",
@@ -1008,7 +1057,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/config.ts",
-      "line": 33,
+      "line": 34,
       "prose": "THE PROJECT'S CONFIG over the defaults — and a REFUSAL when a config is there and\ncannot be read (floor.ts's `readJsonOrRefuse`). ABSENT is legitimate and stays exactly\nas it was: every field has a default, and running with none of them overridden is the\nfirst rung of the adoption ladder.\n\nUNPARSEABLE never was. It used to degrade to the DEFAULTS silently, which is not a\nmilder version of the same thing — it is a harness reading a different tree than the\none it was configured to read, and reporting on it with full confidence. `ignore`,\n`codeExt` and `sources` all revert, so the walk changes shape; and `name` reverts to\nabsent, which resurrects the cross-checkout `docs --check` false positive b32965d\nshipped to kill. Every downstream refusal on this page is then computed over the\nwrong population."
     },
     {
@@ -1477,7 +1526,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/control.ts",
-      "line": 16
+      "line": 17
     },
     {
       "id": "s:src/control.ts#LifecycleHookEvent",
@@ -1486,21 +1535,12 @@
       "kind": "symbol",
       "sub": "type",
       "path": "src/control.ts",
-      "line": 23
+      "line": 24
     },
     {
       "id": "s:src/control.ts#HookScope",
       "parent": "f:src/control.ts",
       "label": "HookScope",
-      "kind": "symbol",
-      "sub": "type",
-      "path": "src/control.ts",
-      "line": 24
-    },
-    {
-      "id": "s:src/control.ts#HookHost",
-      "parent": "f:src/control.ts",
-      "label": "HookHost",
       "kind": "symbol",
       "sub": "type",
       "path": "src/control.ts",
@@ -2565,7 +2605,7 @@
       "kind": "file",
       "sub": "src/due.ts",
       "path": "src/due.ts",
-      "prose": "due.ts — WHICH INSTRUMENTS THE TREE HAS OUTRUN, counted in commits.\n\n── THE FINDING ───────────────────────────────────────────────────────────────────────\n\n`.coherence/status.json` stamps every section with the commit that produced it, and\nnothing ever reads those stamps back to ask whether they are still current. Measured\nacross two projects the day this was written:\n\n    coherence   verify 1 · atlas 2 · mass 2 · economy 45 · drift 45\n    hoist       verify 1 · atlas 1 · mass 11 · economy 28   (full tier: 9)\n\nFive sections on two repos, four of them tens of commits behind a tree that moved every\nday. Nobody was ignoring the tool; nobody was being told.\n\n── COMMITS, NOT CLOCK, AND THAT IS THE WHOLE MEASUREMENT ────────────────────────────\n\nA repo nobody touched is neglecting nothing. `economy` last run three weeks ago is\nperfect health on a frozen tree and an emergency on this one, and wall-clock cannot\ntell those apart — it reports the same \"3 weeks\" for both. NEGLECT IS THE TREE MOVING\nWHILE THE INSTRUMENT DID NOT, so the unit is commits landed since the recorded run, and\na quiet week is silent by construction rather than by a special case.\n\n── WHY THIS PRINTS AN IMPERATIVE INSTEAD OF AN ADVISORY ─────────────────────────────\n\nTranscript archaeology over 234MB found NO recorded instance of a printed advisory\ncausing action: `--raise` was invoked four times ever, and 89 of 89 never-red findings\nwere never asked about. What demonstrably moves an agent is the SessionStart\ninstruction block — its journal imperative produced hundreds of entries in days, and\nits `DOUBT THE INSTRUMENT` paragraph propagated to a consuming project verbatim. So the\nreading ships in the channel with the only demonstrated hit rate, as a section of an\nexisting block rather than as a new command: three commands were evicted this week for\nhaving no invocations, and a fourth nobody runs would be the same mistake with a longer\nhelp string.\n\nThat channel is also the widest blast radius in this repo — the block reaches every\nadopting project on repin, and it already carries three imperatives. A fourth that\nfired on every session would dilute all four. SILENCE WHEN NOTHING IS DUE IS THEREFORE\nNOT A POLISH ITEM; it is the condition on which this is allowed to exist at all, and it\nis why the thresholds below err toward saying nothing.\n\n── IT NEVER WRITES AND IT NEVER GATES ───────────────────────────────────────────────\n\nEvery function here reads: the run record, and `git rev-list --count`. Nothing is\nrecorded about having reported, no \"last nagged at\" stamp, no journal entry. `d-738d7116`\nalready settled that a surprising write is how a mechanism gets switched off wholesale\nrather than tuned, and a SessionStart hook that mutated the repo as a side effect of\nstarting a session is the purest available form of that mistake. A build that fails\nbecause you have not run something often enough gets deleted, so this returns text and\nno exit code — `runHook` returns 0 whatever this says.\n\n── DECLINING IS JOURNALED, AND THAT IS THE LOAD-BEARING HALF ────────────────────────\n\nThe emitted text names `coherence blocked` because without it a DEFERRED item and a\nNEGLECTED one are identical forever: both read as \"45 commits\" next session and the one\nafter. `blocked` is what lets the next reader tell \"nobody looked\" from \"we looked and\ndecided not to\" — the same absent-vs-unreadable distinction that runs through this whole\ncodebase (floor.ts's refusal, status.ts's skip-never-clobbers, `dismiss` vs `resolved`).\nThe reading itself is deliberately NOT suppressed by a `blocked` entry: suppression\nwould need a stored key, the key would need to survive rewording, and a stale\nsuppression is a silence nobody can see. The journal entry is for the human reading the\ntimeline, not for this printer."
+      "prose": "due.ts — WHICH INSTRUMENTS THE TREE HAS OUTRUN, counted in commits.\n\n── THE FINDING ───────────────────────────────────────────────────────────────────────\n\n`.coherence/status.json` stamps every section with the commit that produced it, and\nnothing ever reads those stamps back to ask whether they are still current. Measured\nacross two projects the day this was written:\n\n    coherence   verify 1 · atlas 2 · mass 2 · economy 45 · drift 45\n    hoist       verify 1 · atlas 1 · mass 11 · economy 28   (full tier: 9)\n\nFive sections on two repos, four of them tens of commits behind a tree that moved every\nday. Nobody was ignoring the tool; nobody was being told.\n\n── COMMITS, NOT CLOCK, AND THAT IS THE WHOLE MEASUREMENT ────────────────────────────\n\nA repo nobody touched is neglecting nothing. `economy` last run three weeks ago is\nperfect health on a frozen tree and an emergency on this one, and wall-clock cannot\ntell those apart — it reports the same \"3 weeks\" for both. NEGLECT IS THE TREE MOVING\nWHILE THE INSTRUMENT DID NOT, so the unit is commits landed since the recorded run, and\na quiet week is silent by construction rather than by a special case.\n\n── WHY THIS STAYS A MAINTENANCE QUEUE ──────────────────────────────────────────────\n\nSessionStart is the one channel agents reliably notice, so stale instruments remain\nvisible there. It must not, however, commandeer an unrelated task or compel a journal\nentry merely for deferral. The emitted text points to a dedicated maintenance or\nbranch-finalization session while remaining silent when nothing is due.\n\n── IT NEVER WRITES AND IT NEVER GATES ───────────────────────────────────────────────\n\nEvery function here reads the run record and `git rev-list --count`. Nothing records\nthat the advisory was shown. A SessionStart hook that mutated the repository merely by\nstarting a session would be worse than a missed reminder, so `runHook` always returns 0."
     },
     {
       "id": "s:src/due.ts#DUE_AFTER",
@@ -2574,7 +2614,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/due.ts",
-      "line": 80,
+      "line": 53,
       "prose": "HOW MANY COMMITS BEFORE A RECORDED RUN STOPS BEING CURRENT.\n\nThere is no measurement that fixes this number, so it is chosen against the failure\nmode rather than against the data. Both dogfood repos commit 8–39 times on an active\nday, so ten is roughly half a working day of motion — long enough that the tree has\ngenuinely changed underneath the verdict, short enough to still be this session's\nproblem. The observed split sat at 1·1·2·2 (current) against 9·11·28·45·45 (stale),\nso ten lands inside the gap rather than through a cluster.\n\nErring HIGH is the safe direction: a threshold too low prints on every session, and a\nsection of this block that always prints costs the other three their attention."
     },
     {
@@ -2584,7 +2624,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/due.ts",
-      "line": 88,
+      "line": 61,
       "prose": "THE CAP, and the reason is raise.ts's verbatim: a floor is a precision knob and a repo\n can sit above it any number of times, so the bound that does not depend on tuning is a\n hard count. Three, because the block this joins already carries three imperatives and a\n fourth section longer than them would invert the priority of the whole block. What is\n over the cap is NEVER silent — `formatDue` names the count and the sections, because a\n truncated list that looks complete is the defect this harness exists to hunt."
     },
     {
@@ -2594,7 +2634,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/due.ts",
-      "line": 94,
+      "line": 67,
       "prose": "One instrument the tree has outrun. `commits` is what ordered it; `why` is the clause\n that makes it actionable, and it differs per reading (a section that has not run at all\n says something different from one that runs constantly in a tier that skips the\n oracles)."
     },
     {
@@ -2604,7 +2644,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/due.ts",
-      "line": 103,
+      "line": 76,
       "prose": "ONE READING OF THE RUN RECORD against the tree that has moved since — everything\n `formatDue` needs, including the two things it must not have to assume: what was\n withheld by the cap, and how much of the tool this reading cannot see at all."
     },
     {
@@ -2614,7 +2654,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/due.ts",
-      "line": 131,
+      "line": 104,
       "prose": "Commits landed since `commit`, or null when the distance cannot be established.\n\nNULL IS A REAL ANSWER HERE. `git rev-list A..HEAD` exits non-zero when A is not an\nobject in this repository — after a rebase, in a shallow clone, or when a status record\ntravelled between checkouts — and coercing that to 0 would report the most neglected\npossible section as perfectly current. Absent must not read as green; that is the defect\nthis file's own hook block spends a paragraph on."
     },
     {
@@ -2624,7 +2664,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/due.ts",
-      "line": 149,
+      "line": 122,
       "prose": "Commits landed since an instant. Used ONLY for the tier reading, because `lastFullAt`\nand `lastFastAt` are timestamps — the record stamps one commit per section, not one per\ntier, so there is no hash to diff from.\n\nThis is an APPROXIMATION and is named as one wherever it is reported: `--since` filters\non COMMITTER date, which a rebase rewrites, so a rebased branch can under-count. It is\nstill the honest unit — commits, not elapsed days — and the alternative (widening the\nrecord to stamp a commit per tier) is a schema change on every adopting project to\nsharpen a number that is already directionally right."
     },
     {
@@ -2634,7 +2674,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/due.ts",
-      "line": 182,
+      "line": 155,
       "prose": "READ THE RECORD AND ASK WHAT THE TREE HAS OUTRUN. Pure of writes; safe to call from a\nhook, which is the only caller that matters.\n\nA SECTION THAT HAS NEVER RUN IS SILENT. An absent section is ambiguous three ways —\nnever ran, does not record, or is not applicable to this project — and reporting the\nfirst would fire forever on every consuming project with no reason to run `drift`. The\ndefinition being implemented presupposes an instrument that moved once: neglect is the\ntree moving while the instrument did not. Never-having-run is UNADOPTION, a different\nfinding, and one this reading has no evidence about."
     },
     {
@@ -2644,7 +2684,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/due.ts",
-      "line": 246,
+      "line": 219,
       "prose": "THE EMITTED SECTION, or nothing at all.\n\nReturns `[]` when nothing is due — the caller appends nothing, and the block it joins is\nbyte-identical to what it was before this shipped. That is the contract the whole\nfeature rests on."
     },
     {
@@ -3142,7 +3182,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/experiment.ts",
-      "line": 739
+      "line": 734
     },
     {
       "id": "s:src/experiment.ts#readExperiments",
@@ -3151,7 +3191,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/experiment.ts",
-      "line": 746,
+      "line": 741,
       "prose": "Strict merged read. Exact duplicate rows collapse; every other ambiguity refuses."
     },
     {
@@ -3161,7 +3201,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/experiment.ts",
-      "line": 851,
+      "line": 846,
       "prose": "Open one immutable plan. A byte-equivalent retry returns the standing row without append."
     },
     {
@@ -3171,7 +3211,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/experiment.ts",
-      "line": 917,
+      "line": 912,
       "prose": "Close a plan with total manual evidence. Telemetry keeps the narrowest host scope it can prove."
     },
     {
@@ -3181,7 +3221,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/experiment.ts",
-      "line": 1008,
+      "line": 1003,
       "prose": "Descriptive plan/observation association only. It assigns no clean/defect label."
     },
     {
@@ -3191,7 +3231,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/experiment.ts",
-      "line": 1060,
+      "line": 1055,
       "prose": "Human reading surface. Open loops lead; evidence remains attached to its criterion."
     },
     {
@@ -3418,7 +3458,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 60,
+      "line": 62,
       "prose": "The text every agent is handed at startup. Short on purpose: it is paid for by\n every agent on every job, and an instruction nobody finishes reading is a comment."
     },
     {
@@ -3428,7 +3468,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 157,
+      "line": 117,
       "prose": "The exact-session work order injected beside the durable journal instructions.\nLoaded dynamically so PostToolUse's startup closure does not acquire the coordination\nledger. Failure is rendered as unavailable evidence, never thrown through a host's\nlifecycle boundary."
     },
     {
@@ -3438,7 +3478,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 213,
+      "line": 173,
       "prose": "A Stop feedback turn stops again. Hosts mark that second pass so a non-blocking nudge\ncan be emitted exactly once instead of accidentally becoming an eight-turn gate."
     },
     {
@@ -3448,7 +3488,7 @@
       "kind": "symbol",
       "sub": "type",
       "path": "src/hooks.ts",
-      "line": 218
+      "line": 178
     },
     {
       "id": "s:src/hooks.ts#composeStopFeedback",
@@ -3457,8 +3497,53 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 228,
+      "line": 188,
       "prose": "Host semantics make this distinction consequential: any `additionalContext` continues\nthe conversation. A subagent's parent may genuinely need the final report restated;\nthe main user just read it. Main Stop therefore emits nothing. Shared-worktree state\ncannot be promoted into a task-local obligation merely because this agent stopped."
+    },
+    {
+      "id": "s:src/hooks.ts#LifecycleIdentity",
+      "parent": "f:src/hooks.ts",
+      "label": "LifecycleIdentity",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/hooks.ts",
+      "line": 208
+    },
+    {
+      "id": "s:src/hooks.ts#prepareSessionStart",
+      "parent": "f:src/hooks.ts",
+      "label": "prepareSessionStart",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/hooks.ts",
+      "line": 221
+    },
+    {
+      "id": "s:src/hooks.ts#recordLifecycleToolResult",
+      "parent": "f:src/hooks.ts",
+      "label": "recordLifecycleToolResult",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/hooks.ts",
+      "line": 254
+    },
+    {
+      "id": "s:src/hooks.ts#recordMainSettlement",
+      "parent": "f:src/hooks.ts",
+      "label": "recordMainSettlement",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/hooks.ts",
+      "line": 260
+    },
+    {
+      "id": "s:src/hooks.ts#prepareChildSettlement",
+      "parent": "f:src/hooks.ts",
+      "label": "prepareChildSettlement",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/hooks.ts",
+      "line": 266
     },
     {
       "id": "s:src/hooks.ts#runHook",
@@ -3467,7 +3552,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 250,
+      "line": 285,
       "prose": "`coherence hook <event>` — the hook body itself, so nothing has to be written to\n disk or kept in sync with a script file. Reads the event payload on stdin (unused\n today, but hooks are fed JSON and ignoring it silently would be rude to the next\n person who needs a field from it) and prints the documented output shape."
     },
     {
@@ -3477,7 +3562,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 411,
+      "line": 388,
       "prose": "What a subagent is told as it finishes. Split out of `runHook` so it is reachable\n without a stdin pipe — the hook body drains stdin, and a report you can only observe\n by feeding a process is a report nobody tests."
     },
     {
@@ -3487,7 +3572,16 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/hooks.ts",
-      "line": 486
+      "line": 473
+    },
+    {
+      "id": "s:src/hooks.ts#CurrentPiHookObservation",
+      "parent": "f:src/hooks.ts",
+      "label": "CurrentPiHookObservation",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/hooks.ts",
+      "line": 485
     },
     {
       "id": "s:src/hooks.ts#CurrentHookObservation",
@@ -3496,7 +3590,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/hooks.ts",
-      "line": 498
+      "line": 501
     },
     {
       "id": "s:src/hooks.ts#activeHookHost",
@@ -3505,7 +3599,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 523,
+      "line": 526,
       "prose": "Which host owns the current shell. Explicit selection always wins."
     },
     {
@@ -3515,7 +3609,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 529,
+      "line": 532,
       "prose": "Never pick the newest session: concurrency makes \"latest\" an attribution bug."
     },
     {
@@ -3525,7 +3619,17 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 557
+      "line": 561
+    },
+    {
+      "id": "s:src/hooks.ts#currentPiObservation",
+      "parent": "f:src/hooks.ts",
+      "label": "currentPiObservation",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/hooks.ts",
+      "line": 637,
+      "prose": "Structural configuration, historical memory, and this exact session stay separate."
     },
     {
       "id": "s:src/hooks.ts#hookStatus",
@@ -3534,8 +3638,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 633,
-      "prose": "Structural configuration, historical memory, and this exact session stay separate."
+      "line": 680
     },
     {
       "id": "s:src/hooks.ts#reportHooks",
@@ -3544,7 +3647,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 714,
+      "line": 783,
       "prose": "`coherence hooks status` — report the switch and the observation beside it."
     },
     {
@@ -3554,7 +3657,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 721,
+      "line": 790,
       "prose": "`coherence hooks --check` — the binary current-control gate. Observation never redeems absence."
     },
     {
@@ -3564,7 +3667,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 731
+      "line": 800
     },
     {
       "id": "s:src/hooks.ts#uninstallHooks",
@@ -3573,7 +3676,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 748
+      "line": 817
     },
     {
       "id": "s:src/hooks.ts#reviewHooks",
@@ -3582,7 +3685,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 765,
+      "line": 834,
       "prose": "`coherence hooks review` — every event's EFFECTIVE emission, with its provenance.\n The hook body degrades an unreadable customization to canon silently, because a torn\n file must not break a session; THIS is the loud surface where that damage lands, and\n the exit code carries it."
     },
     {
@@ -3592,7 +3695,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/hooks.ts",
-      "line": 813,
+      "line": 882,
       "prose": "`coherence hooks` — print one host's canonical block, plus the\n instruction text so a reader can see what agents will actually be told."
     },
     {
@@ -5166,8 +5269,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/phrasebook.ts",
-      "line": 155,
-      "prose": "The SERIAL arm of `execNamedTest`, factored so the canary below probes the EXACT code\n path a claim's verdict rides on — same spawn, same exit-code reading, same `testMatch`\n evidence rule. Exit 0 alone is not trusted: `testMatch` requires positive evidence the\n named test actually ran (a zero-match runner that exits 0 would otherwise pass a\n renamed/deleted oracle)."
+      "line": 158
     },
     {
       "id": "s:src/phrasebook.ts#proveSerialRunnerCanFail",
@@ -5176,7 +5278,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/phrasebook.ts",
-      "line": 177,
+      "line": 180,
       "prose": "THE SERIAL CANARY — the repo's own doctrine applied to the instrument: a checker never\nobserved to fail has not been shown to be a checker. The batch path proves a vanished\noracle structurally (zero matches in the report is its own red); the serial path had to\nTRUST `config.test` + `testMatch`, on a runner class this repo has itself documented as\nun-guardable by testMatch (node:test multi-file: a real name and a name existing nowhere\nproduce byte-identical passing output — measured, test-batch.ts:110, types.ts).\n\nSo, once per serial verify, run the runner with a name that provably exists nowhere and\nrequire it to FAIL (nonzero exit, or a `testMatch` miss — the same reading a claim gets).\nA runner that PASSES the canary cannot filter by name: every green it would produce is\ngreen-by-absence, and verify must refuse it exactly as the batch path refuses. Cost is\none extra runner boot per serial run."
     },
     {
@@ -5186,7 +5288,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/phrasebook.ts",
-      "line": 201,
+      "line": 204,
       "prose": "Scan the dictionary dir + cross-reference the graph's `conforms to` claims. Empty when\n the project has no dictionary dir (so the overview's Dictionary section is omitted)."
     },
     {
@@ -5196,7 +5298,128 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/phrasebook.ts",
-      "line": 219
+      "line": 222
+    },
+    {
+      "id": "f:src/pi-control.ts",
+      "parent": "c:src",
+      "label": "pi-control.ts",
+      "kind": "file",
+      "sub": "src/pi-control.ts",
+      "path": "src/pi-control.ts"
+    },
+    {
+      "id": "s:src/pi-control.ts#PI_EXTENSION_ID",
+      "parent": "f:src/pi-control.ts",
+      "label": "PI_EXTENSION_ID",
+      "kind": "symbol",
+      "sub": "const",
+      "path": "src/pi-control.ts",
+      "line": 9
+    },
+    {
+      "id": "s:src/pi-control.ts#PI_HOOK_PROTOCOL_VERSION",
+      "parent": "f:src/pi-control.ts",
+      "label": "PI_HOOK_PROTOCOL_VERSION",
+      "kind": "symbol",
+      "sub": "const",
+      "path": "src/pi-control.ts",
+      "line": 10
+    },
+    {
+      "id": "s:src/pi-control.ts#PI_HOOK_BUNDLE_FINGERPRINT",
+      "parent": "f:src/pi-control.ts",
+      "label": "PI_HOOK_BUNDLE_FINGERPRINT",
+      "kind": "symbol",
+      "sub": "const",
+      "path": "src/pi-control.ts",
+      "line": 18
+    },
+    {
+      "id": "s:src/pi-control.ts#resolvePiProjectRoot",
+      "parent": "f:src/pi-control.ts",
+      "label": "resolvePiProjectRoot",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/pi-control.ts",
+      "line": 108
+    },
+    {
+      "id": "s:src/pi-control.ts#PiLifecycleInspection",
+      "parent": "f:src/pi-control.ts",
+      "label": "PiLifecycleInspection",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/pi-control.ts",
+      "line": 110
+    },
+    {
+      "id": "s:src/pi-control.ts#PiLifecycleMutation",
+      "parent": "f:src/pi-control.ts",
+      "label": "PiLifecycleMutation",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/pi-control.ts",
+      "line": 117
+    },
+    {
+      "id": "s:src/pi-control.ts#inspectPiLifecycleHook",
+      "parent": "f:src/pi-control.ts",
+      "label": "inspectPiLifecycleHook",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/pi-control.ts",
+      "line": 119
+    },
+    {
+      "id": "s:src/pi-control.ts#setPiLifecycleHook",
+      "parent": "f:src/pi-control.ts",
+      "label": "setPiLifecycleHook",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/pi-control.ts",
+      "line": 135
+    },
+    {
+      "id": "s:src/pi-control.ts#resolvePiRuntimeRoot",
+      "parent": "f:src/pi-control.ts",
+      "label": "resolvePiRuntimeRoot",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/pi-control.ts",
+      "line": 167
+    },
+    {
+      "id": "f:src/pi-extension.ts",
+      "parent": "c:src",
+      "label": "pi-extension.ts",
+      "kind": "file",
+      "sub": "src/pi-extension.ts",
+      "path": "src/pi-extension.ts"
+    },
+    {
+      "id": "s:src/pi-extension.ts#PI_COHERENCE_EXTENSION_ACK",
+      "parent": "f:src/pi-extension.ts",
+      "label": "PI_COHERENCE_EXTENSION_ACK",
+      "kind": "symbol",
+      "sub": "const",
+      "path": "src/pi-extension.ts",
+      "line": 17
+    },
+    {
+      "id": "s:src/pi-extension.ts#registerPiHooks",
+      "parent": "f:src/pi-extension.ts",
+      "label": "registerPiHooks",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/pi-extension.ts",
+      "line": 43
+    },
+    {
+      "id": "x:@earendil-works/pi-coding-agent",
+      "label": "@earendil-works/pi-coding-agent",
+      "kind": "external",
+      "sub": "module"
     },
     {
       "id": "f:src/premise.ts",
@@ -5865,7 +6088,7 @@
       "kind": "symbol",
       "sub": "type",
       "path": "src/read-trace.ts",
-      "line": 17
+      "line": 18
     },
     {
       "id": "s:src/read-trace.ts#PatchOperation",
@@ -5874,7 +6097,7 @@
       "kind": "symbol",
       "sub": "type",
       "path": "src/read-trace.ts",
-      "line": 18
+      "line": 19
     },
     {
       "id": "s:src/read-trace.ts#ReadEventProvenance",
@@ -5883,7 +6106,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/read-trace.ts",
-      "line": 19
+      "line": 20
     },
     {
       "id": "s:src/read-trace.ts#ReadEventObservation",
@@ -5892,7 +6115,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/read-trace.ts",
-      "line": 23
+      "line": 24
     },
     {
       "id": "s:src/read-trace.ts#ReadEvent",
@@ -5901,7 +6124,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/read-trace.ts",
-      "line": 34
+      "line": 35
     },
     {
       "id": "s:src/read-trace.ts#TraceRead",
@@ -5910,7 +6133,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/read-trace.ts",
-      "line": 46
+      "line": 47
     },
     {
       "id": "s:src/read-trace.ts#applyPatchCandidates",
@@ -5919,7 +6142,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/read-trace.ts",
-      "line": 69,
+      "line": 70,
       "prose": "Parse only the formal file headers accepted by the apply_patch tool. This is not shell\ncommand inference: it runs solely for canonical `tool_name: \"apply_patch\"`, requires the\ncomplete Begin/End envelope, and ignores arbitrary command text from Bash."
     },
     {
@@ -5929,7 +6152,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/read-trace.ts",
-      "line": 123,
+      "line": 124,
       "prose": "The historical public payload API: exact keys and path-array shape are preserved."
     },
     {
@@ -5939,7 +6162,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/read-trace.ts",
-      "line": 139,
+      "line": 140,
       "prose": "PostToolUse write: tiny, append-only, and intentionally outside the committed record."
     },
     {
@@ -5949,7 +6172,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/read-trace.ts",
-      "line": 211,
+      "line": 215,
       "prose": "Strict reader used by experiments and status surfaces that must report lost evidence."
     },
     {
@@ -5959,7 +6182,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/read-trace.ts",
-      "line": 258,
+      "line": 262,
       "prose": "Historical convenience reader: callers needing loss accounting use readTraceDetailed."
     },
     {
@@ -6210,7 +6433,7 @@
       "kind": "symbol",
       "sub": "type",
       "path": "src/regulate.ts",
-      "line": 21
+      "line": 22
     },
     {
       "id": "s:src/regulate.ts#RegulationObservation",
@@ -6219,7 +6442,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/regulate.ts",
-      "line": 23
+      "line": 24
     },
     {
       "id": "s:src/regulate.ts#RegulationReading",
@@ -6228,7 +6451,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/regulate.ts",
-      "line": 32
+      "line": 33
     },
     {
       "id": "s:src/regulate.ts#SelectedRegulation",
@@ -6237,7 +6460,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/regulate.ts",
-      "line": 41
+      "line": 42
     },
     {
       "id": "s:src/regulate.ts#RegulationDecision",
@@ -6246,7 +6469,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/regulate.ts",
-      "line": 48
+      "line": 49
     },
     {
       "id": "s:src/regulate.ts#selectRegulation",
@@ -6255,7 +6478,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/regulate.ts",
-      "line": 114,
+      "line": 115,
       "prose": "The control law. Pure, total over arbitrary readings, and intentionally ignorant of\nfilesystems, Git, clocks, config, output, and exit codes."
     },
     {
@@ -6265,7 +6488,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/regulate.ts",
-      "line": 245
+      "line": 246
     },
     {
       "id": "s:src/regulate.ts#formatRegulation",
@@ -6274,7 +6497,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/regulate.ts",
-      "line": 252
+      "line": 253
     },
     {
       "id": "s:src/regulate.ts#RegulateOptions",
@@ -6283,7 +6506,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/regulate.ts",
-      "line": 274
+      "line": 275
     },
     {
       "id": "s:src/regulate.ts#observeRegulation",
@@ -6292,7 +6515,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/regulate.ts",
-      "line": 283,
+      "line": 284,
       "prose": "Read every live doctrine sensor. No writes."
     },
     {
@@ -6302,7 +6525,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/regulate.ts",
-      "line": 390,
+      "line": 392,
       "prose": "Explicit CLI surface. Report mode observes; --check turns intervention into a gate."
     },
     {
@@ -7437,13 +7660,40 @@
       "prose": "How to read a platform's infra config (optional — null platform = none)."
     },
     {
+      "id": "s:src/types.ts#HOOK_HOSTS",
+      "parent": "f:src/types.ts",
+      "label": "HOOK_HOSTS",
+      "kind": "symbol",
+      "sub": "const",
+      "path": "src/types.ts",
+      "line": 52
+    },
+    {
+      "id": "s:src/types.ts#HookHost",
+      "parent": "f:src/types.ts",
+      "label": "HookHost",
+      "kind": "symbol",
+      "sub": "type",
+      "path": "src/types.ts",
+      "line": 53
+    },
+    {
+      "id": "s:src/types.ts#ExternalHookHost",
+      "parent": "f:src/types.ts",
+      "label": "ExternalHookHost",
+      "kind": "symbol",
+      "sub": "type",
+      "path": "src/types.ts",
+      "line": 54
+    },
+    {
       "id": "s:src/types.ts#Config",
       "parent": "f:src/types.ts",
       "label": "Config",
       "kind": "symbol",
       "sub": "interface",
       "path": "src/types.ts",
-      "line": 52
+      "line": 56
     },
     {
       "id": "f:src/verify.ts",
@@ -8074,6 +8324,95 @@
       "line": 1182
     },
     {
+      "id": "f:src/write-policy.ts",
+      "parent": "c:src",
+      "label": "write-policy.ts",
+      "kind": "file",
+      "sub": "src/write-policy.ts",
+      "path": "src/write-policy.ts"
+    },
+    {
+      "id": "s:src/write-policy.ts#CheckoutKind",
+      "parent": "f:src/write-policy.ts",
+      "label": "CheckoutKind",
+      "kind": "symbol",
+      "sub": "type",
+      "path": "src/write-policy.ts",
+      "line": 6
+    },
+    {
+      "id": "s:src/write-policy.ts#CheckoutIdentity",
+      "parent": "f:src/write-policy.ts",
+      "label": "CheckoutIdentity",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/write-policy.ts",
+      "line": 7
+    },
+    {
+      "id": "s:src/write-policy.ts#WritePolicyState",
+      "parent": "f:src/write-policy.ts",
+      "label": "WritePolicyState",
+      "kind": "symbol",
+      "sub": "type",
+      "path": "src/write-policy.ts",
+      "line": 12
+    },
+    {
+      "id": "s:src/write-policy.ts#ProjectWritePolicy",
+      "parent": "f:src/write-policy.ts",
+      "label": "ProjectWritePolicy",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/write-policy.ts",
+      "line": 13
+    },
+    {
+      "id": "s:src/write-policy.ts#GitRunner",
+      "parent": "f:src/write-policy.ts",
+      "label": "GitRunner",
+      "kind": "symbol",
+      "sub": "type",
+      "path": "src/write-policy.ts",
+      "line": 19
+    },
+    {
+      "id": "s:src/write-policy.ts#classifyGitCheckout",
+      "parent": "f:src/write-policy.ts",
+      "label": "classifyGitCheckout",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/write-policy.ts",
+      "line": 82
+    },
+    {
+      "id": "s:src/write-policy.ts#projectWritePolicy",
+      "parent": "f:src/write-policy.ts",
+      "label": "projectWritePolicy",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/write-policy.ts",
+      "line": 128
+    },
+    {
+      "id": "s:src/write-policy.ts#writeRefusal",
+      "parent": "f:src/write-policy.ts",
+      "label": "writeRefusal",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/write-policy.ts",
+      "line": 138
+    },
+    {
+      "id": "s:src/write-policy.ts#lifecyclePersistenceNotice",
+      "parent": "f:src/write-policy.ts",
+      "label": "lifecyclePersistenceNotice",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/write-policy.ts",
+      "line": 147
+    },
+    {
       "id": "f:test/_helpers.ts",
       "parent": "c:test",
       "label": "_helpers.ts",
@@ -8598,6 +8937,22 @@
       "prose": "phrasebook.test.ts — the claim grammar-as-data registry. The engine (verify.ts) is now\na thin loop over CLAIM_FORMS, so these lock the properties that loop depends on: the\nORDER (= precedence, first match wins), that every historical form still matches its\ncanonical line, and that a line matching nothing is a dialect-gap skip (never red). The\n`coherence phrasebook` verb renders straight from this registry, so its output must name\nevery form (the README's generated authority)."
     },
     {
+      "id": "f:test/pi-control.test.ts",
+      "parent": "c:test",
+      "label": "pi-control.test.ts",
+      "kind": "file",
+      "sub": "test/pi-control.test.ts",
+      "path": "test/pi-control.test.ts"
+    },
+    {
+      "id": "f:test/pi-extension.test.ts",
+      "parent": "c:test",
+      "label": "pi-extension.test.ts",
+      "kind": "file",
+      "sub": "test/pi-extension.test.ts",
+      "path": "test/pi-extension.test.ts"
+    },
+    {
       "id": "f:test/premise.test.ts",
       "parent": "c:test",
       "label": "premise.test.ts",
@@ -8623,6 +8978,14 @@
       "sub": "test/prose.test.ts",
       "path": "test/prose.test.ts",
       "prose": "prose.test.ts — the PROSE-ROT detector. The failure it exists to catch: one argument\ncached verbatim on two reading surfaces, one copy updated, the other left to rot — and\nno reader able to see it without diffing both.\n\nThe load-bearing tests here are the NEGATIVE CONTROLS, because this is the advisory\nclass where one false positive teaches people to ignore the instrument: a genuine\nparaphrase of the same idea must NOT pair (that is a summary doing its job), and a\nsentence stamped into more places than maxDf must NOT pair (that is boilerplate, not a\ncached argument). The positive case — a mostly-verbatim copy with a local edit — must\npair AND be labeled DIVERGED, ranked above pairs that still agree."
+    },
+    {
+      "id": "f:test/protected-checkout-hosts.test.ts",
+      "parent": "c:test",
+      "label": "protected-checkout-hosts.test.ts",
+      "kind": "file",
+      "sub": "test/protected-checkout-hosts.test.ts",
+      "path": "test/protected-checkout-hosts.test.ts"
     },
     {
       "id": "f:test/pytest-batch.test.ts",
@@ -8879,6 +9242,22 @@
       "sub": "test/work.test.ts",
       "path": "test/work.test.ts",
       "prose": "work.test.ts — contracts for the append-only swarm work-order graph."
+    },
+    {
+      "id": "f:test/write-policy-cli.test.ts",
+      "parent": "c:test",
+      "label": "write-policy-cli.test.ts",
+      "kind": "file",
+      "sub": "test/write-policy-cli.test.ts",
+      "path": "test/write-policy-cli.test.ts"
+    },
+    {
+      "id": "f:test/write-policy.test.ts",
+      "parent": "c:test",
+      "label": "write-policy.test.ts",
+      "kind": "file",
+      "sub": "test/write-policy.test.ts",
+      "path": "test/write-policy.test.ts"
     }
   ],
   "edges": [
@@ -9336,6 +9715,12 @@
       "id": "f:src/cli.ts->f:src/orient.ts:imports",
       "source": "f:src/cli.ts",
       "target": "f:src/orient.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/cli.ts->f:src/write-policy.ts:imports",
+      "source": "f:src/cli.ts",
+      "target": "f:src/write-policy.ts",
       "kind": "imports"
     },
     {
@@ -9921,6 +10306,12 @@
       "kind": "imports"
     },
     {
+      "id": "f:src/hooks.ts->f:src/pi-control.ts:imports",
+      "source": "f:src/hooks.ts",
+      "target": "f:src/pi-control.ts",
+      "kind": "imports"
+    },
+    {
       "id": "f:src/hooks.ts->f:src/hook-text.ts:imports",
       "source": "f:src/hooks.ts",
       "target": "f:src/hook-text.ts",
@@ -9954,6 +10345,12 @@
       "id": "f:src/hooks.ts->f:src/types.ts:imports",
       "source": "f:src/hooks.ts",
       "target": "f:src/types.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/hooks.ts->f:src/write-policy.ts:imports",
+      "source": "f:src/hooks.ts",
+      "target": "f:src/write-policy.ts",
       "kind": "imports"
     },
     {
@@ -10473,6 +10870,102 @@
       "kind": "imports"
     },
     {
+      "id": "f:src/pi-control.ts->x:node:crypto:imports",
+      "source": "f:src/pi-control.ts",
+      "target": "x:node:crypto",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/pi-control.ts->x:node:fs:imports",
+      "source": "f:src/pi-control.ts",
+      "target": "x:node:fs",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/pi-control.ts->x:node:fs/promises:imports",
+      "source": "f:src/pi-control.ts",
+      "target": "x:node:fs/promises",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/pi-control.ts->x:node:path:imports",
+      "source": "f:src/pi-control.ts",
+      "target": "x:node:path",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/pi-control.ts->x:node:url:imports",
+      "source": "f:src/pi-control.ts",
+      "target": "x:node:url",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/pi-control.ts->f:src/control.ts:imports",
+      "source": "f:src/pi-control.ts",
+      "target": "f:src/control.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/pi-control.ts->f:src/types.ts:imports",
+      "source": "f:src/pi-control.ts",
+      "target": "f:src/types.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/pi-extension.ts->x:node:url:imports",
+      "source": "f:src/pi-extension.ts",
+      "target": "x:node:url",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/pi-extension.ts->x:@earendil-works/pi-coding-agent:imports",
+      "source": "f:src/pi-extension.ts",
+      "target": "x:@earendil-works/pi-coding-agent",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/pi-extension.ts->f:src/config.ts:imports",
+      "source": "f:src/pi-extension.ts",
+      "target": "f:src/config.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/pi-extension.ts->f:src/write-policy.ts:imports",
+      "source": "f:src/pi-extension.ts",
+      "target": "f:src/write-policy.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/pi-extension.ts->f:src/activity.ts:imports",
+      "source": "f:src/pi-extension.ts",
+      "target": "f:src/activity.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/pi-extension.ts->f:src/decisions.ts:imports",
+      "source": "f:src/pi-extension.ts",
+      "target": "f:src/decisions.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/pi-extension.ts->f:src/pi-control.ts:imports",
+      "source": "f:src/pi-extension.ts",
+      "target": "f:src/pi-control.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/pi-extension.ts->f:src/hooks.ts:imports",
+      "source": "f:src/pi-extension.ts",
+      "target": "f:src/hooks.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/pi-extension.ts->f:src/types.ts:imports",
+      "source": "f:src/pi-extension.ts",
+      "target": "f:src/types.ts",
+      "kind": "imports"
+    },
+    {
       "id": "f:src/premise.ts->x:node:fs:imports",
       "source": "f:src/premise.ts",
       "target": "x:node:fs",
@@ -10728,6 +11221,12 @@
       "id": "f:src/regulate.ts->f:src/control.ts:imports",
       "source": "f:src/regulate.ts",
       "target": "f:src/control.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/regulate.ts->f:src/pi-control.ts:imports",
+      "source": "f:src/regulate.ts",
+      "target": "f:src/pi-control.ts",
       "kind": "imports"
     },
     {
@@ -11301,6 +11800,30 @@
       "kind": "imports"
     },
     {
+      "id": "f:src/write-policy.ts->x:node:child_process:imports",
+      "source": "f:src/write-policy.ts",
+      "target": "x:node:child_process",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/write-policy.ts->x:node:fs:imports",
+      "source": "f:src/write-policy.ts",
+      "target": "x:node:fs",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/write-policy.ts->x:node:path:imports",
+      "source": "f:src/write-policy.ts",
+      "target": "x:node:path",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/write-policy.ts->f:src/types.ts:imports",
+      "source": "f:src/write-policy.ts",
+      "target": "f:src/types.ts",
+      "kind": "imports"
+    },
+    {
       "id": "f:test/_helpers.ts->x:node:fs/promises:imports",
       "source": "f:test/_helpers.ts",
       "target": "x:node:fs/promises",
@@ -11370,6 +11893,12 @@
       "id": "f:test/activity.test.ts->f:src/control.ts:imports",
       "source": "f:test/activity.test.ts",
       "target": "f:src/control.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/activity.test.ts->f:src/pi-control.ts:imports",
+      "source": "f:test/activity.test.ts",
+      "target": "f:src/pi-control.ts",
       "kind": "imports"
     },
     {
@@ -11946,6 +12475,12 @@
       "id": "f:test/control.test.ts->f:src/control.ts:imports",
       "source": "f:test/control.test.ts",
       "target": "f:src/control.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/control.test.ts->f:src/pi-control.ts:imports",
+      "source": "f:test/control.test.ts",
+      "target": "f:src/pi-control.ts",
       "kind": "imports"
     },
     {
@@ -12705,6 +13240,12 @@
       "kind": "imports"
     },
     {
+      "id": "f:test/hook-stop.test.ts->x:node:fs:imports",
+      "source": "f:test/hook-stop.test.ts",
+      "target": "x:node:fs",
+      "kind": "imports"
+    },
+    {
       "id": "f:test/hook-stop.test.ts->x:node:path:imports",
       "source": "f:test/hook-stop.test.ts",
       "target": "x:node:path",
@@ -12729,15 +13270,21 @@
       "kind": "imports"
     },
     {
+      "id": "f:test/hook-stop.test.ts->f:src/calibration.ts:imports",
+      "source": "f:test/hook-stop.test.ts",
+      "target": "f:src/calibration.ts",
+      "kind": "imports"
+    },
+    {
       "id": "f:test/hook-stop.test.ts->f:src/read-trace.ts:imports",
       "source": "f:test/hook-stop.test.ts",
       "target": "f:src/read-trace.ts",
       "kind": "imports"
     },
     {
-      "id": "f:test/hook-stop.test.ts->f:src/calibration.ts:imports",
+      "id": "f:test/hook-stop.test.ts->f:src/activity.ts:imports",
       "source": "f:test/hook-stop.test.ts",
-      "target": "f:src/calibration.ts",
+      "target": "f:src/activity.ts",
       "kind": "imports"
     },
     {
@@ -12756,6 +13303,12 @@
       "id": "f:test/hook-stop.test.ts->f:src/work.ts:imports",
       "source": "f:test/hook-stop.test.ts",
       "target": "f:src/work.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/hook-stop.test.ts->f:src/write-policy.ts:imports",
+      "source": "f:test/hook-stop.test.ts",
+      "target": "f:src/write-policy.ts",
       "kind": "imports"
     },
     {
@@ -13503,6 +14056,120 @@
       "kind": "imports"
     },
     {
+      "id": "f:test/pi-control.test.ts->x:node:assert/strict:imports",
+      "source": "f:test/pi-control.test.ts",
+      "target": "x:node:assert/strict",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/pi-control.test.ts->x:node:crypto:imports",
+      "source": "f:test/pi-control.test.ts",
+      "target": "x:node:crypto",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/pi-control.test.ts->x:node:fs/promises:imports",
+      "source": "f:test/pi-control.test.ts",
+      "target": "x:node:fs/promises",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/pi-control.test.ts->x:node:path:imports",
+      "source": "f:test/pi-control.test.ts",
+      "target": "x:node:path",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/pi-control.test.ts->x:node:test:imports",
+      "source": "f:test/pi-control.test.ts",
+      "target": "x:node:test",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/pi-control.test.ts->f:test/_helpers.ts:imports",
+      "source": "f:test/pi-control.test.ts",
+      "target": "f:test/_helpers.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/pi-control.test.ts->f:src/control.ts:imports",
+      "source": "f:test/pi-control.test.ts",
+      "target": "f:src/control.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/pi-control.test.ts->f:src/pi-control.ts:imports",
+      "source": "f:test/pi-control.test.ts",
+      "target": "f:src/pi-control.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/pi-extension.test.ts->x:node:assert/strict:imports",
+      "source": "f:test/pi-extension.test.ts",
+      "target": "x:node:assert/strict",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/pi-extension.test.ts->x:node:fs/promises:imports",
+      "source": "f:test/pi-extension.test.ts",
+      "target": "x:node:fs/promises",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/pi-extension.test.ts->x:node:child_process:imports",
+      "source": "f:test/pi-extension.test.ts",
+      "target": "x:node:child_process",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/pi-extension.test.ts->x:node:os:imports",
+      "source": "f:test/pi-extension.test.ts",
+      "target": "x:node:os",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/pi-extension.test.ts->x:node:path:imports",
+      "source": "f:test/pi-extension.test.ts",
+      "target": "x:node:path",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/pi-extension.test.ts->x:node:test:imports",
+      "source": "f:test/pi-extension.test.ts",
+      "target": "x:node:test",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/pi-extension.test.ts->f:src/pi-control.ts:imports",
+      "source": "f:test/pi-extension.test.ts",
+      "target": "f:src/pi-control.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/pi-extension.test.ts->f:src/config.ts:imports",
+      "source": "f:test/pi-extension.test.ts",
+      "target": "f:src/config.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/pi-extension.test.ts->f:src/calibration.ts:imports",
+      "source": "f:test/pi-extension.test.ts",
+      "target": "f:src/calibration.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/pi-extension.test.ts->f:src/pi-extension.ts:imports",
+      "source": "f:test/pi-extension.test.ts",
+      "target": "f:src/pi-extension.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/pi-extension.test.ts->x:@earendil-works/pi-coding-agent:imports",
+      "source": "f:test/pi-extension.test.ts",
+      "target": "x:@earendil-works/pi-coding-agent",
+      "kind": "imports"
+    },
+    {
       "id": "f:test/premise.test.ts->x:node:test:imports",
       "source": "f:test/premise.test.ts",
       "target": "x:node:test",
@@ -13626,6 +14293,66 @@
       "id": "f:test/prose.test.ts->f:test/_helpers.ts:imports",
       "source": "f:test/prose.test.ts",
       "target": "f:test/_helpers.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/protected-checkout-hosts.test.ts->x:node:assert/strict:imports",
+      "source": "f:test/protected-checkout-hosts.test.ts",
+      "target": "x:node:assert/strict",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/protected-checkout-hosts.test.ts->x:node:child_process:imports",
+      "source": "f:test/protected-checkout-hosts.test.ts",
+      "target": "x:node:child_process",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/protected-checkout-hosts.test.ts->x:node:fs/promises:imports",
+      "source": "f:test/protected-checkout-hosts.test.ts",
+      "target": "x:node:fs/promises",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/protected-checkout-hosts.test.ts->x:node:os:imports",
+      "source": "f:test/protected-checkout-hosts.test.ts",
+      "target": "x:node:os",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/protected-checkout-hosts.test.ts->x:node:path:imports",
+      "source": "f:test/protected-checkout-hosts.test.ts",
+      "target": "x:node:path",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/protected-checkout-hosts.test.ts->x:node:test:imports",
+      "source": "f:test/protected-checkout-hosts.test.ts",
+      "target": "x:node:test",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/protected-checkout-hosts.test.ts->x:node:util:imports",
+      "source": "f:test/protected-checkout-hosts.test.ts",
+      "target": "x:node:util",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/protected-checkout-hosts.test.ts->x:node:url:imports",
+      "source": "f:test/protected-checkout-hosts.test.ts",
+      "target": "x:node:url",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/protected-checkout-hosts.test.ts->f:src/pi-extension.ts:imports",
+      "source": "f:test/protected-checkout-hosts.test.ts",
+      "target": "f:src/pi-extension.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/protected-checkout-hosts.test.ts->f:src/types.ts:imports",
+      "source": "f:test/protected-checkout-hosts.test.ts",
+      "target": "f:src/types.ts",
       "kind": "imports"
     },
     {
@@ -13920,6 +14647,12 @@
       "id": "f:test/regulate.test.ts->f:src/control.ts:imports",
       "source": "f:test/regulate.test.ts",
       "target": "f:src/control.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/regulate.test.ts->f:src/pi-control.ts:imports",
+      "source": "f:test/regulate.test.ts",
+      "target": "f:src/pi-control.ts",
       "kind": "imports"
     },
     {
@@ -14814,6 +15547,108 @@
       "id": "f:test/work.test.ts->f:test/_helpers.ts:imports",
       "source": "f:test/work.test.ts",
       "target": "f:test/_helpers.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/write-policy-cli.test.ts->x:node:test:imports",
+      "source": "f:test/write-policy-cli.test.ts",
+      "target": "x:node:test",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/write-policy-cli.test.ts->x:node:assert/strict:imports",
+      "source": "f:test/write-policy-cli.test.ts",
+      "target": "x:node:assert/strict",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/write-policy-cli.test.ts->x:node:fs:imports",
+      "source": "f:test/write-policy-cli.test.ts",
+      "target": "x:node:fs",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/write-policy-cli.test.ts->x:node:fs/promises:imports",
+      "source": "f:test/write-policy-cli.test.ts",
+      "target": "x:node:fs/promises",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/write-policy-cli.test.ts->x:node:os:imports",
+      "source": "f:test/write-policy-cli.test.ts",
+      "target": "x:node:os",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/write-policy-cli.test.ts->x:node:path:imports",
+      "source": "f:test/write-policy-cli.test.ts",
+      "target": "x:node:path",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/write-policy-cli.test.ts->x:node:child_process:imports",
+      "source": "f:test/write-policy-cli.test.ts",
+      "target": "x:node:child_process",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/write-policy-cli.test.ts->x:node:util:imports",
+      "source": "f:test/write-policy-cli.test.ts",
+      "target": "x:node:util",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/write-policy-cli.test.ts->x:node:url:imports",
+      "source": "f:test/write-policy-cli.test.ts",
+      "target": "x:node:url",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/write-policy.test.ts->x:node:assert/strict:imports",
+      "source": "f:test/write-policy.test.ts",
+      "target": "x:node:assert/strict",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/write-policy.test.ts->x:node:child_process:imports",
+      "source": "f:test/write-policy.test.ts",
+      "target": "x:node:child_process",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/write-policy.test.ts->x:node:fs/promises:imports",
+      "source": "f:test/write-policy.test.ts",
+      "target": "x:node:fs/promises",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/write-policy.test.ts->x:node:os:imports",
+      "source": "f:test/write-policy.test.ts",
+      "target": "x:node:os",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/write-policy.test.ts->x:node:path:imports",
+      "source": "f:test/write-policy.test.ts",
+      "target": "x:node:path",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/write-policy.test.ts->x:node:test:imports",
+      "source": "f:test/write-policy.test.ts",
+      "target": "x:node:test",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/write-policy.test.ts->f:src/write-policy.ts:imports",
+      "source": "f:test/write-policy.test.ts",
+      "target": "f:src/write-policy.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/write-policy.test.ts->f:src/types.ts:imports",
+      "source": "f:test/write-policy.test.ts",
+      "target": "f:src/types.ts",
       "kind": "imports"
     }
   ],

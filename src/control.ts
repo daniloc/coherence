@@ -11,7 +11,8 @@ import { execFileSync } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
 import { dirname, join, relative, resolve } from "node:path";
-import type { Config } from "./types.ts";
+import type { Config, ExternalHookHost, HookHost } from "./types.ts";
+export type { ExternalHookHost, HookHost } from "./types.ts";
 
 export const LIFECYCLE_HOOK_EVENTS = [
   "SubagentStart",
@@ -22,7 +23,6 @@ export const LIFECYCLE_HOOK_EVENTS = [
 ] as const;
 export type LifecycleHookEvent = typeof LIFECYCLE_HOOK_EVENTS[number];
 export type HookScope = "project" | "local";
-export type HookHost = "claude" | "codex";
 
 export const POST_TOOL_USE_MATCHER = "Read|Grep|Glob|Write|Edit|MultiEdit|NotebookEdit";
 export const CODEX_POST_TOOL_USE_MATCHER = "Bash|apply_patch|update_plan|mcp__.*";
@@ -98,7 +98,7 @@ export interface HookFileInspection {
 }
 
 export interface HookLauncherInspection {
-  host: HookHost;
+  host: ExternalHookHost;
   path: string;
   /** Script + mapping + executable target are all current. */
   present: boolean;
@@ -136,7 +136,7 @@ export interface CodexProjectConfigInspection {
 }
 
 export interface LifecycleHookInspection {
-  host: HookHost;
+  host: ExternalHookHost;
   /** The control bit: canonical shared wiring, no competing local path, runnable launcher. */
   present: boolean;
   /** Exact project artifacts only. This is not runtime trust or execution evidence. */
@@ -181,23 +181,23 @@ function isObject(value: unknown): value is JsonObject {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
-function launcherForHost(host: HookHost): string {
+function launcherForHost(host: ExternalHookHost): string {
   return host === "codex" ? CODEX_LIFECYCLE_HOOK_LAUNCHER : LIFECYCLE_HOOK_LAUNCHER;
 }
 
-function launcherTemplateForHost(host: HookHost): string {
+function launcherTemplateForHost(host: ExternalHookHost): string {
   return host === "codex" ? CODEX_LIFECYCLE_HOOK_SCRIPT_TEMPLATE : CLAUDE_LIFECYCLE_HOOK_SCRIPT_TEMPLATE;
 }
 
-export function lifecycleHookCommand(event: LifecycleHookEvent, host: HookHost = "claude"): string {
+export function lifecycleHookCommand(event: LifecycleHookEvent, host: ExternalHookHost = "claude"): string {
   return `${launcherForHost(host)} ${event}`;
 }
 
-function canonicalAction(event: LifecycleHookEvent, host: HookHost): JsonObject {
+function canonicalAction(event: LifecycleHookEvent, host: ExternalHookHost): JsonObject {
   return { type: "command", command: lifecycleHookCommand(event, host) };
 }
 
-function canonicalGroup(event: LifecycleHookEvent, host: HookHost): JsonObject {
+function canonicalGroup(event: LifecycleHookEvent, host: ExternalHookHost): JsonObject {
   if (event === "PostToolUse") {
     const matcher = host === "codex" ? CODEX_POST_TOOL_USE_MATCHER : POST_TOOL_USE_MATCHER;
     return { matcher, hooks: [canonicalAction(event, host)] };
@@ -209,7 +209,7 @@ function canonicalGroup(event: LifecycleHookEvent, host: HookHost): JsonObject {
 }
 
 /** The sole authored settings value. Printing, inspection, and installation all call this. */
-export function canonicalLifecycleHookSettings(host: HookHost = "claude"): JsonObject {
+export function canonicalLifecycleHookSettings(host: ExternalHookHost = "claude"): JsonObject {
   const hooks: JsonObject = {};
   for (const event of LIFECYCLE_HOOK_EVENTS) hooks[event] = [canonicalGroup(event, host)];
   return { hooks };
@@ -220,7 +220,7 @@ export function canonicalLifecycleHookSettings(host: HookHost = "claude"): JsonO
  * inspected separately: including it here would make identical host wiring acquire a new
  * runtime identity merely because the consumer keeps coherence in a nested package.
  */
-export function lifecycleHookBundleFingerprint(host: HookHost = "claude"): string {
+export function lifecycleHookBundleFingerprint(host: ExternalHookHost = "claude"): string {
   const authored = JSON.stringify({
     version: 2,
     host,
@@ -252,34 +252,34 @@ export function resolveCodexProjectRoot(cfg: Config): string {
   return resolve(cfg.root, cfg.codexProjectRoot ?? cfg.claudeProjectRoot ?? ".");
 }
 
-export function resolveHookProjectRoot(cfg: Config, host: HookHost): string {
+export function resolveHookProjectRoot(cfg: Config, host: ExternalHookHost): string {
   return host === "codex" ? resolveCodexProjectRoot(cfg) : resolveClaudeProjectRoot(cfg);
 }
 
-function hostDirectory(host: HookHost): ".claude" | ".codex" {
+function hostDirectory(host: ExternalHookHost): ".claude" | ".codex" {
   return host === "codex" ? ".codex" : ".claude";
 }
 
-function hostScopes(host: HookHost): readonly HookScope[] {
+function hostScopes(host: ExternalHookHost): readonly HookScope[] {
   return host === "codex" ? ["project"] : ["project", "local"];
 }
 
-function settingsPath(cfg: Config, scope: HookScope, host: HookHost): string {
+function settingsPath(cfg: Config, scope: HookScope, host: ExternalHookHost): string {
   const name = host === "codex"
     ? "hooks.json"
     : scope === "project" ? "settings.json" : "settings.local.json";
   return join(resolveHookProjectRoot(cfg, host), hostDirectory(host), name);
 }
 
-function launcherPath(cfg: Config, host: HookHost): string {
+function launcherPath(cfg: Config, host: ExternalHookHost): string {
   return join(resolveHookProjectRoot(cfg, host), hostDirectory(host), "coherence-hook");
 }
 
-function mappingPath(cfg: Config, host: HookHost): string {
+function mappingPath(cfg: Config, host: ExternalHookHost): string {
   return join(resolveHookProjectRoot(cfg, host), hostDirectory(host), "coherence-root");
 }
 
-export function lifecycleRootMapping(cfg: Config, host: HookHost = "claude"): string {
+export function lifecycleRootMapping(cfg: Config, host: ExternalHookHost = "claude"): string {
   return (relative(resolveHookProjectRoot(cfg, host), cfg.root) || ".") + "\n";
 }
 
@@ -301,7 +301,7 @@ function settingsShapeError(value: JsonObject): string | undefined {
   return undefined;
 }
 
-function readSettings(cfg: Config, scope: HookScope, host: HookHost): ReadSettings {
+function readSettings(cfg: Config, scope: HookScope, host: ExternalHookHost): ReadSettings {
   const path = settingsPath(cfg, scope, host);
   if (!existsSync(path)) {
     return { scope, path, exists: false, valid: true, value: {}, raw: "", indent: 2, trailingNewline: true };
@@ -333,7 +333,7 @@ function readSettings(cfg: Config, scope: HookScope, host: HookHost): ReadSettin
   }
 }
 
-function canonicalCount(groups: unknown, event: LifecycleHookEvent, host: HookHost): number {
+function canonicalCount(groups: unknown, event: LifecycleHookEvent, host: ExternalHookHost): number {
   if (!Array.isArray(groups)) return 0;
   return groups.filter((group) => isDeepStrictEqual(group, canonicalGroup(event, host))).length;
 }
@@ -342,7 +342,7 @@ function canonicalCount(groups: unknown, event: LifecycleHookEvent, host: HookHo
  * Recognize only lifecycle commands coherence has emitted or that are already present in
  * audited consumers. The match is anchored: mentioning `coherence hook` is not enough.
  */
-export function managedLifecycleEvent(command: unknown, host: HookHost = "claude"): LifecycleHookEvent | null {
+export function managedLifecycleEvent(command: unknown, host: ExternalHookHost = "claude"): LifecycleHookEvent | null {
   if (typeof command !== "string") return null;
   if (host === "codex") {
     const canonical = LIFECYCLE_HOOK_EVENTS.find((event) => command === lifecycleHookCommand(event, host));
@@ -378,11 +378,11 @@ export function managedLifecycleEvent(command: unknown, host: HookHost = "claude
   return nestedRoot ? nestedRoot[1] as LifecycleHookEvent : null;
 }
 
-function managedAction(value: unknown, host: HookHost): boolean {
+function managedAction(value: unknown, host: ExternalHookHost): boolean {
   return isObject(value) && value.type === "command" && managedLifecycleEvent(value.command, host) !== null;
 }
 
-function managedCount(hooks: unknown, host: HookHost): number {
+function managedCount(hooks: unknown, host: ExternalHookHost): number {
   if (!isObject(hooks)) return 0;
   let count = 0;
   for (const groups of Object.values(hooks)) {
@@ -395,7 +395,7 @@ function managedCount(hooks: unknown, host: HookHost): number {
   return count;
 }
 
-function inspectFile(read: ReadSettings, host: HookHost): HookFileInspection {
+function inspectFile(read: ReadSettings, host: ExternalHookHost): HookFileInspection {
   if (!read.valid) {
     return {
       scope: read.scope, path: read.path, exists: read.exists, valid: false, complete: false,
@@ -461,7 +461,7 @@ function readText(path: string): string | undefined {
   try { return readFileSync(path, "utf8"); } catch { return undefined; }
 }
 
-export function lifecycleHookScript(host: HookHost = "claude"): string {
+export function lifecycleHookScript(host: ExternalHookHost = "claude"): string {
   return host === "codex" ? CODEX_LIFECYCLE_HOOK_SCRIPT : LIFECYCLE_HOOK_SCRIPT;
 }
 
@@ -475,7 +475,7 @@ function physicalRoot(path: string): string {
  * checkouts; that only works when the `.codex` owner is also Git's top-level. Outside
  * Git the command falls back to its cwd, which Codex sets to the project root.
  */
-function launcherCommandRoot(cfg: Config, host: HookHost): string {
+function launcherCommandRoot(cfg: Config, host: ExternalHookHost): string {
   const configuredRoot = resolveHookProjectRoot(cfg, host);
   if (host !== "codex") return configuredRoot;
   try {
@@ -491,7 +491,7 @@ function launcherCommandRoot(cfg: Config, host: HookHost): string {
   }
 }
 
-function inspectLauncher(cfg: Config, host: HookHost): HookLauncherInspection {
+function inspectLauncher(cfg: Config, host: ExternalHookHost): HookLauncherInspection {
   const configuredRoot = resolveHookProjectRoot(cfg, host);
   const commandRoot = launcherCommandRoot(cfg, host);
   const rootAligned = physicalRoot(configuredRoot) === physicalRoot(commandRoot);
@@ -612,7 +612,7 @@ export function inspectCodexProjectConfig(cfg: Config): CodexProjectConfigInspec
 }
 
 /** Inspect without mutating: the lifecycle control's read operation. */
-export function inspectLifecycleHook(cfg: Config, host: HookHost = "claude"): LifecycleHookInspection {
+export function inspectLifecycleHook(cfg: Config, host: ExternalHookHost = "claude"): LifecycleHookInspection {
   const files = hostScopes(host).map((scope) => inspectFile(readSettings(cfg, scope, host), host));
   const codexConfig = host === "codex" ? inspectCodexProjectConfig(cfg) : undefined;
   const valid = files.every((file) => file.valid) && (codexConfig?.valid ?? true);
@@ -655,11 +655,11 @@ export function inspectLifecycleHook(cfg: Config, host: HookHost = "claude"): Li
   };
 }
 
-export function inspectLifecycleHookForHost(cfg: Config, host: HookHost): LifecycleHookInspection {
+export function inspectLifecycleHookForHost(cfg: Config, host: ExternalHookHost): LifecycleHookInspection {
   return inspectLifecycleHook(cfg, host);
 }
 
-function stripManagedActions(value: JsonObject, host: HookHost): JsonObject {
+function stripManagedActions(value: JsonObject, host: ExternalHookHost): JsonObject {
   const next = structuredClone(value);
   if (!isObject(next.hooks)) return next;
   const hooks = next.hooks;
@@ -680,7 +680,7 @@ function stripManagedActions(value: JsonObject, host: HookHost): JsonObject {
   return next;
 }
 
-function addCanonicalBundle(value: JsonObject, host: HookHost): JsonObject {
+function addCanonicalBundle(value: JsonObject, host: ExternalHookHost): JsonObject {
   const next = structuredClone(value);
   const hooks = isObject(next.hooks) ? next.hooks : {};
   for (const event of LIFECYCLE_HOOK_EVENTS) {
@@ -732,7 +732,7 @@ async function removeManagedText(path: string, expected: string): Promise<boolea
 export async function setLifecycleHook(
   cfg: Config,
   present: boolean,
-  host: HookHost = "claude",
+  host: ExternalHookHost = "claude",
 ): Promise<LifecycleHookMutation> {
   const reads = hostScopes(host).map((scope) => readSettings(cfg, scope, host));
   const errors = reads.filter((read) => !read.valid).map((read) => `${read.path}: ${read.error ?? "invalid settings"}`);
@@ -787,7 +787,7 @@ export async function setLifecycleHook(
 
 export function setLifecycleHookForHost(
   cfg: Config,
-  host: HookHost,
+  host: ExternalHookHost,
   present: boolean,
 ): Promise<LifecycleHookMutation> {
   return setLifecycleHook(cfg, present, host);

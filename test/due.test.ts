@@ -62,7 +62,7 @@ test("due — a section the tree has outrun is reported in COMMITS, with the exa
   assert.equal(r.due[0].section, "economy");
   assert.equal(r.due[0].commits, DUE_AFTER + 1, "distance is commits landed since the stamped commit");
   const text = formatDue(r, "npx coherence", '--session "s"').join("\n");
-  assert.match(text, /COHERENCE WORK IS DUE/);
+  assert.match(text, /COHERENCE MAINTENANCE IS DUE/);
   assert.match(text, /economy has not run in 11 commits/);
   assert.match(text, /npx coherence economy/, "an item that cannot name a runnable command is a complaint");
   await cleanup(root);
@@ -161,18 +161,19 @@ test("due — an UNCOUNTABLE distance is never reported as zero, and says so in 
   await cleanup(root);
 });
 
-test("due — the emitted text STATES ITS OWN BLIND SPOT and teaches the verb that records a decline", async () => {
+test("due — the emitted text keeps maintenance separate from unrelated work", async () => {
   const { root, commits } = await repo(DUE_AFTER + 2);
   await status(root, { economy: { at, commit: commits[0] } });
   const text = formatDue(await readDue(cfg(root)), "npx coherence", '--session "s"').join("\n");
+  assert.match(text, /COHERENCE MAINTENANCE IS DUE/);
+  assert.match(text, /dedicated maintenance or branch-finalization session/);
   assert.match(text, new RegExp(`only 1 of ${COMMANDS.length} commands write`),
-    "claiming this list is what is due would be green-by-absence in the newest instrument");
+    "the advisory must still name its evidence boundary");
   assert.match(text, /"has not run" and "does not record" are indistinguishable/);
   assert.match(text, /not a complete account of what is due/);
-  // The load-bearing half: without a journaled decline, a DEFERRED item and a NEGLECTED
-  // one read identically forever.
-  assert.match(text, /npx coherence blocked "<what you did not do>" --because "<why>" --session "s"/);
-  assert.match(text, /"nobody looked" from "we decided not to"/);
+  assert.doesNotMatch(text, /coherence blocked/,
+    "an unrelated session need not create a journal entry merely to defer maintenance");
+  assert.doesNotMatch(text, /fold these into this session/);
   assert.match(text, /Not blocking/);
   await cleanup(root);
 });

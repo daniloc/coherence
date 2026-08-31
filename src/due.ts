@@ -20,45 +20,18 @@
 // WHILE THE INSTRUMENT DID NOT, so the unit is commits landed since the recorded run, and
 // a quiet week is silent by construction rather than by a special case.
 //
-// ── WHY THIS PRINTS AN IMPERATIVE INSTEAD OF AN ADVISORY ─────────────────────────────
+// ── WHY THIS STAYS A MAINTENANCE QUEUE ──────────────────────────────────────────────
 //
-// Transcript archaeology over 234MB found NO recorded instance of a printed advisory
-// causing action: `--raise` was invoked four times ever, and 89 of 89 never-red findings
-// were never asked about. What demonstrably moves an agent is the SessionStart
-// instruction block — its journal imperative produced hundreds of entries in days, and
-// its `DOUBT THE INSTRUMENT` paragraph propagated to a consuming project verbatim. So the
-// reading ships in the channel with the only demonstrated hit rate, as a section of an
-// existing block rather than as a new command: three commands were evicted this week for
-// having no invocations, and a fourth nobody runs would be the same mistake with a longer
-// help string.
-//
-// That channel is also the widest blast radius in this repo — the block reaches every
-// adopting project on repin, and it already carries three imperatives. A fourth that
-// fired on every session would dilute all four. SILENCE WHEN NOTHING IS DUE IS THEREFORE
-// NOT A POLISH ITEM; it is the condition on which this is allowed to exist at all, and it
-// is why the thresholds below err toward saying nothing.
+// SessionStart is the one channel agents reliably notice, so stale instruments remain
+// visible there. It must not, however, commandeer an unrelated task or compel a journal
+// entry merely for deferral. The emitted text points to a dedicated maintenance or
+// branch-finalization session while remaining silent when nothing is due.
 //
 // ── IT NEVER WRITES AND IT NEVER GATES ───────────────────────────────────────────────
 //
-// Every function here reads: the run record, and `git rev-list --count`. Nothing is
-// recorded about having reported, no "last nagged at" stamp, no journal entry. `d-738d7116`
-// already settled that a surprising write is how a mechanism gets switched off wholesale
-// rather than tuned, and a SessionStart hook that mutated the repo as a side effect of
-// starting a session is the purest available form of that mistake. A build that fails
-// because you have not run something often enough gets deleted, so this returns text and
-// no exit code — `runHook` returns 0 whatever this says.
-//
-// ── DECLINING IS JOURNALED, AND THAT IS THE LOAD-BEARING HALF ────────────────────────
-//
-// The emitted text names `coherence blocked` because without it a DEFERRED item and a
-// NEGLECTED one are identical forever: both read as "45 commits" next session and the one
-// after. `blocked` is what lets the next reader tell "nobody looked" from "we looked and
-// decided not to" — the same absent-vs-unreadable distinction that runs through this whole
-// codebase (floor.ts's refusal, status.ts's skip-never-clobbers, `dismiss` vs `resolved`).
-// The reading itself is deliberately NOT suppressed by a `blocked` entry: suppression
-// would need a stored key, the key would need to survive rewording, and a stale
-// suppression is a silence nobody can see. The journal entry is for the human reading the
-// timeline, not for this printer.
+// Every function here reads the run record and `git rev-list --count`. Nothing records
+// that the advisory was shown. A SessionStart hook that mutated the repository merely by
+// starting a session would be worse than a missed reminder, so `runHook` always returns 0.
 import { spawnSync } from "node:child_process";
 import { readStatus } from "./status.ts";
 import { COMMANDS } from "./commands.ts";
@@ -243,11 +216,11 @@ export async function readDue(cfg: Config, after = DUE_AFTER, cap = DUE_CAP): Pr
  * byte-identical to what it was before this shipped. That is the contract the whole
  * feature rests on.
  */
-export function formatDue(r: DueReading, cli: string, scope: string): string[] {
+export function formatDue(r: DueReading, cli: string, _scope: string): string[] {
   if (!r.due.length) return [];
   const out = [
     "",
-    "COHERENCE WORK IS DUE — fold these into this session's tasks.",
+    "COHERENCE MAINTENANCE IS DUE — review before branch finalization or in a dedicated maintenance session.",
     "",
   ];
   for (const d of r.due) out.push(`  · ${d.section} ${d.why}`, `      ${cli} ${d.section}`);
@@ -257,11 +230,8 @@ export function formatDue(r: DueReading, cli: string, scope: string): string[] {
   }
   out.push(
     "",
-    "Not blocking, and nothing here was written to disk. IF YOU DECLINE ONE, SAY WHY —",
-    "that is what lets the next session tell \"nobody looked\" from \"we decided not to\".",
-    "Without it a deferred item and a neglected one read identically forever:",
-    "",
-    `  ${cli} blocked "<what you did not do>" --because "<why>" ${scope}`,
+    "Not blocking, and nothing here was written to disk. If this task is unrelated, leave it for a",
+    "dedicated maintenance or branch-finalization session; do not create a journal entry merely to defer it.",
     "",
     // THE BLIND SPOT, stated rather than implied. Only the run record can be read, and only
     // a handful of commands write to it; claiming this list is "what is due" would be

@@ -15,6 +15,7 @@
     "coherence",
     "claude-code",
     "codex",
+    "pi-package",
     "harness",
     "verification"
   ],
@@ -25,6 +26,15 @@
   "bin": {
     "coherence": "dist/cli.js",
     "coherence-hook": "dist/hook-cli.js"
+  },
+  "pi": {
+    "extensions": ["./dist/pi-extension.js"]
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": "*"
+  },
+  "peerDependenciesMeta": {
+    "@earendil-works/pi-coding-agent": { "optional": true }
   },
   "files": [
     "dist",
@@ -41,6 +51,7 @@
     "prepare": "npm run build"
   },
   "devDependencies": {
+    "@earendil-works/pi-coding-agent": "^0.84.3",
     "@types/node": "^22.0.0",
     "tree-sitter-python": "^0.25.0",
     "tree-sitter-ruby": "^0.23.1",

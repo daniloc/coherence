@@ -4,6 +4,7 @@ import { readJsonOrRefuse } from "./floor.ts";
 import type { Config } from "./types.ts";
 
 const DEFAULTS: Omit<Config, "root"> = {
+  protectPrimaryCheckout: false,
   outputDir: "public",
   entryDir: ".",
   tooling: [],

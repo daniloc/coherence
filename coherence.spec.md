@@ -32,9 +32,9 @@ run with no test runner, no serial pin, and the wrong testMatch), and a missing 
 control kills the journal hooks with no host error at all. The latter used to be the weak
 structural claim `.claude/settings.json exists at root`; now the root claims the binary
 control reading itself for every host this repository supports. Its oracle checks each
-host's three tracked parts—settings, stable launcher, and root mapping—their exact
-composition, host-specific exclusion controls, the absence of a competing path, and the
-runnable target. One meaningful claim is lighter and stronger than six
+host's complete tracked control—settings, native package or stable launcher, and root
+mapping—their exact composition, host-specific exclusion controls, the absence of a
+competing path, and the runnable target. One meaningful claim is lighter and stronger than six
 green file-existence claims. Fewer claims, honestly scoped, is still the trade this
 harness teaches; making its own root spec take it is the least it owes.
 

@@ -25,7 +25,7 @@ import { fileURLToPath } from "node:url";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import {
-  COMMANDS, commandNames, commandFor, dispatchTokens, usageBanner, renderCommandsBlock,
+  COMMANDS, commandNames, commandFor, commandEffect, dispatchTokens, usageBanner, renderCommandsBlock,
   COMMANDS_BEGIN, COMMANDS_END, renderPhrasebookBlock, PHRASEBOOK_BEGIN, PHRASEBOOK_END,
 } from "../src/commands.ts";
 import { CLAIM_FORMS } from "../src/phrasebook.ts";
@@ -62,6 +62,28 @@ async function liveDispatch(): Promise<string[]> {
   walk(sf);
   return [...found];
 }
+
+test("every command and alias has a total invocation effect", () => {
+  for (const token of dispatchTokens()) {
+    assert.ok(commandEffect(token, []) === "read" || commandEffect(token, []) === "write", token);
+  }
+  assert.equal(commandEffect("not-a-command", []), null);
+});
+
+test("mixed commands classify their mutating modes", () => {
+  assert.equal(commandEffect("decisions", []), "read");
+  assert.equal(commandEffect("decisions", ["--compact"]), "write");
+  assert.equal(commandEffect("work", ["inspect"]), "read");
+  assert.equal(commandEffect("work", ["create", "objective"]), "write");
+  assert.equal(commandEffect("hooks", ["status"]), "read");
+  assert.equal(commandEffect("hooks", ["install"]), "write");
+  assert.equal(commandEffect("atlas", ["--check"]), "read");
+  assert.equal(commandEffect("atlas", ["--check", "--raise"]), "write");
+  assert.equal(commandEffect("experiment", ["--json", "inspect"]), "read");
+  assert.equal(commandEffect("work", ["--json", "create", "objective"]), "write");
+  assert.equal(commandEffect("consequence", ["--json", "add"]), "write");
+  assert.equal(commandEffect("hooks", ["--json", "install"]), "write");
+});
 
 test("the AST scanner actually reads the dispatch (an oracle that scans nothing passes vacuously)", async () => {
   // THE INSTRUMENT CHECK, and it comes first deliberately. Every assertion below is a set

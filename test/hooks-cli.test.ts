@@ -19,6 +19,7 @@ function hostEnv(codexThread?: string): NodeJS.ProcessEnv {
   delete env.COHERENCE_AGENT;
   delete env.COHERENCE_JOB;
   delete env.CODEX_THREAD_ID;
+  delete env.PI_SESSION_ID;
   if (codexThread) env.CODEX_THREAD_ID = codexThread;
   return env;
 }
@@ -87,6 +88,19 @@ test("hooks CLI — explicit Codex dispatch is isolated and the bare command sta
     const removed = await run(root, ["hooks", "uninstall", "--host", "codex", "--json"]);
     assert.equal(removed.code, 0, removed.stderr);
     assert.equal(JSON.parse(removed.stdout).control.present, false);
+    const piInstalled = await run(root, ["hooks", "install", "--host", "pi", "--json"]);
+    assert.equal(piInstalled.code, 0, piInstalled.stderr);
+    assert.equal(JSON.parse(piInstalled.stdout).host, "pi");
+    assert.equal(existsSync(join(root, ".pi", "settings.json")), true);
+    const piPrint = await run(root, ["hooks", "print", "--host", "pi"]);
+    assert.equal(piPrint.code, 0, piPrint.stderr);
+    assert.match(piPrint.stdout, /native package|extension target/);
+    const piReview = await run(root, ["hooks", "review", "--host", "pi"]);
+    assert.equal(piReview.code, 0, piReview.stderr);
+    const piCheck = await run(root, ["hooks", "--check", "--host", "pi"]);
+    assert.equal(piCheck.code, 0, piCheck.stderr);
+    const piRemoved = await run(root, ["hooks", "uninstall", "--host", "pi", "--json"]);
+    assert.equal(piRemoved.code, 0, piRemoved.stderr);
     const claudeCheck = await run(root, ["hooks", "--check", "--json"], hostEnv("ambient-codex-thread"));
     assert.equal(claudeCheck.code, 0, claudeCheck.stderr);
     assert.equal(JSON.parse(claudeCheck.stdout).host, "claude");
@@ -101,6 +115,7 @@ test("hooks CLI — malformed host and session selectors refuse before mutation"
     await installTarget(root);
     const cases: Array<{ args: string[]; error: RegExp }> = [
       { args: ["hooks", "status", "--host", "other", "--json"], error: /invalid hook host/ },
+      { args: ["hooks", "status", "--host", "other", "--json"], error: /claude, codex, or pi/ },
       { args: ["hooks", "status", "--host", "--json"], error: /missing value.*--host/ },
       { args: ["hooks", "status", "--host", "codex", "--host", "claude", "--json"], error: /repeated hooks selector.*--host/ },
       { args: ["hooks", "status", "--session", "--json"], error: /missing value.*--session/ },

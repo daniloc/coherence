@@ -49,8 +49,13 @@ export interface PlatformAdapter {
   bindings(root: string, files?: readonly string[]): Promise<Bindings | null>;
 }
 
+export const HOOK_HOSTS = ["claude", "codex", "pi"] as const;
+export type HookHost = typeof HOOK_HOSTS[number];
+export type ExternalHookHost = Exclude<HookHost, "pi">;
+
 export interface Config {
   root: string;
+  protectPrimaryCheckout?: boolean; // opt-in: Coherence writes require a registered linked worktree
   // THE PROJECT'S NAME, DECLARED — because it is rendered INTO every generated artifact
   // (the AGENTS.md title and structure tree, graph.json's `root`, both HTML headers, the
   // contract), and an artifact is supposed to be a pure function of the TRACKED tree.
@@ -112,6 +117,7 @@ export interface Config {
   components?: { name: string; files: string[] }[]; // optional sub-component overrides for the decompose/drift co-change analysis ONLY (the spec graph, verify, and coverage are untouched). `files` are globs relative to cfg.root (`*` = within a path segment, `**` = any). A file matching one is regrouped under `name`, so a large spec-component (a domain core) can be measured as the distinct concerns it actually contains instead of one opaque hub. First matching definition wins; unmatched files keep their spec-component.
   claudeMdPath?: string;    // path to the CLAUDE.md whose fenced block `coherence claude` owns (default: "CLAUDE.md" at cfg.root). Use a `../`-relative path when the authored CLAUDE.md lives outside the coherence root (e.g. a repo root above a sub-package); coherence still operates on cfg.root, only the splice target moves.
   claudeProjectRoot?: string; // path from cfg.root to the Claude project root whose .claude/settings.json owns lifecycle hooks (default "."). Real monorepos may keep coherence/package.json in a sub-project while Claude opens at the repository root; the stable launcher uses a generated root mapping so its settings command remains identical in both layouts.
+  piProjectRoot?: string; // path from cfg.root to the Pi project root whose .pi/settings.json owns the native extension control (default ".").
   codexProjectRoot?: string; // path from cfg.root to the Codex project root whose .codex/hooks.json owns lifecycle hooks. Defaults to claudeProjectRoot, then ".", because the two hosts ordinarily open the same repository root while retaining independent control files.
   dictionary?: string;      // dir (relative to cfg.root) holding the pattern dictionary — one `<Word>.md` per word, each a `# <Word>` heading + intent + `## commitments` claim list. A `conforms to <Word>` claim expands the word's commitments against the declaring component. Default "dictionary"; a project with no such dir simply has no words (the claim form still resolves — a missing word file goes RED, not skip).
 

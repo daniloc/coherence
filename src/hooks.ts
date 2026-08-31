@@ -24,18 +24,20 @@ import { readJournal, readTrustedJournal, openSession, resolve, newSessionId } f
 import {
   canonicalLifecycleHookSettings, inspectLifecycleHook, setLifecycleHook,
   lifecycleHookScript, lifecycleRootMapping, resolveHookProjectRoot, LIFECYCLE_HOOK_EVENTS,
-  type HookHost, type LifecycleHookInspection, type LifecycleHookEvent,
+  type HookHost, type ExternalHookHost, type LifecycleHookInspection, type LifecycleHookEvent,
 } from "./control.ts";
+import { inspectPiLifecycleHook, setPiLifecycleHook, resolvePiProjectRoot, type PiLifecycleInspection } from "./pi-control.ts";
 import { composeHookText, readHookText, HOOK_TEXT_DIR } from "./hook-text.ts";
 import { readDue, formatDue } from "./due.ts";
 import {
   activityReplayKey, readActivity, recordActivity,
   type ActivityRow,
-  type ActivityHost, type ActivityTransport,
+  type ActivityHost, type ActivityTransport, type ActivityContext,
 } from "./activity.ts";
-import { readTraceDetailed } from "./read-trace.ts";
+import { readTraceDetailed, recordHookReads } from "./read-trace.ts";
 import { readExperiments } from "./experiment.ts";
 import type { Config } from "./types.ts";
+import { lifecyclePersistenceNotice, projectWritePolicy, type ProjectWritePolicy } from "./write-policy.ts";
 
 /** Use the source entrypoint only while this repository dogfoods itself. Consumers get
  * the installed binary. Keeping this choice here also means the injected command is the
@@ -61,92 +63,50 @@ export function agentInstructions(session: string, cli = "npx coherence", agent?
   const scope = `--session ${JSON.stringify(session)}${agent ? ` --agent ${JSON.stringify(agent)}` : ""}`;
   const shownSession = instructionValue(session);
   return [
-    "DECISION JOURNAL — this repo keeps one, and you are expected to write to it.",
+    "DECISION JOURNAL — Record durable decisions, observed defects, and work boundaries.",
+    "Do not journal temporary probes, command failures, or mechanical edits.",
     "",
-    "When you make a decision — a point where the work could have gone more than one",
-    "way and you picked — record it BEFORE moving on:",
+    `YOUR SESSION ID IS ${shownSession}. Pass it on every call — it keeps records attributable`,
+    "when several agents are working at once.",
     "",
-    `  ${cli} decide "<what you chose>" --over "<what you rejected>" --because "<why>" ${scope}`,
-    "",
-    `YOUR SESSION ID IS ${shownSession}. Pass it on every call — it is what keeps your`,
-    "decisions attributable to you when four other agents are writing at the same time.",
-    "",
-    "SWARM GYROSCOPE — read the durable field before acting:",
+    "COORDINATION — Before dispatching, handing off, or sharing a worktree, read durable state:",
     `  ${cli} orient`,
     `  ${cli} work inspect`,
     "",
-    "`orient` selects one heading from strict evidence; it does not grant authority.",
-    "Only an orchestrator or explicitly authorized coordinator creates or hands off work.",
-    "Freeze objective, observable success, risk, authority, owner, dependencies, and scope",
-    "before dispatch; add parent/dependency/read/write flags when the boundary grants them:",
+    "`orient` selects a heading; it does not grant authority. Only an orchestrator or explicitly",
+    "authorized coordinator creates or hands off work. Create a work record only for delegated,",
+    "multi-writer, or cross-session work:",
     `  ${cli} work create "OBJECTIVE" --success "OBSERVABLE_RESULT" --risk high \\`,
     `    --authority orchestrator-delegated --granted-by "ORCHESTRATOR" \\`,
     `    --boundary "GRANTED_SCOPE" ${scope}`,
-    "Owners advance only the exact assignment printed by SessionStart. Re-inspect after",
-    "each mutation because predecessor tokens deliberately expire instead of last-writer-win.",
+    "A prescribed runbook with its own durable state does not need a second work or experiment",
+    "record unless it creates a durable decision, defect, or handoff.",
+    "After a work lifecycle write, re-inspect that work; other entries do not need a fleet refresh.",
     `Navigate explicit provenance with: ${cli} consequence inspect "work:WORK_ID"`,
     "",
-    "`--over` is repeatable and it is the field that matters most: what you REJECTED is",
-    "what stops the next agent re-litigating a settled question. If you rejected nothing,",
-    "omit it — an unexamined choice and a forced one should not look alike.",
+    "Record a durable decision when it settles behavior, risk, architecture, or a rejected alternative:",
+    `  ${cli} decide "<what you chose>" --over "<what you rejected>" --because "<why>" ${scope}`,
     "",
-    "WHEN A NUMBER SURPRISES YOU, DOUBT THE INSTRUMENT BEFORE THE SUBJECT — and record",
-    "the question even if you cannot chase it. An unresolved conjecture is a real entry:",
-    "",
+    "WHEN A NUMBER SURPRISES YOU, DOUBT THE INSTRUMENT BEFORE THE SUBJECT. Record a conjecture",
+    "only when its result could change current work:",
     `  ${cli} conjecture "<the surprising observation>" --could-be "<explanation>" \\`,
     `    --discriminated-by "<the test that would separate them>" ${scope}`,
     `  ${cli} resolved <id> --because "<what that test showed>" --as "<which candidate won>" ${scope}`,
     `  ${cli} dismiss <id> --because "<why it is not worth chasing>" ${scope}`,
     "",
-    'You need not supply "the instrument is wrong" — it is added for you. It is the',
-    "highest-prior explanation for a surprising measurement and the one everyone skips.",
-    "",
-    "WHEN YOU OBSERVE A DEFECT, RECORD IT BEFORE THE REPAIR ERASES THE EVIDENCE:",
-    "",
+    "WHEN YOU OBSERVE A DEFECT with a reproducer or field evidence, record it before repair:",
     `  ${cli} defect "<what failed>" --evidence "<the reproducer, output, or field report>" ${scope}`,
+    "This is an assessed conclusion, not machine proof; if the defect is uncertain, use conjecture instead.",
+    "Attach each affected path with --file. Redact credentials, tokens, personal data, and customer data.",
     "",
-    "This is your assessed conclusion, not machine proof. If whether it is a defect is",
-    "still an open question, use conjecture instead. Attach each affected path with --file.",
-    "Redact credentials, tokens, personal data, and customer data: this record is committed.",
-    "",
-    "`dismiss` is NOT `resolved`. Use it when the question is real and nobody intends to",
-    "answer it — it renders in its own section, saying exactly that, and it stops the",
-    "advisories re-raising the same finding. Answering something you did not answer is the",
-    "one thing this journal cannot recover from.",
-    "",
-    "BEFORE YOU ADD A CONCEPT, COUNT ITS INSTANCES. A mechanism with no subjects in this",
-    "project is a FINDING, not a feature — and the finding is usually a subtraction that",
-    "does the same work. Record what you measured, what you would have built, and the",
-    "QUERY that decided it, because the answer is a function of the project and will change:",
-    "",
-    `  ${cli} decide "not X — measured N instances" --over "<the mechanism you did not build>" \\`,
-    `    --because "<the query, so the next agent can re-run it instead of re-arguing>" ${scope}`,
-    "",
-    "WHEN YOU FIX A BUG, DECIDE WHAT HAPPENS TO ITS CLASS — dissolve > declare > infer.",
-    "Best: make the class UNREPRESENTABLE — remove the duplicated state, narrow the type,",
-    "collapse the second spelling of the domain that let two copies disagree. Next: PIN it —",
-    "an invariant anchored by a boundary whose guard goes red if the class returns, plus a",
-    "`## refutations` line recording what you actually observed broken; a fixed bug is a",
-    "measured negative control, and it is evidence only if it is written down. A spot fix",
-    "is the floor, not the fix — if the stronger rungs were out of reach, say why:",
-    "",
-    `  ${cli} decide "spot-fixed <bug>; class survives" --over "dissolving <the state that allows it>" \\`,
-    `    --because "<why unrepresentable/pinned was not reachable today>" ${scope}`,
-    "",
-    "WHEN YOU FORM A MULTI-STEP PLAN, MAKE ITS PREDICTION FALSIFIABLE before acting:",
+    "For a multi-step plan whose next decision depends on empirical evidence, make the prediction falsifiable:",
     `  ${cli} experiment create "<what you expect will work>" --context "<file you expect to need>" \\`,
     `    --action "<planned action>" --success "<observable success criterion>" ${scope}`,
-    "The command prints stable action/criterion ids and a close template. Closing derives",
-    "success, failure, or inconclusive from evidence for EVERY id; a Stop or a checked box",
-    "never becomes success by itself.",
-    "",
-    "Two more verbs:",
+    "Use `blocked` only for work that cannot proceed; use `retract` for a refuted record:",
     `  ${cli} blocked "<what you could not do>" --because "<why>" ${scope}`,
     `  ${cli} retract <id> --because "<what refuted it>" ${scope}`,
     "",
-    "This gates nothing. It cannot fail your build and it is not a checklist — log the",
-    "handful of choices a reader who never saw your transcript would need, not every step.",
-    "A job that logs three real decisions is worth more than one that logs thirty steps.",
+    "This does not gate a build. Log the handful of facts a later reader needs, not every step.",
   ].join("\n");
 }
 
@@ -236,11 +196,86 @@ export function composeStopFeedback(
 
 function hookHost(): ActivityHost {
   const host = process.env.COHERENCE_HOOK_HOST;
-  return host === "codex" || host === "claude" ? host : "unknown";
+  return host === "codex" || host === "claude" || host === "pi" ? host : "unknown";
 }
 
 function hookTransport(): ActivityTransport {
-  return process.env.COHERENCE_HOOK_TRANSPORT === "launcher" ? "launcher" : "direct";
+  return process.env.COHERENCE_HOOK_TRANSPORT === "launcher"
+    ? "launcher"
+    : process.env.COHERENCE_HOOK_TRANSPORT === "native" ? "native" : "direct";
+}
+
+export interface LifecycleIdentity {
+  session: string;
+  agent: string;
+  job: string;
+  host: ActivityHost;
+  transport: ActivityTransport;
+  bundleHash: string | null;
+}
+
+function lifecycleContext(identity: LifecycleIdentity): ActivityContext {
+  return { host: identity.host, transport: identity.transport, bundleHash: identity.bundleHash, experimentId: null };
+}
+
+export async function prepareSessionStart(
+  cfg: Config,
+  event: "SessionStart" | "SubagentStart",
+  identity: LifecycleIdentity,
+  policy: ProjectWritePolicy,
+): Promise<string> {
+  let rec = { session: identity.session, agent: identity.agent };
+  let journalControl: string[] = [];
+  try {
+    const trusted = readTrustedJournal(cfg);
+    if (!trusted.ok) {
+      if (policy.writable) throw new Error(`${trusted.damage.length} decision journal damage item(s)`);
+      journalControl = ["", `JOURNAL CONTROL unavailable: ${trusted.damage.length} decision journal damage item(s)`];
+    } else {
+      const existing = trusted.records.find((r) => r.kind === "session" && r.session === identity.session);
+      rec = existing ?? (policy.writable
+        ? openSession(cfg, { session: identity.session, agent: identity.agent, job: identity.job })
+        : rec);
+    }
+  } catch (error) {
+    journalControl = ["", `JOURNAL CONTROL unavailable: ${instructionValue(error instanceof Error ? error.message : String(error))}`];
+  }
+  const cli = projectCli(cfg);
+  const scope = `--session ${JSON.stringify(rec.session)}${rec.agent ? ` --agent ${JSON.stringify(rec.agent)}` : ""}`;
+  const [work, due] = await Promise.all([
+    assignedWorkInstructions(cfg, rec.session, cli, rec.agent),
+    readDue(cfg).then((r) => formatDue(r, cli, scope)).catch(() => []),
+  ]);
+  const notice = lifecyclePersistenceNotice(policy);
+  const canonical = [agentInstructions(rec.session, cli, rec.agent), ...(notice ? ["", notice] : []), ...journalControl, ...work, ...due].join("\n");
+  return composeHookText(canonical, readHookText(cfg, event), { session: rec.session, agent: rec.agent, cli, scope });
+}
+
+export function recordLifecycleToolResult(cfg: Config, payload: unknown, context: ActivityContext, policy: ProjectWritePolicy): void {
+  if (!policy.writable) return;
+  try { recordActivity(cfg, "PostToolUse", payload, context); } catch { /* telemetry is non-authoritative */ }
+  try { recordHookReads(cfg, payload, new Date().toISOString(), context); } catch { /* telemetry is non-authoritative */ }
+}
+
+export async function recordMainSettlement(cfg: Config, session: string, policy: ProjectWritePolicy): Promise<void> {
+  if (!policy.writable) return;
+  const { recordCalibrationSample } = await import("./calibration.ts");
+  await recordCalibrationSample(cfg, session);
+}
+
+export async function prepareChildSettlement(cfg: Config, session: string, policy: ProjectWritePolicy): Promise<string> {
+  const [{ analyzeChange, formatSignal }, { recordCalibrationSample }] = await Promise.all([
+    import("./signal.ts"), import("./calibration.ts"),
+  ]);
+  if (policy.writable) await recordCalibrationSample(cfg, session).catch(() => null);
+  const change: StopChangeFeedback = await analyzeChange(cfg).then((s) => ({
+    kind: "available" as const, text: formatSignal(s).join("\n"),
+  })).catch((e: unknown) => ({
+    kind: "unavailable" as const, text: `CHANGE SIGNAL unavailable: ${e instanceof Error ? e.message : String(e)}`,
+  }));
+  return composeHookText(composeStopFeedback("SubagentStop", stopReport(cfg, session), change) ?? "", readHookText(cfg, "SubagentStop"), {
+    session, cli: projectCli(cfg), scope: `--session ${JSON.stringify(session)}`,
+  });
 }
 
 /** `coherence hook <event>` — the hook body itself, so nothing has to be written to
@@ -256,81 +291,33 @@ export async function runHook(cfg: Config, event: string): Promise<number> {
   const sessionScope = p.session_id ?? p.sessionId;
   const hostScope = agentScope ?? sessionScope;
   const host = hookHost();
+  const policy = projectWritePolicy(cfg);
 
-  // Every lifecycle crossing leaves a cheap, transient heartbeat. Unlike a journal
-  // header, this names the host, launcher transport and exact bundle fingerprint, so an
-  // old Claude run—or a direct diagnostic invocation—cannot prove that THIS Codex
-  // session is currently inside the field.
-  try {
-    recordActivity(cfg, event, payload, {
-      host,
-      transport: hookTransport(),
-      bundleHash: process.env.COHERENCE_HOOK_BUNDLE_FINGERPRINT ?? null,
-      experimentId: null,
-    });
-  } catch { /* observation loss must not become agent-lifecycle failure */ }
+  const identity: LifecycleIdentity = {
+    session: String(hostScope ?? process.env.COHERENCE_SESSION ?? newSessionId()),
+    agent: String(p.agent_type ?? p.agentType ?? process.env.COHERENCE_AGENT ?? "main"),
+    job: String(p.session_id ?? p.sessionId ?? process.env.COHERENCE_JOB ?? "-"),
+    host, transport: hookTransport(), bundleHash: process.env.COHERENCE_HOOK_BUNDLE_FINGERPRINT ?? null,
+  };
+
+  if (event !== "PostToolUse" && policy.writable) {
+    try { recordActivity(cfg, event, payload, lifecycleContext(identity)); }
+    catch { /* observation loss must not become agent-lifecycle failure */ }
+  }
 
   if (event === "SubagentStart" || event === "SessionStart") {
-    // The session is OPENED here, by the hook, once per agent — which is the only
-    // place that can guarantee one id per agent rather than one per shell command.
-    const session = hostScope === undefined ? newSessionId() : String(hostScope);
-    const agent = String(p.agent_type ?? p.agentType ?? process.env.COHERENCE_AGENT ?? "main");
-    let rec: { session: string; agent: string } = { session, agent };
-    let journalUnavailable: string | null = null;
-    // Codex re-fires SessionStart on resume, clear and compaction. Re-inject the current
-    // work order every time, but keep one logical journal opening for one host session.
-    try {
-      const trusted = readTrustedJournal(cfg);
-      if (!trusted.ok) throw new Error(`${trusted.damage.length} decision journal damage item(s)`);
-      const existing = trusted.records
-        .find((record) => record.kind === "session" && record.session === session);
-      rec = existing ?? openSession(cfg, {
-        session,
-        agent,
-        job: String(p.session_id ?? p.sessionId ?? process.env.COHERENCE_JOB ?? "-"),
-      });
-    } catch (error) {
-      journalUnavailable = instructionValue(error instanceof Error ? error.message : String(error));
-    }
-    // THE WORK ORDER IS COMPOSED HERE, not inside `agentInstructions`. That function is
-    // printed verbatim by `coherence hooks` and asserted byte-wise by its tests; making it
-    // read git and the run record would make a documentation command's output vary by
-    // repo state and by day — the hazard commands.ts spends a paragraph on ("no clock,
-    // nothing machine-specific, so `docs --check` compares byte-for-byte with zero
-    // normalization"). The pure block stays pure; the impure reading is appended.
-    //
-    // AND IT IS USUALLY EMPTY. `formatDue` returns [] when nothing is due, so this line is
-    // a no-op on a project that keeps its instruments current, and the emitted block is
-    // byte-identical to what it was before this shipped. A fourth imperative that fired
-    // every session would cost the other three their attention.
-    const cli = projectCli(cfg);
-    const scope = `--session ${JSON.stringify(rec.session)}${rec.agent ? ` --agent ${JSON.stringify(rec.agent)}` : ""}`;
-    // A hook that throws breaks every session in every adopting project on repin. This
-    // reading is worth strictly less than that, so it can fail to nothing.
-    const [work, due] = await Promise.all([
-      assignedWorkInstructions(cfg, rec.session, cli, rec.agent),
-      readDue(cfg).then((r) => formatDue(r, cli, scope)).catch(() => []),
-    ]);
-    const journalControl = journalUnavailable ? ["", `JOURNAL CONTROL unavailable: ${journalUnavailable}`] : [];
-    const canonical = [agentInstructions(rec.session, cli, rec.agent), ...journalControl, ...work, ...due].join("\n");
-    // The project's declared voice composes here — an override replaces the canon, an
-    // append follows it. An empty override is a deliberate silence, so a falsy text
-    // emits nothing at all.
-    const text = composeHookText(canonical, readHookText(cfg, event), { session: rec.session, agent: rec.agent, cli, scope });
-    if (text) emit(host, event, text);
+    const text = await prepareSessionStart(cfg, event, identity, policy);
+    if (text) emit(identity.host, event, text);
     return 0;
   }
 
-  // The CHEAP tick: collect only explicit file paths. No graph build, no git worktree,
-  // and no attempt to reverse-engineer shell command strings. These transient rows are
-  // what `calibrate` later compares with economy's predicted closure.
+  // The CHEAP tick: collect only explicit file paths. No graph build and no attempt to
+  // reverse-engineer shell command strings. An opted-in protected-checkout policy pays
+  // one Git identity reading before this branch; projects using the default policy do not.
   if (event === "PostToolUse") {
-    try {
-      const { recordHookReads } = await import("./read-trace.ts");
-      recordHookReads(cfg, payload);
-    } catch { /* telemetry damage must not become agent-lifecycle failure */ }
-    // Deliberately dependency-light: with nothing declared on disk this is two stat
-    // calls and out. The project voice is the only reason this event ever speaks.
+    recordLifecycleToolResult(cfg, payload, lifecycleContext(identity), policy);
+    // Deliberately dependency-light: the default policy reaches only the two project-voice
+    // stat calls. Opted-in checkout protection adds its Git identity reading first.
     emitProjectVoice(cfg, host, event, hostScope);
     return 0;
   }
@@ -346,8 +333,7 @@ export async function runHook(cfg: Config, event: string): Promise<number> {
     // its report. The one exception is a project-declared voice — an explicit project
     // choice, and one that still sits behind the stop_hook_active loop guard above.
     const session = String(hostScope ?? process.env.COHERENCE_SESSION ?? "unknown");
-    const { recordCalibrationSample } = await import("./calibration.ts");
-    await recordCalibrationSample(cfg, session).catch(() => null);
+    await recordMainSettlement(cfg, session, policy).catch(() => null);
     emitProjectVoice(cfg, host, event, session);
     return 0;
   }
@@ -361,27 +347,18 @@ export async function runHook(cfg: Config, event: string): Promise<number> {
     // precision. In that case the hook still reports the repo-wide signal, but records no
     // child calibration and names the attribution ceiling in the report.
     const childSession = typeof agentScope === "string" && agentScope.length ? agentScope : null;
-    const [{ analyzeChange, formatSignal }, calibration] = await Promise.all([
-      import("./signal.ts"),
-      childSession ? import("./calibration.ts") : Promise.resolve(null),
-    ]);
-    if (childSession && calibration) {
-      await calibration.recordCalibrationSample(cfg, childSession).catch(() => null);
-    }
-    const change: StopChangeFeedback = await analyzeChange(cfg).then((s) => ({
-      kind: "available" as const,
-      text: formatSignal(s).join("\n"),
-    })).catch((e: unknown) => ({
-      kind: "unavailable" as const,
-      text: `CHANGE SIGNAL unavailable: ${e instanceof Error ? e.message : String(e)}`,
-    }));
-    const feedback = composeStopFeedback(event, stopReport(cfg, childSession), change);
-    // The project's declared voice composes over the canonical report — override
-    // replaces, append follows, and an empty override silences even this surface.
-    const text = composeHookText(feedback ?? "", readHookText(cfg, event), {
-      cli: projectCli(cfg),
-      ...(childSession ? { session: childSession, scope: `--session ${JSON.stringify(childSession)}` } : {}),
-    });
+    const feedback = childSession
+      ? await prepareChildSettlement(cfg, childSession, policy)
+      : composeStopFeedback(event, stopReport(cfg, childSession), await import("./signal.ts").then(async ({ analyzeChange, formatSignal }) => ({
+        kind: "available" as const,
+        text: formatSignal(await analyzeChange(cfg)).join("\n"),
+      })).catch((e: unknown) => ({
+        kind: "unavailable" as const,
+        text: `CHANGE SIGNAL unavailable: ${e instanceof Error ? e.message : String(e)}`,
+      })));
+    // Exact-child composition happens in the shared helper used by native Pi too.
+    // The no-child-id branch still composes here because it has no attributable session.
+    const text = childSession ? feedback : composeHookText(feedback ?? "", readHookText(cfg, event), { cli: projectCli(cfg) });
     if (text) emit(host, event, text);
     return 0;
   }
@@ -392,8 +369,8 @@ export async function runHook(cfg: Config, event: string): Promise<number> {
 }
 
 /** Events with no canonical emission still honor a declared project voice. Kept out of
- *  the hot branches so PostToolUse pays two stat calls, not a token build, when the
- *  project has declared nothing. */
+ *  the hot branches so the default-policy PostToolUse pays two stat calls, not a token
+ *  build; opted-in checkout protection separately pays its Git identity reading. */
 function emitProjectVoice(cfg: Config, host: ActivityHost, event: string, sessionScope: unknown): void {
   const custom = readHookText(cfg, event as LifecycleHookEvent);
   if (custom.override === null && custom.append === null) return;
@@ -483,16 +460,42 @@ function readStdin(): Promise<string> {
   });
 }
 
+function externalHost(host: HookHost): ExternalHookHost {
+  if (host === "pi") throw new Error("Pi uses native lifecycle control");
+  return host;
+}
+
+const controlFor = (cfg: Config, host: HookHost): LifecycleHookInspection | PiLifecycleInspection =>
+  host === "pi" ? inspectPiLifecycleHook(cfg) : inspectLifecycleHook(cfg, externalHost(host));
+const mutateControl = (cfg: Config, host: HookHost, present: boolean) =>
+  host === "pi" ? setPiLifecycleHook(cfg, present) : setLifecycleHook(cfg, present, externalHost(host));
+
 export interface HookStatus {
   host: HookHost;
-  control: LifecycleHookInspection;
+  control: LifecycleHookInspection | PiLifecycleInspection;
   observation: {
     journalSessionHeaders: number;
     journalEntries: number;
     sessions: number;
     unreadableJournal: number;
-    current: CurrentHookObservation | null;
+    current: CurrentHookObservation | CurrentPiHookObservation | null;
   };
+}
+
+export interface CurrentPiHookObservation {
+  session: string;
+  state: "observed" | "unobserved" | "stale";
+  exactNativeEvents: number;
+  staleNativeEvents: number;
+  directEvents: number;
+  lastExactAt: string | null;
+  trace: Omit<CurrentHookObservation["trace"], "bundle"> & { bundle: { exactNative: number; staleNative: number; direct: number; legacy: number } };
+  updatePlanEvents: number;
+  parentFallbackEvents: number;
+  unreadableActivity: number;
+  verification: { total: number; success: number; failure: number; unknown: number };
+  intervention: { total: number; success: number; failure: number; unknown: number };
+  experiment: CurrentHookObservation["experiment"];
 }
 
 export interface CurrentHookObservation {
@@ -529,6 +532,7 @@ export function activeHookHost(explicit?: HookHost | null): HookHost {
 export function activeHookSession(host: HookHost, explicit?: string | null): string | null {
   const selected = explicit ?? process.env.COHERENCE_SESSION
     ?? (host === "codex" ? process.env.CODEX_THREAD_ID : undefined)
+    ?? (host === "pi" ? process.env.PI_SESSION_ID : undefined)
     ?? null;
   return selected?.trim() ? selected : null;
 }
@@ -630,8 +634,51 @@ export function currentObservation(cfg: Config, control: LifecycleHookInspection
 }
 
 /** Structural configuration, historical memory, and this exact session stay separate. */
+export function currentPiObservation(cfg: Config, control: PiLifecycleInspection, session: string): CurrentPiHookObservation {
+  const activityRead = readActivity(cfg, session);
+  const activity = uniqueActivity(activityRead.rows);
+  const exact = activity.filter((row) => row.transport === "native" && row.host === "pi" && row.bundleHash === control.bundleFingerprint);
+  const stale = activity.filter((row) => row.transport === "native" && (row.host !== "pi" || row.bundleHash !== control.bundleFingerprint));
+  const direct = activity.filter((row) => row.transport === "direct");
+  const traceRead = readTraceDetailed(cfg, session), trace = traceRead.rows;
+  const scope = { ownerSession: 0, parentSessionAggregate: 0, unscoped: 0 };
+  const bundle = { exactNative: 0, staleNative: 0, direct: 0, legacy: 0 };
+  for (const row of trace) {
+    const observed = row.observation;
+    if (!observed) { scope.unscoped++; bundle.legacy++; continue; }
+    if ((observed.attribution === "agent" && observed.agentId === row.session) || (observed.attribution === "session" && observed.agentId === null && observed.parentSession === null)) scope.ownerSession++;
+    else if (observed.attribution === "parent-fallback" && observed.agentId === null && observed.parentSession === row.session) scope.parentSessionAggregate++;
+    else scope.unscoped++;
+    if (observed.transport === "direct") bundle.direct++;
+    else if (observed.transport === "native" && observed.host === "pi" && observed.bundleHash === control.bundleFingerprint) bundle.exactNative++;
+    else if (observed.transport === "native") bundle.staleNative++;
+  }
+  let experiment: CurrentPiHookObservation["experiment"];
+  try {
+    const owned = readExperiments(cfg).experiments.filter((item) => item.opened.session === session), latest = owned.at(-1);
+    experiment = { open: owned.filter((item) => !item.closed).length, closed: owned.filter((item) => !!item.closed).length, latest: latest?.opened.id ?? null, outcome: latest?.closed?.outcome ?? null };
+  } catch (error) { experiment = { unavailable: error instanceof Error ? error.message : String(error) }; }
+  return { session, state: exact.length ? "observed" : stale.length ? "stale" : "unobserved", exactNativeEvents: exact.length, staleNativeEvents: stale.length, directEvents: direct.length, lastExactAt: exact.at(-1)?.at ?? null,
+    trace: { reads: trace.filter((row) => row.mode === "read").length, writes: trace.filter((row) => row.mode === "write").length, attribution: scope.unscoped ? "unscoped" : scope.parentSessionAggregate ? "parent-session-aggregate" : trace.length ? "owner-session" : "none", scope, bundle, unreadable: traceRead.unreadable },
+    updatePlanEvents: exact.filter((row) => row.event === "PostToolUse" && row.tool === "update_plan").length, parentFallbackEvents: exact.filter((row) => row.attribution === "parent-fallback").length, unreadableActivity: activityRead.unreadable, verification: commandCounts(exact, "verification"), intervention: commandCounts(exact, "intervention"), experiment };
+}
+
+type ExternalHookStatus = Omit<HookStatus, "host" | "control" | "observation"> & {
+  host: ExternalHookHost;
+  control: LifecycleHookInspection;
+  observation: Omit<HookStatus["observation"], "current"> & { current: CurrentHookObservation | null };
+};
+type PiHookStatus = Omit<HookStatus, "host" | "control" | "observation"> & {
+  host: "pi";
+  control: PiLifecycleInspection;
+  observation: Omit<HookStatus["observation"], "current"> & { current: CurrentPiHookObservation | null };
+};
+
+export function hookStatus(cfg: Config, host: "claude" | "codex", session?: string | null): ExternalHookStatus;
+export function hookStatus(cfg: Config, host: "pi", session?: string | null): PiHookStatus;
+export function hookStatus(cfg: Config, host?: HookHost, session?: string | null): HookStatus;
 export function hookStatus(cfg: Config, host: HookHost = "claude", session?: string | null): HookStatus {
-  const control = inspectLifecycleHook(cfg, host);
+  const control = controlFor(cfg, host);
   const { records, sessions, unreadable } = readJournal(cfg);
   const opened = records.filter((r) => r.kind === "session");
   const entries = records.length - opened.length;
@@ -644,7 +691,9 @@ export function hookStatus(cfg: Config, host: HookHost = "claude", session?: str
       journalEntries: entries,
       sessions: sessions.length,
       unreadableJournal: unreadable,
-      current: currentSession ? currentObservation(cfg, control, currentSession) : null,
+      current: currentSession ? (host === "pi"
+      ? currentPiObservation(cfg, control as PiLifecycleInspection, currentSession)
+      : currentObservation(cfg, control as LifecycleHookInspection, currentSession)) : null,
     },
   };
 }
@@ -654,20 +703,28 @@ function printHookStatus(status: HookStatus, json = false): void {
   const { control, observation } = status;
   console.log(`host: ${status.host}`);
   console.log(`lifecycle hook: ${!control.valid ? "UNKNOWN" : control.present ? "PRESENT" : "ABSENT"}`);
-  console.log(`shared wiring: ${control.wiringPresent ? "PRESENT" : "ABSENT"}`);
-  if (control.scopes.length) console.log(`canonical scope(s): ${control.scopes.join(" + ")}`);
-  for (const file of control.files) {
-    if (!file.exists) console.log(`${file.scope}: no settings file`);
-    else if (!file.valid) console.log(`${file.scope}: INVALID — ${file.error ?? "unreadable settings"}`);
-    else if (file.complete) console.log(`${file.scope}: canonical five-event bundle present`);
-    else if (file.missingEvents.length) console.log(`${file.scope}: INCOMPLETE — missing ${file.missingEvents.join(", ")}`);
-    else if (file.matchedEvents.length) console.log(`${file.scope}: NONCANONICAL — duplicate or competing coherence actions`);
-    else console.log(`${file.scope}: canonical bundle absent`);
+  if (status.host === "pi") {
+    const pi = control as PiLifecycleInspection;
+    console.log(`native package: ${pi.settings.managedEntries === 1 ? "READY" : "NOT READY"}`);
+    console.log(`root mapping: ${pi.mapping.present ? "PRESENT" : "ABSENT"}`);
+    console.log(`extension target: ${pi.target.present ? "READY" : "MISSING"} (${pi.target.extensionPath})`);
+  } else {
+    const external = control as LifecycleHookInspection;
+    console.log(`shared wiring: ${external.wiringPresent ? "PRESENT" : "ABSENT"}`);
+    if (external.scopes.length) console.log(`canonical scope(s): ${external.scopes.join(" + ")}`);
+    for (const file of external.files) {
+      if (!file.exists) console.log(`${file.scope}: no settings file`);
+      else if (!file.valid) console.log(`${file.scope}: INVALID — ${file.error ?? "unreadable settings"}`);
+      else if (file.complete) console.log(`${file.scope}: canonical five-event bundle present`);
+      else if (file.missingEvents.length) console.log(`${file.scope}: INCOMPLETE — missing ${file.missingEvents.join(", ")}`);
+      else if (file.matchedEvents.length) console.log(`${file.scope}: NONCANONICAL — duplicate or competing coherence actions`);
+      else console.log(`${file.scope}: canonical bundle absent`);
+    }
   }
-  console.log(`launcher: ${control.launcher.present ? "READY" : "NOT READY"} (${control.launcher.path})`);
-  if (!control.launcher.canonical) console.log(`  script: ${control.launcher.exists ? "DRIFTED" : "MISSING"}`);
-  if (!control.launcher.mappingPresent) console.log(`  root mapping: ${control.launcher.mappingActual === undefined ? "MISSING" : "DRIFTED"} (expected ${control.launcher.mappingExpected})`);
-  console.log(`  target: ${control.launcher.targetPresent ? control.launcher.targetKind.toUpperCase() : "MISSING"} (${control.launcher.targetPath})`);
+  if (status.host !== "pi") console.log(`launcher: ${(control as LifecycleHookInspection).launcher.present ? "READY" : "NOT READY"} (${(control as LifecycleHookInspection).launcher.path})`);
+  if (status.host !== "pi" && !(control as LifecycleHookInspection).launcher.canonical) console.log(`  script: ${(control as LifecycleHookInspection).launcher.exists ? "DRIFTED" : "MISSING"}`);
+  if (status.host !== "pi" && !(control as LifecycleHookInspection).launcher.mappingPresent) console.log(`  root mapping: ${(control as LifecycleHookInspection).launcher.mappingActual === undefined ? "MISSING" : "DRIFTED"} (expected ${(control as LifecycleHookInspection).launcher.mappingExpected})`);
+  if (status.host !== "pi") console.log(`  target: ${(control as LifecycleHookInspection).launcher.targetPresent ? (control as LifecycleHookInspection).launcher.targetKind.toUpperCase() : "MISSING"} (${(control as LifecycleHookInspection).launcher.targetPath})`);
   console.log(`repository journal history: ${observation.journalEntries} entr${observation.journalEntries === 1 ? "y" : "ies"}`
     + ` across ${observation.sessions} session(s) · ${observation.journalSessionHeaders} session header(s)`
     + " — durable history, not proof this host or bundle ran");
@@ -679,17 +736,29 @@ function printHookStatus(status: HookStatus, json = false): void {
   } else {
     const current = observation.current;
     console.log(`current session: ${current.state.toUpperCase()} — ${current.session}`);
-    console.log(`  exact launcher/bundle events: ${current.exactLauncherEvents}`
-      + `${current.staleLauncherEvents ? ` · stale/other bundle: ${current.staleLauncherEvents}` : ""}`
-      + `${current.directEvents ? ` · direct probes: ${current.directEvents}` : ""}`);
+    if (status.host === "pi") {
+      const pi = current as CurrentPiHookObservation;
+      console.log(`  exact native/bundle events: ${pi.exactNativeEvents}`
+        + `${pi.staleNativeEvents ? ` · stale/other bundle: ${pi.staleNativeEvents}` : ""}`
+        + `${pi.directEvents ? ` · direct probes: ${pi.directEvents}` : ""}`);
+    } else {
+      const external = current as CurrentHookObservation;
+      console.log(`  exact launcher/bundle events: ${external.exactLauncherEvents}`
+        + `${external.staleLauncherEvents ? ` · stale/other bundle: ${external.staleLauncherEvents}` : ""}`
+        + `${external.directEvents ? ` · direct probes: ${external.directEvents}` : ""}`);
+    }
     console.log(`  path trace (session file): ${current.trace.reads} read · ${current.trace.writes} write`
       + ` — ${current.trace.attribution}`);
     console.log(`    scope: ${current.trace.scope.ownerSession} owner-session ·`
       + ` ${current.trace.scope.parentSessionAggregate} parent-session aggregate ·`
       + ` ${current.trace.scope.unscoped} unscoped`);
-    console.log(`    bundle: ${current.trace.bundle.exactLauncher} exact launcher/bundle ·`
-      + ` ${current.trace.bundle.staleLauncher} stale/other launcher ·`
-      + ` ${current.trace.bundle.direct} direct · ${current.trace.bundle.legacy} legacy`);
+    if (status.host === "pi") {
+      const bundle = (current as CurrentPiHookObservation).trace.bundle;
+      console.log(`    bundle: ${bundle.exactNative} exact native/bundle · ${bundle.staleNative} stale/other native · ${bundle.direct} direct · ${bundle.legacy} legacy`);
+    } else {
+      const bundle = (current as CurrentHookObservation).trace.bundle;
+      console.log(`    bundle: ${bundle.exactLauncher} exact launcher/bundle · ${bundle.staleLauncher} stale/other launcher · ${bundle.direct} direct · ${bundle.legacy} legacy`);
+    }
     if (current.trace.unreadable) {
       console.log(`    trace damage: ${current.trace.unreadable} unreadable row(s) skipped`);
     }
@@ -729,7 +798,7 @@ export function checkHooks(cfg: Config, json = false, host: HookHost = "claude",
 }
 
 export async function installHooks(cfg: Config, json = false, host: HookHost = "claude", session?: string | null): Promise<number> {
-  const result = await setLifecycleHook(cfg, true, host);
+  const result = await mutateControl(cfg, host, true);
   if (result.errors.length) {
     if (json) console.log(JSON.stringify({ errors: result.errors, control: result.inspection }, null, 2));
     else for (const error of result.errors) console.error(`cannot install lifecycle hook: ${error}`);
@@ -746,7 +815,7 @@ export async function installHooks(cfg: Config, json = false, host: HookHost = "
 }
 
 export async function uninstallHooks(cfg: Config, json = false, host: HookHost = "claude", session?: string | null): Promise<number> {
-  const result = await setLifecycleHook(cfg, false, host);
+  const result = await mutateControl(cfg, host, false);
   if (result.errors.length) {
     if (json) console.log(JSON.stringify({ errors: result.errors, control: result.inspection }, null, 2));
     else for (const error of result.errors) console.error(`cannot uninstall lifecycle hook: ${error}`);
@@ -762,10 +831,10 @@ export async function uninstallHooks(cfg: Config, json = false, host: HookHost =
  *  The hook body degrades an unreadable customization to canon silently, because a torn
  *  file must not break a session; THIS is the loud surface where that damage lands, and
  *  the exit code carries it. */
-export function reviewHooks(cfg: Config): number {
+export function reviewHooks(cfg: Config, host: HookHost = "claude"): number {
   const cli = projectCli(cfg);
   const problems: string[] = [];
-  console.log(`Effective lifecycle emissions — what each event will actually say for this project.
+  console.log(`Effective ${host} lifecycle emissions — what each event will actually say for this project.
 
 A project customizes an event with \`.coherence/hooks/<Event>.override.md\` (replaces the
 canonical emission) and \`.coherence/hooks/<Event>.append.md\` (follows it). An EMPTY
@@ -811,13 +880,21 @@ SubagentStart/SessionStart).`);
 /** `coherence hooks` — print one host's canonical block, plus the
  *  instruction text so a reader can see what agents will actually be told. */
 export function printHooks(cfg: Config, host: HookHost = "claude"): void {
-  const block = canonicalLifecycleHookSettings(host);
-  const hostRoot = resolveHookProjectRoot(cfg, host);
+  if (host === "pi") {
+    const inspection = inspectPiLifecycleHook(cfg);
+    console.log(`Canonical pi control for ${resolvePiProjectRoot(cfg)}. Prefer \`coherence hooks install --host pi\`; it preserves unrelated settings.`);
+    console.log(`native package: ${inspection.settings.managedEntries === 1 ? "READY" : "NOT READY"}`);
+    console.log(`root mapping: ${inspection.mapping.expected}`);
+    console.log(`extension target: ${inspection.target.extensionPath || "MISSING"}`);
+    return;
+  }
+  const block = canonicalLifecycleHookSettings(externalHost(host));
+  const hostRoot = resolveHookProjectRoot(cfg, externalHost(host));
   const hostDir = host === "codex" ? ".codex" : ".claude";
   console.log(`Canonical ${host} control for ${hostRoot}. Prefer \`coherence hooks install --host ${host}\`; it preserves unrelated hooks.`);
   console.log("The settings value, stable launcher, and root mapping are:\n");
   console.log(JSON.stringify(block, null, 2));
-  console.log(`\n--- ${hostDir}/coherence-hook ---\n${lifecycleHookScript(host)}--- ${hostDir}/coherence-root ---\n${lifecycleRootMapping(cfg, host)}`);
+  console.log(`\n--- ${hostDir}/coherence-hook ---\n${lifecycleHookScript(externalHost(host))}--- ${hostDir}/coherence-root ---\n${lifecycleRootMapping(cfg, externalHost(host))}`);
   console.log(`
 SubagentStart / SessionStart inject the instruction below into the agent's context.
 PostToolUse records explicit file reads and writes for per-agent economy calibration; it

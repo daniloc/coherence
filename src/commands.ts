@@ -64,6 +64,9 @@ const GROUP_TITLE: Record<CommandGroup, string> = {
   reference: "Reference and plumbing",
 };
 
+export type CommandEffect = "read" | "write";
+type CommandEffectRule = CommandEffect | ((argv: readonly string[]) => CommandEffect);
+
 export interface Command {
   /** the verb as typed: `coherence <name>`. The dispatch key. */
   name: string;
@@ -74,6 +77,8 @@ export interface Command {
    *  command that takes nothing. */
   usage?: string;
   group: CommandGroup;
+  /** Every invocation is classified before dispatch so protected checkouts can refuse writes. */
+  effect: CommandEffectRule;
   /** alternate spellings the dispatch accepts. An alias is NOT a command: it never appears
    *  in the banner's `<a|b|c>` list nor as its own README entry, and the totality oracle
    *  counts it on the dispatch side. */
@@ -117,89 +122,123 @@ export interface Command {
   writesBaseline?: true;
 }
 
+export const VALUED_FLAGS = new Set([
+  "--since", "--apply", "--over", "--because", "--agent", "--job", "--file", "--for", "--session", "--branch",
+  "--could-be", "--discriminated-by", "--as", "--evidence", "--value", "--baseline", "--threshold", "--unit", "--why",
+  "--raise-cap", "--symbol", "--outcome", "--host", "--context", "--action", "--success", "--hypothesis", "--action-result",
+  "--result", "--work", "--subject", "--authority", "--scope-component", "--scope-file", "--scope-symbol", "--environment",
+  "--max-bytes", "--risk", "--granted-by", "--boundary", "--owner-session", "--owner-agent", "--parent", "--depends-on",
+  "--read-scope", "--write-scope", "--constraint", "--non-goal", "--state", "--expected-previous", "--synthesized", "--id",
+]);
+export function commandPositionals(argv: readonly string[]): string[] {
+  return argv.filter((arg, i) => !arg.startsWith("--") && !VALUED_FLAGS.has(argv[i - 1] ?? ""));
+}
+const action = (argv: readonly string[]): string | undefined => commandPositionals(argv)[0];
+const checkable = (argv: readonly string[]): CommandEffect => argv.includes("--check") ? "read" : "write";
+const experimentEffect = (argv: readonly string[]): CommandEffect => !action(argv) || action(argv) === "inspect" ? "read" : "write";
+const actionWrite = (argv: readonly string[]): CommandEffect => !action(argv) || action(argv) === "inspect" || action(argv) === "status" ? "read" : "write";
+const updateBaseline = (argv: readonly string[]): CommandEffect => argv.includes("--update-baseline") ? "write" : "read";
+const raiseWrite = (argv: readonly string[]): CommandEffect => argv.includes("--raise") ? "write" : "read";
+
 export const COMMANDS: Command[] = [
   // ── derive ───────────────────────────────────────────────────────────────────────────
-  { name: "graph", group: "derive", usage: "[--check]", summary: "emit `graph.json` + `_graph.html` (the outline) to `outputDir`", writesArtifacts: true },
-  { name: "overview", group: "derive", usage: "[--check]", summary: "emit `_overview.html` + `AGENTS.md`", writesArtifacts: true },
-  { name: "docs", group: "derive", usage: "[--check]", summary: "graph + overview + this command index; `--check` fails on any stale artifact", writesArtifacts: true },
-  { name: "claude", group: "derive", usage: "[--check]", summary: "regenerate the owned fenced block inside `CLAUDE.md`", writesArtifacts: true },
+  { name: "graph", group: "derive", usage: "[--check]", summary: "emit `graph.json` + `_graph.html` (the outline) to `outputDir`", writesArtifacts: true, effect: checkable },
+  { name: "overview", group: "derive", usage: "[--check]", summary: "emit `_overview.html` + `AGENTS.md`", writesArtifacts: true, effect: checkable },
+  { name: "docs", group: "derive", usage: "[--check]", summary: "graph + overview + this command index; `--check` fails on any stale artifact", writesArtifacts: true, effect: checkable },
+  { name: "claude", group: "derive", usage: "[--check]", summary: "regenerate the owned fenced block inside `CLAUDE.md`", writesArtifacts: true, effect: checkable },
 
   // ── verify ───────────────────────────────────────────────────────────────────────────
   {
     name: "verify", group: "verify",
+    effect: "write",
     usage: "[--fast] [--staged | --since <ref>] [--raise [--raise-cap N]] [--apply <verdicts>] [--from-report <file>] [--serial-oracles]",
     summary: "run the claims, the evidence chain and coverage — the gate",
   },
   {
     name: "log", group: "verify", usage: "[<refA> [<refB>]] [--strict]",
+    effect: "read",
     summary: "structural diff of the invariant/boundary set between two refs, then the novelty advisory",
   },
   {
     name: "signal", group: "verify", usage: "[--check] [--since <ref>] [--attest-no-invariant --because <why>]",
+    effect: argv => argv.includes("--attest-no-invariant") ? "write" : "read",
     summary: "require significant behavioral growth to gain an anchor or a patch-bound decision",
   },
   {
-    name: "regulate", group: "verify", usage: "[--check] [--since <ref>] [--host <claude|codex>] [--json]",
+    name: "regulate", group: "verify", usage: "[--check] [--since <ref>] [--host <claude|codex|pi>] [--json]",
+    effect: "read",
     summary: "apply the anti-entropy doctrine to live readings and emit exactly one next action",
   },
 
   // ── journal ──────────────────────────────────────────────────────────────────────────
-  { name: "decide", group: "journal", usage: '"<chose>" [--over "<alt>" ...] --because "<why>" [--work W] [--subject S] [--authority A] [--scope-component C] [--scope-file p] [--scope-symbol S] [--environment E] [--session S]', summary: "log one choice, any rejected alternatives, and optional swarm-addressable authority" },
-  { name: "blocked", group: "journal", usage: '"<what>" --because "<why>"', summary: "log what you could NOT do — first-class, not a footnote" },
+  { name: "decide", group: "journal", usage: '"<chose>" [--over "<alt>" ...] --because "<why>" [--work W] [--subject S] [--authority A] [--scope-component C] [--scope-file p] [--scope-symbol S] [--environment E] [--session S]', summary: "log one choice, any rejected alternatives, and optional swarm-addressable authority", effect: "write" },
+  { name: "blocked", group: "journal", usage: '"<what>" --because "<why>"', summary: "log what you could NOT do — first-class, not a footnote", effect: "write" },
   {
     name: "defect", group: "journal",
+    effect: "write",
     usage: '"<what failed>" --evidence "<what proves it>" [--file p] [--session S] [--agent A] [--job J]',
     summary: "record an agent-assessed defect with the evidence that made it a defect",
   },
   {
     name: "defects", group: "journal", usage: "[--session S] [--json]",
+    effect: "read",
     summary: "read the merged append-only defect record across agent sessions",
   },
   {
     name: "conjecture", group: "journal",
+    effect: "write",
     usage: '"<observation>" [--could-be "<explanation>"] --discriminated-by "<the test>"',
     summary: "log what surprised you; `the instrument is wrong` is added if you omit it",
   },
   {
     name: "observed", group: "journal",
+    effect: "write",
     usage: '"<label>" --value <n> --baseline <n> --threshold <n> [--unit U] [--why "<explanation>"]',
     summary: "a tracked metric from the harness that measured it — outside its band and unexplained, one conjecture per label",
   },
   {
     name: "resolved", group: "journal", aliases: ["resolve"],
+    effect: "write",
     usage: '<id> --because "<what the test showed>" [--as "<which candidate won>"]',
     summary: "close a conjecture with what the discriminating test showed",
   },
   {
     name: "dismiss", group: "journal", usage: '<id> --because "<why this is not worth chasing>"',
+    effect: "write",
     summary: "retire a conjecture UNANSWERED — not a resolution, and never raised again",
   },
   {
     name: "retract", group: "journal", usage: '<id> --because "<what refuted it>" [--for "<replacement>"]',
+    effect: "write",
     summary: "withdraw a decision by appending, never by editing",
   },
   {
     name: "decisions", group: "journal",
+    effect: argv => argv.includes("--compact") ? "write" : "read",
     usage: "[--job|--agent|--session|--branch|--sessions|--md|--brief|--open|--compact]",
     summary: "the MERGED timeline across every session file; `--open` is what was noticed and not yet chased,"
       + " `--compact` folds committed session files into one per (branch, month) without changing what this prints",
   },
   {
     name: "journal", group: "journal",
+    effect: "read",
     usage: "[--follow | --once] [--job X] [--agent Y] [--session S] [--branch B]",
     summary: "the LIVE read — stream entries as agents write them, and surf the history in aggregate or one session's stream",
   },
   {
     name: "experiment", group: "journal", aliases: ["plan"],
+    effect: experimentEffect,
     usage: "<create|inspect|close> ... [--session S] [--json]",
     summary: "open a plan hypothesis, freeze its predicted context/actions/criteria, then close it with criterion-total evidence",
   },
   {
     name: "work", group: "journal", usage: "<create|transition|handoff|close|inspect> ... [--json]",
+    effect: actionWrite,
     summary: "append-only swarm work graph; writes require an exact session, reads stay fleet-wide",
   },
   {
     name: "consequence", group: "journal", usage: "<add|inspect> ... [--json]",
+    effect: argv => action(argv) === "add" ? "write" : "read",
     summary: "explicit assessed links across durable records; add requires an exact session",
   },
 
@@ -210,37 +249,41 @@ export const COMMANDS: Command[] = [
     // does not declare it, and the flag is what wires the non-vacuity floor — so a broken
     // deriver cannot overwrite a good Index with a blank one.
     name: "index", group: "perceive", usage: "[--since <ref>]",
+    effect: "write",
     summary: "the returning human's page — MAP · JOURNAL · TRAJECTORY, framed against what you last saw (`_index.html` + `index.json`)",
     writesArtifacts: true,
   },
-  { name: "panel", group: "perceive", usage: "[--no-watch | --once]", summary: "live TUI over the graph + the status record" },
-  { name: "orient", group: "perceive", usage: "[--json]", summary: "one deterministic swarm heading over strict decisions, work, links, experiments, defects, and verification" },
-  { name: "contract", group: "perceive", summary: "the promise graph — graded gates + the reliance ledger (`_contract.html`)", writesArtifacts: true },
+  { name: "panel", group: "perceive", usage: "[--no-watch | --once]", summary: "live TUI over the graph + the status record", effect: argv => argv.includes("--once") ? "read" : "write" },
+  { name: "orient", group: "perceive", usage: "[--json]", summary: "one deterministic swarm heading over strict decisions, work, links, experiments, defects, and verification", effect: "read" },
+  { name: "contract", group: "perceive", summary: "the promise graph — graded gates + the reliance ledger (`_contract.html`)", writesArtifacts: true, effect: "write" },
   {
     name: "context", group: "perceive", usage: "[<file>...] [--symbol <name>] [--changed|--staged] [--max-bytes N|--all]",
+    effect: "read",
     summary: "emit a bounded graph/repository context packet with exact omission accounting; --all expands",
   },
 
   // ── ratchet ──────────────────────────────────────────────────────────────────────────
-  { name: "lint-sinks", group: "ratchet", usage: "[--check | --update-baseline]", summary: "interpolation-surface ratchet — raw SQL-identifier and HTML sinks", writesBaseline: true },
-  { name: "conventions", group: "ratchet", usage: "[--check | --update-baseline]", summary: "guard-vs-contract detector + growth ratchet", writesBaseline: true },
-  { name: "mass", group: "ratchet", usage: "[--check|--update-baseline] [--raise]", summary: "how much machine there is — lines, files, symbols, deps and project measures, pinned", writesBaseline: true },
-  { name: "atlas", group: "ratchet", usage: "[--check] [--raise]", summary: "trust-graded manifold render + the drift / dangling / over-claim gate", writesArtifacts: true },
-  { name: "contracts", group: "ratchet", usage: "[--check]", summary: "producer/consumer contracts across deploy artifacts + the uncovered-surface detector" },
+  { name: "lint-sinks", group: "ratchet", usage: "[--check | --update-baseline]", summary: "interpolation-surface ratchet — raw SQL-identifier and HTML sinks", writesBaseline: true, effect: updateBaseline },
+  { name: "conventions", group: "ratchet", usage: "[--check | --update-baseline]", summary: "guard-vs-contract detector + growth ratchet", writesBaseline: true, effect: updateBaseline },
+  { name: "mass", group: "ratchet", usage: "[--check|--update-baseline] [--raise]", summary: "how much machine there is — lines, files, symbols, deps and project measures, pinned", writesBaseline: true, effect: argv => argv.includes("--update-baseline") || argv.includes("--raise") ? "write" : "read" },
+  { name: "atlas", group: "ratchet", usage: "[--check] [--raise]", summary: "trust-graded manifold render + the drift / dangling / over-claim gate", writesArtifacts: true, effect: argv => !argv.includes("--check") || argv.includes("--raise") ? "write" : "read" },
+  { name: "contracts", group: "ratchet", usage: "[--check]", summary: "producer/consumer contracts across deploy artifacts + the uncovered-surface detector", effect: "read" },
 
   // ── advisory ─────────────────────────────────────────────────────────────────────────
-  { name: "redundancy", group: "advisory", usage: "[--all] [--raise]", summary: "one enumerated domain spelled twice with nothing tying the spellings together" },
-  { name: "prose", group: "advisory", usage: "[--all] [--raise]", summary: "duplicated prose across reading surfaces — and whether the copies have already diverged" },
-  { name: "why-lint", group: "advisory", usage: "[--check]", summary: "`## why` prose restating a mechanism a boundary claim already anchors" },
-  { name: "decompose", group: "advisory", summary: "the wise-decomposition report — a LOCALITY score plus the smells that lower it" },
-  { name: "drift", group: "advisory", summary: "decompose's derivative — converging on one home, or decohering across boundaries" },
+  { name: "redundancy", group: "advisory", usage: "[--all] [--raise]", summary: "one enumerated domain spelled twice with nothing tying the spellings together", effect: raiseWrite },
+  { name: "prose", group: "advisory", usage: "[--all] [--raise]", summary: "duplicated prose across reading surfaces — and whether the copies have already diverged", effect: raiseWrite },
+  { name: "why-lint", group: "advisory", usage: "[--check]", summary: "`## why` prose restating a mechanism a boundary claim already anchors", effect: "read" },
+  { name: "decompose", group: "advisory", summary: "the wise-decomposition report — a LOCALITY score plus the smells that lower it", effect: "read" },
+  { name: "drift", group: "advisory", summary: "decompose's derivative — converging on one home, or decohering across boundaries", effect: "read" },
   {
     name: "economy", group: "advisory", usage: "[--raise]",
+    effect: raiseWrite,
     summary: "the context closure of a change — what a reader must load to modify one thing safely",
   },
-  { name: "premise", group: "advisory", usage: "[--check]", summary: "audit whether standing decisions' named structural addresses still resolve" },
+  { name: "premise", group: "advisory", usage: "[--check]", summary: "audit whether standing decisions' named structural addresses still resolve", effect: "read" },
   {
     name: "calibrate", group: "advisory", usage: "[--outcome <clean|defect>] [--session <id>]",
+    effect: argv => argv.includes("--outcome") ? "write" : "read",
     summary: "compare economy's predicted context with observed agent reads and labeled outcomes",
   },
 
@@ -262,18 +305,20 @@ export const COMMANDS: Command[] = [
     // index owes the SHAPE of a command's arguments; the domain belongs to the command, and
     // `coherence scaffold` with no args prints all four.
     name: "scaffold", group: "bootstrap", usage: "<kind> <name>",
+    effect: "write",
     summary: "the gradient-flip generator — make the complete shape the cheapest thing to ship",
   },
 
   // ── reference ────────────────────────────────────────────────────────────────────────
-  { name: "doctrine", group: "reference", usage: "[--json]", summary: "print the versioned law the regulator is allowed to apply" },
-  { name: "phrasebook", group: "reference", summary: "print the claim-form table straight from the `CLAIM_FORMS` registry" },
+  { name: "doctrine", group: "reference", usage: "[--json]", summary: "print the versioned law the regulator is allowed to apply", effect: "read" },
+  { name: "phrasebook", group: "reference", summary: "print the claim-form table straight from the `CLAIM_FORMS` registry", effect: "read" },
   {
     name: "hooks", group: "reference",
-    usage: "[status|install|uninstall|print|review] [--check] [--json] [--host <claude|codex>] [--session <id>]",
+    effect: argv => argv.includes("--check") ? "read" : (action(argv) === "install" || action(argv) === "uninstall" ? "write" : "read"),
+    usage: "[status|install|uninstall|print|review] [--check] [--json] [--host <claude|codex|pi>] [--session <id>]",
     summary: "the lifecycle control — converge on one canonical, runnable shared hook bundle",
   },
-  { name: "hook", group: "reference", usage: "<event>", summary: "the hook BODY, invoked by the harness rather than by you" },
+  { name: "hook", group: "reference", usage: "<event>", summary: "the hook BODY, invoked by the harness rather than by you", effect: "write" },
 ];
 
 /** Every command name, in registry order. The `<a|b|c>` list — aliases excluded. */
@@ -296,6 +341,12 @@ export const dispatchTokens = (): string[] => COMMANDS.flatMap((c) => [c.name, .
  */
 export const commandFor = (token: string | undefined): Command | undefined =>
   token === undefined ? undefined : COMMANDS.find((c) => c.name === token || (c.aliases ?? []).includes(token));
+
+export function commandEffect(token: string | undefined, argv: readonly string[]): CommandEffect | null {
+  const command = commandFor(token);
+  if (!command) return null;
+  return typeof command.effect === "function" ? command.effect(argv) : command.effect;
+}
 
 /** Groups in first-appearance order, each with the commands that declared it. */
 const grouped = (): { group: CommandGroup; title: string; cmds: Command[] }[] => {

@@ -263,6 +263,17 @@ test("hooks review — every event's effective emission prints with provenance a
   } finally { await cleanup(root); }
 });
 
+test("agent instructions — coordination is durable and lifecycle-specific, not per-step", () => {
+  const text = agentInstructions("s-abc", "npx coherence", "main");
+  assert.match(text, /Record durable decisions, observed defects, and work boundaries/);
+  assert.match(text, /Before dispatching, handing off, or sharing a worktree/);
+  assert.match(text, /After a work lifecycle write, re-inspect that work/);
+  assert.match(text, /A prescribed runbook with its own durable state/);
+  assert.doesNotMatch(text, /BEFORE moving on/);
+  assert.doesNotMatch(text, /before acting/);
+  assert.doesNotMatch(text, /each mutation/);
+});
+
 test("repository voice — contributor startup keeps public capability changes tied to the global hook contract", async () => {
   const path = join(REPO_ROOT, HOOK_TEXT_DIR, "SessionStart.append.md");
   const appendix = await readFile(path, "utf8");

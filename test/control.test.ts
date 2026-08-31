@@ -14,7 +14,8 @@ import {
   managedLifecycleEvent,
   setLifecycleHook,
 } from "../src/control.ts";
-import { checkHooks } from "../src/hooks.ts";
+import { inspectPiLifecycleHook } from "../src/pi-control.ts";
+import { checkHooks, hookStatus } from "../src/hooks.ts";
 import { loadConfig } from "../src/config.ts";
 import { openSession } from "../src/decisions.ts";
 import { cfg, cleanup, runCaptured, tmpProject } from "./_helpers.ts";
@@ -436,9 +437,19 @@ test("control CLI — actions and exit codes expose one unambiguous switch", asy
 
 test("control — this repository's own lifecycle control is PRESENT", async () => {
   const config = await loadConfig(REPO_ROOT);
-  for (const host of ["claude", "codex"] as const) {
-    const inspection = inspectLifecycleHook(config, host);
+  for (const host of ["claude", "codex", "pi"] as const) {
+    const inspection = host === "pi"
+      ? inspectPiLifecycleHook(config)
+      : inspectLifecycleHook(config, host);
     assert.equal(inspection.present, true, `${host}\n${JSON.stringify(inspection, null, 2)}`);
     assert.deepEqual(inspection.warnings, [], host);
   }
+  const piStatus = hookStatus(config, "pi");
+  assert.equal(piStatus.host, "pi");
+  assert.equal(piStatus.control.host, "pi");
+  void piStatus.observation.current?.exactNativeEvents;
+  const externalStatus = hookStatus(config, "claude");
+  assert.equal(externalStatus.host, "claude");
+  void externalStatus.control.launcher.targetPath;
+  void externalStatus.observation.current?.exactLauncherEvents;
 });

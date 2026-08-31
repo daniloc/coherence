@@ -11,8 +11,8 @@ import { createHash } from "node:crypto";
 import { join } from "node:path";
 import type { Config } from "./types.ts";
 
-export type ActivityHost = "claude" | "codex" | "unknown";
-export type ActivityTransport = "launcher" | "direct";
+export type ActivityHost = "claude" | "codex" | "pi" | "unknown";
+export type ActivityTransport = "launcher" | "native" | "direct";
 export type ActivityAttribution = "agent" | "session" | "parent-fallback" | "unknown";
 export type ActivityCommandKind = "verification" | "intervention";
 export type ActivityCommandResult = "success" | "failure" | "unknown";
@@ -104,8 +104,15 @@ function slug(raw: string): string {
 export const activityPath = (cfg: Config, session: string): string =>
   join(activityDir(cfg), `${slug(session)}.jsonl`);
 
-const HOSTS = new Set<string>(["claude", "codex", "unknown"]);
+const HOSTS = new Set<string>(["claude", "codex", "pi", "unknown"]);
 const ATTRIBUTIONS = new Set<string>(["agent", "session", "parent-fallback", "unknown"]);
+
+export function isActivityHostTransport(host: unknown, transport: unknown): boolean {
+  return (host === "pi" && transport === "native")
+    || ((host === "claude" || host === "codex") && transport === "launcher")
+    || (HOSTS.has(String(host)) && transport === "direct");
+}
+
 const RESULTS = new Set<string>(["success", "failure", "unknown"]);
 
 const object = (value: unknown): Record<string, unknown> =>
@@ -261,7 +268,7 @@ export function recordActivity(
 export function isActivityRow(value: unknown, session: string): value is ActivityRow {
   const row = object(value);
   if (row.version !== 1 || row.session !== session || !text(row.at) || !text(row.event)
-    || !HOSTS.has(String(row.host)) || (row.transport !== "launcher" && row.transport !== "direct")
+    || !isActivityHostTransport(row.host, row.transport)
     || !ATTRIBUTIONS.has(String(row.attribution))) return false;
   for (const key of ["bundleHash", "parentSession", "agentId", "turn", "tool", "toolUseId", "eventId", "experimentId"] as const) {
     if (row[key] !== null && !text(row[key])) return false;

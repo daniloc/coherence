@@ -54,6 +54,8 @@ rendering, and journaling remain independently addressable modules beneath this 
 - an empty derivation against a remembered surface refuses, never passes
 - lifecycle hook presence is one canonical runnable bit
 - supported lifecycle hosts share one control contract without sharing host syntax
+- native Pi lifecycle preserves host meaning without requiring pi-subagents
+- lifecycle persistence respects protected checkout ownership across every supported host
 - current-session activation requires exact installed-bundle evidence
 - customized hook text composes declared overrides and appends, degrading to canon on damage
 - python sources feed the same instruments as typescript at their declared grade
@@ -175,6 +177,8 @@ rendering, and journaling remain independently addressable modules beneath this 
 - boundary "an empty derivation against a remembered surface refuses, never passes" at vacuityRefusal via guard "FLOOR — an empty derivation against a remembered surface REFUSES, never reports coherent"
 - boundary "lifecycle hook presence is one canonical runnable bit" at inspectLifecycleHook via guard "control — presence is the complete canonical bundle, never a partial or lookalike"
 - boundary "supported lifecycle hosts share one control contract without sharing host syntax" at setLifecycleHookForHost via guard "Codex control — install is exact, idempotent, preserving, and runnable across nested paths"
+- boundary "native Pi lifecycle preserves host meaning without requiring pi-subagents" at registerPiHooks via guard "Pi extension — main settlement stays silent and child settlement triggers exactly one final report without pi-subagents"
+- boundary "lifecycle persistence respects protected checkout ownership across every supported host" at projectWritePolicy via guard "protected primary checkout stays read-only across CLI, Claude, Codex, and Pi"
 - boundary "current-session activation requires exact installed-bundle evidence" at currentObservation via guard "hook status — exact current bundle activates; stale, direct, replayed, and damaged evidence does not"
 - boundary "customized hook text composes declared overrides and appends, degrading to canon on damage" at composeHookText via guard "hook text — override replaces, append follows, and damage degrades to the canonical emission"
 - boundary "python sources feed the same instruments as typescript at their declared grade" at surfaceOfSource via guard "python surface — module defs, enum variants, and dict keys count; underscore and nested names do not"
@@ -210,6 +214,18 @@ journal and patch signal forward.
 **significant behavioral growth acquires an anchor or patch-specific decision.** The cost
 of adding an invariant is immediate while the cost of omitting it appears later, so the
 current patch must carry either enforcement or an addressable reason that it needs none.
+
+**native Pi lifecycle preserves host meaning without requiring pi-subagents.** Pi's
+in-process extension maps exact native session, tool, and settlement events, remains
+useful with no child package, and allows one guarded child completion turn when
+`PI_SUBAGENT_CHILD=1`; native transport stays distinct from Claude/Codex launchers.
+
+**lifecycle persistence respects protected checkout ownership across every supported host.**
+A host event arrives before an agent can obey repository prose, so textual worktree guidance
+cannot authorize automatic persistence. When the project opts in, Git's registered primary
+worktree remains read-only across explicit CLI operations and Claude, Codex, and Pi lifecycle
+events; an unprovable identity refuses writes rather than becoming permission. Linked
+worktrees retain the complete evidence path.
 
 **a weaker regulation obligation never masks a stronger one.** Regulation compares live
 obligations by a lexicographic potential, with missing observations failing closed instead

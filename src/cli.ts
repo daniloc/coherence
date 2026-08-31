@@ -15,7 +15,7 @@ import { buildGraph } from "./derive.ts";
 import { renderOutline } from "./render-outline.ts";
 import { renderOverview } from "./render-overview.ts";
 import { renderClaude, spliceBlock, extractBlock, resolveClaudeMdPath, CLAUDE_BEGIN, CLAUDE_END } from "./render-claude.ts";
-import { renderCommandsBlock, renderPhrasebookBlock, usageBanner, commandFor, COMMANDS_BEGIN, COMMANDS_END, PHRASEBOOK_BEGIN, PHRASEBOOK_END } from "./commands.ts";
+import { renderCommandsBlock, renderPhrasebookBlock, usageBanner, commandFor, commandEffect, commandPositionals, COMMANDS_BEGIN, COMMANDS_END, PHRASEBOOK_BEGIN, PHRASEBOOK_END } from "./commands.ts";
 import { runVerify, applyVerdicts } from "./verify.ts";
 import { decompose } from "./decompose.ts";
 import { drift } from "./drift.ts";
@@ -67,6 +67,7 @@ import {
   recordConsequence, renderConsequences, type ConsequenceRelation,
 } from "./consequence.ts";
 import { observeOrientation, renderOrientation } from "./orient.ts";
+import { projectWritePolicy, writeRefusal } from "./write-policy.ts";
 
 const cmd = process.argv[2];
 const argv = process.argv.slice(3);
@@ -81,16 +82,9 @@ const since = sinceIdx >= 0 ? argv[sinceIdx + 1] : null;
 // a better record than one with a comma-joined string nobody can split reliably.
 // `--could-be` is repeatable for the same reason as `--over`, and for one more: the
 // count of candidates IS the signal. One candidate is a hunch dressed as an inquiry.
-const VALUED = new Set(["--since", "--apply", "--over", "--because", "--agent", "--job", "--file", "--for", "--session", "--branch",
-  "--could-be", "--discriminated-by", "--as",
-  "--evidence",
-  "--value", "--baseline", "--threshold", "--unit", "--why", "--raise-cap", "--symbol", "--outcome", "--host",
-  "--context", "--action", "--success", "--hypothesis", "--action-result", "--result",
-  "--work", "--subject", "--authority", "--scope-component", "--scope-file", "--scope-symbol", "--environment",
-  "--max-bytes", "--risk", "--granted-by", "--boundary", "--owner-session", "--owner-agent", "--parent", "--depends-on", "--read-scope", "--write-scope", "--constraint", "--non-goal", "--state", "--expected-previous", "--synthesized", "--id"]);
 const many = (flag: string): string[] => argv.reduce<string[]>((acc, a, i) => (a === flag && argv[i + 1] !== undefined ? [...acc, argv[i + 1]] : acc), []);
 const one = (flag: string): string | null => { const v = many(flag); return v.length ? v[v.length - 1] : null; };
-const positional = argv.filter((a, i) => !a.startsWith("--") && !VALUED.has(argv[i - 1] ?? ""));
+const positional = commandPositionals(argv);
 export function repeatedSingletonFlags(
   args: string[],
   allowed: Iterable<string>,
@@ -140,6 +134,11 @@ process.on("uncaughtException", renderUnrunnable);
 process.on("unhandledRejection", renderUnrunnable);
 
 const cfg = await loadConfig(process.cwd());
+const effect = commandEffect(cmd, argv);
+if (effect === "write" && cmd !== "hook") {
+  const refusal = writeRefusal(projectWritePolicy(cfg), `coherence ${cmd}`);
+  if (refusal) { for (const line of refusal) console.error(line); await exit(2); }
+}
 const stamp = new Date().toISOString().slice(0, 16).replace("T", " ") + "Z";
 const out = (p: string) => join(cfg.root, cfg.outputDir, p);
 const normStamp = (s: string) => s.replace(/<span id="stamp">[^<]*<\/span>/, '<span id="stamp"></span>');
@@ -378,13 +377,13 @@ if (cmd === "graph") {
   const hostCount = argv.filter((arg) => arg === "--host").length;
   const invalidSince = sinceIdx >= 0 && (!since || since.startsWith("--"));
   const hostArg = one("--host");
-  const invalidHost = hostCount > 0 && (hostArg !== "claude" && hostArg !== "codex");
+  const invalidHost = hostCount > 0 && (hostArg !== "claude" && hostArg !== "codex" && hostArg !== "pi");
   const badShape = positional.length > 0 || invalidSince || sinceCount > 1 || hostCount > 1 || invalidHost;
   if (badFlags.length || badShape) {
-    const usage = "usage: coherence regulate [--check] [--since <ref>] [--host <claude|codex>] [--json]";
+    const usage = "usage: coherence regulate [--check] [--since <ref>] [--host <claude|codex|pi>] [--json]";
     const message = badFlags.length
       ? `unsupported flag(s) for regulate: ${badFlags.join(", ")}`
-      : "regulate accepts no positional arguments, one --since value, and one claude|codex --host";
+      : "regulate accepts no positional arguments, one --since value, and one claude|codex|pi --host";
     if (json) console.log(JSON.stringify({ error: message, usage }, null, 2));
     else { console.error(message); console.error(usage); }
     await exit(2);
@@ -393,7 +392,7 @@ if (cmd === "graph") {
     since: since ?? undefined,
     check,
     json,
-    host: hostArg === "claude" || hostArg === "codex" ? hostArg : undefined,
+    host: hostArg === "claude" || hostArg === "codex" || hostArg === "pi" ? hostArg : undefined,
   }));
 } else if (cmd === "decide" || cmd === "blocked") {
   // The write half of the decision journal. Deliberately the cheapest thing in the
@@ -1027,12 +1026,10 @@ if (cmd === "graph") {
     ["install", new Set(["--json", "--host", "--session"])],
     ["uninstall", new Set(["--json", "--host", "--session"])],
     ["print", new Set(["--host"])],
-    // Review takes NO flags — not even --host, because emission CONTENT is
-    // host-independent; only the delivery envelope differs per host.
-    ["review", new Set<string>([])],
+    ["review", new Set(["--host"])],
   ]);
   const usage = "usage: coherence hooks [status|install|uninstall|print|review] [--check]"
-    + " [--host <claude|codex>] [--session <id>] [--json]";
+    + " [--host <claude|codex|pi>] [--session <id>] [--json]";
   const actionFlags = allowed.get(action);
   const badFlags = actionFlags
     ? argv.filter((arg) => arg.startsWith("--") && !actionFlags.has(arg))
@@ -1044,7 +1041,7 @@ if (cmd === "graph") {
     argv.filter((arg) => arg === flag).length > 1);
   const hostArg = one("--host");
   const session = one("--session");
-  const invalidHost = hostArg !== null && hostArg !== "claude" && hostArg !== "codex";
+  const invalidHost = hostArg !== null && hostArg !== "claude" && hostArg !== "codex" && hostArg !== "pi";
   const invalidSession = session === "" || session === "unknown";
   const badShape = !allowed.has(action)
     || (action === "check" && !check)
@@ -1055,7 +1052,7 @@ if (cmd === "graph") {
       : badFlags.length ? `unsupported flag(s) for hooks ${action}: ${badFlags.join(", ")}`
       : missingValues.length ? `missing value for: ${missingValues.join(", ")}`
       : repeatedValues.length ? `repeated hooks selector: ${repeatedValues.join(", ")}`
-      : invalidHost ? `invalid hook host: ${hostArg}; expected claude or codex`
+      : invalidHost ? `invalid hook host: ${hostArg}; expected claude, codex, or pi`
       : "--session requires a non-empty, non-unknown id";
     if (json) console.log(JSON.stringify({ error: message, usage }, null, 2));
     else { console.error(message); console.error(usage); }
@@ -1067,7 +1064,7 @@ if (cmd === "graph") {
   if (action === "install") await exit(await installHooks(cfg, json, host, session));
   if (action === "uninstall") await exit(await uninstallHooks(cfg, json, host, session));
   if (action === "print") { printHooks(cfg, host); await exit(0); }
-  if (action === "review") await exit(reviewHooks(cfg));
+  if (action === "review") await exit(reviewHooks(cfg, host));
 } else if (cmd === "hook") {
   // The hook BODY, so nothing has to be written to disk or kept in sync with a script.
   await exit(await runHook(cfg, positional[0] ?? ""));

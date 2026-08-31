@@ -413,6 +413,48 @@ test("strict read — malformed, tampered, and dangling rows are refusals, never
   } finally { await cleanup(nested.root); }
 });
 
+test("strict read — Pi native telemetry is admitted only with its valid host/transport relation", async () => {
+  const { root, config } = await project();
+  try {
+    const opened = createExperiment(config, plan());
+    const piContext = {
+      host: "pi",
+      transport: "native",
+      bundleHash: "pi-bundle",
+      experimentId: opened.id,
+    } as const;
+    recordHookReads(config, {
+      session_id: "parent",
+      agent_id: "owner-1",
+      tool_name: "Read",
+      tool_input: { file_path: "src/a.ts" },
+    }, T(2), piContext);
+    recordActivity(config, "PostToolUse", {
+      session_id: "parent",
+      agent_id: "owner-1",
+      tool_name: "Bash",
+      tool_use_id: "pi-verify",
+      tool_input: { command: "npx coherence verify" },
+      tool_response: { exit_code: 0 },
+    }, piContext, T(3));
+    closeExperiment(config, closing(opened.id));
+
+    const resolved = readExperiments(config).closed[0].closed!;
+    assert.equal(resolved.trace.events[0].observation?.host, "pi");
+    assert.equal(resolved.trace.events[0].observation?.transport, "native");
+    assert.equal(resolved.activity.rows[0].host, "pi");
+    assert.equal(resolved.activity.rows[0].transport, "native");
+
+    const closePath = experimentSessionPath(config, "assessor-1");
+    const raw = JSON.parse((await readFile(closePath, "utf8")).trim()) as Record<string, any>;
+    raw.trace.events[0].observation.transport = "launcher";
+    const { id: _id, at: _at, ...identity } = raw;
+    raw.id = `x-${createHash("sha256").update(stableFixture(identity)).digest("hex").slice(0, 12)}`;
+    await writeFile(closePath, JSON.stringify(raw) + "\n");
+    assert.throws(() => readExperiments(config), /host\/transport relation is invalid/);
+  } finally { await cleanup(root); }
+});
+
 test("strict read — frozen telemetry cannot launder unknown trace scope or inconsistent activity", async () => {
   const { root, config } = await project();
   try {
