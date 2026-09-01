@@ -2346,7 +2346,7 @@ both is exactly what drifted.
      edit by hand — add the command to the registry and re-run. Everything OUTSIDE these
      markers is authored prose. -->
 
-_45 commands. This index is derived from the registry the dispatch is checked
+_46 commands. This index is derived from the registry the dispatch is checked
 against (`test/commands.test.ts` enumerates the live `cmd === …` chain and asserts the two
 sets are equal), so it cannot fall behind the CLI. The reasoning for the commands that have
 any is in **In detail** below — that half is authored, and does not cover all of them._
@@ -2389,6 +2389,7 @@ any is in **In detail** below — that half is authored, and does not cover all 
 - `coherence orient [--json]` — one deterministic swarm heading over strict decisions, work, links, experiments, defects, and verification
 - `coherence contract` — the promise graph — graded gates + the reliance ledger (`_contract.html`)
 - `coherence context [<file>...] [--symbol <name>] [--changed|--staged] [--max-bytes N|--all]` — emit a bounded graph/repository context packet with exact omission accounting; --all expands
+- `coherence classify-check <fixture.json> [--json]` — expand one Phase 0 component classification and fail on invalid or unresolved mandatory guarantees
 
 **Ratchets and gates**
 

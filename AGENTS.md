@@ -97,7 +97,7 @@ _works when:_
 - boundary "defect provenance is data, never terminal control" at readDefects via guard "defect provenance — commit ids have Git shape and cannot carry terminal controls"
 - boundary "a streamed journal entry renders exactly once across appends and compaction" at tailJournal via guard "tail — an appended record arrives exactly once, a compaction fold re-emits nothing and drops nothing, and a half-written line waits for its bytes"
 
-_files:_ `activity.ts`, `atlas.ts`, `boundary.ts`, `calibration.ts`, `cli.ts`, `commands.ts`, `config.ts`, `consequence.ts`, `context.ts`, `contracts.ts`, `control.ts`, `conventions.ts`, `decision-position.ts`, `decisions.ts`, `decompose.ts`, `defects.ts`, `derive.ts`, `doctrine.ts`, `drift.ts`, `due.ts`, `economy.ts`, `evolution.ts`, `experiment.ts`, `floor.ts`, `hook-cli.ts`, `hook-text.ts`, `hooks.ts`, `index-model.ts`, `journal.ts`, `language-packs.ts`, `lint-sinks.ts`, `mass.ts`, `novelty.ts`, `observed.ts`, `oracle-domain.ts`, `orient.ts`, `panel.ts`, `parity.ts`, `phrasebook.ts`, `premise.ts`, `promise-model.ts`, `promise.ts`, `prose.ts`, `raise.ts`, `read-trace.ts`, `redundancy.ts`, `regulate.ts`, `render-claude.ts`, `render-contract.ts`, `render-index.ts`, `render-outline.ts`, `render-overview.ts`, `run-named-test.ts`, `scaffold.ts`, `sidecar.ts`, `signal.ts`, `static-oracles.ts`, `status.ts`, `structural.ts`, `test-batch.ts`, `tree.ts`, `types.ts`, `verify.ts`, `walk.ts`, `why-lint.ts`, `work.ts`
+_files:_ `activity.ts`, `atlas.ts`, `boundary.ts`, `calibration.ts`, `classification.ts`, `cli.ts`, `commands.ts`, `config.ts`, `consequence.ts`, `context.ts`, `contracts.ts`, `control.ts`, `conventions.ts`, `decision-position.ts`, `decisions.ts`, `decompose.ts`, `defects.ts`, `derive.ts`, `doctrine.ts`, `drift.ts`, `due.ts`, `economy.ts`, `evolution.ts`, `experiment.ts`, `floor.ts`, `hook-cli.ts`, `hook-text.ts`, `hooks.ts`, `index-model.ts`, `journal.ts`, `language-packs.ts`, `lint-sinks.ts`, `mass.ts`, `novelty.ts`, `observed.ts`, `oracle-domain.ts`, `orient.ts`, `panel.ts`, `parity.ts`, `phrasebook.ts`, `premise.ts`, `promise-model.ts`, `promise.ts`, `prose.ts`, `raise.ts`, `read-trace.ts`, `redundancy.ts`, `regulate.ts`, `render-claude.ts`, `render-contract.ts`, `render-index.ts`, `render-outline.ts`, `render-overview.ts`, `run-named-test.ts`, `scaffold.ts`, `sidecar.ts`, `signal.ts`, `static-oracles.ts`, `status.ts`, `structural.ts`, `test-batch.ts`, `tree.ts`, `types.ts`, `verify.ts`, `walk.ts`, `why-lint.ts`, `work.ts`
 
 ### Source adapters  `src/adapters`
 Translate language syntax and platform configuration into the common graph vocabulary consumed by the harness core.
@@ -121,7 +121,7 @@ _works when:_
 - decisions.test.ts exists at this node
 - commands.test.ts exists at this node
 
-_files:_ `_helpers.ts`, `activity.test.ts`, `adapter-loader.test.ts`, `atlas.test.ts`, `calibration.test.ts`, `claude.test.ts`, `cloudflare.test.ts`, `codex-control.test.ts`, `commands.test.ts`, `conjecture.test.ts`, `consequence.test.ts`, `context-cli.test.ts`, `context.test.ts`, `contracts.test.ts`, `control.test.ts`, `decision-position.test.ts`, `decisions.test.ts`, `declared-root.test.ts`, `decompose.test.ts`, `defect-cli.test.ts`, `defects.test.ts`, `derive.test.ts`, `dictionary.test.ts`, `due.test.ts`, `economy.test.ts`, `evolution.test.ts`, `experiment-cli.test.ts`, `experiment.test.ts`, `floor.test.ts`, `hook-stop.test.ts`, `hook-text.test.ts`, `hooks-cli.test.ts`, `index.test.ts`, `journal.test.ts`, `kinds.test.ts`, `language-packs.test.ts`, `mass.test.ts`, `novelty-python.test.ts`, `novelty.test.ts`, `observed.test.ts`, `oracle.test.ts`, `orient.test.ts`, `orientation-policy.test.ts`, `panel.test.ts`, `parity.test.ts`, `parse.test.ts`, `phrasebook.test.ts`, `premise.test.ts`, `promise.test.ts`, `prose.test.ts`, `pytest-batch.test.ts`, `python-oracle.test.ts`, `python-parity.test.ts`, `raise.test.ts`, `redundancy.test.ts`, `regulate-cli.test.ts`, `regulate.test.ts`, `render-contract.test.ts`, `run-named-test.test.ts`, `signal.test.ts`, `sinks-python.test.ts`, `sinks-ruby.test.ts`, `sinks.test.ts`, `source-text.test.ts`, `static-oracles.test.ts`, `status.test.ts`, `structural.test.ts`, `swarm-acceptance.test.ts`, `swarm-cli.test.ts`, `test-batch.test.ts`, `tree-sitter-adapter.test.ts`, `tree.test.ts`, `trusted-decisions.test.ts`, `vacuity.test.ts`, `verify.test.ts`, `wasm-heap.test.ts`, `why-lint.test.ts`, `work.test.ts`
+_files:_ `_helpers.ts`, `activity.test.ts`, `adapter-loader.test.ts`, `atlas.test.ts`, `calibration.test.ts`, `classification.test.ts`, `claude.test.ts`, `cloudflare.test.ts`, `codex-control.test.ts`, `commands.test.ts`, `conjecture.test.ts`, `consequence.test.ts`, `context-cli.test.ts`, `context.test.ts`, `contracts.test.ts`, `control.test.ts`, `decision-position.test.ts`, `decisions.test.ts`, `declared-root.test.ts`, `decompose.test.ts`, `defect-cli.test.ts`, `defects.test.ts`, `derive.test.ts`, `dictionary.test.ts`, `due.test.ts`, `economy.test.ts`, `evolution.test.ts`, `experiment-cli.test.ts`, `experiment.test.ts`, `floor.test.ts`, `hook-stop.test.ts`, `hook-text.test.ts`, `hooks-cli.test.ts`, `index.test.ts`, `journal.test.ts`, `kinds.test.ts`, `language-packs.test.ts`, `mass.test.ts`, `novelty-python.test.ts`, `novelty.test.ts`, `observed.test.ts`, `oracle.test.ts`, `orient.test.ts`, `orientation-policy.test.ts`, `panel.test.ts`, `parity.test.ts`, `parse.test.ts`, `phrasebook.test.ts`, `premise.test.ts`, `promise.test.ts`, `prose.test.ts`, `pytest-batch.test.ts`, `python-oracle.test.ts`, `python-parity.test.ts`, `raise.test.ts`, `redundancy.test.ts`, `regulate-cli.test.ts`, `regulate.test.ts`, `render-contract.test.ts`, `run-named-test.test.ts`, `signal.test.ts`, `sinks-python.test.ts`, `sinks-ruby.test.ts`, `sinks.test.ts`, `source-text.test.ts`, `static-oracles.test.ts`, `status.test.ts`, `structural.test.ts`, `swarm-acceptance.test.ts`, `swarm-cli.test.ts`, `test-batch.test.ts`, `tree-sitter-adapter.test.ts`, `tree.test.ts`, `trusted-decisions.test.ts`, `vacuity.test.ts`, `verify.test.ts`, `wasm-heap.test.ts`, `why-lint.test.ts`, `work.test.ts`
 
 ## Structure
 
@@ -135,6 +135,7 @@ coherence/
 │  ├─ atlas.ts
 │  ├─ boundary.ts
 │  ├─ calibration.ts
+│  ├─ classification.ts
 │  ├─ cli.ts
 │  ├─ commands.ts
 │  ├─ config.ts
@@ -203,6 +204,7 @@ coherence/
    ├─ adapter-loader.test.ts
    ├─ atlas.test.ts
    ├─ calibration.test.ts
+   ├─ classification.test.ts
    ├─ claude.test.ts
    ├─ cloudflare.test.ts
    ├─ codex-control.test.ts

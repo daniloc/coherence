@@ -67,6 +67,7 @@ import {
   recordConsequence, renderConsequences, type ConsequenceRelation,
 } from "./consequence.ts";
 import { observeOrientation, renderOrientation } from "./orient.ts";
+import { checkClassificationFile, renderClassificationResult } from "./classification.ts";
 
 const cmd = process.argv[2];
 const argv = process.argv.slice(3);
@@ -1172,6 +1173,26 @@ if (cmd === "graph") {
     await exit(2);
   }
   await exit(0);
+} else if (cmd === "classify-check") {
+  const json = argv.includes("--json");
+  const badFlags = argv.filter((arg) => arg.startsWith("--") && arg !== "--json");
+  if (badFlags.length || positional.length !== 1) {
+    const usage = "usage: coherence classify-check <fixture.json> [--json]";
+    const message = badFlags.length ? `unsupported flag(s) for classify-check: ${badFlags.join(", ")}` : "classify-check requires exactly one fixture path";
+    if (json) console.log(JSON.stringify({ error: message, usage }, null, 2));
+    else { console.error(message); console.error(usage); }
+    await exit(2);
+  }
+  try {
+    const result = await checkClassificationFile(join(cfg.root, positional[0]!));
+    console.log(json ? JSON.stringify(result, null, 2) : renderClassificationResult(result).trimEnd());
+    await exit(result.ok ? 0 : 1);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (json) console.log(JSON.stringify({ error: message }, null, 2));
+    else console.error(`classify-check could not read fixture: ${message}`);
+    await exit(2);
+  }
 } else if (cmd === "contracts") {
   // Producer/consumer contracts across deploy artifacts + the uncovered cross-artifact
   // surface detector. Charts analog: artifacts/contracts are config data, mechanism here.

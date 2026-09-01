@@ -220,6 +220,10 @@ export const COMMANDS: Command[] = [
     name: "context", group: "perceive", usage: "[<file>...] [--symbol <name>] [--changed|--staged] [--max-bytes N|--all]",
     summary: "emit a bounded graph/repository context packet with exact omission accounting; --all expands",
   },
+  {
+    name: "classify-check", group: "perceive", usage: "<fixture.json> [--json]",
+    summary: "expand one Phase 0 component classification and fail on invalid or unresolved mandatory guarantees",
+  },
 
   // ── ratchet ──────────────────────────────────────────────────────────────────────────
   { name: "lint-sinks", group: "ratchet", usage: "[--check | --update-baseline]", summary: "interpolation-surface ratchet — raw SQL-identifier and HTML sinks", writesBaseline: true },
