@@ -1,4 +1,8 @@
-import { readFile } from "node:fs/promises";
+import { appendFile, mkdir, readFile } from "node:fs/promises";
+import { execFile } from "node:child_process";
+import { createHash } from "node:crypto";
+import { dirname, isAbsolute, join, resolve } from "node:path";
+import { promisify } from "node:util";
 
 export const CLASSIFICATION_SCHEMA_VERSION = 1;
 const EVIDENCE_STATUSES = new Set(["supported", "declared-unwired", "stale-authority", "ambiguous", "out-of-evidence"]);
@@ -12,7 +16,13 @@ export interface ClassificationCatalog {
   classes: Record<string, CatalogEntry>; facets: Record<string, CatalogEntry>;
   guarantees: Record<string, GuaranteeDefinition>;
 }
-interface Disposition { status: string; evidence?: string[] }
+export interface ExecutableFalsifier { command: string; args?: string[]; cwd?: string; timeoutMs?: number }
+interface Disposition { status: string; evidence?: string[]; falsifier?: ExecutableFalsifier }
+export interface FalsifierReceipt {
+  schemaVersion: 1; kind: "classification-falsifier"; at: string; component: string; guarantee: string;
+  fixtureHash: string; catalogHash: string; commandHash: string; cwd: string; exitCode: number | null; signal: string | null;
+  timedOut: boolean; stdoutHash: string; stderrHash: string; evidenceHash: string; receiptHash: string; passed: boolean;
+}
 export interface ClassificationFixture {
   schemaVersion: number; component: string; evidenceStatus: string; primary: string;
   facets: string[]; authority?: string; evidence?: string[];
@@ -21,7 +31,7 @@ export interface ClassificationFixture {
 export interface ClassificationResult {
   ok: boolean; catalog: string; component: string; primary: string; facets: string[];
   activatedGuarantees: Array<{ id: string; activatedBy: string[]; status: string | null; evidence: string[]; falsifier: string }>;
-  diagnostics: ClassificationDiagnostic[];
+  diagnostics: ClassificationDiagnostic[]; receipts?: FalsifierReceipt[];
 }
 
 export const PHASE_ZERO_CATALOG: ClassificationCatalog = {
@@ -97,6 +107,59 @@ export function checkClassification(fixture: ClassificationFixture, catalog = PH
 
 export async function checkClassificationFile(path: string): Promise<ClassificationResult> {
   return checkClassification(JSON.parse(await readFile(path, "utf8")) as ClassificationFixture);
+}
+
+const digest = (value: string): string => createHash("sha256").update(value).digest("hex");
+const execute = promisify(execFile);
+
+export async function executeClassificationFile(path: string, journalPath = ".coherence/classification-receipts.jsonl"): Promise<ClassificationResult> {
+  const raw = await readFile(path, "utf8");
+  const fixture = JSON.parse(raw) as ClassificationFixture;
+  const result = checkClassification(fixture);
+  const active = new Set(result.activatedGuarantees.map((guarantee) => guarantee.id));
+  const receipts: FalsifierReceipt[] = [];
+  for (const guarantee of [...active].sort()) {
+    const definition = fixture.dispositions?.[guarantee]?.falsifier;
+    if (!definition) {
+      add(result.diagnostics, "FALSIFIER_MISSING", `activated guarantee ${guarantee} has no executable falsifier`, guarantee);
+      continue;
+    }
+    if (typeof definition.command !== "string" || !definition.command.trim()
+      || (definition.args !== undefined && (!Array.isArray(definition.args) || definition.args.some((arg) => typeof arg !== "string")))
+      || (definition.cwd !== undefined && typeof definition.cwd !== "string")
+      || (definition.timeoutMs !== undefined && (!Number.isFinite(definition.timeoutMs) || definition.timeoutMs <= 0))) {
+      add(result.diagnostics, "FALSIFIER_INVALID", `guarantee ${guarantee} has an invalid executable falsifier`, guarantee);
+      continue;
+    }
+    const base = dirname(resolve(path));
+    const cwd = definition.cwd ? (isAbsolute(definition.cwd) ? definition.cwd : resolve(base, definition.cwd)) : base;
+    const args = definition.args ?? [];
+    let stdout = "", stderr = "", exitCode: number | null = 0, signal: string | null = null, timedOut = false;
+    try {
+      const completed = await execute(definition.command, args, { cwd, timeout: definition.timeoutMs ?? 120_000, maxBuffer: 8_000_000, encoding: "utf8" });
+      stdout = completed.stdout; stderr = completed.stderr;
+    } catch (error) {
+      const failed = error as Error & { code?: number | string; signal?: string; stdout?: string; stderr?: string; killed?: boolean };
+      stdout = failed.stdout ?? ""; stderr = failed.stderr ?? "";
+      exitCode = typeof failed.code === "number" ? failed.code : null; signal = failed.signal ?? null; timedOut = Boolean(failed.killed && signal === "SIGTERM");
+    }
+    const commandIdentity = JSON.stringify({ command: definition.command, args, cwd, timeoutMs: definition.timeoutMs ?? 120_000 });
+    const evidence = { fixtureHash: digest(raw), catalogHash: digest(JSON.stringify(PHASE_ZERO_CATALOG)),
+      commandHash: digest(commandIdentity), stdoutHash: digest(stdout), stderrHash: digest(stderr),
+      exitCode, signal, timedOut, passed: exitCode === 0 && signal === null && !timedOut };
+    const receiptWithoutHash = { schemaVersion: 1 as const, kind: "classification-falsifier" as const,
+      at: new Date().toISOString(), component: fixture.component, guarantee, ...evidence, cwd,
+      evidenceHash: digest(JSON.stringify(evidence)) };
+    receipts.push({ ...receiptWithoutHash, receiptHash: digest(JSON.stringify(receiptWithoutHash)) });
+    if (exitCode !== 0 || signal !== null || timedOut) add(result.diagnostics, "FALSIFIER_FAILED", `executable falsifier for ${guarantee} did not pass`, guarantee);
+  }
+  result.diagnostics.sort((a, b) => a.code.localeCompare(b.code) || (a.guarantee ?? "").localeCompare(b.guarantee ?? ""));
+  result.ok = result.diagnostics.length === 0;
+  result.receipts = receipts;
+  const target = isAbsolute(journalPath) ? journalPath : join(dirname(resolve(path)), journalPath);
+  await mkdir(dirname(target), { recursive: true });
+  await appendFile(target, receipts.map((receipt) => `${JSON.stringify(receipt)}\n`).join(""), "utf8");
+  return result;
 }
 export function renderClassificationResult(result: ClassificationResult): string {
   const lines = [`classification ${result.ok ? "PASS" : "FAIL"}: ${result.component}`, `catalog: ${result.catalog}`, `primary: ${result.primary}`, `facets: ${result.facets.length ? result.facets.join(", ") : "none"}`, "activated guarantees:"];

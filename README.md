@@ -1464,6 +1464,38 @@ Two warnings:
   is theater. Walk the actual TypeScript program (the compilation surface) the way
   `oracle-domain.ts` itself does, and assert over symbols, not strings.
 
+## Component classifications — obligations before judgments
+
+`coherence classify-check classification.json` expands a component's primary class and
+facets into the guarantees they activate. The structural check is deliberately inert: it
+does not run project code. `--execute` is the explicit trust crossing. Each activated
+guarantee must then own a falsifier encoded as an executable plus an argument array; the
+runner uses no shell and fails closed when a falsifier is absent, malformed, or nonzero.
+
+Every execution appends one JSONL receipt per attempted guarantee to
+`.coherence/classification-receipts.jsonl` beside the fixture. `--journal <path>` changes
+that address. Receipts retain the fixture, catalog, command, stdout, and stderr hashes;
+the exit status, signal, timeout state, timestamp, and result; an evidence hash; and a
+hash of the receipt itself. Outputs are hashed rather than copied so a noisy or sensitive
+test does not become journal payload. Failed attempts are evidence too and are appended.
+The journal is a content-addressed execution record, not a satisfaction assertion: the
+guarantee passes only when the current executable falsifier exits successfully. Phase 1
+does not add cryptographic receipt signatures or automated component discovery.
+
+Example disposition:
+
+```json
+{
+  "status": "satisfied",
+  "evidence": ["test/search/rebuild.test.ts"],
+  "falsifier": {
+    "command": "node",
+    "args": ["--test", "test/search/rebuild.test.ts"],
+    "timeoutMs": 120000
+  }
+}
+```
+
 ## The decision journal — what an agent CHOSE, and what it chose that OVER
 
 Five subagents at 400k tokens each produce more context than anything can read, and
@@ -2389,7 +2421,7 @@ any is in **In detail** below — that half is authored, and does not cover all 
 - `coherence orient [--json]` — one deterministic swarm heading over strict decisions, work, links, experiments, defects, and verification
 - `coherence contract` — the promise graph — graded gates + the reliance ledger (`_contract.html`)
 - `coherence context [<file>...] [--symbol <name>] [--changed|--staged] [--max-bytes N|--all]` — emit a bounded graph/repository context packet with exact omission accounting; --all expands
-- `coherence classify-check <fixture.json> [--json]` — expand one Phase 0 component classification and fail on invalid or unresolved mandatory guarantees
+- `coherence classify-check <fixture.json> [--execute] [--journal <receipts.jsonl>] [--json]` — expand one component classification and optionally execute falsifiers into an append-only receipt journal
 
 **Ratchets and gates**
 

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-01 19:21Z",
+  "generatedAt": "2026-09-01 20:17Z",
   "root": "coherence",
   "absRoot": "/Users/daniloc/Documents/coherence-component-classification-phase0",
   "nodes": [
@@ -845,7 +845,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/classification.ts",
-      "line": 3
+      "line": 7
     },
     {
       "id": "s:src/classification.ts#ClassificationDiagnostic",
@@ -854,7 +854,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/classification.ts",
-      "line": 7
+      "line": 11
     },
     {
       "id": "s:src/classification.ts#ClassificationCatalog",
@@ -863,7 +863,25 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/classification.ts",
-      "line": 10
+      "line": 14
+    },
+    {
+      "id": "s:src/classification.ts#ExecutableFalsifier",
+      "parent": "f:src/classification.ts",
+      "label": "ExecutableFalsifier",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/classification.ts",
+      "line": 19
+    },
+    {
+      "id": "s:src/classification.ts#FalsifierReceipt",
+      "parent": "f:src/classification.ts",
+      "label": "FalsifierReceipt",
+      "kind": "symbol",
+      "sub": "interface",
+      "path": "src/classification.ts",
+      "line": 21
     },
     {
       "id": "s:src/classification.ts#ClassificationFixture",
@@ -872,7 +890,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/classification.ts",
-      "line": 16
+      "line": 26
     },
     {
       "id": "s:src/classification.ts#ClassificationResult",
@@ -881,7 +899,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/classification.ts",
-      "line": 21
+      "line": 31
     },
     {
       "id": "s:src/classification.ts#PHASE_ZERO_CATALOG",
@@ -890,7 +908,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/classification.ts",
-      "line": 27
+      "line": 37
     },
     {
       "id": "s:src/classification.ts#checkClassification",
@@ -899,7 +917,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/classification.ts",
-      "line": 50
+      "line": 60
     },
     {
       "id": "s:src/classification.ts#checkClassificationFile",
@@ -908,7 +926,16 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/classification.ts",
-      "line": 98
+      "line": 108
+    },
+    {
+      "id": "s:src/classification.ts#executeClassificationFile",
+      "parent": "f:src/classification.ts",
+      "label": "executeClassificationFile",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/classification.ts",
+      "line": 115
     },
     {
       "id": "s:src/classification.ts#renderClassificationResult",
@@ -917,7 +944,19 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/classification.ts",
-      "line": 101
+      "line": 164
+    },
+    {
+      "id": "x:node:child_process",
+      "label": "node:child_process",
+      "kind": "external",
+      "sub": "module"
+    },
+    {
+      "id": "x:node:util",
+      "label": "node:util",
+      "kind": "external",
+      "sub": "module"
     },
     {
       "id": "f:src/cli.ts",
@@ -1300,12 +1339,6 @@
       "sub": "function",
       "path": "src/consequence.ts",
       "line": 452
-    },
-    {
-      "id": "x:node:child_process",
-      "label": "node:child_process",
-      "kind": "external",
-      "sub": "module"
     },
     {
       "id": "f:src/context.ts",
@@ -1874,12 +1907,6 @@
       "sub": "function",
       "path": "src/control.ts",
       "line": 788
-    },
-    {
-      "id": "x:node:util",
-      "label": "node:util",
-      "kind": "external",
-      "sub": "module"
     },
     {
       "id": "f:src/conventions.ts",
@@ -9166,6 +9193,30 @@
       "kind": "imports"
     },
     {
+      "id": "f:src/classification.ts->x:node:child_process:imports",
+      "source": "f:src/classification.ts",
+      "target": "x:node:child_process",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/classification.ts->x:node:crypto:imports",
+      "source": "f:src/classification.ts",
+      "target": "x:node:crypto",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/classification.ts->x:node:path:imports",
+      "source": "f:src/classification.ts",
+      "target": "x:node:path",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/classification.ts->x:node:util:imports",
+      "source": "f:src/classification.ts",
+      "target": "x:node:util",
+      "kind": "imports"
+    },
+    {
       "id": "f:src/cli.ts->x:node:fs/promises:imports",
       "source": "f:src/cli.ts",
       "target": "x:node:fs/promises",
@@ -11635,6 +11686,12 @@
       "id": "f:test/classification.test.ts->x:node:child_process:imports",
       "source": "f:test/classification.test.ts",
       "target": "x:node:child_process",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/classification.test.ts->x:node:fs/promises:imports",
+      "source": "f:test/classification.test.ts",
+      "target": "x:node:fs/promises",
       "kind": "imports"
     },
     {

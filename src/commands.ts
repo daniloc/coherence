@@ -221,8 +221,8 @@ export const COMMANDS: Command[] = [
     summary: "emit a bounded graph/repository context packet with exact omission accounting; --all expands",
   },
   {
-    name: "classify-check", group: "perceive", usage: "<fixture.json> [--json]",
-    summary: "expand one Phase 0 component classification and fail on invalid or unresolved mandatory guarantees",
+    name: "classify-check", group: "perceive", usage: "<fixture.json> [--execute] [--journal <receipts.jsonl>] [--json]",
+    summary: "expand one component classification and optionally execute falsifiers into an append-only receipt journal",
   },
 
   // ── ratchet ──────────────────────────────────────────────────────────────────────────

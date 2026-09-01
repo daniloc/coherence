@@ -67,7 +67,7 @@ import {
   recordConsequence, renderConsequences, type ConsequenceRelation,
 } from "./consequence.ts";
 import { observeOrientation, renderOrientation } from "./orient.ts";
-import { checkClassificationFile, renderClassificationResult } from "./classification.ts";
+import { checkClassificationFile, executeClassificationFile, renderClassificationResult } from "./classification.ts";
 
 const cmd = process.argv[2];
 const argv = process.argv.slice(3);
@@ -88,7 +88,7 @@ const VALUED = new Set(["--since", "--apply", "--over", "--because", "--agent", 
   "--value", "--baseline", "--threshold", "--unit", "--why", "--raise-cap", "--symbol", "--outcome", "--host",
   "--context", "--action", "--success", "--hypothesis", "--action-result", "--result",
   "--work", "--subject", "--authority", "--scope-component", "--scope-file", "--scope-symbol", "--environment",
-  "--max-bytes", "--risk", "--granted-by", "--boundary", "--owner-session", "--owner-agent", "--parent", "--depends-on", "--read-scope", "--write-scope", "--constraint", "--non-goal", "--state", "--expected-previous", "--synthesized", "--id"]);
+  "--max-bytes", "--risk", "--granted-by", "--boundary", "--owner-session", "--owner-agent", "--parent", "--depends-on", "--read-scope", "--write-scope", "--constraint", "--non-goal", "--state", "--expected-previous", "--synthesized", "--id", "--journal"]);
 const many = (flag: string): string[] => argv.reduce<string[]>((acc, a, i) => (a === flag && argv[i + 1] !== undefined ? [...acc, argv[i + 1]] : acc), []);
 const one = (flag: string): string | null => { const v = many(flag); return v.length ? v[v.length - 1] : null; };
 const positional = argv.filter((a, i) => !a.startsWith("--") && !VALUED.has(argv[i - 1] ?? ""));
@@ -1175,16 +1175,20 @@ if (cmd === "graph") {
   await exit(0);
 } else if (cmd === "classify-check") {
   const json = argv.includes("--json");
-  const badFlags = argv.filter((arg) => arg.startsWith("--") && arg !== "--json");
+  const executeFalsifiers = argv.includes("--execute");
+  const journal = one("--journal");
+  const badFlags = argv.filter((arg) => arg.startsWith("--") && !["--json", "--execute", "--journal"].includes(arg));
   if (badFlags.length || positional.length !== 1) {
-    const usage = "usage: coherence classify-check <fixture.json> [--json]";
+    const usage = "usage: coherence classify-check <fixture.json> [--execute] [--journal <receipts.jsonl>] [--json]";
     const message = badFlags.length ? `unsupported flag(s) for classify-check: ${badFlags.join(", ")}` : "classify-check requires exactly one fixture path";
     if (json) console.log(JSON.stringify({ error: message, usage }, null, 2));
     else { console.error(message); console.error(usage); }
     await exit(2);
   }
   try {
-    const result = await checkClassificationFile(join(cfg.root, positional[0]!));
+    if (journal && !executeFalsifiers) throw new Error("--journal requires --execute");
+    const fixturePath = join(cfg.root, positional[0]!);
+    const result = executeFalsifiers ? await executeClassificationFile(fixturePath, journal ?? ".coherence/classification-receipts.jsonl") : await checkClassificationFile(fixturePath);
     console.log(json ? JSON.stringify(result, null, 2) : renderClassificationResult(result).trimEnd());
     await exit(result.ok ? 0 : 1);
   } catch (error) {
