@@ -23,7 +23,7 @@
 // identically whichever grade derived them.
 import { fileURLToPath } from "node:url";
 import { Parser, Language, Query, type Tree } from "web-tree-sitter";
-import type { LanguageAdapter } from "../types.ts";
+import type { LanguageAdapter, ImportResolution } from "../types.ts";
 import { registeredPack, type BuiltinLanguageName } from "../language-registry.ts";
 
 /**
@@ -57,6 +57,10 @@ export interface TreeSitterLanguageSpec {
    *  def/class; "rustdoc" reads `///` blocks through `#[…]` attributes and `//!` as the
    *  file doc. Default "line". */
   docStyle?: "line" | "jsdoc" | "docstring" | "rustdoc";
+  /** How an import spec becomes an edge, NAMED like docStyle (derive.ts owns the code):
+   *  "relative" (default) links `./`-specifiers to files; "rust-module" resolves module
+   *  paths through the crate's file tree. */
+  importResolution?: ImportResolution;
   /** Escape hatch for PROJECT adapter modules only (rung 2 is code territory by
    *  definition). Built-in packs must not use it — the purity guard enforces that. */
   docs?: { docAbove(lines: string[], line: number): string; fileDoc(lines: string[]): string };
@@ -282,6 +286,7 @@ export async function makeTreeSitterAdapter(
   const commentPrefix = spec.lineComment;
   return {
     exts: spec.exts,
+    ...(spec.importResolution ? { importResolution: spec.importResolution } : {}),
     symbols(src: string) {
       return withTree(parser, src, [] as Array<{ name: string; kind: string; line: number }>, (tree) => {
       const out: Array<{ name: string; kind: string; line: number }> = [];

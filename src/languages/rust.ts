@@ -46,15 +46,22 @@ export const rustPack: LanguagePack = {
       (source_file (trait_item body: (declaration_list (function_item name: (identifier) @method))))
       (source_file (trait_item body: (declaration_list (function_signature_item name: (identifier) @method))))
     `,
-    // A use tree's whole text (the resolver expands `a::{b, c::d}`), an out-of-line
-    // `mod foo;` declaration's name (a module edge, resolved as a path from the
-    // declaring module), and `extern crate` names.
+    // The file module's own scope: a use tree's whole text (the resolver expands
+    // `a::{b, c::d}`) at top level and in top-level fn and method bodies; an out-of-line
+    // `mod foo;` as its declaration text (a child-module edge, never an external); and
+    // `extern crate` names. Inside an inline `mod x { … }` only `crate::` paths count —
+    // `super::`/`self::` there are relative to a module the file path cannot name, and
+    // the `mod tests { use super::*; }` idiom would otherwise link the parent module.
     importQuery: `
-      (use_declaration argument: (_) @spec)
-      (mod_item name: (identifier) @spec !body)
-      (extern_crate_declaration name: (identifier) @spec)
+      (source_file (use_declaration argument: (_) @spec))
+      (source_file (function_item body: (block (use_declaration argument: (_) @spec))))
+      (source_file (impl_item body: (declaration_list (function_item body: (block (use_declaration argument: (_) @spec))))))
+      (mod_item body: (declaration_list (use_declaration argument: (_) @spec (#match? @spec "^crate::"))))
+      (source_file (mod_item !body) @spec)
+      (source_file (extern_crate_declaration name: (identifier) @spec))
     `,
     lineComment: "//",
     docStyle: "rustdoc",
+    importResolution: "rust-module",
   },
 };

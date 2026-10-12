@@ -4,7 +4,7 @@
 import { readFile } from "node:fs/promises";
 import { join, basename, dirname, relative, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
-import type { Config, Graph, GraphNode, GraphEdge, LanguageAdapter, PlatformAdapter } from "./types.ts";
+import type { Config, Graph, GraphNode, GraphEdge, ImportResolution, LanguageAdapter, PlatformAdapter } from "./types.ts";
 import { parseSpec, splitWhy, findSpec, nodeDirs, codeFiles, ownerOf } from "./walk.ts";
 import { Unrunnable, requireDeclaredRoot } from "./floor.ts";
 import { BUILTIN_LANGUAGES, makeTreeSitterAdapter } from "./adapters/tree-sitter.ts";
@@ -12,6 +12,7 @@ import { registerLanguagePack, registeredPack, registeredNames, type LanguagePac
 import { cloudflare } from "./adapters/cloudflare.ts";
 
 const PLATFORMS: Record<string, PlatformAdapter> = { cloudflare };
+const IMPORT_RESOLUTIONS: ImportResolution[] = ["relative", "rust-module"];
 
 /** Which field of a would-be adapter is wrong, or null when the shape is complete.
  *  Named fields in the refusal, because "invalid adapter" sends the author back to the
@@ -24,6 +25,9 @@ function adapterShapeProblem(a: unknown): string | null {
   }
   for (const fn of ["symbols", "imports", "docAbove", "fileDoc"] as const) {
     if (typeof o[fn] !== "function") return `\`${fn}\` must be a function`;
+  }
+  if (o.importResolution !== undefined && !IMPORT_RESOLUTIONS.includes(o.importResolution as ImportResolution)) {
+    return `\`importResolution\` must be one of ${IMPORT_RESOLUTIONS.map((r) => JSON.stringify(r)).join(" · ")}`;
   }
   return null;
 }
@@ -136,6 +140,89 @@ async function loadProjectLanguage(name: string, path: string): Promise<Language
  *  derive one spelling from the other, here by deleting the others. */
 export const isDocumented = (n: GraphNode): boolean => !!(n.prose && String(n.prose).trim());
 
+// ── the "rust-module" import strategy ────────────────────────────────────────────────
+// A Rust import is a MODULE PATH, not a file specifier: unmodified, every `use crate::…`
+// on the gate corpus became an external node (0 internal edges, 245 external), which
+// mislabels the crate's own structure as dependencies — worse than no edges, because
+// decompose and the contract read that label. The adapter names this strategy; the code
+// is the mechanism's, as docStyle's is. Edition-2018 path rules: `crate::` starts at the
+// directory of the nearest lib.rs/main.rs, `self::`/`super::` at the current/parent
+// module, and a lowercase bare first segment is a child module of the current one when
+// such a file exists, else an external crate (one node per crate root, the package
+// granularity the relative strategy uses). The longest prefix that names a module file
+// wins, because a path's tail is usually an item, not a module. A `mod foo;` spec
+// arrives as its declaration text and must resolve to a child file or links nothing.
+// Declared gaps: `#[path]` attributes, and `use <own_crate>::…` from tests/ or a
+// binary (the crate's name lives in Cargo.toml, which no adapter reads).
+
+/** `a::{b, c::d as e, f::*}` → [a,b] [a,c,d] [a,f]: one segment list per imported path. */
+export function expandUseTree(text: string): string[][] {
+  const flat = text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/[^\n]*/g, "")
+    .replace(/\s+as\s+\w+/g, "").replace(/\s+/g, "");
+  const out: string[][] = [];
+  const walk = (s: string, prefix: string[]) => {
+    const brace = s.indexOf("{");
+    const head = (brace < 0 ? s : s.slice(0, brace)).split("::");
+    const global = !prefix.length && s.startsWith("::"); // `::std::x` — an extern-crate path
+    const segs = [...prefix, ...(global ? ["::"] : []), ...head.filter(Boolean)];
+    if (brace < 0) {
+      while (segs.at(-1) === "*" || (segs.at(-1) === "self" && segs.length > 1)) segs.pop();
+      if (segs.length) out.push(segs);
+      return;
+    }
+    let depth = 0, from = brace + 1;
+    const body = s.slice(0, s.lastIndexOf("}"));
+    for (let i = from; i <= body.length; i++) {
+      const c = body[i];
+      if (c === "{") depth++;
+      else if (c === "}") depth--;
+      else if ((c === "," && depth === 0) || i === body.length) { if (i > from) walk(body.slice(from, i), segs); from = i + 1; }
+    }
+  };
+  walk(flat, []);
+  return out;
+}
+
+/** Every target one rust import spec names: a known file, or an external crate root. */
+export function resolveRustModule(spec: string, from: string, known: (file: string) => boolean): Array<{ file: string } | { crate: string }> {
+  const MODULE_FILE = ["mod.rs", "lib.rs", "main.rs"];
+  const moduleDir = (f: string) => MODULE_FILE.includes(basename(f)) ? dirname(f) : join(dirname(f), basename(f, ".rs"));
+  const moduleFile = (dir: string) => [`${dir}.rs`, ...MODULE_FILE.map((m) => join(dir, m))].find(known);
+  const longest = (base: string, rest: string[], min: number): string | undefined => {
+    for (let k = rest.length; k >= min; k--) { const hit = moduleFile(join(base, ...rest.slice(0, k))); if (hit) return hit; }
+    return undefined;
+  };
+  const decl = /^(?:pub(?:\([^)]*\))?\s+)?mod\s+(\w+)\s*;$/.exec(spec.trim());
+  if (decl) { const hit = longest(moduleDir(from), [decl[1]], 1); return hit ? [{ file: hit }] : []; }
+  const out: Array<{ file: string } | { crate: string }> = [];
+  for (const segs of expandUseTree(spec)) {
+    const [head, ...rest] = segs;
+    let hit: string | undefined;
+    if (head === "::") { if (rest[0]) out.push({ crate: rest[0] }); continue; }
+    if (head === "crate") {
+      let d = dirname(from);
+      for (;;) {
+        if (known(join(d, "lib.rs")) || known(join(d, "main.rs"))) { hit = longest(d, rest, 0); break; }
+        const up = dirname(d);
+        if (up === d) break;
+        d = up;
+      }
+    } else if (head === "self" || head === "super") {
+      let dir = moduleDir(from), i = 0;
+      if (head === "self") i = 1;
+      else while (segs[i] === "super") { dir = dirname(dir); i++; }
+      hit = longest(dir, segs.slice(i), 0);
+    } else {
+      hit = longest(moduleDir(from), segs, 1);
+      // A capitalized head is an item already in scope (`use BinOp::*` inside a fn to
+      // bring variants in), never a crate: crate names are snake_case. It links nothing.
+      if (!hit) { if (!/^[A-Z]/.test(head)) out.push({ crate: head }); continue; }
+    }
+    if (hit) out.push({ file: hit }); // an unresolved crate::/self::/super:: path links nothing, never an external
+  }
+  return out;
+}
+
 export async function buildGraph(cfg: Config): Promise<Graph> {
   requireDeclaredRoot(cfg); // the walk floor: an undeclared tree is refused, never wandered
   const root = cfg.root;
@@ -203,7 +290,12 @@ export async function buildGraph(cfg: Config): Promise<Graph> {
       add({ id: `s:${f}#${s.name}`, parent: fileIds.get(f), label: s.name, kind: "symbol", sub: s.kind, path: f, line: s.line, prose: what || undefined, why: why || undefined });
     }
     for (const spec of lang.imports(src)) {
-      if (spec.startsWith(".")) {
+      if (lang.importResolution === "rust-module") {
+        for (const t of resolveRustModule(spec, f, (p) => fileIds.has(p))) {
+          if ("file" in t) link(fileIds.get(f)!, fileIds.get(t.file)!, "imports");
+          else { const id = `x:${t.crate}`; add({ id, label: t.crate, kind: "external", sub: "module" }); link(fileIds.get(f)!, id, "imports"); }
+        }
+      } else if (spec.startsWith(".")) {
         const target = relative(root, resolve(join(root, dirname(f)), spec));
         // A specifier may name the file exactly (`./data.ts`, Node-style), omit the
         // extension (`./data`, bundler-style), or name a directory (`./data` →
