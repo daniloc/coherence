@@ -175,8 +175,10 @@ export const rustPack: LanguagePack = {
     },
     // An inline array or vec! literal, or a hand-chosen range bound.
     literalDomainPatterns: [/^\[/, /^vec!\s*\[/, /^&\[/, /^\d+\s*\.\./],
-    // A len() lower-bound or non-emptiness assertion anywhere in the block.
-    floorPattern: /assert!\(\s*[^\n]*\.len\(\)\s*>=?\s*\d|assert!\(\s*!\s*[^\n]*\.is_empty\(\)|assert_ne!\(\s*[^\n]*\.len\(\),\s*0\s*\)/,
+    // A len() lower bound anywhere in the block, as python's; a non-emptiness assertion
+    // only on a CONST-shaped receiver (`!KINDS.is_empty()`), because `!k.is_empty()` on
+    // an element inside the loop is idiomatic Rust and says nothing about the domain.
+    floorPattern: /assert!\(\s*[^\n]*\.len\(\)\s*>=?\s*\d|assert!\(\s*!\s*(?:\w+::)*[A-Z][A-Z0-9_]*(?:\.\w+\(\))*\.is_empty\(\)|assert_ne!\(\s*(?:\w+::)*[A-Z][A-Z0-9_]*(?:\.\w+\(\))*\.len\(\),\s*0\s*\)/,
     unwrapCalls: [],
     detailTemplates: {
       "inline-literal": "inline {expr40} literal",
