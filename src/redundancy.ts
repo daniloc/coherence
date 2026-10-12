@@ -64,7 +64,7 @@ import { grammarHandle, withTree } from "./adapters/tree-sitter.ts";
 import type { Config, Graph } from "./types.ts";
 import { parseParity } from "./parity.ts";
 import { isTestPath } from "./novelty.ts";
-import { registeredRows } from "./language-registry.ts";
+import { registeredPack, registeredRows } from "./language-registry.ts";
 import { readJournal } from "./decisions.ts";
 import { raiseFindings, formatRaise, type Finding } from "./raise.ts";
 // Imported, not re-typed: the first dogfood run of this very detector flagged the copy of
@@ -636,6 +636,12 @@ export function sitesOfMarkdown(text: string, file = "README.md"): DomainSite[] 
  *  `@cmp.cand` shapes (their spelling artifacts kept by the `condition` strategy). */
 export function sitesOfPython(src: string, file = "x.py"): DomainSite[] {
   return grammarSites(SITE_LANGUAGES.python, src, file);
+}
+
+/** Pure (grammar grade) — domain sites in one rust source, through the first-party
+ *  pack's registered row: the same capture-class engine, no rust code in the mechanism. */
+export function sitesOfRust(src: string, file = "x.rs"): DomainSite[] {
+  return grammarSites(registeredPack("rust")!.sites!, src, file);
 }
 
 // ── the walk ──────────────────────────────────────────────────────────────────────────

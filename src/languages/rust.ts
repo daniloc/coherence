@@ -64,4 +64,62 @@ export const rustPack: LanguagePack = {
     docStyle: "rustdoc",
     importResolution: "rust-module",
   },
+  // Behavioral surface: top-level items carrying ANY visibility modifier (`pub`,
+  // `pub(crate)`, …: the crate's own API is surface for the zero-anchor alarm), and the
+  // variants of a visible enum as an enumerated domain. Methods in impl blocks are not
+  // counted, as class methods are not in typescript. Integration tests and benches are
+  // evidence, not surface; inline `#[cfg(test)] mod tests` needs no path rule because
+  // nested items are never captured.
+  surface: {
+    ext: /\.rs$/i,
+    grammar: "rust",
+    testPath: /(^|\/)(tests|benches)\/[^/]*\.rs$/,
+    query: `
+      (source_file (function_item (visibility_modifier) name: (identifier) @export))
+      (source_file (struct_item (visibility_modifier) name: (type_identifier) @export))
+      (source_file (enum_item (visibility_modifier) name: (type_identifier) @export))
+      (source_file (union_item (visibility_modifier) name: (type_identifier) @export))
+      (source_file (trait_item (visibility_modifier) name: (type_identifier) @export))
+      (source_file (type_item (visibility_modifier) name: (type_identifier) @export))
+      (source_file (const_item (visibility_modifier) name: (identifier) @export))
+      (source_file (static_item (visibility_modifier) name: (identifier) @export))
+      (source_file (enum_item (visibility_modifier) name: (type_identifier) @domain.name
+        body: (enum_variant_list (enum_variant name: (identifier) @domain.member))))
+    `,
+  },
+  // Duplicate-domain sites through the existing capture classes: enum variant lists,
+  // struct field lists, string-array consts/statics/lets (through `&[…]`), string-literal
+  // match arms, `==`/`!=` chains against string literals, and bracketed alternations in
+  // literals. Deliberately absent: a match over enum variants (rustc already enforces
+  // exhaustiveness — a compiler oracle, not an undeclared parity), or-patterns in match
+  // arms (the grammar nests them left-deep, so "every branch a string" has no fixed-depth
+  // spelling), `vec![…]` (its elements are an unparsed token tree), and raw strings.
+  // `raw` strings strategy: it strips the `b`/`c` prefixes a byte or C string carries.
+  sites: {
+    ext: /\.rs$/,
+    grammar: "rust",
+    strings: "raw",
+    compare: "operand",
+    query: `
+      (enum_item name: (type_identifier) @enum.name body: (enum_variant_list) @enum.body) @enum.decl
+      (enum_variant_list (enum_variant name: (identifier) @enum.member)) @enum.of
+      (struct_item name: (type_identifier) @shape.name body: (field_declaration_list) @shape.body) @shape.decl
+      (field_declaration_list (field_declaration name: (field_identifier) @shape.member)) @shape.of
+      (const_item name: (identifier) @var.name value: (_) @var.init) @var.decl
+      (static_item name: (identifier) @var.name value: (_) @var.init) @var.decl
+      (let_declaration pattern: (identifier) @var.name value: (_) @var.init) @var.decl
+      (reference_expression value: (_) @peel.item) @peel.paren
+      (array_expression) @list.body
+      (array_expression (string_literal) @list.item) @list.of
+      (array_expression (_) @list.alt) @list.of
+      (match_expression value: (_) @switch.subject) @switch.subjof
+      (match_expression body: (match_block) @switch.body) @switch.decl
+      (match_block (match_arm pattern: (match_pattern . (string_literal) @switch.label .))) @switch.labelof
+      (binary_expression left: [(identifier) (field_expression)] @cmp.expr operator: ["==" "!="] right: (string_literal) @cmp.lit) @cmp
+      (binary_expression left: (string_literal) @cmp.lit operator: ["==" "!="] right: [(identifier) (field_expression)] @cmp.expr) @cmp
+      (string_literal) @lit.text
+      [(function_item) (closure_expression)] @scope
+      [(line_comment) (block_comment)] @skip
+    `,
+  },
 };
