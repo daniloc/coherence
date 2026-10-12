@@ -61,6 +61,7 @@ rendering, and journaling remain independently addressable modules beneath this 
 - a grammar-backed adapter derives the graph through the same language seam
 - instrument arms read languages through shared grammar queries, never a parallel scanner
 - a built-in language pack is data: queries, patterns, and named strategies, never code
+- a registered language pack reaches every instrument the built-ins reach, as data, or refuses
 - a parse's heap is returned before the next file
 - an undeclared root refuses the walk, never wanders
 - experiment outcomes require criterion-total evidence
@@ -73,6 +74,7 @@ rendering, and journaling remain independently addressable modules beneath this 
 
 ## refutations
 
+- a registered language pack reaches every instrument the built-ins reach, as data, or refuses: three paths read instrument rows without loading the configured language module. With the preload removed from the `lint-sinks` branch, a project pack's sinks row never registered and its SQL interpolation read 0 sites. With it removed from `analyzeChange`, signal's before-side worktree imported the historic module first, so both sides read the historic rows and a patch adding one export read `+0 exports`. A third failure surfaced on a Go pack whose grammar lives in `node_modules`: the before-side worktree built its graph from the historic copy's grammar path, which the worktree does not have, and signal crashed with ENOENT; the graph now derives from the held pack. The guard reds on all three (checked by hand) and pins them.
 - session startup survives a damaged decision-journal path with named degradation: with `.coherence/decisions` replaced by a regular file, SessionStart threw raw `ENOTDIR` before emitting any instructions. It now retains the exact host session, names `JOURNAL CONTROL unavailable`, performs no journal write, and exits zero.
 - session startup teaches the executable swarm loop without manufacturing authority: after the work graph, orientation, and consequence ledger shipped, canonical startup still taught only the decision journal and experiment planning; an exact assignment printed `work inspect` but no safe way to accept, block, hand off, or close it. Startup now names the read-only heading and fleet reads for everyone, reserves create/handoff for explicit coordination authority, and emits state-valid lifecycle commands with the standing predecessor only beside work owned by that exact session.
 - hook telemetry loss never kills PostToolUse: the original no-dependency canary sent `{}`, producing no read event and never exercising persistence. A real Read event with `.coherence/read-traces` replaced by a regular file threw `EEXIST` out of the hook. The runtime boundary now contains telemetry failure, stays byte-silent, and the canary carries the hostile target.
@@ -186,6 +188,8 @@ rendering, and journaling remain independently addressable modules beneath this 
 - boundary "a grammar-backed adapter derives the graph through the same language seam" at makeTreeSitterAdapter via guard "tree-sitter — a grammar-backed adapter derives ruby symbols, imports, and prose through the same seam"
 - boundary "instrument arms read languages through shared grammar queries, never a parallel scanner" at lintSinks via guard "ruby sinks — an interpolation into a SQL context is a site and the safe pattern exempts"
 - boundary "a built-in language pack is data: queries, patterns, and named strategies, never code" at builtinLanguagePacks via guard "language packs — every built-in pack is function-free data across all five instrument tables"
+- boundary "a registered language pack reaches every instrument the built-ins reach, as data, or refuses" at registerLanguagePack via guard "language registry — a registered pack reaches sinks, sites, surface and oracle; a function field or a built-in name refuses"
+- boundary "a registered language pack reaches every instrument the built-ins reach, as data, or refuses" at ensureSiteHandles via guard "language registry — a registered pack reaches sinks, sites, surface and oracle; a function field or a built-in name refuses"
 - boundary "a parse's heap is returned before the next file" at withTree via guard "wasm heap — parses past the measured abort cliff survive because every tree is freed"
 - boundary "an undeclared root refuses the walk, never wanders" at requireDeclaredRoot via guard "declared root — a configless directory refuses the walk and an empty config declares it"
 - boundary "experiment outcomes require criterion-total evidence" at closeExperiment via guard "close — total nonempty evidence is mandatory and outcome is derived, never supplied"
@@ -625,6 +629,22 @@ is honest about what a pack may name — strategies from a closed, mechanism-own
 procedural; naming it keeps the procedure written once where every language can reach
 it. Project adapter modules remain code territory by definition: purity governs what
 ships built in, where a single spelling is the entire point.
+
+**a registered language pack reaches every instrument the built-ins reach, as data, or refuses.** Before the registry, a project could reach the graph tier with its own
+adapter but no further: the surface, sites, sinks, and oracle rows were harness
+constants, so a fourth language was an upstream contribution or nothing. Opening that
+seam to project code is only safe if what crosses is still reviewable, which is why the
+same purity rule applies at registration and a function-valued field refuses by path
+before any instrument trusts the row. Two alternatives were rejected. A project module
+calling the registry itself was the obvious shape, but the package exports no entry a
+project could import, and a module bound to another install's copy would register into
+a registry no instrument reads, silently. Shadowing a built-in name was rejected
+because it re-grades a different tree under a familiar label. First registration wins
+because `signal` and `log` import a historic copy of the project's module from a
+worktree, and the instrument must stay constant across the diff it measures. The gate
+before trust was a registered clone of each built-in row over flask, click, and sinatra
+with files renamed to an extension only the clone reads: zero deltas across graph,
+surface, sites, sinks, and oracle.
 
 **a parse's heap is returned before the next file.** web-tree-sitter trees hold wasm
 heap only an explicit delete returns, and the emscripten heap is fixed — so a leak is
