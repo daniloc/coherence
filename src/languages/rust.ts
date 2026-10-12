@@ -122,6 +122,29 @@ export const rustPack: LanguagePack = {
       [(line_comment) (block_comment)] @skip
     `,
   },
+  // The injection ratchet. Rust has no interpolation node: SQL and HTML are assembled
+  // by the format family, whose arguments are an unparsed token tree and whose inline
+  // `{name}` captures exist only as literal text. The rows name the mechanism's
+  // "format-args" strategy (placeholders parsed from the literal, mapped to the call's
+  // top-level arguments) and read markup off the LITERAL, because generics put
+  // `<…>` on nearly every line of Rust. A naive captures-only row mangled every
+  // expression and found 1 of the gate corpus's SQL sites.
+  sinks: {
+    ext: ".rs",
+    grammar: "rust",
+    sql: "text-shape",
+    interpolation: "format-args",
+    html: "literal",
+    // A format call is a macro_invocation where the grammar parses one, and an
+    // `ident ! (…)` token run where it does not: inside another macro's arguments
+    // (`vec![format!(…)]`, `assert!(…format!(…))`) everything is an unparsed token tree.
+    query: `
+      ((macro_invocation macro: (identifier) @_m (token_tree [(string_literal) (raw_string_literal)] @str) @call)
+        (#any-of? @_m "format" "format_args" "write" "writeln" "print" "println" "eprint" "eprintln"))
+      ((token_tree (identifier) @_m . "!" . (token_tree [(string_literal) (raw_string_literal)] @str) @call)
+        (#any-of? @_m "format" "format_args" "write" "writeln" "print" "println" "eprint" "eprintln"))
+    `,
+  },
   // `via test` / parity at INDENT-REGEX grade, python's grade (d-3aa0cbff): the
   // grammar-query strategy hardcodes typescript node types, so a rust row could not use
   // it without a mechanism rewrite. The anchor is `fn <name>(` or `mod <name>` — the
