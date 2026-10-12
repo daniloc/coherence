@@ -100,6 +100,10 @@ test("rust module paths — use trees expand and resolve by longest module prefi
   assert.deepEqual(resolveRustModule("pub(crate) mod b;", "src/a.rs", has), [{ file: "src/a/b.rs" }], "a non-mod.rs file's children live in its own directory");
   assert.deepEqual(resolveRustModule("mod gone;", "src/a.rs", has), [], "an unresolvable mod declaration links nothing");
   assert.deepEqual(resolveRustModule("serde::{Deserialize, Serialize}", "src/a.rs", has), [{ crate: "serde" }, { crate: "serde" }]);
+  // DECLARED GAP, pinned so a fix is a deliberate change here: an integration test's
+  // `use <own_crate>::…` cannot be told from a dependency without Cargo.toml's name.
+  assert.deepEqual(resolveRustModule("shelf::kinds::KINDS", "tests/smoke.rs", (f) => f === "src/lib.rs" || f === "src/kinds.rs"), [{ crate: "shelf" }],
+    "the crate's own name from tests/ is an external node, as the README declares");
 });
 
 test("rust language — the bare name resolves to the first-party pack; a project pack cannot take its name", async () => {

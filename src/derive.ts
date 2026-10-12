@@ -153,7 +153,8 @@ export const isDocumented = (n: GraphNode): boolean => !!(n.prose && String(n.pr
 // wins, because a path's tail is usually an item, not a module. A `mod foo;` spec
 // arrives as its declaration text and must resolve to a child file or links nothing.
 // Declared gaps: `#[path]` attributes, and `use <own_crate>::…` from tests/ or a
-// binary (the crate's name lives in Cargo.toml, which no adapter reads).
+// binary, which becomes an external named after the crate itself (the crate's name
+// lives in Cargo.toml, which no adapter reads, so it is indistinguishable from a dependency).
 
 /** `a::{b, c::d as e, f::*}` → [a,b] [a,c,d] [a,f]: one segment list per imported path. */
 export function expandUseTree(text: string): string[][] {

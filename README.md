@@ -654,10 +654,14 @@ matches every parametrized case of that function and all must pass.
   "sources": ["src"],
   "test": ["cargo", "test"],
   "testMatch": "test result: ok\\. [1-9]\\d* passed",
+  "oracleExecution": "serial",
   "ignore": ["node_modules", ".git", "target"]
 }
 ```
 
+cargo has no batch report format, so `oracleExecution: "serial"` is the deliberate choice
+without which `verify` refuses the executable tier (one `cargo test <name>` per claim;
+after the first build each is an incremental run).
 `cargo test` exits 0 when its filter matches nothing, so `testMatch` is not optional:
 cargo prints one `test result:` line per test binary, and the pattern needs one of
 them to have run a test. A `via test` claim names the test `fn` (or a `mod` of tests)
@@ -669,9 +673,11 @@ name, so a vanished oracle still reds `verify`. The rust grade, declared:
   read through `#[…]` attributes, `//!` as the file doc. Imports resolve as module
   paths — `crate::`, `super::`, `self::`, `mod foo;` — through the crate's files;
   other crates are one external node per crate root. Crate roots other than `lib.rs`
-  and `main.rs` (`tests/*.rs`, `src/bin/`, examples), `#[path]` attributes, and
-  `use <your_crate>::…` from integration tests resolve to nothing rather than to a
-  mislabeled external.
+  and `main.rs` (`tests/*.rs`, `src/bin/`, examples) and `#[path]` attributes resolve to
+  nothing. `use <your_crate>::…` from an integration test or a binary does not: the
+  crate's name lives in Cargo.toml, which the graph does not read, so it becomes an
+  external node named after your own crate, and `context` lists no integration test
+  as relevant to the code it imports.
 - **Surface.** Top-level items with any visibility modifier (`pub(crate)` included)
   and the variants of a visible enum; `tests/` and `benches/` are evidence.
 - **Sites.** Enum variants, struct fields, string arrays, string-literal match arms
