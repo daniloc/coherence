@@ -64,6 +64,7 @@ import { grammarHandle, withTree } from "./adapters/tree-sitter.ts";
 import type { Config, Graph } from "./types.ts";
 import { parseParity } from "./parity.ts";
 import { isTestPath } from "./novelty.ts";
+import { registeredRows } from "./language-registry.ts";
 import { readJournal } from "./decisions.ts";
 import { raiseFindings, formatRaise, type Finding } from "./raise.ts";
 // Imported, not re-typed: the first dogfood run of this very detector flagged the copy of
@@ -124,7 +125,11 @@ const isProse = (k: SiteKind) => k === "md-table" || k === "alternation";
 // (comments, f-string interpolations, template substitutions) for identity-dropping —
 // the capture-side residue of kids().
 
+/** One language's site row: the files it reads, its grammar and query, and the named
+ *  strategies the mechanism applies to its captures. */
 export interface SiteLanguage {
+  /** The file names this row reads; collectSites routes by the first row that matches. */
+  ext: RegExp;
   grammar: string;
   query: string;
   /** How a captured string literal yields its token — a mechanism-owned unquoting
@@ -141,6 +146,7 @@ export interface SiteLanguage {
 
 export const SITE_LANGUAGES: Record<"typescript" | "python", SiteLanguage> = {
   typescript: {
+    ext: /\.[mc]?[jt]sx?$/,
     grammar: "typescript",
     strings: "cooked",
     compare: "operand",
@@ -190,6 +196,7 @@ export const SITE_LANGUAGES: Record<"typescript" | "python", SiteLanguage> = {
     `,
   },
   python: {
+    ext: /\.py$/,
     grammar: "python",
     strings: "raw",
     compare: "condition",
@@ -226,17 +233,23 @@ export const SITE_LANGUAGES: Record<"typescript" | "python", SiteLanguage> = {
   },
 };
 
+/** Built-in rows, then registered ones: collectSites routes a file to the first match. */
+const siteRows = (): SiteLanguage[] => [...Object.values(SITE_LANGUAGES), ...registeredRows("sites")];
+
 // Loaded once at module evaluation — the adapter factory's own top-level-await pattern.
 // The extractors below stay SYNC on purpose: tests and the spec's boundary claim address
-// them as plain functions, so the async grammar load happens here, never per call.
-const SITE_HANDLES = await (async () => {
-  const load = async (l: SiteLanguage) => {
+// them as plain functions, so the async grammar load happens here, never per call. A
+// project pack registers AFTER this module evaluated (the config's module is imported
+// by the graph build), so collectSites awaits ensureSiteHandles for the rows it adds.
+const SITE_HANDLES = new Map<SiteLanguage, { parser: import("web-tree-sitter").Parser; query: Query }>();
+/** Load the grammar and query of every site row not loaded yet — built-in or registered. */
+export async function ensureSiteHandles(): Promise<void> {
+  await Promise.all(siteRows().filter((l) => !SITE_HANDLES.has(l)).map(async (l) => {
     const { language, parser } = await grammarHandle(l.grammar);
-    return { parser, query: new Query(language, l.query) };
-  };
-  const [typescript, python] = await Promise.all([load(SITE_LANGUAGES.typescript), load(SITE_LANGUAGES.python)]);
-  return { typescript, python };
-})();
+    SITE_HANDLES.set(l, { parser, query: new Query(language, l.query) });
+  }));
+}
+await ensureSiteHandles();
 
 /** Named children minus comments — the grammar names comments as nodes; the retired
  *  compiler AST never surfaced them, and no member list should count one. */
@@ -322,9 +335,10 @@ const byStart = (a: Node, b: Node) => a.startIndex - b.startIndex;
 
 /** Pure (grammar grade) — every domain site one language's query finds in one source.
  *  Only the forms the query names become sites; everything else is deliberately silence. */
-function grammarSites(langKey: keyof typeof SITE_LANGUAGES, src: string, file: string): DomainSite[] {
-  const lang = SITE_LANGUAGES[langKey];
-  const { parser, query } = SITE_HANDLES[langKey];
+function grammarSites(lang: SiteLanguage, src: string, file: string): DomainSite[] {
+  const handle = SITE_HANDLES.get(lang);
+  if (!handle) throw new Error(`site grammar ${JSON.stringify(lang.grammar)} not loaded — await ensureSiteHandles() first`);
+  const { parser, query } = handle;
   return withTree(parser, src, [] as DomainSite[], (tree) => {
   const cookStr = lang.strings === "cooked" ? cook : rawCook;
   const matches = query.matches(tree.rootNode);
@@ -564,7 +578,7 @@ function grammarSites(langKey: keyof typeof SITE_LANGUAGES, src: string, file: s
 
 /** Pure (grammar only) — every domain site in one TypeScript/JavaScript source. */
 export function sitesOfSource(src: string, file = "x.ts"): DomainSite[] {
-  return grammarSites("typescript", src, file);
+  return grammarSites(SITE_LANGUAGES.typescript, src, file);
 }
 
 // ── markdown sites ────────────────────────────────────────────────────────────────────
@@ -621,12 +635,11 @@ export function sitesOfMarkdown(text: string, file = "README.md"): DomainSite[] 
  *  `@list.item`, and the CMP_A/CMP_B comparison patterns are the anchored
  *  `@cmp.cand` shapes (their spelling artifacts kept by the `condition` strategy). */
 export function sitesOfPython(src: string, file = "x.py"): DomainSite[] {
-  return grammarSites("python", src, file);
+  return grammarSites(SITE_LANGUAGES.python, src, file);
 }
 
 // ── the walk ──────────────────────────────────────────────────────────────────────────
 
-const CODE_RE = /\.[mc]?[jt]sx?$/;
 /** Generated artifacts restate the graph by construction — they are output, not a second
  *  hand-kept spelling of the domain, so a pair against them would be pure noise. */
 const GENERATED = new Set(["AGENTS.md", "graph.json", "CHANGELOG.md"]);
@@ -634,6 +647,8 @@ const GENERATED = new Set(["AGENTS.md", "graph.json", "CHANGELOG.md"]);
 export async function collectSites(cfg: Config): Promise<DomainSite[]> {
   const ignore = new Set([...NOISE_DIRS, ...(cfg.ignore ?? []), cfg.outputDir]);
   const out: DomainSite[] = [];
+  await ensureSiteHandles();
+  const rows = siteRows();
   const visit = async (dir: string): Promise<void> => {
     for (const e of await readdir(dir, { withFileTypes: true }).catch(() => [])) {
       if (e.name.startsWith(".") || ignore.has(e.name)) continue;
@@ -646,9 +661,9 @@ export async function collectSites(cfg: Config): Promise<DomainSite[]> {
       if (isTestPath(rel) || isPyTestPath(rel) || GENERATED.has(e.name)) continue;
       const src = await readFile(p, "utf8").catch(() => null);
       if (src === null) continue;
-      if (CODE_RE.test(e.name)) out.push(...sitesOfSource(src, rel));
-      else if (e.name.endsWith(".py")) out.push(...sitesOfPython(src, rel));
-      else if (e.name.endsWith(".md")) out.push(...sitesOfMarkdown(src, rel));
+      if (e.name.endsWith(".md")) { out.push(...sitesOfMarkdown(src, rel)); continue; }
+      const lang = rows.find((l) => l.ext.test(e.name));
+      if (lang) out.push(...grammarSites(lang, src, rel));
     }
   };
   await visit(cfg.root);

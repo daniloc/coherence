@@ -42,6 +42,7 @@ import { join } from "node:path";
 import { Query, type Node } from "web-tree-sitter";
 import { grammarHandle, withTree } from "./adapters/tree-sitter.ts";
 import type { Config } from "./types.ts";
+import { registeredRows } from "./language-registry.ts";
 
 /** What one source file contributes to the behavioral surface: its exported symbol
  *  names, and its enumerated domains (exported string-literal unions and enums, plus
@@ -75,6 +76,8 @@ export interface SurfaceLanguage {
   query: string;
   /** exports whose names match are dropped (python's `_` convention). */
   privateName?: RegExp;
+  /** A registered pack's test-file convention (built-in spellings live in isTestPath). */
+  testPath?: RegExp;
 }
 
 // The object-member alternation shared by the six TS table forms: pair keys, method
@@ -147,12 +150,14 @@ const PRIVATE_EXEMPT = new Set(["table"]);
 const unquote = (text: string): string =>
   text.replace(/^[A-Za-z]*["']/, "").replace(/["']$/, "");
 
-const surfaceQueryCache = new Map<string, Promise<{ parser: import("web-tree-sitter").Parser; query: Query }>>();
+// Keyed by ROW, not grammar: a registered row may share a built-in grammar with a
+// different query, and a grammar-keyed cache would hand it the built-in's.
+const surfaceQueryCache = new Map<SurfaceLanguage, Promise<{ parser: import("web-tree-sitter").Parser; query: Query }>>();
 function surfaceHandle(lang: SurfaceLanguage): Promise<{ parser: import("web-tree-sitter").Parser; query: Query }> {
-  let cached = surfaceQueryCache.get(lang.grammar);
+  let cached = surfaceQueryCache.get(lang);
   if (!cached) {
     cached = grammarHandle(lang.grammar).then(({ language, parser }) => ({ parser, query: new Query(language, lang.query) }));
-    surfaceQueryCache.set(lang.grammar, cached);
+    surfaceQueryCache.set(lang, cached);
   }
   return cached;
 }
@@ -162,7 +167,7 @@ function surfaceHandle(lang: SurfaceLanguage): Promise<{ parser: import("web-tre
 export async function surfaceOfSource(src: string, fileName = "x.ts"): Promise<FileSurface> {
   const exports = new Set<string>();
   const domains = new Map<string, Set<string>>();
-  const lang = SURFACE_LANGUAGES.find((l) => l.ext.test(fileName));
+  const lang = [...SURFACE_LANGUAGES, ...registeredRows("surface")].find((l) => l.ext.test(fileName));
   if (!lang) return { exports, domains };
   const { parser, query } = await surfaceHandle(lang);
   // Aggregation state: members per (class, name) across matches; captured body spans;
@@ -220,10 +225,12 @@ export async function surfaceOfSource(src: string, fileName = "x.ts"): Promise<F
 }
 
 /** Whether a path is a test file (excluded from the surface proxies). Python spellings
- *  mirror oracle-domain's: test_*.py / *_test.py by basename, anywhere in the tree. */
+ *  mirror oracle-domain's: test_*.py / *_test.py by basename, anywhere in the tree. A
+ *  registered surface row adds its own `testPath`. */
 export const isTestPath = (p: string) =>
   /\.(test|spec)\.[mc]?[jt]sx?$/.test(p) || /(^|\/)__tests__\//.test(p) ||
-  /(^|\/)test_[^/]*\.py$/.test(p) || /_test\.py$/.test(p);
+  /(^|\/)test_[^/]*\.py$/.test(p) || /_test\.py$/.test(p) ||
+  registeredRows("surface").some((l) => l.testPath?.test(p));
 
 /** Scan the surface of a set of files under one tree root; missing files (added or
  *  removed on the other side of the range) are simply absent. Exports and domains are
@@ -232,7 +239,8 @@ export async function scanSurface(root: string, files: Iterable<string>): Promis
   const exports = new Set<string>();
   const domains = new Map<string, Set<string>>();
   for (const rel of files) {
-    if (!/\.([mc]?[jt]sx?|py)$/.test(rel) || isTestPath(rel)) continue;
+    const scanned = /\.([mc]?[jt]sx?|py)$/.test(rel) || registeredRows("surface").some((l) => l.ext.test(rel));
+    if (!scanned || isTestPath(rel)) continue;
     let src: string;
     try { src = await readFile(join(root, rel), "utf8"); } catch { continue; }
     const s = await surfaceOfSource(src, rel);

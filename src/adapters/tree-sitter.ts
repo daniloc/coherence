@@ -24,6 +24,7 @@
 import { fileURLToPath } from "node:url";
 import { Parser, Language, Query, type Tree } from "web-tree-sitter";
 import type { LanguageAdapter } from "../types.ts";
+import { registeredPack, type BuiltinLanguageName } from "../language-registry.ts";
 
 /**
  * THE ONLY SANCTIONED WAY TO PARSE. web-tree-sitter trees hold wasm heap that only an
@@ -304,20 +305,22 @@ const BUILTIN_WASM: Record<string, string> = {
   typescript: "tree-sitter-typescript.wasm",
   python: "tree-sitter-python.wasm",
   ruby: "tree-sitter-ruby.wasm",
-};
+} satisfies Record<BuiltinLanguageName, string>;
 
-/** One memoized {language, parser} per built-in grammar — the graph adapter AND the
- *  instrument arms (phase 2b) query the same loaded grammar instead of re-reading wasm. */
+/** One memoized {language, parser} per grammar — the graph adapter AND the instrument
+ *  arms (phase 2b) query the same loaded grammar instead of re-reading wasm. A name no
+ *  built-in claims resolves through a registered pack's `grammar` path, else refuses. */
 export interface GrammarHandle { language: Language; parser: Parser }
 const handleCache = new Map<string, Promise<GrammarHandle>>();
 export function grammarHandle(name: keyof typeof BUILTIN_WASM | string): Promise<GrammarHandle> {
   let cached = handleCache.get(name);
   if (!cached) {
     const wasm = BUILTIN_WASM[name];
-    if (!wasm) return Promise.reject(new Error(`no built-in grammar named ${JSON.stringify(name)}`));
+    const path = wasm ? grammarPath(wasm) : registeredPack(name)?.grammar;
+    if (!path) return Promise.reject(new Error(`no built-in or registered grammar named ${JSON.stringify(name)}`));
     cached = (async () => {
       await Parser.init();
-      const language = await Language.load(grammarPath(wasm));
+      const language = await Language.load(path);
       const parser = new Parser();
       parser.setLanguage(language);
       return { language, parser };
@@ -340,4 +343,4 @@ export const BUILTIN_LANGUAGES: Record<string, () => Promise<LanguageAdapter>> =
   typescript: memo("typescript", "tree-sitter-typescript.wasm", typescript),
   python: memo("python", "tree-sitter-python.wasm", python),
   ruby: memo("ruby", "tree-sitter-ruby.wasm", ruby),
-};
+} satisfies Record<BuiltinLanguageName, unknown>;
