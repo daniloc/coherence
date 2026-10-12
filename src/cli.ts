@@ -11,7 +11,7 @@
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { join } from "node:path";
 import { loadConfig } from "./config.ts";
-import { buildGraph } from "./derive.ts";
+import { buildGraph, resolveLanguageAdapter } from "./derive.ts";
 import { renderOutline } from "./render-outline.ts";
 import { renderOverview } from "./render-overview.ts";
 import { renderClaude, spliceBlock, extractBlock, resolveClaudeMdPath, CLAUDE_BEGIN, CLAUDE_END } from "./render-claude.ts";
@@ -1081,6 +1081,7 @@ if (cmd === "graph") {
   // Interpolation-surface ratchet. Mechanism in the harness; SAFE patterns + scoped
   // sources in config; baseline in <outputDir>/sinks-baseline.json.
   const mode = argv.includes("--update-baseline") ? "update" : check ? "check" : "report";
+  await resolveLanguageAdapter(cfg); // no graph on this path: register a project pack's rows first
   await exit(await lintSinks(cfg, mode));
 } else if (cmd === "conventions") {
   // Guard-vs-contract detector + growth ratchet. Reuses the graph's boundary claims.
@@ -1189,6 +1190,7 @@ if (cmd === "graph") {
   // Advisory: redundancy's argument applied to the surface redundancy does not scan —
   // duplicated PROSE across reading surfaces, labeled IDENTICAL vs DIVERGED (the rot
   // signal). Ranked, capped, gates nothing (--all uncaps; --raise uses the default floor).
+  await resolveLanguageAdapter(cfg); // a project pack's test-path convention excludes its tests
   await exit(await prose(cfg, {
     all: argv.includes("--all"), raise, raiseCap,
     session: one("--session") ?? undefined, agent: one("--agent") ?? undefined,
