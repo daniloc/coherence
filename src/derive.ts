@@ -214,8 +214,8 @@ export function resolveRustModule(spec: string, from: string, known: (file: stri
       hit = longest(dir, segs.slice(i), 0);
     } else {
       hit = longest(moduleDir(from), segs, 1);
-      // A capitalized head is an item already in scope (`use BinOp::*` inside a fn to
-      // bring variants in), never a crate: crate names are snake_case. It links nothing.
+      // A capitalized head is an item already in scope — `use BinOp::*` inside a fn to
+      // bring variants in — never a crate: crate names are snake_case. It links nothing.
       if (!hit) { if (!/^[A-Z]/.test(head)) out.push({ crate: head }); continue; }
     }
     if (hit) out.push({ file: hit }); // an unresolved crate::/self::/super:: path links nothing, never an external

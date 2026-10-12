@@ -65,7 +65,7 @@ for that model; every command below is an instrument in that economy.
 
 The **core is platform- and language-agnostic.** Project-specific knowledge lives
 behind two adapters:
-- **language adapter** (`src/adapters/tree-sitter.ts`) — symbols, imports, docblocks; grammar-backed built-ins for TypeScript, Python, and Ruby, project-extensible.
+- **language adapter** (`src/adapters/tree-sitter.ts`) — symbols, imports, docblocks; grammar-backed built-ins for TypeScript, Python, Rust, and Ruby, project-extensible.
 - **platform adapter** (`src/adapters/cloudflare.ts`) — infra bindings from wrangler config plus direct typed `Env` capabilities. Optional.
 
 With `"platform": "cloudflare"`, direct module-level `Env` / `Cloudflare.Env`
@@ -599,21 +599,23 @@ anywhere. `{}` is a complete config (the defaults do the rest). A useful minimal
 }
 ```
 
-**Languages.** Three are built in — `"language": "typescript"`, `"python"`, or `"ruby"`
-resolves against grammar binaries that ship with the package (`grammars/`, provenance
-alongside), and every instrument reads them through those grammars. What each language
-gets today, with the per-instrument query tables as the source of truth:
+**Languages.** Four are built in — `"language": "typescript"`, `"python"`, `"rust"`, or
+`"ruby"` resolves against grammar binaries that ship with the package (`grammars/`,
+provenance alongside), and every instrument reads them through those grammars. Rust
+ships as one first-party language pack (`src/languages/rust.ts`) rather than rows in
+each table. What each language gets today, with the per-instrument query tables as the
+source of truth:
 
-| Instrument | typescript | python | ruby | your adapter | your pack |
-|---|---|---|---|---|---|
-| Graph, claims, prose (`tree-sitter.ts`) | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Serial test oracles (`test` argv + `testMatch`) | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Everything language-blind (hooks, journal, mass, drift, atlas) | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Surface → zero-anchor alarm (`SURFACE_LANGUAGES`, novelty.ts) | ✓ | ✓ | — | — | ✓ |
-| `via test` oracle + parity analysis (oracle-domain.ts) | ✓ | ✓ | — | — | ✓ |
-| Duplicate-domain ranking (`SITE_LANGUAGES`, redundancy.ts) | ✓ | ✓ | — | — | ✓ |
-| Injection sinks (`SINK_LANGUAGES`, lint-sinks.ts) | ✓ | ✓ | ✓ | — | ✓ |
-| Batched oracles (`testBatchFormat`) | vitest-json | pytest-json | serial | serial | serial |
+| Instrument | typescript | python | rust | ruby | your adapter | your pack |
+|---|---|---|---|---|---|---|
+| Graph, claims, prose (`tree-sitter.ts`) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Serial test oracles (`test` argv + `testMatch`) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Everything language-blind (hooks, journal, mass, drift, atlas) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Surface → zero-anchor alarm (`SURFACE_LANGUAGES`, novelty.ts) | ✓ | ✓ | ✓ | — | — | ✓ |
+| `via test` oracle + parity analysis (oracle-domain.ts) | ✓ | ✓ | ✓ (indent-regex) | — | — | ✓ |
+| Duplicate-domain ranking (`SITE_LANGUAGES`, redundancy.ts) | ✓ | ✓ | ✓ | — | — | ✓ |
+| Injection sinks (`SINK_LANGUAGES`, lint-sinks.ts) | ✓ | ✓ | ✓ | ✓ | — | ✓ |
+| Batched oracles (`testBatchFormat`) | vitest-json | pytest-json | serial | serial | serial | serial |
 
 A `—` costs you the instrument, never a false verdict: an uncovered language simply
 contributes nothing there. One consequence worth knowing: `via test` claims in an
@@ -622,7 +624,8 @@ uncovered language fail oracle analysis rather than pass vacuously — set
 
 Serial oracles are runner-agnostic — the claim's oracle name is appended to `test` and
 `testMatch` guards the output — so rspec is `"test": ["bundle", "exec", "rspec", "-e"]`,
-go is `["go", "test", "-run"]`, and so on. Only batch formats are enumerated.
+go is `["go", "test", "-run"]`, cargo is `["cargo", "test"]`, and so on. Only batch
+formats are enumerated.
 
 **A python configuration**, end to end (`pytest-json-report` provides the batch report):
 
@@ -642,9 +645,50 @@ go is `["go", "test", "-run"]`, and so on. Only batch formats are enumerated.
 A `passes test` claim cites the pytest function name (`test_…`); in batch mode it
 matches every parametrized case of that function and all must pass.
 
+**A rust configuration**, end to end:
+
+```json
+{
+  "language": "rust",
+  "codeExt": ["rs"],
+  "sources": ["src"],
+  "test": ["cargo", "test"],
+  "testMatch": "test result: ok\\. [1-9]\\d* passed",
+  "ignore": ["node_modules", ".git", "target"]
+}
+```
+
+`cargo test` exits 0 when its filter matches nothing, so `testMatch` is not optional:
+cargo prints one `test result:` line per test binary, and the pattern needs one of
+them to have run a test. A `via test` claim names the test `fn` (or a `mod` of tests)
+exactly; cargo's filter is a substring match, and the meta-oracle anchors the exact
+name, so a vanished oracle still reds `verify`. The rust grade, declared:
+
+- **Graph.** Every top-level item and every function in a top-level `impl`/`trait`
+  body; items inside inline `mod x { … }` are not symbols. Prose is rustdoc's: `///`
+  read through `#[…]` attributes, `//!` as the file doc. Imports resolve as module
+  paths — `crate::`, `super::`, `self::`, `mod foo;` — through the crate's files;
+  other crates are one external node per crate root. Crate roots other than `lib.rs`
+  and `main.rs` (`tests/*.rs`, `src/bin/`, examples), `#[path]` attributes, and
+  `use <your_crate>::…` from integration tests resolve to nothing rather than to a
+  mislabeled external.
+- **Surface.** Top-level items with any visibility modifier (`pub(crate)` included)
+  and the variants of a visible enum; `tests/` and `benches/` are evidence.
+- **Sites.** Enum variants, struct fields, string arrays, string-literal match arms
+  and `==` chains. Matches over enum variants are not sites (rustc already checks
+  them); or-patterns, `vec![…]` and raw strings are not read.
+- **Sinks.** Placeholders of `format!`/`write!`/`writeln!`/`print!` family literals,
+  mapped to their arguments; markup is read off the literal, not the line, because
+  generics put `<…>` on every line of Rust.
+- **`via test`.** Python's indent-regex grade. The anchor is the first line matching
+  `fn <name>(`, so a same-named non-test fn earlier in a file is read instead of the
+  `#[test]` fn (ripgrep, which names tests after the methods they test: 32 of 383).
+  Scope is `use` lines only, so a same-file const reads LIVE, never LITERAL, and
+  `use super::*` binds nothing.
+
 **Adding a language is a ladder** — each rung is useful on its own:
 
-**Rung 1 — a built-in name.** `typescript`, `python`, `ruby`: config only, nothing to
+**Rung 1 — a built-in name.** `typescript`, `python`, `rust`, `ruby`: config only, nothing to
 write. An unknown bare name refuses with the live built-in list rather than falling
 back (a wrong grammar would grade a different tree than you configured).
 
@@ -675,7 +719,8 @@ export default await makeTreeSitterAdapter({
 
 Capture names become symbol kinds; the shipped specs in `src/adapters/tree-sitter.ts`
 are the reference. Prose extraction is a named `docStyle` strategy (`"line"`,
-`"jsdoc"`, `"docstring"`); a project module may instead supply its own `docs`
+`"jsdoc"`, `"docstring"`, `"rustdoc"`), and import edges a named `importResolution`
+(`"relative"`, `"rust-module"`); a project module may instead supply its own `docs`
 functions or hand-implement the five `LanguageAdapter` members directly — rung 2 is
 code territory by definition, and both shapes serve the same seam. The same module may
 instead export a `languagePack` (rung 3), whose `graph` spec builds the adapter when the
@@ -688,7 +733,8 @@ pure data, so giving a language an instrument is a row of capture queries, not a
 analyzer: a surface row feeds the zero-anchor alarm, a sites row duplicate-domain
 ranking, a sinks row the injection ratchet, and an oracle row the `via test` analysis.
 The built-in rows (`SURFACE_LANGUAGES`, `SITE_LANGUAGES`, `SINK_LANGUAGES`,
-`ORACLE_LANGUAGES`) are the reference for each shape. A project supplies its own by
+`ORACLE_LANGUAGES`) and the first-party rust pack (`src/languages/rust.ts`, every arm in
+one file) are the reference for each shape. A project supplies its own by
 exporting a `languagePack` from the module `language` names; coherence registers it
 when it loads the module, and every instrument then reads it beside the built-ins:
 
@@ -1029,7 +1075,7 @@ defaults come from `src/config.ts`):
 | `oracleExecution` | unset (= batched) | Set to `"serial"` to demand the pre-0.17 profile: one **full test-pool boot per claim**. Supported, never implicit — see "Batched oracle execution". Same as the `--serial-oracles` flag, which wins if both are present. |
 | `oracleDomain` | `true` (anything but `false`) | The META-ORACLE gate: assert a `via test` oracle iterates a LIVE domain. Set `false` to disable the gate. |
 | `staticOracleExistence` | `true` when Vitest is identifiable | The runner-free `verify --fast` name-existence floor for conventional Vitest source. Set `false` when a project's test registry is assembled outside the scanner's direct-declaration grade; named executable claims then remain UNKNOWN/skipped and no source index is built. |
-| `language` | `"typescript"` | Language adapter key. |
+| `language` | `"typescript"` | Language adapter key: `typescript`, `python`, `rust`, `ruby`, or a `./`-relative module path. |
 | `platform` | `null` | Platform adapter key, or null. |
 | `components` | unset | Sub-component overrides for `decompose`/`drift` co-change analysis ONLY (globs relative to root; first match wins). The spec graph, verify, and coverage are untouched. |
 | `claudeMdPath` | `"CLAUDE.md"` | Path to the CLAUDE.md whose fenced block `coherence claude` owns. May be `../`-relative to escape the coherence root (repo-root CLAUDE.md above a sub-package). |
