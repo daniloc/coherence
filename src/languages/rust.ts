@@ -122,4 +122,49 @@ export const rustPack: LanguagePack = {
       [(line_comment) (block_comment)] @skip
     `,
   },
+  // `via test` / parity at INDENT-REGEX grade, python's grade (d-3aa0cbff): the
+  // grammar-query strategy hardcodes typescript node types, so a rust row could not use
+  // it without a mechanism rewrite. The anchor is `fn <name>(` or `mod <name>` — the
+  // name cargo's filter matches — and the block runs to the closing brace at the
+  // anchor's indent (rustfmt output). Unit tests live inline in any `.rs` file, so every
+  // one is a candidate; the name pre-filter keeps the walk cheap.
+  // Declared blind spots: (1) the anchor is the FIRST line in a file that matches, so a
+  // same-named fn in another impl or mod above the `#[test]` fn — not distinguished by
+  // a line regex — is analyzed instead; (2) scope is imports only, so a same-file const
+  // iterated by a test reads LIVE (opaque root), never LITERAL; (3) a multi-line
+  // signature whose `) {` sits at the anchor's indent ends the block early;
+  // (4) `use super::*` binds no names, so its domains read LIVE — the conservative side.
+  oracle: {
+    grade: "indent-regex",
+    testFilePattern: /\.rs$/,
+    anchorPatterns: [
+      "^(\\s*)(?:pub(?:\\([^)]*\\))?\\s+)?(?:(?:const|async|unsafe)\\s+)*fn\\s+{name}\\s*[(<]",
+      "^(\\s*)(?:pub(?:\\([^)]*\\))?\\s+)?mod\\s+{name}\\b",
+    ],
+    // `for x in <domain> {` and a receiver iterated in place (`REGISTRY.iter().all(…)`).
+    domainPatterns: [
+      /for\s+[\w,\s()&]+\s+in\s+&?(?:mut\s+)?([^{]+?)\s*\{/,
+      /(?<![\w.:])((?:[A-Za-z_]\w*::)*[A-Za-z_]\w*(?:\.\w+)*)\.(?:iter|into_iter|keys|values)\(\)/,
+    ],
+    importPatterns: {
+      fromImport: /^(?:pub(?:\([^)]*\))?\s+)?use\s+[\w:]+::\{([^}]+)\}\s*;/,
+      plainImport: /^(?:pub(?:\([^)]*\))?\s+)?use\s+(?:\w+::)*(?:\w+\s+as\s+)?(\w+)\s*;/,
+    },
+    // An inline array or vec! literal, or a hand-chosen range bound.
+    literalDomainPatterns: [/^\[/, /^vec!\s*\[/, /^&\[/, /^\d+\s*\.\./],
+    // A len() lower-bound or non-emptiness assertion anywhere in the block.
+    floorPattern: /assert!\(\s*[^\n]*\.len\(\)\s*>=?\s*\d|assert!\(\s*!\s*[^\n]*\.is_empty\(\)|assert_ne!\(\s*[^\n]*\.len\(\),\s*0\s*\)/,
+    unwrapCalls: [],
+    detailTemplates: {
+      "inline-literal": "inline {expr40} literal",
+      "call": "for-in/iter over {expr}",
+      "imported": "for-in/iter over {expr}",
+      "live-local": "for-in/iter over {expr}",
+      "const-array": "inline {expr40} literal",
+      "call-root": "for-in/iter over {expr}",
+      "opaque-root": "for-in/iter over {expr}",
+      "unresolved": "for-in/iter over {expr}",
+    },
+    noIterationDetail: "no for-in / .iter() over a domain",
+  },
 };
