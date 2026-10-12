@@ -604,16 +604,16 @@ resolves against grammar binaries that ship with the package (`grammars/`, prove
 alongside), and every instrument reads them through those grammars. What each language
 gets today, with the per-instrument query tables as the source of truth:
 
-| Instrument | typescript | python | ruby | your adapter |
-|---|---|---|---|---|
-| Graph, claims, prose (`tree-sitter.ts`) | ✓ | ✓ | ✓ | ✓ |
-| Serial test oracles (`test` argv + `testMatch`) | ✓ | ✓ | ✓ | ✓ |
-| Everything language-blind (hooks, journal, mass, drift, atlas) | ✓ | ✓ | ✓ | ✓ |
-| Surface → zero-anchor alarm (`SURFACE_LANGUAGES`, novelty.ts) | ✓ | ✓ | — | — |
-| `via test` oracle + parity analysis (oracle-domain.ts) | ✓ | ✓ | — | — |
-| Duplicate-domain ranking (`SITE_LANGUAGES`, redundancy.ts) | ✓ | ✓ | — | — |
-| Injection sinks (`SINK_LANGUAGES`, lint-sinks.ts) | ✓ | ✓ | ✓ | — |
-| Batched oracles (`testBatchFormat`) | vitest-json | pytest-json | serial | serial |
+| Instrument | typescript | python | ruby | your adapter | your pack |
+|---|---|---|---|---|---|
+| Graph, claims, prose (`tree-sitter.ts`) | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Serial test oracles (`test` argv + `testMatch`) | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Everything language-blind (hooks, journal, mass, drift, atlas) | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Surface → zero-anchor alarm (`SURFACE_LANGUAGES`, novelty.ts) | ✓ | ✓ | — | — | ✓ |
+| `via test` oracle + parity analysis (oracle-domain.ts) | ✓ | ✓ | — | — | ✓ |
+| Duplicate-domain ranking (`SITE_LANGUAGES`, redundancy.ts) | ✓ | ✓ | — | — | ✓ |
+| Injection sinks (`SINK_LANGUAGES`, lint-sinks.ts) | ✓ | ✓ | ✓ | — | ✓ |
+| Batched oracles (`testBatchFormat`) | vitest-json | pytest-json | serial | serial | serial |
 
 A `—` costs you the instrument, never a false verdict: an uncovered language simply
 contributes nothing there. One consequence worth knowing: `via test` claims in an
@@ -677,23 +677,65 @@ Capture names become symbol kinds; the shipped specs in `src/adapters/tree-sitte
 are the reference. Prose extraction is a named `docStyle` strategy (`"line"`,
 `"jsdoc"`, `"docstring"`); a project module may instead supply its own `docs`
 functions or hand-implement the five `LanguageAdapter` members directly — rung 2 is
-code territory by definition, and both shapes serve the same seam. A wrong-shaped
-module refuses naming the broken field. Importing the module executes project code —
-the same declared trust as the config's `test`/`typecheck` argv.
+code territory by definition, and both shapes serve the same seam. The same module may
+instead export a `languagePack` (rung 3), whose `graph` spec builds the adapter when the
+module exports none. A wrong-shaped module refuses naming the broken field. Importing
+the module executes project code — the same declared trust as the config's
+`test`/`typecheck` argv.
 
-**Rung 3 — the full field: instrument rows.** The instrument arms read languages as
-pure data, so giving a language an instrument is a table row of capture queries, not
-an analyzer: a `SURFACE_LANGUAGES` row (novelty.ts) feeds the zero-anchor alarm, a
-`SITE_LANGUAGES` row (redundancy.ts) feeds duplicate-domain ranking, a
-`SINK_LANGUAGES` row (lint-sinks.ts) feeds the injection ratchet, and an
-`ORACLE_LANGUAGES` row (oracle-domain.ts) carries the `via test` analysis. The rule
-every row lives under is enforced, not aspirational: a built-in pack carries queries,
-patterns, and named strategies — **never functions** — and a guard sweeps every table
-for violations (`language-packs.ts`). Rows live in the harness today, so rung 3 is a
-contribution — small ones, as the ruby sinks row (three lines) shows — and the house
-rule for every row is the one this repo's own migration was held to: build the new
-reader beside an existing witness and gate them against a real corpus before trusting
-it. A batch report format (`testBatchFormat`) is likewise a registered parser in
+**Rung 3 — the full field: a language pack.** The instrument arms read languages as
+pure data, so giving a language an instrument is a row of capture queries, not an
+analyzer: a surface row feeds the zero-anchor alarm, a sites row duplicate-domain
+ranking, a sinks row the injection ratchet, and an oracle row the `via test` analysis.
+The built-in rows (`SURFACE_LANGUAGES`, `SITE_LANGUAGES`, `SINK_LANGUAGES`,
+`ORACLE_LANGUAGES`) are the reference for each shape. A project supplies its own by
+exporting a `languagePack` from the module `language` names; coherence registers it
+when it loads the module, and every instrument then reads it beside the built-ins:
+
+```js
+// .coherence/adapters/go.mjs — data only; coherence registers it when it loads the module
+export const languagePack = {
+  name: "go",
+  grammar: "../../node_modules/tree-sitter-go/tree-sitter-go.wasm", // relative to this file
+  graph: {
+    exts: ["go"],
+    symbolQuery: `
+      (function_declaration name: (identifier) @function)
+      (method_declaration name: (field_identifier) @method)
+      (type_declaration (type_spec name: (type_identifier) @type))
+    `,
+    importQuery: `(import_spec path: (interpreted_string_literal) @spec)`,
+    lineComment: "//",
+  },
+  surface: {
+    ext: /\.go$/, grammar: "go", testPath: /_test\.go$/,
+    query: `(source_file (function_declaration name: (identifier) @export (#match? @export "^[A-Z]")))`,
+  },
+  sites: {
+    ext: /\.go$/, grammar: "go", strings: "cooked", compare: "operand",
+    query: `
+      (var_spec name: (identifier) @var.name value: (expression_list (composite_literal body: (literal_value) @var.init))) @var.decl
+      (literal_value) @list.body
+      (literal_value (literal_element (interpreted_string_literal) @list.item)) @list.of
+      (literal_value (_) @list.alt) @list.of
+      (comment) @skip
+    `,
+  },
+};
+```
+
+An arm the pack omits is a declared gap — that instrument contributes nothing for the
+language, as a `—` does above. The rule every row lives under is enforced, not
+aspirational: a pack carries queries, patterns, and named strategies — **never
+functions** — and the same sweep that guards the built-in tables (`language-packs.ts`)
+runs at registration, refusing a function-valued field by path before any instrument
+trusts the row. A built-in name refuses rather than shadow it, and the first pack
+registered under a name holds, so `signal` and `log` grade both sides of a diff with
+today's rows. A pack is still a reader of your code, so the house rule for every row is
+the one this repo's own migration was held to: build the new reader beside an existing
+witness and gate them against a real corpus before trusting it. A row that belongs to
+everyone (a language the harness should ship) is still welcome upstream, as the ruby
+sinks row (three lines) shows. A batch report format (`testBatchFormat`) is likewise a registered parser in
 test-batch.ts; serial oracles need nothing.
 
 ### Adopt the lifecycle control
