@@ -8,7 +8,7 @@ import type { Config, Graph, GraphNode, GraphEdge, LanguageAdapter, PlatformAdap
 import { parseSpec, splitWhy, findSpec, nodeDirs, codeFiles, ownerOf } from "./walk.ts";
 import { Unrunnable, requireDeclaredRoot } from "./floor.ts";
 import { BUILTIN_LANGUAGES, makeTreeSitterAdapter } from "./adapters/tree-sitter.ts";
-import { registerLanguagePack, registeredPack, type LanguagePack } from "./language-registry.ts";
+import { registerLanguagePack, registeredPack, registeredNames, type LanguagePack } from "./language-registry.ts";
 import { cloudflare } from "./adapters/cloudflare.ts";
 
 const PLATFORMS: Record<string, PlatformAdapter> = { cloudflare };
@@ -29,6 +29,7 @@ function adapterShapeProblem(a: unknown): string | null {
 }
 
 const projectAdapters = new Map<string, Promise<LanguageAdapter>>();
+const packAdapters = new Map<string, Promise<LanguageAdapter>>();
 
 /**
  * Resolve `cfg.language` to an adapter: a built-in name, or a `./`-relative project
@@ -58,6 +59,14 @@ export async function resolveLanguageAdapter(cfg: Config): Promise<LanguageAdapt
   // history — one spelling of "how coherence reads a language", not two.
   const builtin = BUILTIN_LANGUAGES[name];
   if (builtin) return builtin();
+  // A bare name the registry holds with a graph spec — the first-party packs (rust) —
+  // builds its adapter from that spec, memoized like the built-ins' wasm load.
+  const pack = registeredPack(name);
+  if (pack?.graph) {
+    let cached = packAdapters.get(name);
+    if (!cached) { cached = makeTreeSitterAdapter(pack.graph, pack.grammar); packAdapters.set(name, cached); }
+    return cached;
+  }
   if (name.startsWith("./") || name.startsWith("../")) {
     const path = resolve(cfg.root, name);
     let cached = projectAdapters.get(path);
@@ -66,7 +75,7 @@ export async function resolveLanguageAdapter(cfg: Config): Promise<LanguageAdapt
   }
   throw new Unrunnable([
     `✗ [config] "language": ${JSON.stringify(name)} is not a language coherence knows`,
-    `  built-ins: ${Object.keys(BUILTIN_LANGUAGES).join(" · ")}`,
+    `  built-ins: ${[...Object.keys(BUILTIN_LANGUAGES), ...registeredNames()].join(" · ")}`,
     `  or a project adapter: "./.coherence/adapters/<lang>.mjs" — a module exporting a LanguageAdapter or a languagePack`,
     `  Refusing rather than falling back: walking ${JSON.stringify(name)} files with the`,
     "  typescript grammar would grade a DIFFERENT tree than you configured, with full confidence.",

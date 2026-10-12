@@ -54,8 +54,9 @@ export interface TreeSitterLanguageSpec {
   /** Prose-extraction strategy, NAMED from a closed set the mechanism owns — a pack
    *  carries data, never code (the pack-purity invariant). "line" reads lineComment
    *  blocks; "jsdoc" adds block comments; "docstring" prefers the literal below a
-   *  def/class. Default "line". */
-  docStyle?: "line" | "jsdoc" | "docstring";
+   *  def/class; "rustdoc" reads `///` blocks through `#[…]` attributes and `//!` as the
+   *  file doc. Default "line". */
+  docStyle?: "line" | "jsdoc" | "docstring" | "rustdoc";
   /** Escape hatch for PROJECT adapter modules only (rung 2 is code territory by
    *  definition). Built-in packs must not use it — the purity guard enforces that. */
   docs?: { docAbove(lines: string[], line: number): string; fileDoc(lines: string[]): string };
@@ -170,11 +171,45 @@ const pythonDocs = {
   },
 };
 
+/** Rust prose is rustdoc's: `///` lines, which routinely sit ABOVE the item's `#[…]`
+ *  attributes (`#[derive(…)]` between doc and struct is the idiom — the line scanner
+ *  read nothing for 38 of 421 doc blocks on the gate corpus), and `//!` inner docs for
+ *  the file. Plain `//` and `////` comments are not docs, exactly as rustdoc rules. */
+const RUSTDOC = /^\s*\/\/\/(?!\/)\s?/;
+const rustDocs = {
+  docAbove(lines: string[], lineNo: number): string {
+    const b: string[] = [];
+    for (let i = lineNo - 2; i >= 0; i--) {
+      const t = lines[i].trim();
+      if (RUSTDOC.test(lines[i])) { b.unshift(lines[i].replace(RUSTDOC, "")); continue; }
+      if (t.startsWith("#[")) continue;
+      // a rustfmt-wrapped attribute: its closing `)]`/`]` line, walked up to the `#[`
+      if (t.endsWith("]") && !t.startsWith("//")) {
+        let k = i - 1;
+        while (k >= 0 && k > i - 50 && lines[k].trim() && !lines[k].trim().startsWith("#[") && !lines[k].trim().startsWith("//")) k--;
+        if (k >= 0 && lines[k].trim().startsWith("#[")) { i = k; continue; }
+      }
+      break;
+    }
+    const c = b.join("\n").replace(/\n{3,}/g, "\n\n").trim();
+    return /^[\s\-─=*]+$/.test(c) ? "" : c;
+  },
+  fileDoc(lines: string[]): string {
+    let i = 0;
+    while (i < lines.length && (!lines[i].trim() || lines[i].trim().startsWith("#!["))) i++;
+    const b: string[] = [];
+    for (; i < lines.length && lines[i].trim().startsWith("//!"); i++) b.push(lines[i].replace(/^\s*\/\/!\s?/, ""));
+    const c = b.join("\n").replace(/\n{3,}/g, "\n\n").trim();
+    return /^[\s\-─=*]+$/.test(c) ? "" : c;
+  },
+};
+
 /** The closed strategy set the `docStyle` field names. "line" is absent on purpose:
  *  it is the factory's default scanners below, parameterized by lineComment. */
 const DOC_STRATEGIES: Record<string, { docAbove(lines: string[], line: number): string; fileDoc(lines: string[]): string } | undefined> = {
   jsdoc: typescriptDocs,
   docstring: pythonDocs,
+  rustdoc: rustDocs,
 };
 
 /** TypeScript at query grade: exported top-level declarations + class methods. Mirrors
