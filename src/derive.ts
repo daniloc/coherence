@@ -7,7 +7,8 @@ import { pathToFileURL } from "node:url";
 import type { Config, Graph, GraphNode, GraphEdge, LanguageAdapter, PlatformAdapter } from "./types.ts";
 import { parseSpec, splitWhy, findSpec, nodeDirs, codeFiles, ownerOf } from "./walk.ts";
 import { Unrunnable, requireDeclaredRoot } from "./floor.ts";
-import { BUILTIN_LANGUAGES } from "./adapters/tree-sitter.ts";
+import { BUILTIN_LANGUAGES, makeTreeSitterAdapter } from "./adapters/tree-sitter.ts";
+import { registerLanguagePack, registeredPack, type LanguagePack } from "./language-registry.ts";
 import { cloudflare } from "./adapters/cloudflare.ts";
 
 const PLATFORMS: Record<string, PlatformAdapter> = { cloudflare };
@@ -27,9 +28,12 @@ function adapterShapeProblem(a: unknown): string | null {
   return null;
 }
 
+const projectAdapters = new Map<string, Promise<LanguageAdapter>>();
+
 /**
  * Resolve `cfg.language` to an adapter: a built-in name, or a `./`-relative project
- * module (conventionally `.coherence/adapters/<lang>.mjs`) exporting a LanguageAdapter.
+ * module (conventionally `.coherence/adapters/<lang>.mjs`) exporting a LanguageAdapter,
+ * a `languagePack`, or both.
  *
  * AN UNKNOWN BARE NAME REFUSES. The `?? typescript` fallback this replaces meant
  * `"language": "go"` silently walked Go files with the TypeScript grammar and reported
@@ -37,6 +41,15 @@ function adapterShapeProblem(a: unknown): string | null {
  * loadConfig refuses for when the config itself is unreadable. Importing a project
  * module executes project code, which is the trust the atlas already declares at the
  * loadConfig crossing: running the harness in a tree executes that tree's config.
+ *
+ * THE ONE PROJECT PATH INTO THE INSTRUMENTS. A module's `languagePack` export is DATA the
+ * loader registers (purity-checked; a relative `grammar` resolves against the module), so
+ * its rows reach surface, sites, sinks, and oracle as the built-ins' do — and its `graph`
+ * spec builds the adapter when the module exports none. The loader registers rather than
+ * the module calling the registry itself: the package exports no entry a project could
+ * import, and a module bound to a different install's registry would register into a
+ * copy no instrument reads. Memoized per module path, so every command that needs the
+ * rows registered can call this first at no cost.
  */
 export async function resolveLanguageAdapter(cfg: Config): Promise<LanguageAdapter> {
   const name = cfg.language;
@@ -47,34 +60,62 @@ export async function resolveLanguageAdapter(cfg: Config): Promise<LanguageAdapt
   if (builtin) return builtin();
   if (name.startsWith("./") || name.startsWith("../")) {
     const path = resolve(cfg.root, name);
-    let mod: Record<string, unknown>;
-    try {
-      mod = await import(pathToFileURL(path).href) as Record<string, unknown>;
-    } catch (error) {
-      throw new Unrunnable([
-        `✗ [config] "language": ${JSON.stringify(name)} could not be imported`,
-        `  ${path}`,
-        `  ${error instanceof Error ? error.message : String(error)}`,
-      ]);
-    }
-    const candidate = mod.default ?? mod.adapter;
-    const problem = adapterShapeProblem(candidate);
-    if (problem) {
-      throw new Unrunnable([
-        `✗ [config] "language": ${JSON.stringify(name)} does not export a LanguageAdapter`,
-        `  ${problem}`,
-        `  required shape: { exts: string[], symbols(src), imports(src), docAbove(lines, line), fileDoc(lines) }`,
-      ]);
-    }
-    return candidate as LanguageAdapter;
+    let cached = projectAdapters.get(path);
+    if (!cached) { cached = loadProjectLanguage(name, path); projectAdapters.set(path, cached); }
+    return cached;
   }
   throw new Unrunnable([
     `✗ [config] "language": ${JSON.stringify(name)} is not a language coherence knows`,
     `  built-ins: ${Object.keys(BUILTIN_LANGUAGES).join(" · ")}`,
-    `  or a project adapter: "./.coherence/adapters/<lang>.mjs" — a module exporting a LanguageAdapter`,
+    `  or a project adapter: "./.coherence/adapters/<lang>.mjs" — a module exporting a LanguageAdapter or a languagePack`,
     `  Refusing rather than falling back: walking ${JSON.stringify(name)} files with the`,
     "  typescript grammar would grade a DIFFERENT tree than you configured, with full confidence.",
   ]);
+}
+
+/** Import one project language module: register its pack, then return its adapter —
+ *  the module's own, else one built from the pack's `graph` spec. */
+async function loadProjectLanguage(name: string, path: string): Promise<LanguageAdapter> {
+  let mod: Record<string, unknown>;
+  try {
+    mod = await import(pathToFileURL(path).href) as Record<string, unknown>;
+  } catch (error) {
+    throw new Unrunnable([
+      `✗ [config] "language": ${JSON.stringify(name)} could not be imported`,
+      `  ${path}`,
+      `  ${error instanceof Error ? error.message : String(error)}`,
+    ]);
+  }
+  const pack = mod.languagePack as LanguagePack | undefined;
+  if (pack !== undefined) {
+    const located = pack && typeof pack === "object" && typeof pack.grammar === "string"
+      ? { ...pack, grammar: resolve(dirname(path), pack.grammar) } : pack;
+    let held: LanguagePack;
+    try {
+      held = registerLanguagePack(located) ? located : registeredPack(located.name)!;
+    } catch (error) {
+      throw new Unrunnable([
+        `✗ [config] "language": ${JSON.stringify(name)} exports a languagePack coherence cannot register`,
+        ...(error instanceof Error ? error.message : String(error)).split("\n").map((l) => `  ${l.trim()}`),
+      ]);
+    }
+    // The graph reads the HELD pack too: a historic worktree copy derives with today's
+    // spec and grammar, which also exists where the worktree's untracked files do not.
+    if (mod.default === undefined && mod.adapter === undefined && held.graph) {
+      return makeTreeSitterAdapter(held.graph, held.grammar);
+    }
+  }
+  const candidate = mod.default ?? mod.adapter;
+  const problem = adapterShapeProblem(candidate);
+  if (problem) {
+    throw new Unrunnable([
+      `✗ [config] "language": ${JSON.stringify(name)} does not export a LanguageAdapter`,
+      `  ${problem}`,
+      `  required shape: { exts: string[], symbols(src), imports(src), docAbove(lines, line), fileDoc(lines) }`,
+      `  or a \`languagePack\` export whose \`graph\` spec builds one`,
+    ]);
+  }
+  return candidate as LanguageAdapter;
 }
 
 /** THE documented-symbol predicate — one spelling, homed with the code that SETS `prose`

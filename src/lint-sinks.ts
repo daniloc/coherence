@@ -28,6 +28,7 @@ import { join } from "node:path";
 import { Query } from "web-tree-sitter";
 import type { Config } from "./types.ts";
 import { grammarHandle, withTree } from "./adapters/tree-sitter.ts";
+import { registeredRows } from "./language-registry.ts";
 import { scanSources, readBaseline, writeBaseline } from "./sidecar.ts";
 import { ratchetVacuityRefusal, type RatchetReading } from "./floor.ts";
 
@@ -52,7 +53,7 @@ const BASELINE = "sinks-baseline.json";
 // or `text-shape` (the literal's own text carries a statement shape, for languages
 // whose string delimiters consume the quotes). HTML stays a line signal in every
 // language. The safe-pattern config grades the bare expression identically throughout.
-interface SinkLanguage {
+export interface SinkLanguage {
   ext: string;
   grammar: string;
   query: string;
@@ -165,15 +166,16 @@ export async function lintSinks(cfg: Config, mode: "report" | "check" | "update"
   const { src } = await scanSources(cfg);
 
   const findings: Finding[] = [];
-  const queries = new Map<string, { parser: import("web-tree-sitter").Parser; query: Query }>();
+  const rows = [...SINK_LANGUAGES, ...registeredRows("sinks")];
+  const queries = new Map<SinkLanguage, { parser: import("web-tree-sitter").Parser; query: Query }>();
   for (const { rel, text } of src) {
-    const lang = SINK_LANGUAGES.find((l) => rel.endsWith(l.ext));
+    const lang = rows.find((l) => rel.endsWith(l.ext));
     if (!lang) continue;
-    let handle = queries.get(lang.ext);
+    let handle = queries.get(lang);
     if (!handle) {
       const { language, parser } = await grammarHandle(lang.grammar);
       handle = { parser, query: new Query(language, lang.query) };
-      queries.set(lang.ext, handle);
+      queries.set(lang, handle);
     }
     const lines = text.split("\n");
     withTree(handle.parser, text, null, (tree) => {

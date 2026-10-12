@@ -10,8 +10,9 @@
 // experiment ledger) — but the type-level rule is what makes the NEXT hand-rolled
 // scanner unrepresentable at this seam rather than merely discouraged.
 //
-// Future home of pack conformance (`languages --check`) and project-local pack
-// merging; today it aggregates for inspection and the purity oracle, nothing more.
+// Future home of pack conformance (`languages --check`); today it aggregates the
+// built-ins for inspection and the purity oracle. Project packs merge through
+// language-registry.ts, held to the same sweep at registration.
 import { typescript, python, ruby } from "./adapters/tree-sitter.ts";
 import { SURFACE_LANGUAGES } from "./novelty.ts";
 import { SITE_LANGUAGES } from "./redundancy.ts";
@@ -29,12 +30,6 @@ export function builtinLanguagePacks(): Record<string, unknown> {
   };
 }
 
-/** Depth-first sweep for function-valued fields; returns the path of each offender.
- *  RegExp is data (a pattern); a function is code and never belongs in a pack. */
-export function functionFields(value: unknown, path = "pack"): string[] {
-  if (typeof value === "function") return [path];
-  if (value instanceof RegExp || value === null || typeof value !== "object") return [];
-  const out: string[] = [];
-  for (const [k, v] of Object.entries(value)) out.push(...functionFields(v, `${path}.${k}`));
-  return out;
-}
+// The purity sweep lives in the registry, which runs it on every registered pack before
+// any instrument trusts a row; re-exported so the built-in guard reads the same spelling.
+export { functionFields } from "./language-registry.ts";

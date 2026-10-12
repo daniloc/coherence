@@ -245,6 +245,12 @@
         "security": true,
         "translates": "The config's `language` value becomes the adapter whose grammar derives the entire graph — a built-in name, or a project module imported and EXECUTED from the tree under analysis (the same declared trust as loadConfig's argv). An unknown name refuses with the live built-in list rather than falling back to the typescript grammar, because a wrong adapter walks a different tree than the one configured and every downstream gate grades the garbage with full confidence."
       },
+      "registerLanguagePack": {
+        "from": "project-source",
+        "to": "derived-model",
+        "security": true,
+        "translates": "A project module's exported languagePack becomes rows every instrument trusts: surface, sites, sinks, and oracle read them beside the built-ins, and grammarHandle loads the wasm the pack names. Only data crosses: the purity sweep refuses any function-valued field by path, a built-in name refuses rather than shadow it, and the first registration of a name holds so a historic worktree copy cannot re-grade the current tree."
+      },
       "makeTreeSitterAdapter": {
         "from": "project-source",
         "to": "derived-model",
@@ -397,6 +403,7 @@
       }
     },
     "nonTransition": {
+      "ensureSiteHandles": "Loads the grammar and query of each site row already registered so the sync extractors can read it. No crossing of its own: the rows entered at registerLanguagePack, purity-checked there; this only makes them reachable to the walk that started after registration.",
       "builtinLanguagePacks": "Aggregates the five in-harness pack tables for inspection and the purity oracle. No crossing: harness constants in, harness constants out — it exists so the pack-purity guard has one perimeter to sweep and so conformance checking has a future home.",
       "withTree": "Memory hygiene within the shell chart: owns a parse tree's whole wasm lifetime and frees it in a finally, so node captures cannot outlive their tree and a leak is unrepresentable. No fact crosses a chart here."
     }

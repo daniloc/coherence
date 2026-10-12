@@ -14,7 +14,7 @@ import { join, relative, resolve } from "node:path";
 import { parseBoundary, type Boundary } from "./boundary.ts";
 import { parseParity, type Parity } from "./parity.ts";
 import { loadConfig } from "./config.ts";
-import { buildGraph } from "./derive.ts";
+import { buildGraph, resolveLanguageAdapter } from "./derive.ts";
 import { ownerOf } from "./walk.ts";
 import { CONFORMS_RE, dictionaryDir, parseWord } from "./phrasebook.ts";
 import { noveltyVerdict, renderNovelty, scanSurface, surfaceSignals } from "./novelty.ts";
@@ -374,7 +374,9 @@ export function locDelta(cfg: Config, refA: string, refB: string | null): { adde
 
 export async function structuralLog(cfg: Config, refA: string, refB: string | null, strict: boolean): Promise<number> {
   // One checkout per ref: derive the graph AND the changed-file domain scan from the
-  // same tree (the novelty surface proxies need the file contents at each ref).
+  // same tree (the novelty surface proxies need the file contents at each ref). The
+  // current tree's language module registers first, so both refs read today's rows.
+  await resolveLanguageAdapter(cfg);
   const changed = changedBetween(cfg, refA, refB);
   const at = (ref: string | null) => withTreeAt(cfg, ref, async (root) => ({
     graph: await buildGraph(await loadConfig(root)),
