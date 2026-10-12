@@ -11,6 +11,7 @@ const GRAMMARS = [
   { pkg: "tree-sitter-typescript", wasm: "tree-sitter-typescript.wasm" },
   { pkg: "tree-sitter-python", wasm: "tree-sitter-python.wasm" },
   { pkg: "tree-sitter-ruby", wasm: "tree-sitter-ruby.wasm" },
+  { pkg: "tree-sitter-rust", wasm: "tree-sitter-rust.wasm" },
 ];
 
 const provenance = ["# Vendored tree-sitter grammar binaries", "",

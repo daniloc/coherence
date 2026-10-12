@@ -786,7 +786,7 @@ export async function analyzeOracle(cfg: Config, oracleName: string): Promise<Or
       : "";
     return { verdict: "literal", detail: renderDetail(row.detailTemplates[lit.reason], lit.ref) + more, file: rel };
   }
-  return { verdict: "not-found", detail: `no describe("${oracleName}") found in any test file`, file: undefined };
+  return { verdict: "not-found", detail: `no oracle block named "${oracleName}" found in any test file`, file: undefined };
 }
 
 // ── the PARITY meta-oracle ────────────────────────────────────────────────────────────
@@ -847,5 +847,5 @@ export async function analyzeParityOracle(
       };
     return { verdict: "ok", detail: `enumerates \`${domain}\` and drives both \`${f}\` and \`${g}\``, file: rel };
   }
-  return { verdict: "not-found", detail: `no describe("${oracleName}") found in any test file` };
+  return { verdict: "not-found", detail: `no oracle block named "${oracleName}" found in any test file` };
 }

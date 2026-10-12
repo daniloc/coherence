@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-12 21:25Z",
+  "generatedAt": "2026-10-12 22:06Z",
   "root": "coherence",
   "absRoot": "/workspace/personal/repos/coherence",
   "nodes": [
@@ -91,6 +91,12 @@
         "boundary \"a built-in language pack is data: queries, patterns, and named strategies, never code\" at builtinLanguagePacks via guard \"language packs — every built-in pack is function-free data across all five instrument tables\"",
         "boundary \"a registered language pack reaches every instrument the built-ins reach, as data, or refuses\" at registerLanguagePack via guard \"language registry — a registered pack reaches sinks, sites, surface and oracle; a function field or a built-in name refuses\"",
         "boundary \"a registered language pack reaches every instrument the built-ins reach, as data, or refuses\" at ensureSiteHandles via guard \"language registry — a registered pack reaches sinks, sites, surface and oracle; a function field or a built-in name refuses\"",
+        "boundary \"rust sources feed the same instruments as typescript at their declared grade\" at makeTreeSitterAdapter via guard \"rust graph — top-level items and impl methods are symbols, rustdoc reads through attributes, module paths resolve to files\"",
+        "boundary \"rust sources feed the same instruments as typescript at their declared grade\" at resolveRustModule via guard \"rust module paths — use trees expand and resolve by longest module prefix\"",
+        "boundary \"rust sources feed the same instruments as typescript at their declared grade\" at surfaceOfSource via guard \"rust surface — pub items and pub enum variants count; private and nested items do not\"",
+        "boundary \"rust sources feed the same instruments as typescript at their declared grade\" at sitesOfRust via guard \"rust redundancy — two spellings of one domain rank as a candidate; a match on enum variants does not\"",
+        "boundary \"rust sources feed the same instruments as typescript at their declared grade\" at lintSinks via guard \"rust sinks — a format! placeholder into a SQL context is a site, the safe pattern exempts, and generics on the line are not markup\"",
+        "boundary \"rust sources feed the same instruments as typescript at their declared grade\" at analyzeOracle via guard \"rust oracle — an imported domain with a floor is live; a literal array is literal; a vanished fn is not-found\"",
         "boundary \"a parse's heap is returned before the next file\" at withTree via guard \"wasm heap — parses past the measured abort cliff survive because every tree is freed\"",
         "boundary \"an undeclared root refuses the walk, never wanders\" at requireDeclaredRoot via guard \"declared root — a configless directory refuses the walk and an empty config declares it\"",
         "boundary \"experiment outcomes require criterion-total evidence\" at closeExperiment via guard \"close — total nonempty evidence is mandatory and outcome is derived, never supplied\"",
@@ -102,7 +108,7 @@
         "boundary \"a streamed journal entry renders exactly once across appends and compaction\" at tailJournal via guard \"tail — an appended record arrives exactly once, a compaction fold re-emits nothing and drops nothing, and a half-written line waits for its bytes\""
       ],
       "prose": "The CLI is deliberately a thin composition root. Parsing, derivation, verification,\nrendering, and journaling remain independently addressable modules beneath this boundary.",
-      "why": "**agent lifecycle preserves decisions and exposes the current change signal.** Decisions\nand risk are cheapest to surface while the agent still holds the context that produced\nthem; waiting for a later reviewer externalizes both reconstruction costs. The two stop\nsurfaces are not interchangeable: a subagent restates its report because its caller may\nsee nothing else, while the main agent has already shown its report to the user and is\nnever interrupted by shared-worktree state that may belong to another agent. Main Stop\nkeeps the calibration observation and emits no bytes; only SubagentStop carries the\njournal and patch signal forward.\n\n**significant behavioral growth acquires an anchor or patch-specific decision.** The cost\nof adding an invariant is immediate while the cost of omitting it appears later, so the\ncurrent patch must carry either enforcement or an addressable reason that it needs none.\n\n**a weaker regulation obligation never masks a stronger one.** Regulation compares live\nobligations by a lexicographic potential, with missing observations failing closed instead\nof becoming zero, and returns the single strongest action owed. V2 evaluates only rules\ndeclared in the live doctrine registry; even a no-action result makes no claim of overall\nsafety.\n\n**regulation evaluates and repairs the selected agent host.** A canonical Claude control\ncannot create a field around a Codex session, even though both hosts implement the same\nlifecycle domain. The sensor therefore names the explicit or current host in its reading,\nthe decision identity retains it, and a lifecycle redirect installs that same host. A\nforeign host value refuses before it can release or author a shell command.\n\n**task context is bounded and names its approximations.** A focused context packet is\nuseful only when its one-hop and heuristic limits stay visible; otherwise convenience is\nmisread as completeness and recreates the omission gradient this project exists to oppose.\nRoutes, named limitations, and omission accounting are mandatory framing; a byte budget\nthat cannot hold them refuses with its exact minimum. Everything else is included in a\nstable priority order, and the withheld item and byte totals make truncation observable.\nRepository-level, generated, and explicitly requested ignored files remain navigable even\nwhen the source graph owns no component for them; `graphOwner: null` is evidence, not a miss.\n\n**verdict-bearing decision reads fail closed on surviving journal damage.** The journal's\ntolerant reader is useful for a human salvaging old history, but a regulator or waiver\ncannot turn its skipped lines into a smaller trusted population. The strict projection\nvalidates wire version, canonical shape and time, content identity, session/file\nattribution, containment, append framing, duplicate agreement, and terminal references\nas one relation. Domain-separated session hashes retain case-sensitive identity on\ncase-folding filesystems while an owned historical filename remains readable. Any damage\nmakes the verdict-bearing population unavailable while the historical render stays\nbackward-compatible.\n\n**a committed decision population cannot disappear into adoption from zero.** An absent\nledger is legitimate before first use, so filesystem absence alone proves nothing. Once\ncurrent Git `HEAD` owns decision files, however, their wholesale deletion is an external\nwitness that zero rows means lost evidence rather than adoption. The witness is consulted\nonly at zero: populated compaction remains legal, while non-Git and unborn repositories\nretain an honestly unproven empty state.\n\n**decision ratification follows explicit subject and authority, never prose similarity or\nrecency.** Independent agents can word the same question differently and can mention the\nsame noun while answering different questions. Conflict detection therefore compares only\nstanding decisions that share a machine-authored subject. Local alternatives remain\nproposals; one explicit orchestrator-accepted or user-directed choice can ratify them;\nincompatible choices tied at the highest authority stay contested.\n\n**work state is append-only, attributable, and predecessor-checked.** A shared task board\nthat mutates in place loses the handoffs and rejected transitions a swarm most needs after\ncontext loss. Each work order and transition is content-addressed in its writer session,\nand the current state is a strict replay. Broken predecessors, competing successors,\ndetached histories, damaged rows, and missing graph referents refuse instead of resolving\nby last-write-wins. The ledger is repository evidence rather than a machine-local queue;\nthe repository control therefore writes one through the public boundary, commits it,\nclones the repository, and requires the strict reader to reconstruct it.\n\n**work cannot activate or complete before every dependency completes.** Readiness is not\nadvice layered over the lifecycle; it is the lifecycle's ordering law. Every transition\nand closure validates its prospective graph before append, so a caller cannot bypass a\nwaiting projection by naming `active` or `completed` directly. Cancellation remains a\nterminal non-success and therefore does not satisfy a dependency that requires completed\noutput.\n\n**runnable work with overlapping write scopes is a collision, never concurrent\npermission.** Read and write scopes are repository-relative addresses. Dependency order\ncan make an overlap merely potential, but two dependency-clear or active writers whose\nexact/tree scopes intersect are a live conflict. The projection blocks dispatch and names\nboth work ids and both scopes; ownership is explicit rather than reverse-engineered from a\nshared diff.\n\n**a terminal parent has no live child and explicitly synthesizes every completed direct\nchild.** A child returning is not evidence that its parent incorporated the result, and a\nlive child whose join target is closed has nowhere truthful to report. Prospective graph\nvalidation therefore refuses parent closure until every direct child is terminal, requires\nevery completed child in the synthesis set, and refuses a late live child beneath a\nterminal parent. Cancellation can settle a child but cannot masquerade as synthesized\nsuccess.\n\n**authored work text is single-line data, never model-instruction control.** Work records\nare repository-authored evidence on read, even when they were valid on write. Their text\ncrosses into SessionStart's model-instruction channel, so public writes reject C0/C1\ncontrols and the hook renderer escapes such bytes again. A newline can remain visible as\ndata but cannot acquire the grammar of a peer instruction.\n\n**swarm write identity and authority flags are singleton or refused.** Repeated evidence,\ncriteria, alternatives, and scopes represent honest plurality; repeated session, owner,\nauthority, or predecessor selectors represent two incompatible attributions for one\nappend. One shared parser predicate distinguishes those sets and refuses ambiguity before\nany ledger writer runs.\n\n**consequence navigation contains only explicit assessed edges.** Decisions, work,\ncommits, experiments, verification, and defects already have addresses; temporal or path\nproximity does not make one cause another. The consequence ledger stores an assessor,\nevidence, typed endpoints, and a constrained relation per edge. Its graph traverses both\ndirections for navigation while retaining the authored direction, and strict reads refuse\nforged, displaced, conflicting, or symlink-redirected evidence. Those edges are durable\nonly if they cross a clone boundary, so the repository control writes a typed edge to a\nreal commit, transports it through Git, and requires a dangling-free cloned orientation.\n\n**specialized consequence relations admit only their declared endpoint kinds.** A generic\n`relates-to` edge can connect any two supported addresses, but verbs such as `produces`,\n`verifies`, `reveals`, and `repairs` carry lifecycle meaning. Their source and target kinds\nare checked as a pair, keeping the typed graph from accepting grammatically valid nonsense\nthat its render would otherwise state with unwarranted confidence.\n\n**consequence evidence refuses surviving storage damage instead of shrinking navigation.**\nAbsence is a legitimate first-use state; a surviving but unreadable, displaced, renamed,\nor torn edge is not. If damaged bytes could disappear from the population, removing one\nfile suffix or final newline could erase the only path from a defect to its repair while\nleaving an innocent empty graph. Storage framing and containment therefore belong to the\nevidence contract, not merely to filesystem hygiene.\n\n**orientation refuses damaged evidence before selecting a swarm heading.** The gyroscope\nis a projection over independent instruments, not a new source of truth. It reads each\nstrictly, preserves source availability and denominators, and selects one deterministic\nheading: refuse, resolve a collision, repair navigation, unblock, synthesize, dispatch,\ncontinue, verify, or steady. A damaged source outranks every actionable-looking empty list.\n\n**orientation admits verification state only with valid shape and comparable provenance.**\nThe status file is persisted JSON, not a TypeScript value at runtime. Orientation validates\nthe fields it uses—canonical time, commit shape, dirty bit, tier, and nonnegative failure\ncount—and refuses malformed evidence. A green report is current only when both repository\nand report commit addresses exist and agree; missing provenance is stale, never an\nimplicit match.\n\n**verification currency follows material repository state without invalidating its own\nreceipt.** Matching `HEAD` identifies a commit, not the live index and working tree layered\nover it. A source, staged, or untracked change therefore makes a clean report stale even\nwhen `HEAD` did not move. The status file itself is the one excluded path because recording\nthe report happens after its Git sample; counting that receipt would make every successful\nverification invalidate itself immediately.\n\n**orientation selects synthesis only when parent closure can execute it.** Synthesis is\nrepresented by the parent's terminal close, not by a separate mutable checkbox. A completed\nchild can therefore remain visibly unsynthesized while a ready, active, or blocked sibling\nstill owes work; selecting synthesis then would demand an operation the lifecycle refuses.\nOnly when that parent's children are terminal does synthesis become the executable highest\nheading.\n\n**orientation derives live blockage only from closeable work state.** A journaled impasse\nis historical testimony and has no event that later marks it complete. Treating such rows\nas the live scheduler makes the heading demand an action the record cannot ever discharge.\nThe work lifecycle owns current blocked state; journal incidents remain visible context\nwithout acquiring scheduler semantics.\n\n**completed work remains unverified until an explicit verification edge names it.** A\npassing command nearby in time cannot establish which work it assessed. V2 regulation\ntherefore treats a completed work order without a `verification --verifies--> work` edge\nas an obligation. This is deliberately stronger than command success and deliberately\nweaker than a proof of semantic correctness; append-only verification receipts remain a\nnamed future limit.\n\n**high-frequency lifecycle hooks start without the analysis dependency stack.**\nPostToolUse is the hottest and most fragile control boundary. Its eager import closure is\nbuilt-ins plus local lifecycle modules; parser registries enter only through the main CLI\ncomposition root. The runtime canary copies the complete source tree into an isolated\nproject with no dependency installation and executes PostToolUse, so a future eager edge\nto a parser package recreates the measured startup failure.\n\n**hook telemetry loss never kills PostToolUse.** Read traces calibrate the context model,\nbut losing that observation is cheaper than breaking every tool call in an agent session.\nThe hook contains both dynamic-load and persistence failures, emits no canonical bytes,\nand leaves the damaged target untouched. A real file-bearing hostile-target canary ensures\nthis contract exercises the write path rather than vacuously recording zero events.\n\n**session startup injects only the exact session's current work order.** Assignment is\nuseful only if the receiving agent can distinguish its authority, success criteria,\ndependencies, write scope, and collisions from another worker's. SessionStart reads the\nwork graph dynamically and emits only records whose owner session exactly matches the\nhost session; failure degrades to a named unavailable reading rather than breaking agent\nstartup.\n\n**session startup teaches the executable swarm loop without manufacturing authority.**\nEvery agent gets the two inert readings that establish direction and fleet state, while\ncreation and handoff remain explicitly conditional on coordination authority. Only an\nexactly owned live order acquires mutation examples, and those examples are selected from\nits standing state and carry both the host session and predecessor token. After one write\nthe token expires and the hook says to inspect again; startup guidance therefore cannot\nturn a stale instruction or a general orientation heading into last-writer-wins authority.\n\n**session startup survives a damaged decision-journal path with named degradation.** The\njournal carries decisions but cannot be allowed to prevent the agent that might repair it\nfrom starting. SessionStart keeps the exact host identity in memory, emits the canonical\ninstructions plus a visible unavailable control, and skips the journal write when the\nstanding path cannot be read or opened. This is degradation, not silent adoption of an\nempty history.\n\n**harness source remains searchable text rather than silently becoming binary.** Agent\nnavigation depends on ordinary repository search seeing every source file. A single literal\nzero byte can make common tools classify an otherwise textual module as binary and omit its\nmatches without a syntax or type error. Keeping control ranges escaped in source preserves\nruntime meaning while making disappearance from the reading surface a loud regression.\n\n**cached decisions expose structurally expired premises.** A decision saves inference only\nwhile the repository addresses supporting it remain live. Broken explicit referents must\nbe louder than readable but stale rationale.\n\n**predicted context closure is calibrated against observed reads and outcomes.** Economy's\none-hop closure is a hypothesis about necessary reading, not cognition. Observed reads and\nlater defect labels give that model a path to correction instead of turning it into dogma.\n\n**calibration preserves the weakest host attribution of its trace.** A Codex parent\nsession file can contain parent and descendant tool use because PostToolUse supplies no\nchild id. Calibration may still compare that aggregate against a patch, but it must name\nthe aggregate rather than relabeling those writes as one agent's work. Legacy rows remain\nunscoped, shared-worktree fallback remains separate, and any unreadable row prevents a\nnew sample instead of disappearing from its denominator.\n\n**reviewed risk sites survive relocation but never duplication.** A ratchet baseline is a\ncached review, and a cached fact that expires on a rename rots the same way a decision's\npremises do — a refactor then spends a reviewer's attention on sites nobody touched, and\nattention spent on false alarms is how a real one gets waved through. Relocation changes\nwhere a reviewed site lives; duplication changes how much unreviewed surface exists, and\nonly the second is news.\n\n**pinned mass follows a value-conserving rename but never absorbs growth.** A mass\ndimension's key embeds a name someone chose — a spec H1, a measure's config key — so a\nrename re-addresses the pin, and a ratchet that reads its own re-addressing as \"gained\nparts nobody named\" prints a lie beside the unchanged total that refutes it (measured:\none H1 edit, 35 lines relabeled, zero gained, gate red). The repair must stay\ncount-conserving: only a vanished pin with the same family, unit and exact value can\nabsorb a new name, or growth and novelty would ride in under renames.\n\n**a claim goes green only on positive evidence its oracle ran.** The verifier's whole\nauthority rests on this one property, and until now no claim cited it: an audit deleted\nthe rule and the tree stayed \"✓ coherent\" while the unit test failed unseen. An exit\ncode is the runner's statement about itself, not about the named test — a filter that\nmatched nothing exits clean on every runner class this repo has measured — so green\nmust require output that names the run, the one reading absence cannot produce.\n\n**a vanished oracle reds its claim, never green-by-absence.** A renamed or deleted test\nleaves a claim citing a name nothing owns, and that claim then guards nothing while\nwearing green. Absence has to be its own observable verdict, distinct from ran-and-failed,\nbecause the two demand different repairs: a red test needs the code fixed, a vanished\noracle needs the contract re-tied to something that exists.\n\n**fast verification rejects a statically vanished Vitest oracle without executing\ntests.** Name ownership is cheaper than test outcome: a literal Vitest declaration either\nstill supplies a runner-style full name or it does not. The edit loop should answer that\nstructural question without buying remote credentials or a suite boot, while refusing to\nturn dynamic or damaged source into false certainty. Static presence therefore remains a\nskip. A complete current population can prove absence; independently, a concrete Git\n`HEAD` owner disappearing from a deleted or still-complete former path proves an ownership\nloss even when unrelated current source is incomplete. If that same path becomes dynamic\nor damaged, it stays explicitly unknown; everything else does too. The\nexecutable tier alone can supply pass/fail evidence. This is a direct-declaration grade,\nnot an evaluator for arbitrary runtime registration; projects beyond it disable\n`staticOracleExistence` or resolve a fresh report.\n\n**fast oracle absence requires a complete direct-declaration population.** Absence is a\nstronger statement than failure: it says the registry owns no matching name. The static\nfloor may say that only when every registration mechanism it recognizes was enumerable;\ndynamic titles, fixture DSLs, registration-time module loads, custom includes, and damaged\nsource must poison absence into UNKNOWN while still allowing positive direct matches.\nOtherwise the cheap tier would turn its own inability to see a live oracle into evidence\nthat the oracle vanished.\n\n**committed platform capabilities survive optional deployment-config toggles.** The graph\ndescribes the capability surface authored code can address, not only what one machine has\nenabled for its next deploy. For Cloudflare stores, a direct `Env` property with a known\nbinding type and a wrangler stanza are two observations of the same binding domain: the\nadapter unions them, collapses agreement, and refuses disagreement. Source inference uses\nthe graph's already-filtered file population, so a generated machine-local environment\ndeclaration cannot become a hidden second walk. Runtime-variable names are retained as\ndeclarations, but their deployment values are unrepresentable in `Bindings` and never\nenter generated artifacts. An optional binding or machine-specific value may therefore\nchange without silently changing the architecture documented for the same source tree.\n\n**a declared invariant unanchored by any boundary fails coverage.** A spec may not\nassert a property that nothing enforces: that is the ratchet the whole harness turns on,\nand if it silently loosened, specs would drift back into aspiration prose. The gap has to\ncost a red at the run that opened it, while the person who opened it still holds the\ncontext to close it.\n\n**a via-test oracle that iterates no live domain fails its claim.** A totality label on a\nsampling test is worse than no label: it retires the reader's suspicion without retiring\nthe risk. Deriving the checked set from the live registry the chokepoint actually serves\nis what makes \"covers every case\" a fact about the system rather than about the fixture\nlist the author remembered.\n\n**a skipped run never clobbers an oracle's recorded verdict.** The record is the last\nknown truth, honestly dated. A fast tier that skips the executable claims every commit\nwould otherwise erase last week's real pass — or, worse, a real fail — with \"did not\nlook\", and history that can be overwritten by not looking is not history.\n\n**a named oracle that no test runs cannot pass.** The serial runner is the component the\nexecutable tier leans its trust on, and it was outside the evidence perimeter — unclaimed,\nuntested, and (measured) willing to exit clean when the cited title survived only as a\nstring in a file. The runner itself must refuse a name it cannot show ran, because every\ngreen above it inherits that refusal.\n\n**an empty derivation against a remembered surface refuses, never passes.** Every verdict\nin this file rests on the graph deriving non-empty, and nothing checked that premise:\ngutting `buildGraph` left the gate printing \"claims: 0\" and \"✓ coherent\", exit 0 —\ndeeper than a vanished oracle, because it empties every check at once while announcing\nthey all passed. The record remembers how many claims the last run graded, so a run that\nsuddenly sees zero must refuse rather than report success over nothing; the only\nlegitimate zero (a project adopting from nothing) is exactly the one with no memory, and\nit gets the adoption ladder instead. The floor deliberately stops at zero: a partial\ncollapse where every component keeps a claim is observationally identical to deliberate\npruning, and deletion has to stay free or people stop deleting. What the complement\nunderneath it actually reaches is narrower than it first appears — a component stripped of\nits claims is still a node someone can red, while a component the walk never discovered\nleaves nothing behind to notice, so an N→1 slide reads as N ordinary prunings. Pinning the\npopulation as a mass dimension is the honest answer there, because the question it settles\nis not whether anything survived but whether as much survived as last time.\n\n**lifecycle hook presence is one canonical runnable bit.** The control surface cannot\ncreate a field if every repository is free to carry a merely similar—or silently dead—\nhook. Printing, installation, and inspection therefore share one five-event value and\none stable launcher per host. Presence means exactly one shared project copy, no competing\nlocal, inline, or legacy path, an aligned host/launcher root, a correct declared root\nmapping, an enabled project-hook layer, and a runnable target. Unrelated hooks may coexist.\nHistorical journal activity is reported beside this bit but can neither redeem current\nabsence nor erase current presence.\n\n**supported lifecycle hosts share one control contract without sharing host syntax.**\nClaude and Codex expose the same five lifecycle meanings through different settings files,\nmatchers, launch commands, and response envelopes. Host parity therefore means deriving\neach complete bundle from one host-selected domain while retaining a distinct fingerprint;\ncopying Claude bytes into Codex would be resemblance, not parity.\n\n**current-session activation requires exact installed-bundle evidence.** Structural\npresence proves that the project control is runnable, not that this session loaded it. A\nsession becomes observed only when its activity names the selected host, launcher\ntransport, and current bundle fingerprint. Direct probes, stale bundles, other sessions,\nand a guessed newest session cannot establish activation; parent-session fallback stays a\nnamed attribution ceiling rather than being promoted to child evidence.\n\n**customized hook text composes declared overrides and appends, degrading to canon on\ndamage.** The canonical hook text is the harness's voice — identical across adopting\nprojects, and byte-testable because of it — but a project knows things the harness cannot:\nits own commands, its conventions, the one warning its history taught it. So a project\ngets a declared voice per event rather than a fork of the hook body, under one composition\nrule with no conflict state: the override answers what the base is, the append answers\nwhat follows it, and both may coexist; an empty override is a deliberate, visible silence,\nnot an error. Damage must degrade to the canonical emission at hook time, because the hook\nbody runs inside every agent session of every adopting project — a torn customization\nfile that broke sessions would make the journal's carrier the thing that kills the work it\nrecords — so a tear costs exactly the customization, never the session, and the loud\nsurface for it is `hooks review`, where a reader is actually looking. Events with no\ncanonical emission — main Stop, PostToolUse — speak only with a declared project voice;\nmain Stop's canonical byte-silence and the attribution reasoning behind it stand unchanged\nas the default.\n\n**python sources feed the same instruments as typescript at their declared grade.**\nThe adapter seam always promised language-agnosticism, but three analyzers and two\nscanners parsed TypeScript directly, so a python project's surface grew invisibly — the\nzero-anchor alarm never fired, parity claims skipped `.py` oracles, duplicated domains\nwent unranked, batch oracles knew one report format, and f-string interpolations were not\nsites. Each instrument now reads python at a DECLARED grade: most through the shared\ngrammar queries of phase 2b (surface, sites, sinks), the oracle arms at the pinned\nindent-block grade their guards froze — in-harness, no subprocess, and since the arms\nported, no compiler dependency at all. The grade is declared, not hidden —\nprecision is preferred over recall everywhere, because an advisory that cries wolf\nretires the reader's attention without retiring risk, and with no compiler behind `.py`\na false positive can never be rescued downstream. What the regex grade deliberately does\nnot count is journaled beside each instrument, so the next reader inherits the boundary\nof the instrument instead of rediscovering it.\n\n**a declared language resolves to a real adapter or refuses, never a silent fallback.**\nThe graph is the one derivation everything downstream consumes, and the adapter decides\nwhat that derivation can see. The old `?? typescript` fallback meant a typo'd language\nname walked the wrong grammar and reported on the garbage with full confidence — the\nsame walking-a-different-tree failure the config loader refuses for, one seam later. So\nan unknown bare name now refuses with the live built-in list, and the same seam is where\na project brings its own language: a `./`-relative module exporting the LanguageAdapter\nshape, validated field-by-field so the refusal names the line that needs fixing.\nImporting project code is not new trust — the atlas already declares at the loadConfig\ncrossing that running the harness in a tree executes that tree's config. What a custom\nadapter buys is the graph tier: symbols, import edges, prose, claims over them. The\nper-language instrument arms (surface counting, oracle analysis, redundancy, sinks,\nbatch formats) remain harness contributions, and the documentation says so, because an\nadapter author who is not told the boundary believes they have the full field when they\nhave half.\n\n**a grammar-backed adapter derives the graph through the same language seam.** The\nregex adapters scale in expert code — the python push measured ~900 hand-built lines\nacross five instrument arms — while a grammar plus capture queries scales in data:\nmodern tree-sitter grammar packages ship a prebuilt wasm, `web-tree-sitter` runs it\nwithout a native toolchain, and the language-specific knowledge shrinks to patterns a\ncontributor can write without touching verdict logic. The factory is async once (wasm\nload) and the adapter it returns is synchronous, so the seam is unchanged and a project\nmodule reaches it with one top-level await. The corpus diff that justified the phase\nalso bounded it: on this repository's own sixty-three TypeScript files the regex grade\nmissed zero symbols a real parse found, so the graph tier was not where parse fidelity\nwas owed. The built-ins then CONVERGED onto the grammar path anyway — not for fidelity\nbut because two implementations of one outcome are two spellings of a domain, the\nredundancy class this harness ranks in other people's code. The regex adapters were\ncorpus-diffed to parity (every delta an enumerated regex mistake), their prose logic\nported verbatim, and then deleted; their grammars ship vendored with provenance. The\ninstrument arms remain hand-built until a later phase ports them to query packs.\n\n**instrument arms read languages through shared grammar queries, never a parallel\nscanner.** Phase 2b's contract, proven first on the injection ratchet: a language\ncontributes captures and signals — which node is an interpolation, how its SQL context\nannounces itself — and the mechanism owns classification, safe-pattern grading, site\nidentity, and the ratchet, once. The regex scanners this replaced matched line TEXT, so\nthey counted `${}` inside plain strings, comments, and test fixtures as sites, bounded\nvisibility at one brace of nesting, and one of them matched its own source. The query\nscan re-pinned the baseline with every delta enumerated: nineteen real nested-brace\nsites gained, one self-match artifact gone. A new language now gains the whole\ninstrument from a table row — ruby's took three lines and no scanner — which is the\ntwo-tier boundary dissolving arm by arm.\n\n**a built-in language pack is data: queries, patterns, and named strategies, never\ncode.** The declarative baseline is what keeps \"add a language\" a table-row act instead\nof an expert contribution — and it is a rule that erodes one convenient function at a\ntime unless something refuses. So the packs are inspectable values aggregated in one\nplace, and a guard sweeps them for function-valued fields by path: the hand-rolled\nscanner class is unrepresentable at the seam, not merely discouraged. The rule's edge\nis honest about what a pack may name — strategies from a closed, mechanism-owned set\n(\"jsdoc\", \"docstring\", \"cooked-string\") — because some knowledge is genuinely\nprocedural; naming it keeps the procedure written once where every language can reach\nit. Project adapter modules remain code territory by definition: purity governs what\nships built in, where a single spelling is the entire point.\n\n**a registered language pack reaches every instrument the built-ins reach, as data, or refuses.** Before the registry, a project could reach the graph tier with its own\nadapter but no further: the surface, sites, sinks, and oracle rows were harness\nconstants, so a fourth language was an upstream contribution or nothing. Opening that\nseam to project code is only safe if what crosses is still reviewable, which is why the\nsame purity rule applies at registration and a function-valued field refuses by path\nbefore any instrument trusts the row. Two alternatives were rejected. A project module\ncalling the registry itself was the obvious shape, but the package exports no entry a\nproject could import, and a module bound to another install's copy would register into\na registry no instrument reads, silently. Shadowing a built-in name was rejected\nbecause it re-grades a different tree under a familiar label. First registration wins\nbecause `signal` and `log` import a historic copy of the project's module from a\nworktree, and the instrument must stay constant across the diff it measures. The gate\nbefore trust was a registered clone of each built-in row over flask, click, and sinatra\nwith files renamed to an extension only the clone reads: zero deltas across graph,\nsurface, sites, sinks, and oracle.\n\n**a parse's heap is returned before the next file.** web-tree-sitter trees hold wasm\nheap only an explicit delete returns, and the emscripten heap is fixed — so a leak is\ninvisible on a small repository and fatal on a large one, the worst observability\nprofile a defect can have. The measured incident is the refutation above. The repair is\nthe ladder's top rung, not discipline: `withTree` owns the tree's whole lifetime, every\ncall site takes it, node captures die inside it (the one lazy consumer was made eager\nrather than allowed to touch a freed node), and forgetting to free is unrepresentable.\n\n**an undeclared root refuses the walk, never wanders.** A configless run walks whatever\ndirectory the shell happened to be in and grades that population with full confidence —\nthe incident run was `npx coherence verify` from a home directory, which is not exotic;\nit is the first thing a curious adopter types. The config file's PRESENCE is the\ndeclaration, so `{}` is a complete first rung of the adoption ladder, and the refusal\nprints exactly that one-line bootstrap. Journal, hook, and reference commands never\nwalk, so they stay available in an undeclared directory — the field does not require a\nconfig to remember decisions.\n\n**experiment outcomes require criterion-total evidence.** A\nplan is frozen before work with its predicted context, actions, criteria, and evidence\ncursors. Closure answers every action and criterion exactly once, preserves the assessor,\nand derives success, failure, or inconclusive from criterion statuses rather than accepting\nan outcome label. Otherwise the ledger would turn an incomplete story into a measured loop.\n\n**experiment telemetry preserves its weakest provable attribution.** Trace and activity\nwindows may be empty, prove an exact owner session, or only prove a parent-session aggregate\nthat can include descendants; older trace may carry no observation metadata at all. Those\nfour scopes remain distinct in the immutable close record. Damaged prefixes, unreadable\nrows, and unknown or inconsistent scope refuse. That keeps compatible history without\nturning absence or uncertainty into false precision.\n\n**activity evidence is accepted only when identity, scope, time, and command agree.** A\nrow is useful precisely because later status and experiment readers stop re-deriving the\nhost event. That cached inference is safe only while its relational fields still agree:\nagent attribution names the row session, parent fallback names its parent domain, event\nidentity recomputes, time is canonical, and command kind/result agrees with name and exit\ncode. One strict reader grades that whole relation; malformed rows become counted damage,\nnever partially trusted evidence.\n\n**surviving agent-assessed defect evidence is attributable and internally consistent.** A\nconjecture keeps uncertainty alive; a defect record says an agent crossed that epistemic\nboundary and must therefore carry the evidence for doing so, the repository subject it\njudged, and the caller-attributed writer labels attached to the assessment. Records append per session and\ndedupe exact retries, while the merged reader recomputes the ordinary content address and\nrefuses malformed, inconsistent, or displaced surviving rows. That detects partial damage;\nit does not prove that a valid row was never rewritten with a recomputed id. Committed Git\nhistory is this first recorder's external rewrite and deletion witness, and an independently\nanchored head is future work.\n\n**defect writes refuse pre-existing symlink redirection.** A path beneath the repository\nis not containment when its stable components redirect through a symlink. The reader\ntherefore refuses linked ledger directories and entries, while the writer validates both\ndirectory components and opens the session target without following its final link, then\ncompares the opened descriptor with the standing path before appending. This prevents the\nmeasured stable-state redirects; it is not an `openat`-grade promise against a privileged\nprocess racing parent-directory renames during the append.\n\n**defect provenance is data, never terminal control.** Repository identity is captured by\nthe machine, but the committed row is still untrusted input on its next read. A commit is\ntherefore null or has lowercase SHA-1/SHA-256 object-name shape, never merely a nonempty string; the\nhuman renderer also neutralizes its bytes. Without both the semantic constraint and the\noutput encoding, an edited but re-addressed row could turn provenance into a terminal\ninstruction while remaining structurally valid.\n\n**a streamed journal entry renders exactly once across appends and compaction.** The live\nstream exists for the one reader the settled render cannot serve — an orchestrator watching\nfive subagents mid-flight — and that reader has no way to audit the feed against the files.\nA dropped entry is a decision the orchestrator never saw, indistinguishable from one never\nmade; a duplicate teaches the opposite lie, that a question was decided twice. Both are\ncheap to produce, because the journal's files do not strictly grow: compaction moves lines\nbetween files and unlinks the originals, which a position-addressed reader replays in full.\nSo a record's identity in the stream comes from its content — the same triple the merged\ntimeline sorts by — and a moved line is one the feed already carried.\n\n(The import claims above separately prove that the composition root still reaches the\nconfiguration loader, graph derivation, verifier, spec walker, and journal.)",
+      "why": "**agent lifecycle preserves decisions and exposes the current change signal.** Decisions\nand risk are cheapest to surface while the agent still holds the context that produced\nthem; waiting for a later reviewer externalizes both reconstruction costs. The two stop\nsurfaces are not interchangeable: a subagent restates its report because its caller may\nsee nothing else, while the main agent has already shown its report to the user and is\nnever interrupted by shared-worktree state that may belong to another agent. Main Stop\nkeeps the calibration observation and emits no bytes; only SubagentStop carries the\njournal and patch signal forward.\n\n**significant behavioral growth acquires an anchor or patch-specific decision.** The cost\nof adding an invariant is immediate while the cost of omitting it appears later, so the\ncurrent patch must carry either enforcement or an addressable reason that it needs none.\n\n**a weaker regulation obligation never masks a stronger one.** Regulation compares live\nobligations by a lexicographic potential, with missing observations failing closed instead\nof becoming zero, and returns the single strongest action owed. V2 evaluates only rules\ndeclared in the live doctrine registry; even a no-action result makes no claim of overall\nsafety.\n\n**regulation evaluates and repairs the selected agent host.** A canonical Claude control\ncannot create a field around a Codex session, even though both hosts implement the same\nlifecycle domain. The sensor therefore names the explicit or current host in its reading,\nthe decision identity retains it, and a lifecycle redirect installs that same host. A\nforeign host value refuses before it can release or author a shell command.\n\n**task context is bounded and names its approximations.** A focused context packet is\nuseful only when its one-hop and heuristic limits stay visible; otherwise convenience is\nmisread as completeness and recreates the omission gradient this project exists to oppose.\nRoutes, named limitations, and omission accounting are mandatory framing; a byte budget\nthat cannot hold them refuses with its exact minimum. Everything else is included in a\nstable priority order, and the withheld item and byte totals make truncation observable.\nRepository-level, generated, and explicitly requested ignored files remain navigable even\nwhen the source graph owns no component for them; `graphOwner: null` is evidence, not a miss.\n\n**verdict-bearing decision reads fail closed on surviving journal damage.** The journal's\ntolerant reader is useful for a human salvaging old history, but a regulator or waiver\ncannot turn its skipped lines into a smaller trusted population. The strict projection\nvalidates wire version, canonical shape and time, content identity, session/file\nattribution, containment, append framing, duplicate agreement, and terminal references\nas one relation. Domain-separated session hashes retain case-sensitive identity on\ncase-folding filesystems while an owned historical filename remains readable. Any damage\nmakes the verdict-bearing population unavailable while the historical render stays\nbackward-compatible.\n\n**a committed decision population cannot disappear into adoption from zero.** An absent\nledger is legitimate before first use, so filesystem absence alone proves nothing. Once\ncurrent Git `HEAD` owns decision files, however, their wholesale deletion is an external\nwitness that zero rows means lost evidence rather than adoption. The witness is consulted\nonly at zero: populated compaction remains legal, while non-Git and unborn repositories\nretain an honestly unproven empty state.\n\n**decision ratification follows explicit subject and authority, never prose similarity or\nrecency.** Independent agents can word the same question differently and can mention the\nsame noun while answering different questions. Conflict detection therefore compares only\nstanding decisions that share a machine-authored subject. Local alternatives remain\nproposals; one explicit orchestrator-accepted or user-directed choice can ratify them;\nincompatible choices tied at the highest authority stay contested.\n\n**work state is append-only, attributable, and predecessor-checked.** A shared task board\nthat mutates in place loses the handoffs and rejected transitions a swarm most needs after\ncontext loss. Each work order and transition is content-addressed in its writer session,\nand the current state is a strict replay. Broken predecessors, competing successors,\ndetached histories, damaged rows, and missing graph referents refuse instead of resolving\nby last-write-wins. The ledger is repository evidence rather than a machine-local queue;\nthe repository control therefore writes one through the public boundary, commits it,\nclones the repository, and requires the strict reader to reconstruct it.\n\n**work cannot activate or complete before every dependency completes.** Readiness is not\nadvice layered over the lifecycle; it is the lifecycle's ordering law. Every transition\nand closure validates its prospective graph before append, so a caller cannot bypass a\nwaiting projection by naming `active` or `completed` directly. Cancellation remains a\nterminal non-success and therefore does not satisfy a dependency that requires completed\noutput.\n\n**runnable work with overlapping write scopes is a collision, never concurrent\npermission.** Read and write scopes are repository-relative addresses. Dependency order\ncan make an overlap merely potential, but two dependency-clear or active writers whose\nexact/tree scopes intersect are a live conflict. The projection blocks dispatch and names\nboth work ids and both scopes; ownership is explicit rather than reverse-engineered from a\nshared diff.\n\n**a terminal parent has no live child and explicitly synthesizes every completed direct\nchild.** A child returning is not evidence that its parent incorporated the result, and a\nlive child whose join target is closed has nowhere truthful to report. Prospective graph\nvalidation therefore refuses parent closure until every direct child is terminal, requires\nevery completed child in the synthesis set, and refuses a late live child beneath a\nterminal parent. Cancellation can settle a child but cannot masquerade as synthesized\nsuccess.\n\n**authored work text is single-line data, never model-instruction control.** Work records\nare repository-authored evidence on read, even when they were valid on write. Their text\ncrosses into SessionStart's model-instruction channel, so public writes reject C0/C1\ncontrols and the hook renderer escapes such bytes again. A newline can remain visible as\ndata but cannot acquire the grammar of a peer instruction.\n\n**swarm write identity and authority flags are singleton or refused.** Repeated evidence,\ncriteria, alternatives, and scopes represent honest plurality; repeated session, owner,\nauthority, or predecessor selectors represent two incompatible attributions for one\nappend. One shared parser predicate distinguishes those sets and refuses ambiguity before\nany ledger writer runs.\n\n**consequence navigation contains only explicit assessed edges.** Decisions, work,\ncommits, experiments, verification, and defects already have addresses; temporal or path\nproximity does not make one cause another. The consequence ledger stores an assessor,\nevidence, typed endpoints, and a constrained relation per edge. Its graph traverses both\ndirections for navigation while retaining the authored direction, and strict reads refuse\nforged, displaced, conflicting, or symlink-redirected evidence. Those edges are durable\nonly if they cross a clone boundary, so the repository control writes a typed edge to a\nreal commit, transports it through Git, and requires a dangling-free cloned orientation.\n\n**specialized consequence relations admit only their declared endpoint kinds.** A generic\n`relates-to` edge can connect any two supported addresses, but verbs such as `produces`,\n`verifies`, `reveals`, and `repairs` carry lifecycle meaning. Their source and target kinds\nare checked as a pair, keeping the typed graph from accepting grammatically valid nonsense\nthat its render would otherwise state with unwarranted confidence.\n\n**consequence evidence refuses surviving storage damage instead of shrinking navigation.**\nAbsence is a legitimate first-use state; a surviving but unreadable, displaced, renamed,\nor torn edge is not. If damaged bytes could disappear from the population, removing one\nfile suffix or final newline could erase the only path from a defect to its repair while\nleaving an innocent empty graph. Storage framing and containment therefore belong to the\nevidence contract, not merely to filesystem hygiene.\n\n**orientation refuses damaged evidence before selecting a swarm heading.** The gyroscope\nis a projection over independent instruments, not a new source of truth. It reads each\nstrictly, preserves source availability and denominators, and selects one deterministic\nheading: refuse, resolve a collision, repair navigation, unblock, synthesize, dispatch,\ncontinue, verify, or steady. A damaged source outranks every actionable-looking empty list.\n\n**orientation admits verification state only with valid shape and comparable provenance.**\nThe status file is persisted JSON, not a TypeScript value at runtime. Orientation validates\nthe fields it uses—canonical time, commit shape, dirty bit, tier, and nonnegative failure\ncount—and refuses malformed evidence. A green report is current only when both repository\nand report commit addresses exist and agree; missing provenance is stale, never an\nimplicit match.\n\n**verification currency follows material repository state without invalidating its own\nreceipt.** Matching `HEAD` identifies a commit, not the live index and working tree layered\nover it. A source, staged, or untracked change therefore makes a clean report stale even\nwhen `HEAD` did not move. The status file itself is the one excluded path because recording\nthe report happens after its Git sample; counting that receipt would make every successful\nverification invalidate itself immediately.\n\n**orientation selects synthesis only when parent closure can execute it.** Synthesis is\nrepresented by the parent's terminal close, not by a separate mutable checkbox. A completed\nchild can therefore remain visibly unsynthesized while a ready, active, or blocked sibling\nstill owes work; selecting synthesis then would demand an operation the lifecycle refuses.\nOnly when that parent's children are terminal does synthesis become the executable highest\nheading.\n\n**orientation derives live blockage only from closeable work state.** A journaled impasse\nis historical testimony and has no event that later marks it complete. Treating such rows\nas the live scheduler makes the heading demand an action the record cannot ever discharge.\nThe work lifecycle owns current blocked state; journal incidents remain visible context\nwithout acquiring scheduler semantics.\n\n**completed work remains unverified until an explicit verification edge names it.** A\npassing command nearby in time cannot establish which work it assessed. V2 regulation\ntherefore treats a completed work order without a `verification --verifies--> work` edge\nas an obligation. This is deliberately stronger than command success and deliberately\nweaker than a proof of semantic correctness; append-only verification receipts remain a\nnamed future limit.\n\n**high-frequency lifecycle hooks start without the analysis dependency stack.**\nPostToolUse is the hottest and most fragile control boundary. Its eager import closure is\nbuilt-ins plus local lifecycle modules; parser registries enter only through the main CLI\ncomposition root. The runtime canary copies the complete source tree into an isolated\nproject with no dependency installation and executes PostToolUse, so a future eager edge\nto a parser package recreates the measured startup failure.\n\n**hook telemetry loss never kills PostToolUse.** Read traces calibrate the context model,\nbut losing that observation is cheaper than breaking every tool call in an agent session.\nThe hook contains both dynamic-load and persistence failures, emits no canonical bytes,\nand leaves the damaged target untouched. A real file-bearing hostile-target canary ensures\nthis contract exercises the write path rather than vacuously recording zero events.\n\n**session startup injects only the exact session's current work order.** Assignment is\nuseful only if the receiving agent can distinguish its authority, success criteria,\ndependencies, write scope, and collisions from another worker's. SessionStart reads the\nwork graph dynamically and emits only records whose owner session exactly matches the\nhost session; failure degrades to a named unavailable reading rather than breaking agent\nstartup.\n\n**session startup teaches the executable swarm loop without manufacturing authority.**\nEvery agent gets the two inert readings that establish direction and fleet state, while\ncreation and handoff remain explicitly conditional on coordination authority. Only an\nexactly owned live order acquires mutation examples, and those examples are selected from\nits standing state and carry both the host session and predecessor token. After one write\nthe token expires and the hook says to inspect again; startup guidance therefore cannot\nturn a stale instruction or a general orientation heading into last-writer-wins authority.\n\n**session startup survives a damaged decision-journal path with named degradation.** The\njournal carries decisions but cannot be allowed to prevent the agent that might repair it\nfrom starting. SessionStart keeps the exact host identity in memory, emits the canonical\ninstructions plus a visible unavailable control, and skips the journal write when the\nstanding path cannot be read or opened. This is degradation, not silent adoption of an\nempty history.\n\n**harness source remains searchable text rather than silently becoming binary.** Agent\nnavigation depends on ordinary repository search seeing every source file. A single literal\nzero byte can make common tools classify an otherwise textual module as binary and omit its\nmatches without a syntax or type error. Keeping control ranges escaped in source preserves\nruntime meaning while making disappearance from the reading surface a loud regression.\n\n**cached decisions expose structurally expired premises.** A decision saves inference only\nwhile the repository addresses supporting it remain live. Broken explicit referents must\nbe louder than readable but stale rationale.\n\n**predicted context closure is calibrated against observed reads and outcomes.** Economy's\none-hop closure is a hypothesis about necessary reading, not cognition. Observed reads and\nlater defect labels give that model a path to correction instead of turning it into dogma.\n\n**calibration preserves the weakest host attribution of its trace.** A Codex parent\nsession file can contain parent and descendant tool use because PostToolUse supplies no\nchild id. Calibration may still compare that aggregate against a patch, but it must name\nthe aggregate rather than relabeling those writes as one agent's work. Legacy rows remain\nunscoped, shared-worktree fallback remains separate, and any unreadable row prevents a\nnew sample instead of disappearing from its denominator.\n\n**reviewed risk sites survive relocation but never duplication.** A ratchet baseline is a\ncached review, and a cached fact that expires on a rename rots the same way a decision's\npremises do — a refactor then spends a reviewer's attention on sites nobody touched, and\nattention spent on false alarms is how a real one gets waved through. Relocation changes\nwhere a reviewed site lives; duplication changes how much unreviewed surface exists, and\nonly the second is news.\n\n**pinned mass follows a value-conserving rename but never absorbs growth.** A mass\ndimension's key embeds a name someone chose — a spec H1, a measure's config key — so a\nrename re-addresses the pin, and a ratchet that reads its own re-addressing as \"gained\nparts nobody named\" prints a lie beside the unchanged total that refutes it (measured:\none H1 edit, 35 lines relabeled, zero gained, gate red). The repair must stay\ncount-conserving: only a vanished pin with the same family, unit and exact value can\nabsorb a new name, or growth and novelty would ride in under renames.\n\n**a claim goes green only on positive evidence its oracle ran.** The verifier's whole\nauthority rests on this one property, and until now no claim cited it: an audit deleted\nthe rule and the tree stayed \"✓ coherent\" while the unit test failed unseen. An exit\ncode is the runner's statement about itself, not about the named test — a filter that\nmatched nothing exits clean on every runner class this repo has measured — so green\nmust require output that names the run, the one reading absence cannot produce.\n\n**a vanished oracle reds its claim, never green-by-absence.** A renamed or deleted test\nleaves a claim citing a name nothing owns, and that claim then guards nothing while\nwearing green. Absence has to be its own observable verdict, distinct from ran-and-failed,\nbecause the two demand different repairs: a red test needs the code fixed, a vanished\noracle needs the contract re-tied to something that exists.\n\n**fast verification rejects a statically vanished Vitest oracle without executing\ntests.** Name ownership is cheaper than test outcome: a literal Vitest declaration either\nstill supplies a runner-style full name or it does not. The edit loop should answer that\nstructural question without buying remote credentials or a suite boot, while refusing to\nturn dynamic or damaged source into false certainty. Static presence therefore remains a\nskip. A complete current population can prove absence; independently, a concrete Git\n`HEAD` owner disappearing from a deleted or still-complete former path proves an ownership\nloss even when unrelated current source is incomplete. If that same path becomes dynamic\nor damaged, it stays explicitly unknown; everything else does too. The\nexecutable tier alone can supply pass/fail evidence. This is a direct-declaration grade,\nnot an evaluator for arbitrary runtime registration; projects beyond it disable\n`staticOracleExistence` or resolve a fresh report.\n\n**fast oracle absence requires a complete direct-declaration population.** Absence is a\nstronger statement than failure: it says the registry owns no matching name. The static\nfloor may say that only when every registration mechanism it recognizes was enumerable;\ndynamic titles, fixture DSLs, registration-time module loads, custom includes, and damaged\nsource must poison absence into UNKNOWN while still allowing positive direct matches.\nOtherwise the cheap tier would turn its own inability to see a live oracle into evidence\nthat the oracle vanished.\n\n**committed platform capabilities survive optional deployment-config toggles.** The graph\ndescribes the capability surface authored code can address, not only what one machine has\nenabled for its next deploy. For Cloudflare stores, a direct `Env` property with a known\nbinding type and a wrangler stanza are two observations of the same binding domain: the\nadapter unions them, collapses agreement, and refuses disagreement. Source inference uses\nthe graph's already-filtered file population, so a generated machine-local environment\ndeclaration cannot become a hidden second walk. Runtime-variable names are retained as\ndeclarations, but their deployment values are unrepresentable in `Bindings` and never\nenter generated artifacts. An optional binding or machine-specific value may therefore\nchange without silently changing the architecture documented for the same source tree.\n\n**a declared invariant unanchored by any boundary fails coverage.** A spec may not\nassert a property that nothing enforces: that is the ratchet the whole harness turns on,\nand if it silently loosened, specs would drift back into aspiration prose. The gap has to\ncost a red at the run that opened it, while the person who opened it still holds the\ncontext to close it.\n\n**a via-test oracle that iterates no live domain fails its claim.** A totality label on a\nsampling test is worse than no label: it retires the reader's suspicion without retiring\nthe risk. Deriving the checked set from the live registry the chokepoint actually serves\nis what makes \"covers every case\" a fact about the system rather than about the fixture\nlist the author remembered.\n\n**a skipped run never clobbers an oracle's recorded verdict.** The record is the last\nknown truth, honestly dated. A fast tier that skips the executable claims every commit\nwould otherwise erase last week's real pass — or, worse, a real fail — with \"did not\nlook\", and history that can be overwritten by not looking is not history.\n\n**a named oracle that no test runs cannot pass.** The serial runner is the component the\nexecutable tier leans its trust on, and it was outside the evidence perimeter — unclaimed,\nuntested, and (measured) willing to exit clean when the cited title survived only as a\nstring in a file. The runner itself must refuse a name it cannot show ran, because every\ngreen above it inherits that refusal.\n\n**an empty derivation against a remembered surface refuses, never passes.** Every verdict\nin this file rests on the graph deriving non-empty, and nothing checked that premise:\ngutting `buildGraph` left the gate printing \"claims: 0\" and \"✓ coherent\", exit 0 —\ndeeper than a vanished oracle, because it empties every check at once while announcing\nthey all passed. The record remembers how many claims the last run graded, so a run that\nsuddenly sees zero must refuse rather than report success over nothing; the only\nlegitimate zero (a project adopting from nothing) is exactly the one with no memory, and\nit gets the adoption ladder instead. The floor deliberately stops at zero: a partial\ncollapse where every component keeps a claim is observationally identical to deliberate\npruning, and deletion has to stay free or people stop deleting. What the complement\nunderneath it actually reaches is narrower than it first appears — a component stripped of\nits claims is still a node someone can red, while a component the walk never discovered\nleaves nothing behind to notice, so an N→1 slide reads as N ordinary prunings. Pinning the\npopulation as a mass dimension is the honest answer there, because the question it settles\nis not whether anything survived but whether as much survived as last time.\n\n**lifecycle hook presence is one canonical runnable bit.** The control surface cannot\ncreate a field if every repository is free to carry a merely similar—or silently dead—\nhook. Printing, installation, and inspection therefore share one five-event value and\none stable launcher per host. Presence means exactly one shared project copy, no competing\nlocal, inline, or legacy path, an aligned host/launcher root, a correct declared root\nmapping, an enabled project-hook layer, and a runnable target. Unrelated hooks may coexist.\nHistorical journal activity is reported beside this bit but can neither redeem current\nabsence nor erase current presence.\n\n**supported lifecycle hosts share one control contract without sharing host syntax.**\nClaude and Codex expose the same five lifecycle meanings through different settings files,\nmatchers, launch commands, and response envelopes. Host parity therefore means deriving\neach complete bundle from one host-selected domain while retaining a distinct fingerprint;\ncopying Claude bytes into Codex would be resemblance, not parity.\n\n**current-session activation requires exact installed-bundle evidence.** Structural\npresence proves that the project control is runnable, not that this session loaded it. A\nsession becomes observed only when its activity names the selected host, launcher\ntransport, and current bundle fingerprint. Direct probes, stale bundles, other sessions,\nand a guessed newest session cannot establish activation; parent-session fallback stays a\nnamed attribution ceiling rather than being promoted to child evidence.\n\n**customized hook text composes declared overrides and appends, degrading to canon on\ndamage.** The canonical hook text is the harness's voice — identical across adopting\nprojects, and byte-testable because of it — but a project knows things the harness cannot:\nits own commands, its conventions, the one warning its history taught it. So a project\ngets a declared voice per event rather than a fork of the hook body, under one composition\nrule with no conflict state: the override answers what the base is, the append answers\nwhat follows it, and both may coexist; an empty override is a deliberate, visible silence,\nnot an error. Damage must degrade to the canonical emission at hook time, because the hook\nbody runs inside every agent session of every adopting project — a torn customization\nfile that broke sessions would make the journal's carrier the thing that kills the work it\nrecords — so a tear costs exactly the customization, never the session, and the loud\nsurface for it is `hooks review`, where a reader is actually looking. Events with no\ncanonical emission — main Stop, PostToolUse — speak only with a declared project voice;\nmain Stop's canonical byte-silence and the attribution reasoning behind it stand unchanged\nas the default.\n\n**python sources feed the same instruments as typescript at their declared grade.**\nThe adapter seam always promised language-agnosticism, but three analyzers and two\nscanners parsed TypeScript directly, so a python project's surface grew invisibly — the\nzero-anchor alarm never fired, parity claims skipped `.py` oracles, duplicated domains\nwent unranked, batch oracles knew one report format, and f-string interpolations were not\nsites. Each instrument now reads python at a DECLARED grade: most through the shared\ngrammar queries of phase 2b (surface, sites, sinks), the oracle arms at the pinned\nindent-block grade their guards froze — in-harness, no subprocess, and since the arms\nported, no compiler dependency at all. The grade is declared, not hidden —\nprecision is preferred over recall everywhere, because an advisory that cries wolf\nretires the reader's attention without retiring risk, and with no compiler behind `.py`\na false positive can never be rescued downstream. What the regex grade deliberately does\nnot count is journaled beside each instrument, so the next reader inherits the boundary\nof the instrument instead of rediscovering it.\n\n**a declared language resolves to a real adapter or refuses, never a silent fallback.**\nThe graph is the one derivation everything downstream consumes, and the adapter decides\nwhat that derivation can see. The old `?? typescript` fallback meant a typo'd language\nname walked the wrong grammar and reported on the garbage with full confidence — the\nsame walking-a-different-tree failure the config loader refuses for, one seam later. So\nan unknown bare name now refuses with the live built-in list, and the same seam is where\na project brings its own language: a `./`-relative module exporting the LanguageAdapter\nshape, validated field-by-field so the refusal names the line that needs fixing.\nImporting project code is not new trust — the atlas already declares at the loadConfig\ncrossing that running the harness in a tree executes that tree's config. What a custom\nadapter buys is the graph tier: symbols, import edges, prose, claims over them. The\nper-language instrument arms (surface counting, oracle analysis, redundancy, sinks,\nbatch formats) remain harness contributions, and the documentation says so, because an\nadapter author who is not told the boundary believes they have the full field when they\nhave half.\n\n**a grammar-backed adapter derives the graph through the same language seam.** The\nregex adapters scale in expert code — the python push measured ~900 hand-built lines\nacross five instrument arms — while a grammar plus capture queries scales in data:\nmodern tree-sitter grammar packages ship a prebuilt wasm, `web-tree-sitter` runs it\nwithout a native toolchain, and the language-specific knowledge shrinks to patterns a\ncontributor can write without touching verdict logic. The factory is async once (wasm\nload) and the adapter it returns is synchronous, so the seam is unchanged and a project\nmodule reaches it with one top-level await. The corpus diff that justified the phase\nalso bounded it: on this repository's own sixty-three TypeScript files the regex grade\nmissed zero symbols a real parse found, so the graph tier was not where parse fidelity\nwas owed. The built-ins then CONVERGED onto the grammar path anyway — not for fidelity\nbut because two implementations of one outcome are two spellings of a domain, the\nredundancy class this harness ranks in other people's code. The regex adapters were\ncorpus-diffed to parity (every delta an enumerated regex mistake), their prose logic\nported verbatim, and then deleted; their grammars ship vendored with provenance. The\ninstrument arms remain hand-built until a later phase ports them to query packs.\n\n**instrument arms read languages through shared grammar queries, never a parallel\nscanner.** Phase 2b's contract, proven first on the injection ratchet: a language\ncontributes captures and signals — which node is an interpolation, how its SQL context\nannounces itself — and the mechanism owns classification, safe-pattern grading, site\nidentity, and the ratchet, once. The regex scanners this replaced matched line TEXT, so\nthey counted `${}` inside plain strings, comments, and test fixtures as sites, bounded\nvisibility at one brace of nesting, and one of them matched its own source. The query\nscan re-pinned the baseline with every delta enumerated: nineteen real nested-brace\nsites gained, one self-match artifact gone. A new language now gains the whole\ninstrument from a table row — ruby's took three lines and no scanner — which is the\ntwo-tier boundary dissolving arm by arm.\n\n**a built-in language pack is data: queries, patterns, and named strategies, never\ncode.** The declarative baseline is what keeps \"add a language\" a table-row act instead\nof an expert contribution — and it is a rule that erodes one convenient function at a\ntime unless something refuses. So the packs are inspectable values aggregated in one\nplace, and a guard sweeps them for function-valued fields by path: the hand-rolled\nscanner class is unrepresentable at the seam, not merely discouraged. The rule's edge\nis honest about what a pack may name — strategies from a closed, mechanism-owned set\n(\"jsdoc\", \"docstring\", \"cooked-string\") — because some knowledge is genuinely\nprocedural; naming it keeps the procedure written once where every language can reach\nit. Project adapter modules remain code territory by definition: purity governs what\nships built in, where a single spelling is the entire point.\n\n**a registered language pack reaches every instrument the built-ins reach, as data, or refuses.** Before the registry, a project could reach the graph tier with its own\nadapter but no further: the surface, sites, sinks, and oracle rows were harness\nconstants, so a fourth language was an upstream contribution or nothing. Opening that\nseam to project code is only safe if what crosses is still reviewable, which is why the\nsame purity rule applies at registration and a function-valued field refuses by path\nbefore any instrument trusts the row. Two alternatives were rejected. A project module\ncalling the registry itself was the obvious shape, but the package exports no entry a\nproject could import, and a module bound to another install's copy would register into\na registry no instrument reads, silently. Shadowing a built-in name was rejected\nbecause it re-grades a different tree under a familiar label. First registration wins\nbecause `signal` and `log` import a historic copy of the project's module from a\nworktree, and the instrument must stay constant across the diff it measures. The gate\nbefore trust was a registered clone of each built-in row over flask, click, and sinatra\nwith files renamed to an extension only the clone reads: zero deltas across graph,\nsurface, sites, sinks, and oracle.\n\n**rust sources feed the same instruments as typescript at their declared grade.** Rust\nis the first language to arrive as one pack through the registry rather than as rows\nspread across five tables, so it is also the registry's proof that a language can reach\ntypescript's level as data. It did not arrive as rows alone, and the boundary is drawn\nwhere the measurements put it: three things rust needs are knowledge no query can hold —\nwhich comment is documentation, what a module path names on disk, and where a format\nstring's placeholders get their values. Each became a strategy the mechanism owns and\nthe pack only names, so the next language with the same shape names it too instead of\nshipping code. The grade is declared the same way python's is. The oracle stays at the\nindent-regex grade, because the grammar-query strategy is typescript-shaped and porting\nit is a separate cost; the price is a named blind spot rather than a hidden one — the\nanchor is a line, so a same-named function above the test is read instead, measured at 0\nof 60 tests on naga and 32 of 383 on ripgrep. A module path that cannot be resolved\nlinks nothing rather than an external package, because a mislabeled dependency is read\ndownstream as fact while a missing edge is only an absence. Trust came the house way:\neach reader gated beside an independent witness (tags.scm, rustdoc's JSON, line-regex\nreaders, the python row) over naga and ripgrep before any guard was written.\n\n**a parse's heap is returned before the next file.** web-tree-sitter trees hold wasm\nheap only an explicit delete returns, and the emscripten heap is fixed — so a leak is\ninvisible on a small repository and fatal on a large one, the worst observability\nprofile a defect can have. The measured incident is the refutation above. The repair is\nthe ladder's top rung, not discipline: `withTree` owns the tree's whole lifetime, every\ncall site takes it, node captures die inside it (the one lazy consumer was made eager\nrather than allowed to touch a freed node), and forgetting to free is unrepresentable.\n\n**an undeclared root refuses the walk, never wanders.** A configless run walks whatever\ndirectory the shell happened to be in and grades that population with full confidence —\nthe incident run was `npx coherence verify` from a home directory, which is not exotic;\nit is the first thing a curious adopter types. The config file's PRESENCE is the\ndeclaration, so `{}` is a complete first rung of the adoption ladder, and the refusal\nprints exactly that one-line bootstrap. Journal, hook, and reference commands never\nwalk, so they stay available in an undeclared directory — the field does not require a\nconfig to remember decisions.\n\n**experiment outcomes require criterion-total evidence.** A\nplan is frozen before work with its predicted context, actions, criteria, and evidence\ncursors. Closure answers every action and criterion exactly once, preserves the assessor,\nand derives success, failure, or inconclusive from criterion statuses rather than accepting\nan outcome label. Otherwise the ledger would turn an incomplete story into a measured loop.\n\n**experiment telemetry preserves its weakest provable attribution.** Trace and activity\nwindows may be empty, prove an exact owner session, or only prove a parent-session aggregate\nthat can include descendants; older trace may carry no observation metadata at all. Those\nfour scopes remain distinct in the immutable close record. Damaged prefixes, unreadable\nrows, and unknown or inconsistent scope refuse. That keeps compatible history without\nturning absence or uncertainty into false precision.\n\n**activity evidence is accepted only when identity, scope, time, and command agree.** A\nrow is useful precisely because later status and experiment readers stop re-deriving the\nhost event. That cached inference is safe only while its relational fields still agree:\nagent attribution names the row session, parent fallback names its parent domain, event\nidentity recomputes, time is canonical, and command kind/result agrees with name and exit\ncode. One strict reader grades that whole relation; malformed rows become counted damage,\nnever partially trusted evidence.\n\n**surviving agent-assessed defect evidence is attributable and internally consistent.** A\nconjecture keeps uncertainty alive; a defect record says an agent crossed that epistemic\nboundary and must therefore carry the evidence for doing so, the repository subject it\njudged, and the caller-attributed writer labels attached to the assessment. Records append per session and\ndedupe exact retries, while the merged reader recomputes the ordinary content address and\nrefuses malformed, inconsistent, or displaced surviving rows. That detects partial damage;\nit does not prove that a valid row was never rewritten with a recomputed id. Committed Git\nhistory is this first recorder's external rewrite and deletion witness, and an independently\nanchored head is future work.\n\n**defect writes refuse pre-existing symlink redirection.** A path beneath the repository\nis not containment when its stable components redirect through a symlink. The reader\ntherefore refuses linked ledger directories and entries, while the writer validates both\ndirectory components and opens the session target without following its final link, then\ncompares the opened descriptor with the standing path before appending. This prevents the\nmeasured stable-state redirects; it is not an `openat`-grade promise against a privileged\nprocess racing parent-directory renames during the append.\n\n**defect provenance is data, never terminal control.** Repository identity is captured by\nthe machine, but the committed row is still untrusted input on its next read. A commit is\ntherefore null or has lowercase SHA-1/SHA-256 object-name shape, never merely a nonempty string; the\nhuman renderer also neutralizes its bytes. Without both the semantic constraint and the\noutput encoding, an edited but re-addressed row could turn provenance into a terminal\ninstruction while remaining structurally valid.\n\n**a streamed journal entry renders exactly once across appends and compaction.** The live\nstream exists for the one reader the settled render cannot serve — an orchestrator watching\nfive subagents mid-flight — and that reader has no way to audit the feed against the files.\nA dropped entry is a decision the orchestrator never saw, indistinguishable from one never\nmade; a duplicate teaches the opposite lie, that a question was decided twice. Both are\ncheap to produce, because the journal's files do not strictly grow: compaction moves lines\nbetween files and unlinks the originals, which a position-addressed reader replays in full.\nSo a record's identity in the stream comes from its content — the same triple the merged\ntimeline sorts by — and a moved line is one the feed already carried.\n\n(The import claims above separately prove that the composition root still reaches the\nconfiguration loader, graph derivation, verifier, spec walker, and journal.)",
       "invariants": [
         "agent lifecycle preserves decisions and exposes the current change signal",
         "significant behavioral growth acquires an anchor or patch-specific decision",
@@ -158,6 +164,7 @@
         "instrument arms read languages through shared grammar queries, never a parallel scanner",
         "a built-in language pack is data: queries, patterns, and named strategies, never code",
         "a registered language pack reaches every instrument the built-ins reach, as data, or refuses",
+        "rust sources feed the same instruments as typescript at their declared grade",
         "a parse's heap is returned before the next file",
         "an undeclared root refuses the walk, never wanders",
         "experiment outcomes require criterion-total evidence",
@@ -169,6 +176,7 @@
         "a streamed journal entry renders exactly once across appends and compaction"
       ],
       "refutations": [
+        "rust sources feed the same instruments as typescript at their declared grade: three rust needs were measured broken before a strategy was named for each. With the relative import strategy, naga's 245 `use` paths derived 0 internal edges and `crate::value::{Name, Value}` became an external package. With the line doc scanner, every `///` line read as `/ text` and the 38 doc blocks above `#[derive]` read nothing. A captures-only sinks row mangled every expression and found 1 SQL site. After the strategies, the python-twin oracle guard went red on the row itself: `!k.is_empty()` on each element read as a domain floor, so the floor now needs a const-shaped receiver.",
         "a registered language pack reaches every instrument the built-ins reach, as data, or refuses: three paths read instrument rows without loading the configured language module. With the preload removed from the `lint-sinks` branch, a project pack's sinks row never registered and its SQL interpolation read 0 sites. With it removed from `analyzeChange`, signal's before-side worktree imported the historic module first, so both sides read the historic rows and a patch adding one export read `+0 exports`. A third failure surfaced on a Go pack whose grammar lives in `node_modules`: the before-side worktree built its graph from the historic copy's grammar path, which the worktree does not have, and signal crashed with ENOENT; the graph now derives from the held pack. The guard reds on all three (checked by hand) and pins them.",
         "session startup survives a damaged decision-journal path with named degradation: with `.coherence/decisions` replaced by a regular file, SessionStart threw raw `ENOTDIR` before emitting any instructions. It now retains the exact host session, names `JOURNAL CONTROL unavailable`, performs no journal write, and exits zero.",
         "session startup teaches the executable swarm loop without manufacturing authority: after the work graph, orientation, and consequence ledger shipped, canonical startup still taught only the decision journal and experiment planning; an exact assignment printed `work inspect` but no safe way to accept, block, hand off, or close it. Startup now names the read-only heading and fleet reads for everyone, reserves create/handoff for explicit coordination authority, and emits state-valid lifecycle commands with the standing predecessor only beside work owned by that exact session.",
@@ -542,7 +550,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/adapters/tree-sitter.ts",
-      "line": 66,
+      "line": 71,
       "prose": "Ruby at query grade: methods, singleton methods, classes, modules, constants;\n `require`/`require_relative` string arguments as import edges; `#` doc blocks."
     },
     {
@@ -552,7 +560,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/adapters/tree-sitter.ts",
-      "line": 183,
+      "line": 222,
       "prose": "TypeScript at query grade: exported top-level declarations + class methods. Mirrors\n the retired regex adapter's declared intent; corpus-diffed against it before the\n swap (63 files, 625 symbols, zero missed — the 2 deltas are regex over-reports)."
     },
     {
@@ -562,7 +570,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/adapters/tree-sitter.ts",
-      "line": 209,
+      "line": 248,
       "prose": "Python at query grade: module-level defs/classes/assignments + class methods,\n decorated forms included. Corpus-diffed against the retired regex adapter over\n flask/src (24 files, 430 symbols; the 8 deltas were regex nesting mistakes)."
     },
     {
@@ -572,7 +580,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/adapters/tree-sitter.ts",
-      "line": 236
+      "line": 275
     },
     {
       "id": "s:src/adapters/tree-sitter.ts#GrammarHandle",
@@ -581,7 +589,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/adapters/tree-sitter.ts",
-      "line": 313,
+      "line": 353,
       "prose": "One memoized {language, parser} per grammar — the graph adapter AND the instrument\n arms (phase 2b) query the same loaded grammar instead of re-reading wasm. A name no\n built-in claims resolves through a registered pack's `grammar` path, else refuses."
     },
     {
@@ -591,7 +599,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/adapters/tree-sitter.ts",
-      "line": 315
+      "line": 355
     },
     {
       "id": "s:src/adapters/tree-sitter.ts#BUILTIN_LANGUAGES",
@@ -600,7 +608,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/adapters/tree-sitter.ts",
-      "line": 342
+      "line": 382
     },
     {
       "id": "x:node:url",
@@ -2421,7 +2429,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/derive.ts",
-      "line": 54,
+      "line": 59,
       "prose": "Resolve `cfg.language` to an adapter: a built-in name, or a `./`-relative project\nmodule (conventionally `.coherence/adapters/<lang>.mjs`) exporting a LanguageAdapter,\na `languagePack`, or both.\n\nAN UNKNOWN BARE NAME REFUSES. The `?? typescript` fallback this replaces meant\n`\"language\": \"go\"` silently walked Go files with the TypeScript grammar and reported\non the garbage with full confidence — the same walking-a-DIFFERENT-tree failure\nloadConfig refuses for when the config itself is unreadable. Importing a project\nmodule executes project code, which is the trust the atlas already declares at the\nloadConfig crossing: running the harness in a tree executes that tree's config.\n\nTHE ONE PROJECT PATH INTO THE INSTRUMENTS. A module's `languagePack` export is DATA the\nloader registers (purity-checked; a relative `grammar` resolves against the module), so\nits rows reach surface, sites, sinks, and oracle as the built-ins' do — and its `graph`\nspec builds the adapter when the module exports none. The loader registers rather than\nthe module calling the registry itself: the package exports no entry a project could\nimport, and a module bound to a different install's registry would register into a\ncopy no instrument reads. Memoized per module path, so every command that needs the\nrows registered can call this first at no cost."
     },
     {
@@ -2431,8 +2439,28 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/derive.ts",
-      "line": 128,
+      "line": 141,
       "prose": "THE documented-symbol predicate — one spelling, homed with the code that SETS `prose`\n (the `add({ …, prose: what || undefined })` call below). verify's coverage line\n (\"symbols N/M documented\"), its `[doc]` jobs, and mass's `undocumented|symbols`\n dimension all read this, so a symbol the coverage advisory calls undocumented is\n exactly one the ratchet counts. It was spelled twice inside verify.ts alone before this\n — the harness's own `redundancy` finding, fixed the way that advisory prescribes:\n derive one spelling from the other, here by deleting the others."
+    },
+    {
+      "id": "s:src/derive.ts#expandUseTree",
+      "parent": "f:src/derive.ts",
+      "label": "expandUseTree",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/derive.ts",
+      "line": 159,
+      "prose": "`a::{b, c::d as e, f::*}` → [a,b] [a,c,d] [a,f]: one segment list per imported path."
+    },
+    {
+      "id": "s:src/derive.ts#resolveRustModule",
+      "parent": "f:src/derive.ts",
+      "label": "resolveRustModule",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/derive.ts",
+      "line": 187,
+      "prose": "Every target one rust import spec names: a known file, or an external crate root."
     },
     {
       "id": "s:src/derive.ts#buildGraph",
@@ -2441,7 +2469,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/derive.ts",
-      "line": 130
+      "line": 226
     },
     {
       "id": "f:src/doctrine.ts",
@@ -4111,7 +4139,7 @@
       "kind": "file",
       "sub": "src/language-registry.ts",
       "path": "src/language-registry.ts",
-      "prose": "language-registry.ts — the one seam every instrument consults for languages beyond the\nbuilt-ins: a registered pack's rows reach the graph, surface, sites, sinks, and oracle\narms exactly where the built-in rows do.\n\nA LEAF ON PURPOSE. language-packs.ts imports every arm to aggregate the built-ins; the\narms import THIS module to read registered rows. Only `import type` crosses the other\nway (erased at runtime), so the registry can never close an import cycle, and an arm\nreading rows during its own module evaluation (redundancy's top-level grammar load)\nsees a finished registry.\n\nA REGISTERED PACK IS HELD TO THE BUILT-INS' RULE. Data only — query text, patterns,\nnames of mechanism-owned strategies — and the purity sweep runs at registration, so a\nfunction-valued field refuses by path before any instrument trusts the row. A built-in\nname refuses too: shadowing `typescript` would silently re-grade a different tree. The\nFIRST registration of a name wins and later ones are ignored: `signal` and `log` import\na historic copy of the project module from a detached worktree, and pinning the current\ntree's rows keeps the instrument constant across the diff it measures."
+      "prose": "language-registry.ts — the one seam every instrument consults for languages beyond the\nbuilt-ins: a registered pack's rows reach the graph, surface, sites, sinks, and oracle\narms exactly where the built-in rows do.\n\nA LEAF ON PURPOSE. language-packs.ts imports every arm to aggregate the built-ins; the\narms import THIS module to read registered rows. Only `import type` crosses the other\nway (erased at runtime), so the registry can never close an import cycle, and an arm\nreading rows during its own module evaluation (redundancy's top-level grammar load)\nsees a finished registry.\n\nA REGISTERED PACK IS HELD TO THE BUILT-INS' RULE. Data only — query text, patterns,\nnames of mechanism-owned strategies — and the purity sweep runs at registration, so a\nfunction-valued field refuses by path before any instrument trusts the row. A built-in\nname refuses too: shadowing `typescript` would silently re-grade a different tree. The\nFIRST registration of a name wins and later ones are ignored: `signal` and `log` import\na historic copy of the project module from a detached worktree, and pinning the current\ntree's rows keeps the instrument constant across the diff it measures.\n\nFIRST-PARTY PACKS SEED FROM A STATIC LIST, NEVER BY SIDE-EFFECT IMPORT. Rust ships in\nthe package as a pack, not as rows in each arm's table, so `\"language\": \"rust\"` takes\nthe same path a project pack takes. The pack modules are this file's only runtime\nimports and import nothing back but types, so seeding finishes before any arm module\nevaluates — redundancy's top-level grammar load included — whatever imported first."
     },
     {
       "id": "s:src/language-registry.ts#BUILTIN_LANGUAGE_NAMES",
@@ -4120,7 +4148,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/language-registry.ts",
-      "line": 26,
+      "line": 33,
       "prose": "The names the harness ships grammars for. tree-sitter.ts ties its grammar and adapter\n tables to this list with `satisfies`, so tsc is the oracle that the spellings agree."
     },
     {
@@ -4130,7 +4158,7 @@
       "kind": "symbol",
       "sub": "type",
       "path": "src/language-registry.ts",
-      "line": 28,
+      "line": 35,
       "prose": "One shipped language's name — the key type the built-in tables are checked against."
     },
     {
@@ -4140,7 +4168,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/language-registry.ts",
-      "line": 32,
+      "line": 43,
       "prose": "One language, every instrument it covers: DATA ONLY (pack purity). An absent arm is a\n declared gap — that instrument contributes nothing for the language, never a fallback."
     },
     {
@@ -4150,7 +4178,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/language-registry.ts",
-      "line": 46,
+      "line": 57,
       "prose": "Depth-first sweep for function-valued fields; returns the path of each offender.\n RegExp is data (a pattern); a function is code and never belongs in a pack."
     },
     {
@@ -4160,7 +4188,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/language-registry.ts",
-      "line": 57,
+      "line": 68,
       "prose": "Why a would-be pack cannot register, by field — empty when it can. The routing fields\n are checked because an instrument dereferences them for every file it walks; a missing\n one would surface as a crash deep inside a scan instead of a named refusal here."
     },
     {
@@ -4170,7 +4198,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/language-registry.ts",
-      "line": 84,
+      "line": 96,
       "prose": "Register a pack, or throw naming every problem. Returns false when an earlier pack of\n the same name already holds the slot (first registration wins)."
     },
     {
@@ -4180,8 +4208,18 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/language-registry.ts",
-      "line": 93,
+      "line": 109,
       "prose": "The registered pack of one name, if any."
+    },
+    {
+      "id": "s:src/language-registry.ts#registeredNames",
+      "parent": "f:src/language-registry.ts",
+      "label": "registeredNames",
+      "kind": "symbol",
+      "sub": "const",
+      "path": "src/language-registry.ts",
+      "line": 112,
+      "prose": "Every registered pack's name, first-party ones first — what a refusal lists."
     },
     {
       "id": "s:src/language-registry.ts#registeredRows",
@@ -4190,8 +4228,27 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/language-registry.ts",
-      "line": 96,
+      "line": 115,
       "prose": "Every registered row for one instrument arm, in registration order."
+    },
+    {
+      "id": "f:src/languages/rust.ts",
+      "parent": "c:src",
+      "label": "rust.ts",
+      "kind": "file",
+      "sub": "src/languages/rust.ts",
+      "path": "src/languages/rust.ts",
+      "prose": "rust.ts — the first-party Rust pack: one language, every instrument row, as DATA.\n\nFIRST-PARTY, NOT BUILT-IN-BY-TABLE. The three original languages live as rows inside\neach arm's own table; Rust is the first language to arrive as one pack through\nlanguage-registry.ts, seeded from its static first-party list. That keeps the arms'\ntables closed and proves the registry path with a language users actually configure:\n`\"language\": \"rust\"` resolves to this pack exactly as a project's registered pack\nwould, held to the same purity sweep (queries, patterns, and names of mechanism-owned\nstrategies — never functions).\n\nTHE MECHANISM OWNS EVERYTHING RUST NEEDED BEYOND ROWS, BY NAME. Three things a row\ncould not say were measured on a real corpus before anything was named here: rustdoc\ncomments sit above `#[…]` attributes (the default line scanner read nothing for 38 of\n421 doc blocks), `use crate::…`/`super::…` paths are module paths, not file\nspecifiers (unmodified, all 245 `use` paths of the corpus became external nodes), and\nformat-string placeholders are text inside a macro token tree, not interpolation\nnodes. Each is a strategy NAME below (`docStyle: \"rustdoc\"`, `importResolution:\n\"rust-module\"`, …); the code behind each name lives with its instrument."
+    },
+    {
+      "id": "s:src/languages/rust.ts#rustPack",
+      "parent": "f:src/languages/rust.ts",
+      "label": "rustPack",
+      "kind": "symbol",
+      "sub": "const",
+      "path": "src/languages/rust.ts",
+      "line": 24,
+      "prose": "The pack `\"language\": \"rust\"` resolves to. The grammar path resolves identically\n from src/ during dogfood and from dist/ in the shipped package, as the built-ins' do."
     },
     {
       "id": "f:src/lint-sinks.ts",
@@ -4219,7 +4276,17 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/lint-sinks.ts",
-      "line": 65
+      "line": 75
+    },
+    {
+      "id": "s:src/lint-sinks.ts#formatArgSites",
+      "parent": "f:src/lint-sinks.ts",
+      "label": "formatArgSites",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/lint-sinks.ts",
+      "line": 123,
+      "prose": "The \"format-args\" strategy: the expression behind every placeholder of one format\n string, given the argument text that follows the literal in the call. `{{`/`}}` are\n escapes; `{}` takes the next positional argument, `{0}` an explicit one, `{name}` a\n `name = expr` argument when one exists and otherwise the captured identifier itself;\n any `:spec` is dropped. Unresolvable placeholders yield nothing — precision over\n recall, as the python grade's skipped `.format` forms."
     },
     {
       "id": "s:src/lint-sinks.ts#Finding",
@@ -4228,7 +4295,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/lint-sinks.ts",
-      "line": 86
+      "line": 143
     },
     {
       "id": "s:src/lint-sinks.ts#Move",
@@ -4237,7 +4304,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/lint-sinks.ts",
-      "line": 100
+      "line": 157
     },
     {
       "id": "s:src/lint-sinks.ts#Reconciled",
@@ -4246,7 +4313,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/lint-sinks.ts",
-      "line": 101
+      "line": 158
     },
     {
       "id": "s:src/lint-sinks.ts#reconcile",
@@ -4255,7 +4322,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/lint-sinks.ts",
-      "line": 123,
+      "line": 180,
       "prose": "Split the current sites against the baseline into MOVES and genuinely NOVEL sites.\n\n The baseline addresses a site by `context|file|expr`, so relocating a file re-addresses\n every sink inside it. That turns a refactor into a pile of false security alarms — and a\n ratchet whose alarms are routinely wrong is a ratchet reviewers learn to wave through.\n\n A move is a **matched disappearance**: an unmatched current site is a move only if some\n baselined site with the same `context|expr` has VANISHED from the live set, and each\n vanished entry absorbs exactly ONE unmatched site. Count is therefore conserved per\n `context|expr` — a site that was COPIED (the original still live) finds nothing to\n absorb it and stays novel, so the ratchet cannot be laundered by duplicating an\n already-reviewed expression into a new and more dangerous file.\n\n What this deliberately does NOT promise: when several byte-identical sites share one\n `context|expr`, WHICH new path inherits which vanished review is arbitrary (paths are\n paired in sorted order for determinism, not for meaning). The guarantee is the count —\n n vanished sites absorb n relocations and the n+1st is novel. It is also, honestly, a\n loosening: a site that moved into a genuinely more exposed file no longer FAILS the\n check. It is reported by name, from → to, so the fact stays readable rather than\n silent; that is the trade for not crying wolf on every refactor."
     },
     {
@@ -4265,7 +4332,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/lint-sinks.ts",
-      "line": 163
+      "line": 220
     },
     {
       "id": "f:src/mass.ts",
@@ -6174,13 +6241,23 @@
       "prose": "Pure (grammar grade) — domain sites in one python source, through the same\n capture-class engine as every other language. Only the forms the query names become\n sites; everything else is deliberately silence (see header). The retired scan's\n acceptances survive in the pack, not in code: the Enum base-list regex is the\n `@enum.bases` #match? predicate, \"plain string literal\" is the bare-quote #match? on\n `@list.item`, and the CMP_A/CMP_B comparison patterns are the anchored\n `@cmp.cand` shapes (their spelling artifacts kept by the `condition` strategy)."
     },
     {
+      "id": "s:src/redundancy.ts#sitesOfRust",
+      "parent": "f:src/redundancy.ts",
+      "label": "sitesOfRust",
+      "kind": "symbol",
+      "sub": "function",
+      "path": "src/redundancy.ts",
+      "line": 643,
+      "prose": "Pure (grammar grade) — domain sites in one rust source, through the first-party\n pack's registered row: the same capture-class engine, no rust code in the mechanism."
+    },
+    {
       "id": "s:src/redundancy.ts#collectSites",
       "parent": "f:src/redundancy.ts",
       "label": "collectSites",
       "kind": "symbol",
       "sub": "function",
       "path": "src/redundancy.ts",
-      "line": 647
+      "line": 653
     },
     {
       "id": "s:src/redundancy.ts#RedundancyPair",
@@ -6189,7 +6266,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/redundancy.ts",
-      "line": 675
+      "line": 681
     },
     {
       "id": "s:src/redundancy.ts#Suppressed",
@@ -6198,7 +6275,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/redundancy.ts",
-      "line": 684
+      "line": 690
     },
     {
       "id": "s:src/redundancy.ts#RedundancyOpts",
@@ -6207,7 +6284,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/redundancy.ts",
-      "line": 686
+      "line": 692
     },
     {
       "id": "s:src/redundancy.ts#REDUNDANCY_DEFAULTS",
@@ -6216,7 +6293,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/redundancy.ts",
-      "line": 696,
+      "line": 702,
       "prose": "`Required<RedundancyOpts>`, not a bare object literal: the first dogfood run flagged this\ntable against the interface above it (5 shared keys, tied by nothing). The annotation makes\ntsc the oracle, which is the tier-1 fix — and the pair now suppresses as compiler-enforced."
     },
     {
@@ -6226,7 +6303,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/redundancy.ts",
-      "line": 717,
+      "line": 723,
       "prose": "The site's name with any POSITIONAL suffix replaced by a digest of its own tokens.\n\n Alternation sites are named `alternation@<line>` — the line is INSIDE the name, so\n dropping the `@line` from the id is not enough. Two ways to fix it and only one works:\n stripping the suffix outright fuses every alternation in a file into one key (two real\n findings collapse, and the second is swallowed), while digesting the token set keeps\n them apart and does not move when the file does. A changed token set IS a different\n enumeration, so re-keying on it is the honest behaviour rather than a leak."
     },
     {
@@ -6236,7 +6313,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/redundancy.ts",
-      "line": 725,
+      "line": 731,
       "prose": "A site, as a thing a reader can go and find: file, how it was spelled, what it is\n called. No line, no token count, no score."
     },
     {
@@ -6246,7 +6323,7 @@
       "kind": "symbol",
       "sub": "const",
       "path": "src/redundancy.ts",
-      "line": 733,
+      "line": 739,
       "prose": "THE PAIR'S IDENTITY IS THE PAIR OF SITES, sorted so A|B and B|A are one question.\n\n Everything else the report prints about a pair is excluded on purpose, and the score is\n the one that matters: `df` is computed over the WHOLE TREE, so a token appearing in one\n more unrelated file re-ranks every pair in the repo. A key holding the score would open\n a fresh question on an edit that touched neither site."
     },
     {
@@ -6256,7 +6333,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/redundancy.ts",
-      "line": 749,
+      "line": 755,
       "prose": "Pure — pair the sites and rank them. `declared` is the set of symbol names any parity\nclaim already names (domain / fnA / fnB): a declared agreement is not a finding, which\nis the point of the whole command.\n\nThe score is deliberately small and explainable:\n  |shared| × (0.35 + 0.65·distinctness) × mediumW × fileW × divergenceW\nwhere distinctness is the fraction of shared tokens that appear at NO third site (two\nsites owning a private vocabulary is the strong case; tokens scattered everywhere are\nproject idiom), mediumW favours code↔prose (no compiler can ever check it), fileW\ndiscounts same-file pairs, and divergenceW rewards sets that ALREADY disagree — a\ntranscription that has drifted is a finding on its own evidence."
     },
     {
@@ -6266,7 +6343,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/redundancy.ts",
-      "line": 838,
+      "line": 844,
       "prose": "The symbol names any parity claim already names — those pairs are declared, not found."
     },
     {
@@ -6276,7 +6353,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/redundancy.ts",
-      "line": 855,
+      "line": 861,
       "prose": "THE REPORTING FLOOR, in one place. The render shows these and — separately — these are\n the only pairs allowed to become journal entries. Sharing the function rather than\n restating the filter is the point: \"raise only what the advisory already reports\" has\n to be enforced by construction, or the two copies drift and raising quietly widens."
     },
     {
@@ -6286,7 +6363,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/redundancy.ts",
-      "line": 860
+      "line": 866
     },
     {
       "id": "s:src/redundancy.ts#pairFindings",
@@ -6295,7 +6372,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/redundancy.ts",
-      "line": 910,
+      "line": 916,
       "prose": "A pair, as a QUESTION. The render already forms this suspicion and then throws it away\n by printing it — \"either the difference is intended (say so), or one side drifted\" is a\n conjecture with two candidates, verbatim, scrolled past once per run forever.\n\n The observation carries line numbers and a score because it is a SNAPSHOT of what was\n seen; identity comes from `pairSubject`, which carries neither. Separating the two is\n what lets the sentence be useful and the key be stable at the same time."
     },
     {
@@ -6305,7 +6382,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/redundancy.ts",
-      "line": 954
+      "line": 960
     },
     {
       "id": "s:src/redundancy.ts#redundancy",
@@ -6314,7 +6391,7 @@
       "kind": "symbol",
       "sub": "function",
       "path": "src/redundancy.ts",
-      "line": 957,
+      "line": 963,
       "prose": "The `coherence redundancy` command. Advisory: always returns 0."
     },
     {
@@ -7540,13 +7617,23 @@
       "prose": "A raw spec parsed from a *.spec.md file."
     },
     {
+      "id": "s:src/types.ts#ImportResolution",
+      "parent": "f:src/types.ts",
+      "label": "ImportResolution",
+      "kind": "symbol",
+      "sub": "type",
+      "path": "src/types.ts",
+      "line": 39,
+      "prose": "How derive.ts turns one import spec into an edge — a NAME from the closed set the\n mechanism owns (pack purity: data, never code). \"relative\": a `./`-specifier is a\n file, anything else an external package. \"rust-module\": a spec is a module path\n (`crate::`, `super::`, `self::`, a `mod foo;` name) resolved through the crate's\n file tree, anything unresolved an external crate root."
+    },
+    {
       "id": "s:src/types.ts#LanguageAdapter",
       "parent": "f:src/types.ts",
       "label": "LanguageAdapter",
       "kind": "symbol",
       "sub": "interface",
       "path": "src/types.ts",
-      "line": 35,
+      "line": 42,
       "prose": "How to read a language's code — symbols, imports, and where docblocks live."
     },
     {
@@ -7556,7 +7643,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/types.ts",
-      "line": 44,
+      "line": 52,
       "prose": "How to read a platform's infra config (optional — null platform = none)."
     },
     {
@@ -7566,7 +7653,7 @@
       "kind": "symbol",
       "sub": "interface",
       "path": "src/types.ts",
-      "line": 52
+      "line": 60
     },
     {
       "id": "f:src/verify.ts",
@@ -8651,6 +8738,15 @@
       "prose": "novelty-python.test.ts — Python parity for the novelty-vs-anchor advisory. The gap\nthis guards: signal.ts's zero-anchor growth alarm rides on scanSurface/surfaceSignals/\nnoveltyVerdict, and until the regex-grade Python scan landed, a Python project grew\nbehavioral surface invisibly — no exports, no variants, no alarm. These tests pin what\nCOUNTS (module defs/classes/consts, Enum members, dict keys, Literal alternatives),\nwhat deliberately does NOT (underscore-prefixed names, nested defs, methods, docstring\nexample code, test files), and that Python growth registers exactly the way TS growth\ndoes — through the same public API, no signature changes."
     },
     {
+      "id": "f:test/novelty-rust.test.ts",
+      "parent": "c:test",
+      "label": "novelty-rust.test.ts",
+      "kind": "file",
+      "sub": "test/novelty-rust.test.ts",
+      "path": "test/novelty-rust.test.ts",
+      "prose": "novelty-rust.test.ts — rust feeds the zero-anchor alarm through the first-party pack's\nsurface row: visible top-level items are exports, a visible enum's variants are a\ndomain, and private, nested, and integration-test items are not surface."
+    },
+    {
       "id": "f:test/novelty.test.ts",
       "parent": "c:test",
       "label": "novelty.test.ts",
@@ -8844,6 +8940,33 @@
       "prose": "run-named-test.test.ts — the serial oracle runner's own contract, now INSIDE the\nevidence perimeter (src/run-named-test.ts; scripts/run-named-test.mjs is a thin entry).\nThe property that matters is the one the whole executable tier leans on: a name that\nexists NOWHERE exits nonzero — a claim citing a vanished oracle must fail, not pass\nquietly. This is the runner-side half of what the serial canary probes at verify time."
     },
     {
+      "id": "f:test/rust-graph.test.ts",
+      "parent": "c:test",
+      "label": "rust-graph.test.ts",
+      "kind": "file",
+      "sub": "test/rust-graph.test.ts",
+      "path": "test/rust-graph.test.ts",
+      "prose": "rust-graph.test.ts — the rust pack's graph tier: symbols at the declared positions,\nrustdoc prose through attributes, and module-path imports resolved through the crate's\nfile tree. Each fixture shape is one the corpus gate measured (naga, ripgrep): the\ndoc above `#[derive]`, `mod foo;` → foo.rs and foo/mod.rs, `crate::a::B` → a.rs."
+    },
+    {
+      "id": "f:test/rust-oracle.test.ts",
+      "parent": "c:test",
+      "label": "rust-oracle.test.ts",
+      "kind": "file",
+      "sub": "test/rust-oracle.test.ts",
+      "path": "test/rust-oracle.test.ts",
+      "prose": "rust-oracle.test.ts — the meta-oracle's rust row, at python's indent-regex grade. The\nwitness is the python row itself: each rust fixture is the structural twin of a python\none, and the two rows must reach the same verdict per shape. The declared blind spot —\nthe anchor is the first matching line, not the #[test] fn — is pinned so a fix to it\nis a deliberate change to this file, never a silent one."
+    },
+    {
+      "id": "f:test/rust-redundancy.test.ts",
+      "parent": "c:test",
+      "label": "rust-redundancy.test.ts",
+      "kind": "file",
+      "sub": "test/rust-redundancy.test.ts",
+      "path": "test/rust-redundancy.test.ts",
+      "prose": "rust-redundancy.test.ts — rust duplicate-domain sites through the first-party pack's\nsite row and the shared capture-class engine. The pair shape is the one the corpus gate\nfound in real code (a const op list and the dispatch switch that re-spells it); the\nmatch over enum variants is the one rustc already checks, so it must stay silent."
+    },
+    {
       "id": "f:test/signal.test.ts",
       "parent": "c:test",
       "label": "signal.test.ts",
@@ -8869,6 +8992,15 @@
       "sub": "test/sinks-ruby.test.ts",
       "path": "test/sinks-ruby.test.ts",
       "prose": "sinks-ruby.test.ts — ruby gains the injection ratchet through the shared query table:\nno ruby-specific scanner exists, only capture data, which is the whole point of 2b."
+    },
+    {
+      "id": "f:test/sinks-rust.test.ts",
+      "parent": "c:test",
+      "label": "sinks-rust.test.ts",
+      "kind": "file",
+      "sub": "test/sinks-rust.test.ts",
+      "path": "test/sinks-rust.test.ts",
+      "prose": "sinks-rust.test.ts — rust gains the injection ratchet through the format-args strategy:\nplaceholders parsed out of a format! literal and mapped to the call's arguments, with\nmarkup read off the literal so generics on the line are never HTML."
     },
     {
       "id": "f:test/sinks.test.ts",
@@ -10269,6 +10401,12 @@
       "kind": "imports"
     },
     {
+      "id": "f:src/language-registry.ts->f:src/languages/rust.ts:imports",
+      "source": "f:src/language-registry.ts",
+      "target": "f:src/languages/rust.ts",
+      "kind": "imports"
+    },
+    {
       "id": "f:src/language-registry.ts->f:src/adapters/tree-sitter.ts:imports",
       "source": "f:src/language-registry.ts",
       "target": "f:src/adapters/tree-sitter.ts",
@@ -10296,6 +10434,18 @@
       "id": "f:src/language-registry.ts->f:src/oracle-domain.ts:imports",
       "source": "f:src/language-registry.ts",
       "target": "f:src/oracle-domain.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/languages/rust.ts->x:node:url:imports",
+      "source": "f:src/languages/rust.ts",
+      "target": "x:node:url",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/languages/rust.ts->f:src/language-registry.ts:imports",
+      "source": "f:src/languages/rust.ts",
+      "target": "f:src/language-registry.ts",
       "kind": "imports"
     },
     {
@@ -13449,6 +13599,30 @@
       "kind": "imports"
     },
     {
+      "id": "f:test/novelty-rust.test.ts->x:node:test:imports",
+      "source": "f:test/novelty-rust.test.ts",
+      "target": "x:node:test",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/novelty-rust.test.ts->x:node:assert/strict:imports",
+      "source": "f:test/novelty-rust.test.ts",
+      "target": "x:node:assert/strict",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/novelty-rust.test.ts->f:src/novelty.ts:imports",
+      "source": "f:test/novelty-rust.test.ts",
+      "target": "f:src/novelty.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/novelty-rust.test.ts->f:test/_helpers.ts:imports",
+      "source": "f:test/novelty-rust.test.ts",
+      "target": "f:test/_helpers.ts",
+      "kind": "imports"
+    },
+    {
       "id": "f:test/novelty.test.ts->x:node:test:imports",
       "source": "f:test/novelty.test.ts",
       "target": "x:node:test",
@@ -14307,6 +14481,96 @@
       "kind": "imports"
     },
     {
+      "id": "f:test/rust-graph.test.ts->x:node:test:imports",
+      "source": "f:test/rust-graph.test.ts",
+      "target": "x:node:test",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/rust-graph.test.ts->x:node:assert/strict:imports",
+      "source": "f:test/rust-graph.test.ts",
+      "target": "x:node:assert/strict",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/rust-graph.test.ts->f:test/_helpers.ts:imports",
+      "source": "f:test/rust-graph.test.ts",
+      "target": "f:test/_helpers.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/rust-graph.test.ts->f:src/derive.ts:imports",
+      "source": "f:test/rust-graph.test.ts",
+      "target": "f:src/derive.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/rust-graph.test.ts->f:src/language-registry.ts:imports",
+      "source": "f:test/rust-graph.test.ts",
+      "target": "f:src/language-registry.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/rust-graph.test.ts->f:src/languages/rust.ts:imports",
+      "source": "f:test/rust-graph.test.ts",
+      "target": "f:src/languages/rust.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/rust-graph.test.ts->f:src/floor.ts:imports",
+      "source": "f:test/rust-graph.test.ts",
+      "target": "f:src/floor.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/rust-oracle.test.ts->x:node:test:imports",
+      "source": "f:test/rust-oracle.test.ts",
+      "target": "x:node:test",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/rust-oracle.test.ts->x:node:assert/strict:imports",
+      "source": "f:test/rust-oracle.test.ts",
+      "target": "x:node:assert/strict",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/rust-oracle.test.ts->f:src/oracle-domain.ts:imports",
+      "source": "f:test/rust-oracle.test.ts",
+      "target": "f:src/oracle-domain.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/rust-oracle.test.ts->f:test/_helpers.ts:imports",
+      "source": "f:test/rust-oracle.test.ts",
+      "target": "f:test/_helpers.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/rust-redundancy.test.ts->x:node:test:imports",
+      "source": "f:test/rust-redundancy.test.ts",
+      "target": "x:node:test",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/rust-redundancy.test.ts->x:node:assert/strict:imports",
+      "source": "f:test/rust-redundancy.test.ts",
+      "target": "x:node:assert/strict",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/rust-redundancy.test.ts->f:src/redundancy.ts:imports",
+      "source": "f:test/rust-redundancy.test.ts",
+      "target": "f:src/redundancy.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/rust-redundancy.test.ts->f:test/_helpers.ts:imports",
+      "source": "f:test/rust-redundancy.test.ts",
+      "target": "f:test/_helpers.ts",
+      "kind": "imports"
+    },
+    {
       "id": "f:test/signal.test.ts->x:node:test:imports",
       "source": "f:test/signal.test.ts",
       "target": "x:node:test",
@@ -14448,6 +14712,60 @@
       "id": "f:test/sinks-ruby.test.ts->f:test/_helpers.ts:imports",
       "source": "f:test/sinks-ruby.test.ts",
       "target": "f:test/_helpers.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/sinks-rust.test.ts->x:node:test:imports",
+      "source": "f:test/sinks-rust.test.ts",
+      "target": "x:node:test",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/sinks-rust.test.ts->x:node:assert/strict:imports",
+      "source": "f:test/sinks-rust.test.ts",
+      "target": "x:node:assert/strict",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/sinks-rust.test.ts->x:node:child_process:imports",
+      "source": "f:test/sinks-rust.test.ts",
+      "target": "x:node:child_process",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/sinks-rust.test.ts->x:node:util:imports",
+      "source": "f:test/sinks-rust.test.ts",
+      "target": "x:node:util",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/sinks-rust.test.ts->x:node:fs/promises:imports",
+      "source": "f:test/sinks-rust.test.ts",
+      "target": "x:node:fs/promises",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/sinks-rust.test.ts->x:node:path:imports",
+      "source": "f:test/sinks-rust.test.ts",
+      "target": "x:node:path",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/sinks-rust.test.ts->x:node:url:imports",
+      "source": "f:test/sinks-rust.test.ts",
+      "target": "x:node:url",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/sinks-rust.test.ts->f:test/_helpers.ts:imports",
+      "source": "f:test/sinks-rust.test.ts",
+      "target": "f:test/_helpers.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:test/sinks-rust.test.ts->f:src/lint-sinks.ts:imports",
+      "source": "f:test/sinks-rust.test.ts",
+      "target": "f:src/lint-sinks.ts",
       "kind": "imports"
     },
     {

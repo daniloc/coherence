@@ -6,3 +6,4 @@ Prebuilt wasm shipped by each grammar package, copied verbatim by
 - tree-sitter-typescript.wasm — tree-sitter-typescript@0.23.2
 - tree-sitter-python.wasm — tree-sitter-python@0.25.0
 - tree-sitter-ruby.wasm — tree-sitter-ruby@0.23.1
+- tree-sitter-rust.wasm — tree-sitter-rust@0.24.0

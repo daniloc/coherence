@@ -172,6 +172,23 @@ try {
   ], { cwd: consumer }).stdout);
   assert.deepEqual(narrowed.defects.map((record) => record.session), ["package-session-one"]);
 
+  // The first-party rust pack resolves by bare name from the packed dist: its grammar path
+  // climbs from dist/languages/ to the shipped grammars/, and its module-path imports link.
+  const rustConsumer = join(temporaryRoot, "rust-consumer");
+  await mkdir(join(rustConsumer, "src"), { recursive: true });
+  await writeFile(join(rustConsumer, "coherence.config.json"), `${JSON.stringify({ language: "rust", codeExt: ["rs"] })}\n`);
+  await writeFile(join(rustConsumer, "app.spec.md"), "# app\n\nPacked rust consumer.\n");
+  await writeFile(join(rustConsumer, "src", "lib.rs"), "//! The crate.\nmod store;\n/// A program.\n#[derive(Debug)]\npub struct Program;\n");
+  await writeFile(join(rustConsumer, "src", "store.rs"), "use crate::Program;\npub fn open() {}\n");
+  run(coherence, ["docs"], { cwd: rustConsumer });
+  const rustGraph = JSON.parse(await readFile(join(rustConsumer, "public", "graph.json"), "utf8"));
+  const program = rustGraph.nodes.find((node) => node.id === "s:src/lib.rs#Program");
+  assert.equal(program?.prose, "A program.", "packed rust pack did not derive the documented symbol");
+  assert.ok(
+    rustGraph.edges.some((edge) => edge.source === "f:src/lib.rs" && edge.target === "f:src/store.rs"),
+    "packed rust pack did not resolve `mod store;` to src/store.rs",
+  );
+
   // Both hosts must install from the consumer's packed bin and independently satisfy the
   // structural control bit. No session selector is supplied: this is presence, not a claim
   // that the current runner process was launched by either host.

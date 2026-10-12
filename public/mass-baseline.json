@@ -1,7 +1,7 @@
 [
   {
     "key": "deps|dev",
-    "value": 5,
+    "value": 6,
     "unit": "deps"
   },
   {
@@ -11,37 +11,37 @@
   },
   {
     "key": "deps|transitive",
-    "value": 10,
+    "value": 11,
     "unit": "deps"
   },
   {
     "key": "files|total",
-    "value": 148,
+    "value": 154,
     "unit": "files"
   },
   {
     "key": "lines|Executable contracts",
-    "value": 19719,
+    "value": 20099,
     "unit": "lines"
   },
   {
     "key": "lines|Harness core",
-    "value": 27627,
+    "value": 28033,
     "unit": "lines"
   },
   {
     "key": "lines|Source adapters",
-    "value": 573,
+    "value": 613,
     "unit": "lines"
   },
   {
     "key": "lines|total",
-    "value": 47919,
+    "value": 48745,
     "unit": "lines"
   },
   {
     "key": "measure|graph-claims",
-    "value": 85,
+    "value": 91,
     "unit": "claims"
   },
   {
@@ -51,7 +51,7 @@
   },
   {
     "key": "symbols|total",
-    "value": 773,
+    "value": 780,
     "unit": "symbols"
   },
   {
