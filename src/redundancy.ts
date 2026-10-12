@@ -124,7 +124,7 @@ const isProse = (k: SiteKind) => k === "md-table" || k === "alternation";
 // (comments, f-string interpolations, template substitutions) for identity-dropping —
 // the capture-side residue of kids().
 
-interface SiteLanguage {
+export interface SiteLanguage {
   grammar: string;
   query: string;
   /** How a captured string literal yields its token — a mechanism-owned unquoting

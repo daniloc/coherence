@@ -69,7 +69,7 @@ export interface FileSurface { exports: Set<string>; domains: Map<string, Set<st
 // generic argument) matches neither pattern, preserving the old union-edges-only walk.
 // Those deeper matches carry no name; the mechanism attaches them to the enclosing
 // captured `@lit.body` by byte range.
-interface SurfaceLanguage {
+export interface SurfaceLanguage {
   ext: RegExp;
   grammar: string;
   query: string;

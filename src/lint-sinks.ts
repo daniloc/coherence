@@ -52,7 +52,7 @@ const BASELINE = "sinks-baseline.json";
 // or `text-shape` (the literal's own text carries a statement shape, for languages
 // whose string delimiters consume the quotes). HTML stays a line signal in every
 // language. The safe-pattern config grades the bare expression identically throughout.
-interface SinkLanguage {
+export interface SinkLanguage {
   ext: string;
   grammar: string;
   query: string;
