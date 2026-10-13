@@ -23,7 +23,8 @@
 // identically whichever grade derived them.
 import { fileURLToPath } from "node:url";
 import { Parser, Language, Query, type Tree } from "web-tree-sitter";
-import type { LanguageAdapter } from "../types.ts";
+import type { LanguageAdapter, ImportResolution } from "../types.ts";
+import { registeredPack, type BuiltinLanguageName } from "../language-registry.ts";
 
 /**
  * THE ONLY SANCTIONED WAY TO PARSE. web-tree-sitter trees hold wasm heap that only an
@@ -53,8 +54,13 @@ export interface TreeSitterLanguageSpec {
   /** Prose-extraction strategy, NAMED from a closed set the mechanism owns — a pack
    *  carries data, never code (the pack-purity invariant). "line" reads lineComment
    *  blocks; "jsdoc" adds block comments; "docstring" prefers the literal below a
-   *  def/class. Default "line". */
-  docStyle?: "line" | "jsdoc" | "docstring";
+   *  def/class; "rustdoc" reads `///` blocks through `#[…]` attributes and `//!` as the
+   *  file doc. Default "line". */
+  docStyle?: "line" | "jsdoc" | "docstring" | "rustdoc";
+  /** How an import spec becomes an edge, NAMED like docStyle (derive.ts owns the code):
+   *  "relative" (default) links `./`-specifiers to files; "rust-module" resolves module
+   *  paths through the crate's file tree. */
+  importResolution?: ImportResolution;
   /** Escape hatch for PROJECT adapter modules only (rung 2 is code territory by
    *  definition). Built-in packs must not use it — the purity guard enforces that. */
   docs?: { docAbove(lines: string[], line: number): string; fileDoc(lines: string[]): string };
@@ -169,11 +175,45 @@ const pythonDocs = {
   },
 };
 
+/** Rust prose is rustdoc's: `///` lines, which routinely sit ABOVE the item's `#[…]`
+ *  attributes (`#[derive(…)]` between doc and struct is the idiom — the line scanner
+ *  read nothing for 38 of 421 doc blocks on the gate corpus), and `//!` inner docs for
+ *  the file. Plain `//` and `////` comments are not docs, exactly as rustdoc rules. */
+const RUSTDOC = /^\s*\/\/\/(?!\/)\s?/;
+const rustDocs = {
+  docAbove(lines: string[], lineNo: number): string {
+    const b: string[] = [];
+    for (let i = lineNo - 2; i >= 0; i--) {
+      const t = lines[i].trim();
+      if (RUSTDOC.test(lines[i])) { b.unshift(lines[i].replace(RUSTDOC, "")); continue; }
+      if (t.startsWith("#[")) continue;
+      // a rustfmt-wrapped attribute: its closing `)]`/`]` line, walked up to the `#[`
+      if (t.endsWith("]") && !t.startsWith("//")) {
+        let k = i - 1;
+        while (k >= 0 && k > i - 50 && lines[k].trim() && !lines[k].trim().startsWith("#[") && !lines[k].trim().startsWith("//")) k--;
+        if (k >= 0 && lines[k].trim().startsWith("#[")) { i = k; continue; }
+      }
+      break;
+    }
+    const c = b.join("\n").replace(/\n{3,}/g, "\n\n").trim();
+    return /^[\s\-─=*]+$/.test(c) ? "" : c;
+  },
+  fileDoc(lines: string[]): string {
+    let i = 0;
+    while (i < lines.length && (!lines[i].trim() || lines[i].trim().startsWith("#!["))) i++;
+    const b: string[] = [];
+    for (; i < lines.length && lines[i].trim().startsWith("//!"); i++) b.push(lines[i].replace(/^\s*\/\/!\s?/, ""));
+    const c = b.join("\n").replace(/\n{3,}/g, "\n\n").trim();
+    return /^[\s\-─=*]+$/.test(c) ? "" : c;
+  },
+};
+
 /** The closed strategy set the `docStyle` field names. "line" is absent on purpose:
  *  it is the factory's default scanners below, parameterized by lineComment. */
 const DOC_STRATEGIES: Record<string, { docAbove(lines: string[], line: number): string; fileDoc(lines: string[]): string } | undefined> = {
   jsdoc: typescriptDocs,
   docstring: pythonDocs,
+  rustdoc: rustDocs,
 };
 
 /** TypeScript at query grade: exported top-level declarations + class methods. Mirrors
@@ -246,6 +286,7 @@ export async function makeTreeSitterAdapter(
   const commentPrefix = spec.lineComment;
   return {
     exts: spec.exts,
+    ...(spec.importResolution ? { importResolution: spec.importResolution } : {}),
     symbols(src: string) {
       return withTree(parser, src, [] as Array<{ name: string; kind: string; line: number }>, (tree) => {
       const out: Array<{ name: string; kind: string; line: number }> = [];
@@ -304,20 +345,22 @@ const BUILTIN_WASM: Record<string, string> = {
   typescript: "tree-sitter-typescript.wasm",
   python: "tree-sitter-python.wasm",
   ruby: "tree-sitter-ruby.wasm",
-};
+} satisfies Record<BuiltinLanguageName, string>;
 
-/** One memoized {language, parser} per built-in grammar — the graph adapter AND the
- *  instrument arms (phase 2b) query the same loaded grammar instead of re-reading wasm. */
+/** One memoized {language, parser} per grammar — the graph adapter AND the instrument
+ *  arms (phase 2b) query the same loaded grammar instead of re-reading wasm. A name no
+ *  built-in claims resolves through a registered pack's `grammar` path, else refuses. */
 export interface GrammarHandle { language: Language; parser: Parser }
 const handleCache = new Map<string, Promise<GrammarHandle>>();
 export function grammarHandle(name: keyof typeof BUILTIN_WASM | string): Promise<GrammarHandle> {
   let cached = handleCache.get(name);
   if (!cached) {
     const wasm = BUILTIN_WASM[name];
-    if (!wasm) return Promise.reject(new Error(`no built-in grammar named ${JSON.stringify(name)}`));
+    const path = wasm ? grammarPath(wasm) : registeredPack(name)?.grammar;
+    if (!path) return Promise.reject(new Error(`no built-in or registered grammar named ${JSON.stringify(name)}`));
     cached = (async () => {
       await Parser.init();
-      const language = await Language.load(grammarPath(wasm));
+      const language = await Language.load(path);
       const parser = new Parser();
       parser.setLanguage(language);
       return { language, parser };
@@ -340,4 +383,4 @@ export const BUILTIN_LANGUAGES: Record<string, () => Promise<LanguageAdapter>> =
   typescript: memo("typescript", "tree-sitter-typescript.wasm", typescript),
   python: memo("python", "tree-sitter-python.wasm", python),
   ruby: memo("ruby", "tree-sitter-ruby.wasm", ruby),
-};
+} satisfies Record<BuiltinLanguageName, unknown>;

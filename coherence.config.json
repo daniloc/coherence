@@ -245,6 +245,12 @@
         "security": true,
         "translates": "The config's `language` value becomes the adapter whose grammar derives the entire graph — a built-in name, or a project module imported and EXECUTED from the tree under analysis (the same declared trust as loadConfig's argv). An unknown name refuses with the live built-in list rather than falling back to the typescript grammar, because a wrong adapter walks a different tree than the one configured and every downstream gate grades the garbage with full confidence."
       },
+      "registerLanguagePack": {
+        "from": "project-source",
+        "to": "derived-model",
+        "security": true,
+        "translates": "A project module's exported languagePack becomes rows every instrument trusts: surface, sites, sinks, and oracle read them beside the built-ins, and grammarHandle loads the wasm the pack names. Only data crosses: the purity sweep refuses any function-valued field by path, a built-in name refuses rather than shadow it, and the first registration of a name holds so a historic worktree copy cannot re-grade the current tree."
+      },
       "makeTreeSitterAdapter": {
         "from": "project-source",
         "to": "derived-model",
@@ -255,7 +261,7 @@
         "from": "project-source",
         "to": "derived-model",
         "security": false,
-        "translates": "One file's text becomes counted behavioral surface — exported symbols, domain variants, keyed-table keys — for both languages the harness reads. The change signal's zero-anchor alarm consumes these counts, so a language this crossing cannot see grows silently; python is read at the declared regex grade rather than not at all."
+        "translates": "One file's text becomes counted behavioral surface — exported symbols, domain variants, keyed-table keys — for every language the harness reads. The change signal's zero-anchor alarm consumes these counts, so a language this crossing cannot see grows silently; python is read at the declared regex grade rather than not at all."
       },
       "analyzeParityOracle": {
         "from": "project-source",
@@ -269,11 +275,23 @@
         "security": false,
         "translates": "Python enumeration sites — module dicts, Enum bodies, string-constant collections, match/elif chains — become candidate token sets for the undeclared-duplication ranker, the same shape the TS extractor emits. Advisory only; with no compiler behind .py, precision is earned at extraction because nothing downstream can rescue a false positive."
       },
+      "sitesOfRust": {
+        "from": "project-source",
+        "to": "derived-model",
+        "security": false,
+        "translates": "Rust enumeration sites — enum variant lists, struct fields, string arrays behind const/static/let, string-literal match arms, == chains — become candidate token sets for the undeclared-duplication ranker through the first-party pack's row and the same capture-class engine. A match over enum variants is deliberately not a site: rustc's exhaustiveness check is already the oracle there."
+      },
+      "resolveRustModule": {
+        "from": "project-source",
+        "to": "derived-model",
+        "security": false,
+        "translates": "A rust use path or mod declaration becomes graph import edges: crate::, self::, super:: and child-module names resolve through the crate's file tree by longest module prefix, anything else one external node per crate root. A path that resolves to no file links nothing, because a crate's own module mislabeled as an external package would be read downstream as a dependency fact."
+      },
       "lintSinks": {
         "from": "project-source",
         "to": "verdict",
         "security": true,
-        "translates": "Raw interpolations into dangerous contexts — JS template literals and python f-strings alike — become the ratcheted review surface. A NEW unreviewed site fails --check; the safe-pattern config grades the bare expression identically in both languages, so switching languages cannot shrink the visible surface."
+        "translates": "Raw interpolations into dangerous contexts — JS template literals, python f-strings, and rust format-string placeholders alike — become the ratcheted review surface. A NEW unreviewed site fails --check; the safe-pattern config grades the bare expression identically in both languages, so switching languages cannot shrink the visible surface."
       },
       "reconcile": {
         "from": "record",
@@ -397,6 +415,7 @@
       }
     },
     "nonTransition": {
+      "ensureSiteHandles": "Loads the grammar and query of each site row already registered so the sync extractors can read it. No crossing of its own: the rows entered at registerLanguagePack, purity-checked there; this only makes them reachable to the walk that started after registration.",
       "builtinLanguagePacks": "Aggregates the five in-harness pack tables for inspection and the purity oracle. No crossing: harness constants in, harness constants out — it exists so the pack-purity guard has one perimeter to sweep and so conformance checking has a future home.",
       "withTree": "Memory hygiene within the shell chart: owns a parse tree's whole wasm lifetime and frees it in a finally, so node captures cannot outlive their tree and a leak is unrepresentable. No fact crosses a chart here."
     }

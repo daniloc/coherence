@@ -309,7 +309,7 @@ export const CLAIM_FORMS: ClaimForm[] = [
         if (a.verdict === "no-iteration")
           return { kind: "fail", detail: `[oracle] "${test}" performs NO domain iteration (${a.detail}) — a source-grep / hand-enumerated cases, not totality. Loop the live domain behind \`${sym}\`, or — if it is a genuine source-property guard — declare it \`via guard "${test}"\` instead of \`via test\`.` };
         if (a.verdict === "not-found")
-          return { kind: "fail", detail: `[oracle] "${test}" — no describe() with this EXACT title found, so the meta-oracle cannot analyze its domain (the runner alone would still pass on an it()-name match, silently skipping analysis). Anchor the claim to the oracle's exact describe title, or declare it \`passes test\`/\`via guard\` if it is not a domain totality.` };
+          return { kind: "fail", detail: `[oracle] "${test}" — no oracle block (describe / def / fn) with this EXACT name found, so the meta-oracle cannot analyze its domain (the runner alone would still pass on a substring or it()-name match, silently skipping analysis). Anchor the claim to the oracle block's exact name, or declare it \`passes test\`/\`via guard\` if it is not a domain totality.` };
       }
       if (ctx.fast) return fastNamedOracle(ctx, test, "boundary oracle (--fast)");
       if (!hasRunner(ctx)) return { kind: "skip", detail: "no test runner configured (config.test)" };
@@ -357,7 +357,7 @@ export const CLAIM_FORMS: ClaimForm[] = [
       if (ctx.cfg.oracleDomain !== false) {
         const a = await analyzeParityOracle(ctx.cfg, oracle, domain, f, g);
         if (a.verdict === "not-found")
-          return { kind: "fail", detail: `[parity] "${oracle}" — no describe() with this EXACT title found, so the parity meta-oracle cannot analyze it. Anchor the claim to the oracle's exact describe title.` };
+          return { kind: "fail", detail: `[parity] "${oracle}" — no oracle block (describe / def / fn) with this EXACT name found, so the parity meta-oracle cannot analyze it. Anchor the claim to the oracle block's exact name.` };
         if (a.verdict !== "ok")
           return { kind: "fail", detail: `[parity] "${oracle}" ${a.detail} (${a.file}). Loop the declared domain and assert \`${f}\` ≡ \`${g}\` per member.` };
       }

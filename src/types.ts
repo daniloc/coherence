@@ -31,9 +31,17 @@ export interface Graph {
 /** A raw spec parsed from a *.spec.md file. */
 export interface ParsedSpec { name: string; intent: string; claims: string[]; claimKinds: Record<string, string>; prose: string; why: string; invariants: string[]; refutations: string[]; }
 
+/** How derive.ts turns one import spec into an edge — a NAME from the closed set the
+ *  mechanism owns (pack purity: data, never code). "relative": a `./`-specifier is a
+ *  file, anything else an external package. "rust-module": a spec is a module path
+ *  (`crate::`, `super::`, `self::`, a `mod foo;` name) resolved through the crate's
+ *  file tree, anything unresolved an external crate root. */
+export type ImportResolution = "relative" | "rust-module";
+
 /** How to read a language's code — symbols, imports, and where docblocks live. */
 export interface LanguageAdapter {
   exts: string[]; // file extensions whose symbols/imports/docblocks we parse
+  importResolution?: ImportResolution; // default "relative"
   symbols(src: string): Array<{ name: string; kind: string; line: number }>;
   imports(src: string): string[];
   docAbove(lines: string[], line: number): string;

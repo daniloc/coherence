@@ -28,6 +28,7 @@ import { join } from "node:path";
 import { Query } from "web-tree-sitter";
 import type { Config } from "./types.ts";
 import { grammarHandle, withTree } from "./adapters/tree-sitter.ts";
+import { registeredRows } from "./language-registry.ts";
 import { scanSources, readBaseline, writeBaseline } from "./sidecar.ts";
 import { ratchetVacuityRefusal, type RatchetReading } from "./floor.ts";
 
@@ -52,7 +53,7 @@ const BASELINE = "sinks-baseline.json";
 // or `text-shape` (the literal's own text carries a statement shape, for languages
 // whose string delimiters consume the quotes). HTML stays a line signal in every
 // language. The safe-pattern config grades the bare expression identically throughout.
-interface SinkLanguage {
+export interface SinkLanguage {
   ext: string;
   grammar: string;
   query: string;
@@ -60,6 +61,16 @@ interface SinkLanguage {
   /** Container-text gate, a PATTERN not a predicate (pack purity: data, never code) —
    *  e.g. python: only f-prefixed strings interpolate meaningfully for this ratchet. */
   acceptString?: RegExp;
+  /** Where the interpolated expressions come from, NAMED from the closed set this
+   *  module owns. "node" (default): each `@expr` capture inside `@str`. "format-args":
+   *  the language has no interpolation node — `@str` is a format-string literal and
+   *  `@call` the macro argument list it heads; placeholders are parsed out of the
+   *  literal and mapped to the call's arguments (see formatArgSites). */
+  interpolation?: "node" | "format-args";
+  /** What the HTML signal reads. "line" (default): a markup tag anywhere on the line.
+   *  "literal": a tag inside the container's own text — for languages whose generics
+   *  (`Vec<T>`) put tag-shaped text on every line. */
+  html?: "line" | "literal";
 }
 export const SINK_LANGUAGES: SinkLanguage[] = [
   { ext: ".ts", grammar: "typescript", sql: "quote-wrap",
@@ -80,6 +91,53 @@ function interpolationExpr(node: import("web-tree-sitter").Node): string {
   const text = node.text;
   const lead = text.startsWith("${") || text.startsWith("#{") ? 2 : 1;
   return text.slice(lead, text.endsWith("}") ? -1 : undefined).trim();
+}
+
+/** The text of a string literal minus any prefix letters, raw-string hashes and quotes. */
+const literalText = (raw: string): string =>
+  raw.replace(/^[A-Za-z]*#*"/, "").replace(/"#*$/, "");
+
+/** Split an argument list's text on commas at bracket depth 0, skipping string and char
+ *  literals — the top-level argument slices of a macro call, untrimmed. */
+function topLevelArgs(text: string): string[] {
+  const out: string[] = [];
+  let depth = 0, from = 0;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (c === '"') { for (i++; i < text.length && text[i] !== '"'; i++) if (text[i] === "\\") i++; continue; }
+    if (c === "'" && /^'(?:\\.|[^\\'])'/.test(text.slice(i, i + 4))) { i += text[i + 1] === "\\" ? 3 : 2; continue; }
+    if ("([{".includes(c)) depth++;
+    else if (")]}".includes(c)) depth--;
+    else if (c === "," && depth === 0) { out.push(text.slice(from, i)); from = i + 1; }
+  }
+  out.push(text.slice(from));
+  return out;
+}
+
+/** The "format-args" strategy: the expression behind every placeholder of one format
+ *  string, given the argument text that follows the literal in the call. `{{`/`}}` are
+ *  escapes; `{}` takes the next positional argument, `{0}` an explicit one, `{name}` a
+ *  `name = expr` argument when one exists and otherwise the captured identifier itself;
+ *  any `:spec` is dropped. Unresolvable placeholders yield nothing — precision over
+ *  recall, as the python grade's skipped `.format` forms. */
+export function formatArgSites(format: string, argsAfter: string): string[] {
+  const args = topLevelArgs(argsAfter).map((a) => a.trim()).filter(Boolean);
+  const positional: string[] = [];
+  const named = new Map<string, string>();
+  for (const a of args) {
+    const m = /^([A-Za-z_]\w*)\s*=(?!=)\s*([\s\S]+)$/.exec(a);
+    if (m) named.set(m[1], m[2].trim()); else positional.push(a);
+  }
+  const exprs: string[] = [];
+  let next = 0;
+  for (const m of format.matchAll(/\{\{|\}\}|\{([^{}:]*)(?::[^{}]*)?\}/g)) {
+    if (m[0] === "{{" || m[0] === "}}") continue;
+    const arg = m[1].trim();
+    if (arg === "") { const e = positional[next++]; if (e) exprs.push(e); }
+    else if (/^\d+$/.test(arg)) { const e = positional[Number(arg)]; if (e) exprs.push(e); }
+    else if (/^[A-Za-z_]\w*$/.test(arg)) exprs.push(named.get(arg) ?? arg);
+  }
+  return exprs;
 }
 
 export interface Finding { context: string; file: string; expr: string; line: number }
@@ -165,34 +223,54 @@ export async function lintSinks(cfg: Config, mode: "report" | "check" | "update"
   const { src } = await scanSources(cfg);
 
   const findings: Finding[] = [];
-  const queries = new Map<string, { parser: import("web-tree-sitter").Parser; query: Query }>();
+  const rows = [...SINK_LANGUAGES, ...registeredRows("sinks")];
+  const queries = new Map<SinkLanguage, { parser: import("web-tree-sitter").Parser; query: Query }>();
   for (const { rel, text } of src) {
-    const lang = SINK_LANGUAGES.find((l) => rel.endsWith(l.ext));
+    const lang = rows.find((l) => rel.endsWith(l.ext));
     if (!lang) continue;
-    let handle = queries.get(lang.ext);
+    let handle = queries.get(lang);
     if (!handle) {
       const { language, parser } = await grammarHandle(lang.grammar);
       handle = { parser, query: new Query(language, lang.query) };
-      queries.set(lang.ext, handle);
+      queries.set(lang, handle);
     }
     const lines = text.split("\n");
+    // One context decision and safe-pattern grade for every strategy: the rest of the
+    // ratchet never learns which strategy produced an expression.
+    const grade = (container: string, row: number, exprs: string[], quoteWrapped = false) => {
+      const isSql = lang.sql === "quote-wrap" ? quoteWrapped : SQL_TEXT.test(container);
+      if (!isSql && !HTML_TAG.test(lang.html === "literal" ? container : lines[row] ?? "")) return;
+      const context = isSql ? "sql-ident" : "html-value";
+      for (const expr of exprs) {
+        if (expr && !(isSql ? safeSql : safeHtml).test(expr)) findings.push({ context, file: rel, expr, line: row + 1 });
+      }
+    };
     withTree(handle.parser, text, null, (tree) => {
+    if (lang.interpolation === "format-args") {
+      // The format string is the FIRST literal argument of each captured call; later
+      // literals are arguments, never formats.
+      const firstStr = new Map<number, { str: import("web-tree-sitter").Node; call: import("web-tree-sitter").Node }>();
+      for (const match of handle.query.matches(tree.rootNode)) {
+        const str = match.captures.find((c) => c.name === "str")?.node;
+        const call = match.captures.find((c) => c.name === "call")?.node;
+        if (!str || !call) continue;
+        const held = firstStr.get(call.id);
+        if (!held || str.startIndex < held.str.startIndex) firstStr.set(call.id, { str, call });
+      }
+      for (const { str, call } of firstStr.values()) {
+        const format = literalText(str.text);
+        const after = text.slice(str.endIndex, call.endIndex - 1).replace(/^\s*,/, "");
+        grade(format, str.startPosition.row, formatArgSites(format, after));
+      }
+      return null;
+    }
     for (const match of handle.query.matches(tree.rootNode)) {
       const str = match.captures.find((c) => c.name === "str")?.node;
       const interp = match.captures.find((c) => c.name === "expr")?.node;
       if (!str || !interp) continue;
       if (lang.acceptString && !lang.acceptString.test(str.text)) continue;
-      const isSql = lang.sql === "quote-wrap"
-        ? text[interp.startIndex - 1] === '"' && text[interp.endIndex] === '"'
-        : SQL_TEXT.test(str.text);
-      const row = interp.startPosition.row;
-      if (!isSql && !HTML_TAG.test(lines[row] ?? "")) continue;
-      const expr = interpolationExpr(interp);
-      if (!expr) continue;
-      const context = isSql ? "sql-ident" : "html-value";
-      if (!(isSql ? safeSql : safeHtml).test(expr)) {
-        findings.push({ context, file: rel, expr, line: row + 1 });
-      }
+      const quoteWrapped = text[interp.startIndex - 1] === '"' && text[interp.endIndex] === '"';
+      grade(str.text, interp.startPosition.row, [interpolationExpr(interp)], quoteWrapped);
     }
     return null;
     });

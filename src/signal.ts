@@ -15,7 +15,7 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { spawnSync } from "node:child_process";
 import type { Config, Graph } from "./types.ts";
-import { buildGraph } from "./derive.ts";
+import { buildGraph, resolveLanguageAdapter } from "./derive.ts";
 import { loadConfig } from "./config.ts";
 import {
   changedBetween, diffGraphs, locDelta, withTreeAt, type StructuralDiff,
@@ -125,6 +125,9 @@ async function locIncludingUntracked(cfg: Config, ref: string, changed: Set<stri
 /** Derive the current patch signal. The before graph and surface come from ONE detached
  * worktree; the after side is the caller's working tree. No writes. */
 export async function analyzeChange(cfg: Config, graph?: Graph, ref = "HEAD"): Promise<ChangeSignal> {
+  // The CURRENT tree's language module registers first: the before-side worktree imports
+  // a historic copy, and first-registration-wins then reads both sides with today's rows.
+  await resolveLanguageAdapter(cfg);
   // Harness records are consequences of assessing the patch, not part of the patch being
   // assessed. Including the attestation journal line would make its own fingerprint
   // self-invalidating; calibration/status writes would do the same at Stop.

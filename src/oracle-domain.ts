@@ -37,6 +37,7 @@ import { readdir } from "node:fs/promises";
 import { join, relative } from "node:path";
 import { Query, type Node, type Parser } from "web-tree-sitter";
 import { grammarHandle, withTree } from "./adapters/tree-sitter.ts";
+import { registeredRows } from "./language-registry.ts";
 import type { Config } from "./types.ts";
 
 export type OracleVerdict = "live" | "literal" | "no-iteration" | "not-found";
@@ -278,13 +279,16 @@ export const ORACLE_LANGUAGES: { typescript: QueryOracleLanguage; python: RegexO
  *  is the duplicated-domain finding that module exists to report. */
 export const isPyTestPath = (p: string) => ORACLE_LANGUAGES.python.testFilePattern.test(p);
 
+/** Built-in rows, then registered ones — discovery and dispatch read the same list. */
+const oracleRows = (): OracleLanguageSpec[] => [...Object.values(ORACLE_LANGUAGES), ...registeredRows("oracle")];
+
 /** A test file (NOT a *.spec.md — those are coherence specs, not runnable tests). */
 const isTestFile = (name: string) =>
-  name !== "spec.md" && Object.values(ORACLE_LANGUAGES).some((row) => row.testFilePattern.test(name));
+  name !== "spec.md" && oracleRows().some((row) => row.testFilePattern.test(name));
 
 /** The language row that reads one discovered test file. */
 const rowFor = (rel: string): OracleLanguageSpec =>
-  Object.values(ORACLE_LANGUAGES).find((row) => row.testFilePattern.test(rel)) ?? ORACLE_LANGUAGES.typescript;
+  oracleRows().find((row) => row.testFilePattern.test(rel)) ?? ORACLE_LANGUAGES.typescript;
 
 // Dirs that are never source, regardless of the project's graph-`ignore`. We deliberately
 // do NOT reuse cfg.ignore: a project commonly excludes its test dir (e.g. "__tests__") from
@@ -360,9 +364,10 @@ function anchorView(row: OracleLanguageSpec, src: string, oracleName: string): P
 // the parse and the row contributes the patterns, never the verdicts.
 
 interface QueryHandles { parser: Parser; anchor: Query; scope: Query; iteration: Query; floor: Query }
-const queryHandleCache = new Map<string, Promise<QueryHandles>>();
+// Keyed by ROW: a registered row may reuse a built-in grammar with different queries.
+const queryHandleCache = new Map<QueryOracleLanguage, Promise<QueryHandles>>();
 function queryHandles(row: QueryOracleLanguage): Promise<QueryHandles> {
-  let cached = queryHandleCache.get(row.grammar);
+  let cached = queryHandleCache.get(row);
   if (!cached) {
     cached = (async () => {
       const { language, parser } = await grammarHandle(row.grammar);
@@ -374,7 +379,7 @@ function queryHandles(row: QueryOracleLanguage): Promise<QueryHandles> {
         floor: new Query(language, row.floorQuery),
       };
     })();
-    queryHandleCache.set(row.grammar, cached);
+    queryHandleCache.set(row, cached);
   }
   return cached;
 }
@@ -781,7 +786,7 @@ export async function analyzeOracle(cfg: Config, oracleName: string): Promise<Or
       : "";
     return { verdict: "literal", detail: renderDetail(row.detailTemplates[lit.reason], lit.ref) + more, file: rel };
   }
-  return { verdict: "not-found", detail: `no describe("${oracleName}") found in any test file`, file: undefined };
+  return { verdict: "not-found", detail: `no oracle block named "${oracleName}" found in any test file`, file: undefined };
 }
 
 // ── the PARITY meta-oracle ────────────────────────────────────────────────────────────
@@ -842,5 +847,5 @@ export async function analyzeParityOracle(
       };
     return { verdict: "ok", detail: `enumerates \`${domain}\` and drives both \`${f}\` and \`${g}\``, file: rel };
   }
-  return { verdict: "not-found", detail: `no describe("${oracleName}") found in any test file` };
+  return { verdict: "not-found", detail: `no oracle block named "${oracleName}" found in any test file` };
 }

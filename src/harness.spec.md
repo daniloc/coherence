@@ -61,6 +61,8 @@ rendering, and journaling remain independently addressable modules beneath this 
 - a grammar-backed adapter derives the graph through the same language seam
 - instrument arms read languages through shared grammar queries, never a parallel scanner
 - a built-in language pack is data: queries, patterns, and named strategies, never code
+- a registered language pack reaches every instrument the built-ins reach, as data, or refuses
+- rust sources feed the same instruments as typescript at their declared grade
 - a parse's heap is returned before the next file
 - an undeclared root refuses the walk, never wanders
 - experiment outcomes require criterion-total evidence
@@ -73,6 +75,8 @@ rendering, and journaling remain independently addressable modules beneath this 
 
 ## refutations
 
+- rust sources feed the same instruments as typescript at their declared grade: three rust needs were measured broken before a strategy was named for each. With the relative import strategy, naga's 245 `use` paths derived 0 internal edges and `crate::value::{Name, Value}` became an external package. With the line doc scanner, every `///` line read as `/ text` and the 38 doc blocks above `#[derive]` read nothing. A captures-only sinks row mangled every expression and found 1 SQL site. After the strategies, the python-twin oracle guard went red on the row itself: `!k.is_empty()` on each element read as a domain floor, so the floor now needs a const-shaped receiver.
+- a registered language pack reaches every instrument the built-ins reach, as data, or refuses: three paths read instrument rows without loading the configured language module. With the preload removed from the `lint-sinks` branch, a project pack's sinks row never registered and its SQL interpolation read 0 sites. With it removed from `analyzeChange`, signal's before-side worktree imported the historic module first, so both sides read the historic rows and a patch adding one export read `+0 exports`. A third failure surfaced on a Go pack whose grammar lives in `node_modules`: the before-side worktree built its graph from the historic copy's grammar path, which the worktree does not have, and signal crashed with ENOENT; the graph now derives from the held pack. The guard reds on all three (checked by hand) and pins them.
 - session startup survives a damaged decision-journal path with named degradation: with `.coherence/decisions` replaced by a regular file, SessionStart threw raw `ENOTDIR` before emitting any instructions. It now retains the exact host session, names `JOURNAL CONTROL unavailable`, performs no journal write, and exits zero.
 - session startup teaches the executable swarm loop without manufacturing authority: after the work graph, orientation, and consequence ledger shipped, canonical startup still taught only the decision journal and experiment planning; an exact assignment printed `work inspect` but no safe way to accept, block, hand off, or close it. Startup now names the read-only heading and fleet reads for everyone, reserves create/handoff for explicit coordination authority, and emits state-valid lifecycle commands with the standing predecessor only beside work owned by that exact session.
 - hook telemetry loss never kills PostToolUse: the original no-dependency canary sent `{}`, producing no read event and never exercising persistence. A real Read event with `.coherence/read-traces` replaced by a regular file threw `EEXIST` out of the hook. The runtime boundary now contains telemetry failure, stays byte-silent, and the canary carries the hostile target.
@@ -186,6 +190,14 @@ rendering, and journaling remain independently addressable modules beneath this 
 - boundary "a grammar-backed adapter derives the graph through the same language seam" at makeTreeSitterAdapter via guard "tree-sitter — a grammar-backed adapter derives ruby symbols, imports, and prose through the same seam"
 - boundary "instrument arms read languages through shared grammar queries, never a parallel scanner" at lintSinks via guard "ruby sinks — an interpolation into a SQL context is a site and the safe pattern exempts"
 - boundary "a built-in language pack is data: queries, patterns, and named strategies, never code" at builtinLanguagePacks via guard "language packs — every built-in pack is function-free data across all five instrument tables"
+- boundary "a registered language pack reaches every instrument the built-ins reach, as data, or refuses" at registerLanguagePack via guard "language registry — a registered pack reaches sinks, sites, surface and oracle; a function field or a built-in name refuses"
+- boundary "a registered language pack reaches every instrument the built-ins reach, as data, or refuses" at ensureSiteHandles via guard "language registry — a registered pack reaches sinks, sites, surface and oracle; a function field or a built-in name refuses"
+- boundary "rust sources feed the same instruments as typescript at their declared grade" at makeTreeSitterAdapter via guard "rust graph — top-level items and impl methods are symbols, rustdoc reads through attributes, module paths resolve to files"
+- boundary "rust sources feed the same instruments as typescript at their declared grade" at resolveRustModule via guard "rust module paths — use trees expand and resolve by longest module prefix"
+- boundary "rust sources feed the same instruments as typescript at their declared grade" at surfaceOfSource via guard "rust surface — pub items and pub enum variants count; private and nested items do not"
+- boundary "rust sources feed the same instruments as typescript at their declared grade" at sitesOfRust via guard "rust redundancy — two spellings of one domain rank as a candidate; a match on enum variants does not"
+- boundary "rust sources feed the same instruments as typescript at their declared grade" at lintSinks via guard "rust sinks — a format! placeholder into a SQL context is a site, the safe pattern exempts, and generics on the line are not markup"
+- boundary "rust sources feed the same instruments as typescript at their declared grade" at analyzeOracle via guard "rust oracle — an imported domain with a floor is live; a literal array is literal; a vanished fn is not-found"
 - boundary "a parse's heap is returned before the next file" at withTree via guard "wasm heap — parses past the measured abort cliff survive because every tree is freed"
 - boundary "an undeclared root refuses the walk, never wanders" at requireDeclaredRoot via guard "declared root — a configless directory refuses the walk and an empty config declares it"
 - boundary "experiment outcomes require criterion-total evidence" at closeExperiment via guard "close — total nonempty evidence is mandatory and outcome is derived, never supplied"
@@ -625,6 +637,40 @@ is honest about what a pack may name — strategies from a closed, mechanism-own
 procedural; naming it keeps the procedure written once where every language can reach
 it. Project adapter modules remain code territory by definition: purity governs what
 ships built in, where a single spelling is the entire point.
+
+**a registered language pack reaches every instrument the built-ins reach, as data, or refuses.** Before the registry, a project could reach the graph tier with its own
+adapter but no further: the surface, sites, sinks, and oracle rows were harness
+constants, so a fourth language was an upstream contribution or nothing. Opening that
+seam to project code is only safe if what crosses is still reviewable, which is why the
+same purity rule applies at registration and a function-valued field refuses by path
+before any instrument trusts the row. Two alternatives were rejected. A project module
+calling the registry itself was the obvious shape, but the package exports no entry a
+project could import, and a module bound to another install's copy would register into
+a registry no instrument reads, silently. Shadowing a built-in name was rejected
+because it re-grades a different tree under a familiar label. First registration wins
+because `signal` and `log` import a historic copy of the project's module from a
+worktree, and the instrument must stay constant across the diff it measures. The gate
+before trust was a registered clone of each built-in row over flask, click, and sinatra
+with files renamed to an extension only the clone reads: zero deltas across graph,
+surface, sites, sinks, and oracle.
+
+**rust sources feed the same instruments as typescript at their declared grade.** Rust
+is the first language to arrive as one pack through the registry rather than as rows
+spread across five tables, so it is also the registry's proof that a language can reach
+typescript's level as data. It did not arrive as rows alone, and the boundary is drawn
+where the measurements put it: three things rust needs are knowledge no query can hold —
+which comment is documentation, what a module path names on disk, and where a format
+string's placeholders get their values. Each became a strategy the mechanism owns and
+the pack only names, so the next language with the same shape names it too instead of
+shipping code. The grade is declared the same way python's is. The oracle stays at the
+indent-regex grade, because the grammar-query strategy is typescript-shaped and porting
+it is a separate cost; the price is a named blind spot rather than a hidden one — the
+anchor is a line, so a same-named function above the test is read instead, measured at 0
+of 60 tests on naga and 32 of 383 on ripgrep. A module path that cannot be resolved
+links nothing rather than an external package, because a mislabeled dependency is read
+downstream as fact while a missing edge is only an absence. Trust came the house way:
+each reader gated beside an independent witness (tags.scm, rustdoc's JSON, line-regex
+readers, the python row) over naga and ripgrep before any guard was written.
 
 **a parse's heap is returned before the next file.** web-tree-sitter trees hold wasm
 heap only an explicit delete returns, and the emscripten heap is fixed — so a leak is
