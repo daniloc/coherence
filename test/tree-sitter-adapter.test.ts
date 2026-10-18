@@ -50,6 +50,7 @@ test("tree-sitter — a grammar-backed adapter derives ruby symbols, imports, an
     assert.equal(byName.get("render()"), "method", "methods carry the () spelling both regex adapters use");
     assert.equal(byName.get("default()"), "method", "singleton methods count");
     assert.deepEqual(adapter.imports(RUBY_SRC), ["json", "domain"]);
+    assert.deepEqual(adapter.outline?.(RUBY_SRC), { symbols, imports: ["json", "domain"] }, "the one-parse outline reads exactly what the two single reads do");
     const lines = RUBY_SRC.split("\n");
     const renderer = symbols.find((s) => s.name === "BadgeRenderer")!;
     assert.equal(adapter.docAbove(lines, renderer.line), "The one renderer every surface calls.");

@@ -21,22 +21,22 @@
   },
   {
     "key": "lines|Executable contracts",
-    "value": 19575,
+    "value": 19576,
     "unit": "lines"
   },
   {
     "key": "lines|Harness core",
-    "value": 27456,
+    "value": 27458,
     "unit": "lines"
   },
   {
     "key": "lines|Source adapters",
-    "value": 570,
+    "value": 569,
     "unit": "lines"
   },
   {
     "key": "lines|total",
-    "value": 47601,
+    "value": 47603,
     "unit": "lines"
   },
   {

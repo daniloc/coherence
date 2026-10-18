@@ -244,37 +244,36 @@ export async function makeTreeSitterAdapter(
   parser.setLanguage(language);
 
   const commentPrefix = spec.lineComment;
+  const symbolsIn = (tree: Tree): Array<{ name: string; kind: string; line: number }> => {
+    const out: Array<{ name: string; kind: string; line: number }> = [];
+    const seen = new Set<string>();
+    for (const match of symbolQuery.matches(tree.rootNode)) {
+      for (const capture of match.captures) {
+        if (capture.name.startsWith("_")) continue; // predicate-only capture
+        if (spec.excludeSymbolNames?.test(capture.node.text)) continue;
+        const kind = capture.name;
+        const name = kind === "method" ? `${capture.node.text}()` : capture.node.text;
+        const line = capture.node.startPosition.row + 1;
+        const key = `${name}@${line}`;
+        if (!seen.has(key)) { seen.add(key); out.push({ name, kind, line }); }
+      }
+    }
+    return out.sort((a, b) => a.line - b.line);
+  };
+  const importsIn = (tree: Tree): string[] => {
+    const specs: string[] = [];
+    for (const match of importQuery.matches(tree.rootNode)) {
+      for (const capture of match.captures) {
+        if (capture.name === "spec") specs.push(capture.node.text);
+      }
+    }
+    return specs;
+  };
   return {
     exts: spec.exts,
-    symbols(src: string) {
-      return withTree(parser, src, [] as Array<{ name: string; kind: string; line: number }>, (tree) => {
-      const out: Array<{ name: string; kind: string; line: number }> = [];
-      const seen = new Set<string>();
-      for (const match of symbolQuery.matches(tree.rootNode)) {
-        for (const capture of match.captures) {
-          if (capture.name.startsWith("_")) continue; // predicate-only capture
-          if (spec.excludeSymbolNames?.test(capture.node.text)) continue;
-          const kind = capture.name;
-          const name = kind === "method" ? `${capture.node.text}()` : capture.node.text;
-          const line = capture.node.startPosition.row + 1;
-          const key = `${name}@${line}`;
-          if (!seen.has(key)) { seen.add(key); out.push({ name, kind, line }); }
-        }
-      }
-      return out.sort((a, b) => a.line - b.line);
-      });
-    },
-    imports(src: string) {
-      return withTree(parser, src, [] as string[], (tree) => {
-        const specs: string[] = [];
-        for (const match of importQuery.matches(tree.rootNode)) {
-          for (const capture of match.captures) {
-            if (capture.name === "spec") specs.push(capture.node.text);
-          }
-        }
-        return specs;
-      });
-    },
+    symbols: (src: string) => withTree(parser, src, [], symbolsIn),
+    imports: (src: string) => withTree(parser, src, [], importsIn),
+    outline: (src: string) => withTree(parser, src, { symbols: [], imports: [] }, (tree) => ({ symbols: symbolsIn(tree), imports: importsIn(tree) })),
     docAbove: spec.docs?.docAbove ?? DOC_STRATEGIES[spec.docStyle ?? "line"]?.docAbove ?? ((lines: string[], lineNo: number) => {
       let j = lineNo - 2; // lineNo is 1-based; start at the line above the symbol
       const block: string[] = [];

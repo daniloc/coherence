@@ -148,11 +148,12 @@ export async function buildGraph(cfg: Config): Promise<Graph> {
     add({ id: fileIds.get(f)!, parent: owner === null ? undefined : compId(owner), label: basename(f), kind: "file", sub: f, path: f, prose: fwhat, why: fwhy });
     if (!isCode) continue;
 
-    for (const s of lang.symbols(src)) {
+    const outline = lang.outline?.(src) ?? { symbols: lang.symbols(src), imports: lang.imports(src) };
+    for (const s of outline.symbols) {
       const { what, why } = splitWhy(lang.docAbove(lines, s.line));
       add({ id: `s:${f}#${s.name}`, parent: fileIds.get(f), label: s.name, kind: "symbol", sub: s.kind, path: f, line: s.line, prose: what || undefined, why: why || undefined });
     }
-    for (const spec of lang.imports(src)) {
+    for (const spec of outline.imports) {
       if (spec.startsWith(".")) {
         const target = relative(root, resolve(join(root, dirname(f)), spec));
         // A specifier may name the file exactly (`./data.ts`, Node-style), omit the

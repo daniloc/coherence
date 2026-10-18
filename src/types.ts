@@ -36,6 +36,7 @@ export interface LanguageAdapter {
   exts: string[]; // file extensions whose symbols/imports/docblocks we parse
   symbols(src: string): Array<{ name: string; kind: string; line: number }>;
   imports(src: string): string[];
+  outline?(src: string): { symbols: Array<{ name: string; kind: string; line: number }>; imports: string[] };
   docAbove(lines: string[], line: number): string;
   fileDoc(lines: string[]): string;
 }
