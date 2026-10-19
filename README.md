@@ -1,5 +1,9 @@
 # coherence: Spend less inference, build better projects
 
+> [!IMPORTANT]
+> **This project has moved to [PostHog/coherence](https://github.com/PostHog/coherence).**
+> Development continues there, and the package is now published as [`@posthog/coherence`](https://www.npmjs.com/package/@posthog/coherence). This repository is archived and preserved for history.
+
 Robots can write code faster than any human can interpret.
 
 That's the strange new problem of the agent age. An agent has inexhaustible stamina: it will generate, refactor, and patch for as long as you let it. But every choice it makes—every alternative it rejected, every argument it settled—evaporates when the session ends. The next reader arrives with the same questions we've always had: *Can I change this safely? What breaks if I do? Why is it this way?*
